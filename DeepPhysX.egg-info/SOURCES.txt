@@ -1,7 +1,0 @@
-README.md
-setup.py
-DeepPhysX/__init__.py
-DeepPhysX.egg-info/PKG-INFO
-DeepPhysX.egg-info/SOURCES.txt
-DeepPhysX.egg-info/dependency_links.txt
-DeepPhysX.egg-info/top_level.txt
