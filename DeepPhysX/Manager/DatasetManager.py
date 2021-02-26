@@ -78,9 +78,6 @@ class DatasetManager:
         if (os.path.getsize(path1) > self.maxSize) or (os.path.getsize(path2)) > self.maxSize:
             self.createNewPartition()
 
-    def setTrainingMode(self):
-        pass
-
     def createNewPartition(self):
         current_file_path_in = self.partitionNameTemplate.format('IN', len(self.partitionsList[self.submode]) // 2)
         current_file_path_out = self.partitionNameTemplate.format('OUT', len(self.partitionsList[self.submode]) // 2)
@@ -99,12 +96,6 @@ class DatasetManager:
         self.currentFile = [open(self.managerAbsolutePath + current_file_path_in, 'ab'),
                             open(self.managerAbsolutePath + current_file_path_out, 'ab')]
         return
-
-    def setOfflineTrainingMode(self):
-        pass
-
-    def loadDirectory(self):
-        pass
 
     def saveData(self):
         file = open(self.managerAbsolutePath + self.partitionsListPath[self.submode], "w+")
@@ -137,11 +128,6 @@ class DatasetManager:
         self.setOffLineTrainingMode()
         self.loadDirectory()
 
-    def setTestMode(self):
-        pass
-
-    def setOffLineTrainingMode(self):
-        pass
 
     def loadPartition(self, shuffle_dataset=True, multiple_partitions=False):
         # Reset data
@@ -249,9 +235,63 @@ class DatasetManager:
             parts.append(self.managerAbsolutePath + out_file)
         return parts
 
+    def loadDirectory(self, dir_name=''):
+        # Load a directory according to the distribution given by teh lists
+        # Or the whole directory as training data if not provided
+        self.currentPartition[self.submode] = 0
+        if dir_name == '':
+            dir_name = self.datasetAbsolutePath
+        print("Loading directory: {}".format(dir_name))
+        if not os.path.isdir(dir_name):
+            raise Exception('Loading directory: The given input is not an existing directory\n{}'.format(dir_name))
+        # Look for while which ends with "partitions_list.txt"
+        partition_list_file = [f for f in os.listdir(dir_name) if
+                               os.isfile(os.join(dir_name, f)) and f.endswith('partitions_list.txt')]
+        # If there is no such files then proceed to load any dataset found as in/out
+        if len(partition_list_file) == 0:
+            print("Will consider any .npy file as input/output.")
+            dataset_list = [f for f in os.listdir(dir_name) if
+                            os.isfile(os.join(dir_name, f)) and f.enswith(".npy")]
+            self.partitionsList[self.submode] = self.addPartitionToList(dataset_list)
+        else:
+            # If partitions_list.txt found then proceed to load the specific dataset as input/output
+            for p_l in partition_list_file:
+                partition_file = open(self.datasetAbsolutePath + p_l)
+                partition_list = partition_file.readlines()
+                self.partitionsList[self.submode] = self.addPartitionToList(partition_list)
 
+    def setTrainingMode(self):
+        self.mode = self.modesList[0]
+        self.submode = 0
 
+    def setTestMode(self):
+        self.mode = self.modesList[2]
+        self.submode = 1
+
+    def setOfflineTrainingMode(self):
+        self.mode = self.modesList[1]
+        self.submode = 0
+
+    def setOfflineTestMode(self):
+        self.mode = self.modesList[3]
+        self.submode = 1
+
+    def description(self, minimal=False):
+        desc = "\n\nDataset Manager: \n"
+        desc += "Partition size: {}Go\n".format(self.maxSize * 1e-9)
+        desc += "Dataset path: {}\na".format(self.datasetAbsolutePath)
+        return desc
 
 
     def getNextIndex(self, multiple_partition):
-        pass
+        if multiple_partition:
+            if self.indexStep is None:
+                path_in = self.partitionsList[self.submode][0].replace("\n", "")
+                data_in = np.float32(np.load(path_in, allow_pickle=True)).reshape((-1, *self.input_shape))
+                self.indexStep = int(data_in.shape[0] / len(self.partitionsList[self.submode]))
+                return 0, self.indexStep
+            return self.indexBegin + self.indexStep, self.indexBegin ++ 2 * self.index_step
+        else:
+            # Represent 1e100 tensor (huge value for the indexing)
+            return 0, 1e100
+
