@@ -1,3 +1,8 @@
+"""
+Test script for the DeepPhysX tools
+Train a network to return the first decimal of a random number in [0, 1[
+"""
+
 from DeepPhysX.Manager.DatasetManager import DatasetManager
 import numpy as np
 import random
