@@ -30,12 +30,8 @@ class DatasetManager:
         self.actualPartitions = {'train': 0, 'test': 0, 'predict': 0}
         self.currentPartitions = None
         self.saved = True
-        # Uncertain variables
         self.in_and_out = True
-        self.done_reading = False
-        # Index
-        self.indexBegin = 0
-        self.indexStep = None
+        self.description = ""
         # Init dataset
         self.initDataset()
 
@@ -224,8 +220,9 @@ class DatasetManager:
     def getNextOutput(self, batched=False):
         return self.getData(inputs=False, outputs=True, batched=batched)
 
-    def description(self):
-        desc = "\n\nDataset Manager: \n"
-        desc += "Partition size: {}Go\n".format(self.maxSize * 1e-9)
-        desc += "Dataset path: {}\na".format(self.datasetPath)
-        return desc
+    def getDescription(self):
+        if len(self.description) == 0:
+            self.description += "\nDATASET MANAGER:\n"
+            self.description += "   Partition size: {}Go\n".format(self.maxSize * 1e-9)
+            self.description += "   Dataset path: {}\n".format(self.datasetPath)
+        return self.description
