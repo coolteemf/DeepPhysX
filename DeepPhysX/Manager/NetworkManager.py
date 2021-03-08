@@ -1,19 +1,22 @@
 import os
-import inspect
 import shutil
+
+import DeepPhysX.utils.pathUtils as pathUtils
 
 
 class NetworkManager:
 
-    def __init__(self, network_name, retrain_network=False, save_each_epoch=False):
-        frm = inspect.stack()[1]
-        mod = inspect.getmodule(frm[0])
-        caller_path = os.path.dirname(os.path.abspath(mod.__file__))
-        self.networkDir = os.path.join(caller_path, network_name, 'network/')
-        self.retrainNetwork = retrain_network
+    def __init__(self, session_name, network_dir, existing_network, manager_dir,
+                 train_network=False, save_each_epoch=False, load_only=False):
+        
+        self.networkDir = network_dir
+        self.managerDir = manager_dir
+        self.existingNetwork = existing_network
+        self.trainNetwork = train_network
         self.saveEachEpoch = save_each_epoch
         self.savedCount = 0
-        self.networkTemplateName = "network_{}.pth"
+        self.loadOnly = load_only
+        self.networkTemplateName = session_name + '_network_{}.pth'
         self.network = None
         self.config = None
         self.optimizer = None
@@ -26,8 +29,19 @@ class NetworkManager:
         self.config = config
         self.network = config.create()
         self.network.setDevice()
+
+        if self.existingNetwork:
+            if not self.loadOnly:
+                # Link to the dataset in the session directory
+                # os.symlink(self.datasetDir, os.path.join(self.managerDir, 'dataset/'))
+                shutil.copytree(self.networkDir, os.path.join(self.managerDir, 'network/'))
+            self.networkDir = os.path.join(self.managerDir, 'network/')
+        # Create the folder were we will save the network
+        else:
+            self.networkDir = pathUtils.createDir(self.networkDir, key='network')
+
         # Check if we are using the network for prediction only
-        if optimizer is None or lr is None or self.retrainNetwork:
+        if (optimizer is None or lr is None) and self.existingNetwork:
             networks_list = [os.path.join(self.networkDir, f) for f in os.listdir(self.networkDir) if
                              os.path.isfile(os.path.join(self.networkDir, f)) and f.endswith('.pth')]
             if len(networks_list) > 1 and which_network == -1:
@@ -41,11 +55,8 @@ class NetworkManager:
                 print("There is no network in {}. Shutting down.".format(self.networkDir))
                 quit(0)
             self.network.loadParameters(networks_list[which_network])
-        # Create the folder were we will save the network
+            BaseN
         else:
-            if os.path.isdir(self.networkDir):
-                shutil.rmtree(self.networkDir, ignore_errors=True)
-            os.makedirs(self.networkDir)
             self.lr = lr
             # self.optimizer = optimizer(self.network.getParameters(), lr=lr)
             self.optimizer = optimizer

@@ -1,12 +1,8 @@
-"""
-Test script for the DeepPhysX Dataset
-"""
-
-import numpy as np
-import random
 import os
 
-from DeepPhysX.Manager.DatasetManager import DatasetManager
+import numpy as np
+
+from DeepPhysX.Manager.Manager import Manager
 
 
 def createData(n, m):
@@ -32,10 +28,15 @@ def read(dsm, mode, t):
 
 
 def main():
-    network_name = 'network'
+    session_name = 'test_session'
+    network_config = None
     max_size = 0.000001
+
     # Generate
-    dsm = DatasetManager(network_name=network_name, partition_size=max_size, mode='train', generate_data=True)
+    manager = Manager(session_name=session_name, network_config=network_config, trainer=True, manager_dir=None,
+                      dataset_dir=None, network_dir=None, partition_size=max_size, shuffle_dataset=False,
+                      save_each_epoch=False)
+    dsm = manager.datasetManager
     for epoch in range(1):
         train_idx = 0
         test_idx = 0
@@ -43,17 +44,21 @@ def main():
         test_idx = generate(dsm, test_idx, 'test', epoch, 25)
         train_idx = generate(dsm, train_idx, 'train', epoch, 50)
         test_idx = generate(dsm, test_idx, 'test', epoch, 25)
-    dsm.close()
+    manager.close()
+
     # Read
-    dsm = DatasetManager(network_name=network_name, partition_size=max_size, mode='train', generate_data=False,
-                         shuffle_dataset=True)
+    manager_dir = os.path.join(os.getcwd(), session_name)
+    dataset_dir = os.path.join(manager_dir, 'dataset')
+    manager = Manager(session_name=session_name, network_config=network_config, trainer=True, manager_dir=None,
+                      dataset_dir=dataset_dir, network_dir=None, partition_size=max_size, shuffle_dataset=True,
+                      save_each_epoch=False)
+    dsm = manager.datasetManager
     for epoch in range(1):
         read(dsm, 'train', 50)
         print("")
         read(dsm, 'test', 25)
-        """read(dsm, 'train', 50)
-        read(dsm, 'test', 25)"""
-    dsm.close()
+    manager.close()
+
     return
 
 
