@@ -2,24 +2,30 @@ import os
 import shutil
 import numpy as np
 
-from DeepPhysX.Dataset.Dataset import Dataset
+from DeepPhysX.Dataset.DatasetConfig import DatasetConfig
 import DeepPhysX.utils.pathUtils as pathUtils
 
 
 class DatasetManager:
 
-    def __init__(self, session_name, dataset_dir, existing_dataset, manager_dir,
-                 partition_size=1, mode='train', shuffle_dataset=False, generate_data=True, load_only=False):
+    def __init__(self, session_name, dataset_config: DatasetConfig, manager_dir, trainer):
+
         # Dataset variables
-        self.datasetDir = dataset_dir
+
+        self.datasetConfig = dataset_config
+        self.dataset = dataset_config.createDataset()
+
+        self.datasetDir = dataset_config.datasetDir
         self.managerDir = manager_dir
-        self.existingDataset = existing_dataset
-        self.generateData = generate_data
-        self.maxSize = int(partition_size * 1e9)  # from gigabytes to bytes
-        self.dataset = Dataset(max_size=self.maxSize)
-        self.mode = mode
-        self.shuffleDataset = shuffle_dataset
-        self.loadOnly = load_only
+
+        self.maxSize = dataset_config.maxSize
+        self.existingDataset = dataset_config.existingDataset
+        self.shuffleDataset = dataset_config.shuffleDataset
+        self.generateData = dataset_config.generateData
+        # Todo: if generate Data and existing dataset, write additional data
+
+        self.mode = 'train' if trainer else 'predict'
+
         # Partition variables
         self.partitionsTemplates = {'train': session_name + '_train_{}_{}.npy',
                                     'test': session_name + '_test_{}_{}.npy',
@@ -39,11 +45,13 @@ class DatasetManager:
 
     def initDataset(self):
         if self.existingDataset:
-            if not self.loadOnly:
-                # Link to the dataset in the session directory
-                # os.symlink(self.datasetDir, os.path.join(self.managerDir, 'dataset/'))
+            # Write additional data
+            if self.generateData:
                 shutil.copytree(self.datasetDir, os.path.join(self.managerDir, 'dataset/'))
-            self.datasetDir = os.path.join(self.managerDir, 'dataset/')
+                self.datasetDir = os.path.join(self.managerDir, 'dataset/')
+            # Reference to the read only dataset
+            else:
+                os.symlink(self.datasetDir, os.path.join(self.managerDir, 'dataset/'))
             # Load directory: look for files which ends with "partitions_list.txt"
             self.loadDirectory()
         else:
@@ -119,7 +127,7 @@ class DatasetManager:
                 self.in_and_out = False
         return partitions_list
 
-    def addData(self, network_input, ground_truth):
+    def addData(self, data):
         if self.generateData:
             # Check whether if there is still available place in partitions
             actual_size = self.dataset.getSize()
@@ -128,6 +136,8 @@ class DatasetManager:
                 self.saveData()
                 self.createNewPartitions()
                 self.dataset.reset()
+            network_input = data['in']
+            ground_truth = data['out']
             self.dataset.add(network_input, ground_truth)
             self.saved = False
 
@@ -194,36 +204,36 @@ class DatasetManager:
             if self.shuffleDataset:
                 self.dataset.shuffle()
 
-    def getData(self, inputs, outputs, batch_size=1, batched=True):
+    def getData(self, get_inputs, get_outputs, batch_size=1, batched=True):
         if self.dataset.currentSample > len(self.dataset.data['in']):
             self.dataset.shuffle()
             self.dataset.currentSample = 0
         idx = self.dataset.currentSample
-        res = {'in': np.array([]), 'out': np.array([])}
-        if inputs:
+        data = {'in': np.array([]), 'out': np.array([])}
+        if get_inputs:
             if batched:
-                res['in'] = self.dataset.data['in'][idx: idx + batch_size]
+                data['in'] = self.dataset.data['in'][idx: idx + batch_size]
             else:
-                res['in'] = np.squeeze(self.dataset.data['in'][idx: idx + batch_size], axis=0)
-        if outputs:
+                data['in'] = np.squeeze(self.dataset.data['in'][idx: idx + batch_size], axis=0)
+        if get_outputs:
             if batched:
-                res['out'] = self.dataset.data['out'][idx: idx + batch_size]
+                data['out'] = self.dataset.data['out'][idx: idx + batch_size]
             else:
-                res['out'] = np.squeeze(self.dataset.data['out'][idx: idx + batch_size], axis=0)
-        self.dataset.currentSample += 1
-        return res
+                data['out'] = np.squeeze(self.dataset.data['out'][idx: idx + batch_size], axis=0)
+        self.dataset.currentSample += batch_size
+        return data
 
     def getNextBatch(self, batch_size):
-        return self.getData(inputs=True, outputs=True, batch_size=batch_size, batched=True)
+        return self.getData(get_inputs=True, get_outputs=True, batch_size=batch_size, batched=True)
 
     def getNextSample(self, batched=True):
-        return self.getData(inputs=True, outputs=True, batched=batched)
+        return self.getData(get_inputs=True, get_outputs=True, batched=batched)
 
     def getNextInput(self, batched=False):
-        return self.getData(inputs=True, outputs=False, batched=batched)
+        return self.getData(get_inputs=True, get_outputs=False, batched=batched)
 
     def getNextOutput(self, batched=False):
-        return self.getData(inputs=False, outputs=True, batched=batched)
+        return self.getData(get_inputs=False, get_outputs=True, batched=batched)
 
     def getDescription(self):
         if len(self.description) == 0:

@@ -55,5 +55,3 @@ class Dataset:
             data_out[i] = self.data['out'][index[i]]
         self.data['in'] = data_in
         self.data['out'] = data_out
-
-
