@@ -16,6 +16,7 @@ class Manager:
         self.sessionName = session_name
         self.networkConfig = network_config
         self.datasetConfig = dataset_config
+        self.environmentConfig = environment_config
 
         # Trainer: must create a new session to avoid overwriting
         if trainer:
@@ -23,6 +24,11 @@ class Manager:
             self.managerDir = os.path.join(pathUtils.getFirstCaller(), self.sessionName)
             # Avoid unwanted overwritten data
             self.managerDir = pathUtils.createDir(self.managerDir, key=self.sessionName)
+            # Set other dir if they are None
+            if self.datasetConfig.datasetDir is None:
+                self.datasetConfig.datasetDir = os.path.join(self.managerDir, 'dataset/')
+            if self.networkConfig.networkDir is None:
+                self.networkConfig.networkDir = os.path.join(self.managerDir, 'network/')
         # Runner: load an existing session or create a custom new one
         else:
             # Create a custom session
@@ -46,20 +52,27 @@ class Manager:
                                              manager_dir=self.managerDir, trainer=trainer)
         self.networkManager = NetworkManager(session_name=self.sessionName, network_config=self.networkConfig,
                                              manager_dir=self.managerDir, trainer=trainer)
-        self.environmentManager = EnvironmentManager(environment_config=environment_config)
+        if environment_config is None:
+            self.environmentManager = None
+        else:
+            self.environmentManager = EnvironmentManager(environment_config=environment_config)
         # Todo: manage conflict if environment and datasetDir are set
 
-    def getData(self, source, get_inputs, get_outputs, batch_size):
-        if source == 'environment':
-            if self.environmentManager is None:
-                print("Manager: Trying to get data from an non existing environment. Shutting down.")
-                quit(0)
-            data = self.environmentManager.getData(get_inputs, get_outputs, batch_size)
+    def getData(self, epoch, batch_size=1, get_inputs=True, get_outputs=True):
+        if (self.environmentManager is not None) and (epoch == 0 or self.environmentConfig.alwaysCreateData):
+            print("Getting data from environment")
+            data = self.environmentManager.getData(batch_size=batch_size, get_inputs=get_inputs, get_outputs=get_outputs)
             self.datasetManager.addData(data)
-            return data
-        if source == 'dataset':
-            data = self.datasetManager.getData(get_inputs, get_outputs, batch_size)
-            return data
+        else:
+            # print("Getting data from dataset")
+            data = self.datasetManager.getData(batch_size=batch_size, get_inputs=get_inputs, get_outputs=get_outputs)
+        return data
+
+    def predict(self, inputs):
+        return self.networkManager.network.forward(inputs)
+
+    def optimizeNetwork(self, prediction, ground_truth):
+        return self.networkManager.optimizeNetwork(prediction=prediction, ground_truth=ground_truth)
 
     def close(self):
         if self.datasetManager is not None:

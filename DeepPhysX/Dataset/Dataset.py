@@ -23,15 +23,16 @@ class Dataset:
 
     def add(self, network_input, ground_truth):
         if (self.inFlatShape is None) or (self.outFlatShape is None):
-            self.inShape = network_input.shape
-            self.outShape = ground_truth.shape
-            self.inFlatShape = len(network_input.flatten())
-            self.outFlatShape = len(ground_truth.flatten())
+            self.inShape = network_input[0].shape
+            self.outShape = ground_truth[0].shape
+            self.inFlatShape = len(network_input[0].flatten())
+            self.outFlatShape = len(ground_truth[0].flatten())
         if len(self.data['in']) == 0:
             self.data['in'] = np.array([]).reshape((0, self.inFlatShape))
             self.data['out'] = np.array([]).reshape((0, self.outFlatShape))
-        self.data['in'] = np.concatenate((self.data['in'], network_input.flatten()[None, :]))
-        self.data['out'] = np.concatenate((self.data['out'], ground_truth.flatten()[None, :]))
+        for i in range(len(network_input)):
+            self.data['in'] = np.concatenate((self.data['in'], network_input[i].flatten()[None, :]))
+            self.data['out'] = np.concatenate((self.data['out'], ground_truth[i].flatten()[None, :]))
 
     def loadData(self, data_in, data_out):
         if (self.inFlatShape is None) or (self.outFlatShape is None):

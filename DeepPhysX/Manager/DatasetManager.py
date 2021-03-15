@@ -205,11 +205,12 @@ class DatasetManager:
                 self.dataset.shuffle()
 
     def getData(self, get_inputs, get_outputs, batch_size=1, batched=True):
-        if self.dataset.currentSample > len(self.dataset.data['in']):
+        if self.dataset.currentSample >= len(self.dataset.data['in']):
             self.dataset.shuffle()
             self.dataset.currentSample = 0
         idx = self.dataset.currentSample
         data = {'in': np.array([]), 'out': np.array([])}
+        # Todo: manage batched on upper levels
         if get_inputs:
             if batched:
                 data['in'] = self.dataset.data['in'][idx: idx + batch_size]

@@ -23,9 +23,7 @@ class NetworkManager:
         self.savedCounter = 0
 
         self.network = None
-        self.loss = None
-        self.lr = None
-        self.optimizer = None
+        self.optimization = None
         self.setNetwork()
 
         self.description = ""
@@ -40,11 +38,11 @@ class NetworkManager:
 
     def setNetwork(self):
         self.network = self.networkConfig.createNetwork()
-        optimization = self.networkConfig.createOptimization()
-        self.loss = optimization.setLoss()
+        self.optimization = self.networkConfig.createOptimization()
+        self.optimization.setLoss()
         # If training mode
         if self.training:
-            self.optimizer, self.lr = optimization.setOptimizer()
+            self.optimization.setOptimizer(self.network)
             # Re-train an existing network, copy directory
             if self.existingNetwork:
                 shutil.copytree(self.networkDir, os.path.join(self.managerDir, 'network/'))
@@ -76,6 +74,14 @@ class NetworkManager:
                     quit(0)
                 self.network.loadParameters(networks_list[which_network])
 
+    def optimizeNetwork(self, prediction, ground_truth):
+        loss = self.optimization.computeLoss(prediction, ground_truth)
+        self.optimization.optimize(loss)
+        return loss
+
+    def computeLoss(self, prediction, ground_truth):
+        return self.optimization.computeLoss(prediction, ground_truth)
+
     def saveNetwork(self, last_save=False, suffix=None):
         if last_save:
             path = self.networkDir + "network.pth"
@@ -88,7 +94,7 @@ class NetworkManager:
         self.network.saveParameters(path)
 
     def close(self):
-        if self.optimizer is not None:
+        if self.training:
             self.saveNetwork(last_save=True)
         del self.network
         del self.networkConfig
@@ -103,10 +109,13 @@ class NetworkManager:
             self.description += "   Weight in Go : {}\n".format(nb_param * 32 * 1.25e-10)
             self.description += "   Configuration : {}\n".format(self.networkConfig)
             self.description += "   Network : {}\n".format(self.network.type if minimal else self.network)
-            self.description += "   Optimizer : {}, Learning rate : {}\n".format(self.optimizer, self.lr)
+            self.description += "   Optimizer : {}, Learning rate : {}\n".format(self.optimization.optimizer,
+                                                                                 self.optimization.lr)
             # self.description += "   Loss function : {}\n".format(str(self.loss).split(" ")[1])
-            self.description += "   Loss function : {}\n".format(self.loss)
+            self.description += "   Loss function : {}\n".format(self.optimization.loss)
             self.description += "   Save each epoch : {}\n".format(self.saveEachEpoch)
         return self.description
+
+
 
 

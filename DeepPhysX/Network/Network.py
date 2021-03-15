@@ -8,23 +8,20 @@ class Network:
     def forward(self, x):
         raise NotImplementedError
 
-    def backward(self, gradient):
-        pass
-
     def setDevice(self):
-        pass
+        raise NotImplementedError
 
     def loadParameters(self, path):
-        pass
+        raise NotImplementedError
 
     def getParameters(self):
-        pass
+        raise NotImplementedError
 
     def saveParameters(self, path):
-        pass
+        raise NotImplementedError
 
     def nbParameters(self):
-        pass
+        raise NotImplementedError
 
     def getDescription(self):
         if len(self.description) == 0:

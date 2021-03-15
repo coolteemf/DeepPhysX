@@ -1,3 +1,6 @@
+import numpy as np
+from torch import no_grad
+
 from DeepPhysX.Manager.Manager import Manager
 
 
@@ -26,8 +29,6 @@ class BaseTrainer:
 
         # Simulation variables
         self.environmentConfig = environment_config
-        # Todo: EnvironmentConfig
-        self.alwaysCreateData = environment_config.alwaysCreateData
 
         self.manager = Manager(session_name=self.sessionName, network_config=self.networkConfig,
                                dataset_config=dataset_config, trainer=True, environment_config=self.environmentConfig,
@@ -39,24 +40,37 @@ class BaseTrainer:
             self.epochBegin()
             for batch in range(self.nbBatches):
                 self.batchBegin()
-                inputs, expects = self.getData(epoch)
-                predicts = self.manager.networkManager.network.predict(inputs)
-                loss = self.manager.networkManager.updateNetwork(predicts, expects)
+                data = self.manager.getData(epoch=epoch, batch_size=self.batchSize)
+                inputs, ground_truth = data['in'], data['out']
+                prediction = self.manager.predict(inputs=inputs)
+                loss = self.manager.optimizeNetwork(prediction=prediction, ground_truth=ground_truth)
+                print(loss.item())
                 self.batchEnd()
             self.epochEnd()
         self.trainEnd()
 
-    def validate(self):
-        pass
+    def validate(self, size):
+        success_count = 0
+        # TODO: find alternative to no_grad()
+        # TODO: move from this file
+        with no_grad():
+            for i in range(size):
+                data = self.manager.environmentManager.getData(1, True, True)
+                inputs, ground_truth = data['in'], data['out']
+                prediction = np.argmax(self.manager.predict(inputs=inputs).numpy())
+                if prediction == ground_truth[0]:
+                    success_count += 1
+        print("Success Rate =", success_count * 100.0 / size)
 
     def trainBegin(self):
         pass
 
     def trainEnd(self):
+        #self.manager.close()
         pass
 
     def epochBegin(self):
-        pass
+        self.manager.datasetManager.dataset.shuffle()
 
     def epochEnd(self):
         pass
@@ -66,11 +80,3 @@ class BaseTrainer:
 
     def batchEnd(self):
         pass
-
-    def getData(self, epoch):
-        if (self.environmentConfig is not None) and (epoch == 1 or self.alwaysCreateData):
-            return self.manager.getData(source='environment', batch_size=self.batchSize,
-                                        get_inputs=True, get_outputs=True)
-        else:
-            return self.manager.getData(source='dataset', batch_size=self.batchSize,
-                                        get_inputs=True, get_outputs=True)

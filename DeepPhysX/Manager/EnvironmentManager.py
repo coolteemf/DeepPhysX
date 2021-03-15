@@ -13,12 +13,13 @@ class EnvironmentManager:
         for _ in range(self.environment.simulationPerStep):
             self.environment.step()
 
-    def getData(self, get_inputs, get_outputs, batch_size):
-        # Todo : add get_inputs and get_outputs booleans
+    def getData(self, batch_size, get_inputs, get_outputs):
         inputs = np.empty((batch_size, self.environment.inputSize))
         outputs = np.empty((batch_size, self.environment.outputSize))
         for i in range(batch_size):
             self.step()
-            inputs[i] = self.environment.getInput()
-            outputs[i] = self.environment.getOutput()
+            if get_inputs:
+                inputs[i] = self.environment.getInput()
+            if get_outputs:
+                outputs[i] = self.environment.getOutput()
         return {'in': inputs, 'out': outputs}
