@@ -43,6 +43,7 @@ class NetworkManager:
         # If training mode
         if self.training:
             self.optimization.setOptimizer(self.network)
+            self.network.setTrain()
             # Re-train an existing network, copy directory
             if self.existingNetwork:
                 shutil.copytree(self.networkDir, os.path.join(self.managerDir, 'network/'))
@@ -52,6 +53,7 @@ class NetworkManager:
                 self.networkDir = pathUtils.createDir(self.networkDir, key='network')
         # If predict only
         else:
+            self.network.setEval()
             # Need an existing network
             if not self.existingNetwork:
                 print("NetworkManager: Need an existing network for prediction only. Shutting down")

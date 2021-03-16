@@ -3,9 +3,16 @@ class Network:
     def __init__(self, network_name, network_type):
         self.type = network_type
         self.name = network_name
+        self.device = None
         self.description = ""
 
     def forward(self, x):
+        raise NotImplementedError
+
+    def setTrain(self):
+        raise NotImplementedError
+
+    def setEval(self):
         raise NotImplementedError
 
     def setDevice(self):

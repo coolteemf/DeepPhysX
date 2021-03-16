@@ -11,7 +11,7 @@ import DeepPhysX.utils.pathUtils as pathUtils
 class Manager:
 
     def __init__(self, session_name, network_config, dataset_config, trainer, environment_config=None,
-                 manager_dir=None):
+                 manager_dir=None, stats_window=50):
 
         self.sessionName = session_name
         self.networkConfig = network_config
@@ -57,6 +57,8 @@ class Manager:
         else:
             self.environmentManager = EnvironmentManager(environment_config=environment_config)
         # Todo: manage conflict if environment and datasetDir are set
+        self.statsManager = StatsManager(log_dir=os.path.join(self.managerDir, 'stats/'),
+                                         sliding_window_size=stats_window)
 
     def getData(self, epoch, batch_size=1, get_inputs=True, get_outputs=True):
         if (self.environmentManager is not None) and (epoch == 0 or self.environmentConfig.alwaysCreateData):
@@ -71,6 +73,9 @@ class Manager:
     def predict(self, inputs):
         return self.networkManager.network.forward(inputs)
 
+    def computeLoss(self, prediction, ground_truth):
+        return self.networkManager.computeLoss(prediction, ground_truth)
+
     def optimizeNetwork(self, prediction, ground_truth):
         return self.networkManager.optimizeNetwork(prediction=prediction, ground_truth=ground_truth)
 
@@ -79,6 +84,10 @@ class Manager:
             self.datasetManager.close()
         if self.networkManager is not None:
             self.networkManager.close()
+        if self.environmentManager is not None:
+            self.environmentManager.close()
+        if self.statsManager is not None:
+            self.statsManager.close()
 
     def getDescription(self):
         manager_description = ""

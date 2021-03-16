@@ -1,22 +1,26 @@
 import tensorboardX as tb
 import numpy as np
-import torch
 
 
 def generateDefaultScene():
-    return {
-        'camera': {'cls': 'PerspectiveCamera', 'fov': 75},
-        'light': {'cls': 'AmbientLight', 'color': '#ffffff', 'intensity': 0.75}
-    }
+    return {'camera': {'cls': 'PerspectiveCamera', 'fov': 75},
+            'light': {'cls': 'AmbientLight', 'color': '#ffffff', 'intensity': 0.75}
+            }
+
+
+def generateDefaultMaterial():
+    return {'material': {'cls': 'MeshStandardMaterial', 'roughness': 1, 'metalness': 0, 'color': '#8888ff'}}
 
 
 class StatsManager:
+
     def __init__(self, log_dir, sliding_window_size=50):
         self.log_dir = log_dir
         self.writer = tb.SummaryWriter(log_dir)
         self.sliding_window_size = sliding_window_size
         self.values = np.full((4, sliding_window_size), np.inf)
-        self.current_value = np.zeros(4, dtype=np.int)
+        print("Values in stats manager:", self.values)
+        self.current_value = np.zeros(4, dtype=np.int32)
         self.train_loss = np.array([])
         self.tag_dict = {}
 
@@ -82,7 +86,7 @@ class StatsManager:
 
     def add_3DPointCloud(self, tag, vertices, colors=None, BN3=False, config_dict=None):
         if config_dict is None:
-            config_dict = {**generateDefaultScene(), **self.generateDefaultMaterial()}
+            config_dict = {**generateDefaultScene(), **generateDefaultMaterial()}
         # Information should be written using (Batch, number of vertex, 3) as shape. Hence, if not we emulate it
         if not BN3:
             v = vertices[None, :, :]
@@ -96,7 +100,7 @@ class StatsManager:
 
     def add_3DMesh(self, tag, vertices, colors=None, faces=None, BN3=False, config_dict=None):
         if config_dict is None:
-            config_dict = {**generateDefaultScene(), **self.generateDefaultMaterial()}
+            config_dict = {**generateDefaultScene(), **generateDefaultMaterial()}
         # Information should be written using (Batch, number of vertex, 3) as shape. Hence, if not we emulate it
         if not BN3:
             v = vertices[None, :, :]
@@ -109,10 +113,6 @@ class StatsManager:
             c = colors
             f = faces
         self.writer.add_mesh(tag=tag, vertices=v, colors=c, faces=f, config_dict=config_dict)
-
-    def generateDefaultMaterial(self):
-        return {'material': {'cls': 'MeshStandardMaterial', 'roughness': 1, 'metalness': 0, 'color': '#8888ff'}}
-
 
     def close(self):
         self.writer.close()

@@ -35,7 +35,9 @@ class BaseTrainer:
                                manager_dir=manager_dir)
 
     def execute(self):
+        # TODO: add test_every ?
         self.trainBegin()
+        loss = None
         for epoch in range(self.nbEpochs):
             self.epochBegin()
             for batch in range(self.nbBatches):
@@ -44,9 +46,8 @@ class BaseTrainer:
                 inputs, ground_truth = data['in'], data['out']
                 prediction = self.manager.predict(inputs=inputs)
                 loss = self.manager.optimizeNetwork(prediction=prediction, ground_truth=ground_truth)
-                print(loss.item())
-                self.batchEnd()
-            self.epochEnd()
+                self.batchEnd(loss, epoch, batch)
+            self.epochEnd(loss, epoch)
         self.trainEnd()
 
     def validate(self, size):
@@ -66,17 +67,20 @@ class BaseTrainer:
         pass
 
     def trainEnd(self):
-        #self.manager.close()
+        # self.manager.close()
         pass
 
     def epochBegin(self):
         self.manager.datasetManager.dataset.shuffle()
 
-    def epochEnd(self):
-        pass
+    def epochEnd(self, loss, epoch):
+        self.manager.statsManager.add_trainEpochLoss(loss.item(), epoch)
+        if epoch % 100 == 0:
+            print(loss.item())
 
     def batchBegin(self):
         pass
 
-    def batchEnd(self):
-        pass
+    def batchEnd(self, loss, epoch, batch):
+        self.manager.statsManager.add_trainBatchLoss(loss.item(), epoch * self.nbBatches + batch)
+        self.manager.statsManager.add_trainTestBatchLoss(loss.item(), None, epoch * self.nbBatches + batch)  # why ?

@@ -23,3 +23,6 @@ class EnvironmentManager:
             if get_outputs:
                 outputs[i] = self.environment.getOutput()
         return {'in': inputs, 'out': outputs}
+
+    def close(self):
+        pass
