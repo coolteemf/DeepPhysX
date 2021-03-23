@@ -1,5 +1,4 @@
 import os
-import shutil
 import numpy as np
 
 from DeepPhysX.Dataset.DatasetConfig import DatasetConfig
@@ -11,22 +10,18 @@ class DatasetManager:
     def __init__(self, session_name, dataset_config: DatasetConfig, manager_dir, trainer):
 
         # Dataset variables
-
         self.datasetConfig = dataset_config
         self.dataset = dataset_config.createDataset()
-
-        self.datasetDir = dataset_config.datasetDir
         self.managerDir = manager_dir
-
+        self.datasetDir = os.path.join(self.managerDir, 'dataset/') if dataset_config.datasetDir is None else dataset_config.datasetDir
         self.maxSize = dataset_config.maxSize
         self.existingDataset = dataset_config.existingDataset
         self.shuffleDataset = dataset_config.shuffleDataset
         self.generateData = dataset_config.generateData
-        # Todo: if generate Data and existing dataset, write additional data
-
-        self.mode = 'train' if trainer else 'predict'
+        self.initDatasetDir()
 
         # Partition variables
+        self.mode = 'train' if trainer else 'predict'
         self.partitionsTemplates = {'train': session_name + '_train_{}_{}.npy',
                                     'test': session_name + '_test_{}_{}.npy',
                                     'predict': session_name + '_predict_{}_{}.npy'}
@@ -36,27 +31,24 @@ class DatasetManager:
                                      'predict': self.datasetDir + 'Dataset_predict_partitions_list.txt'}
         self.actualPartitions = {'train': 0, 'test': 0, 'predict': 0}
         self.currentPartitions = None
-        self.saved = True
+        self.saved = False
         self.in_and_out = True
-        self.description = ""
-        # Init dataset
-        # Todo: init with mode in BaseTrainer or BaseRunner
         self.initDataset()
 
-    def initDataset(self):
+        # Description
+        self.description = ""
+
+    def initDatasetDir(self):
         if self.existingDataset:
-            # Write additional data
-            if self.generateData:
-                shutil.copytree(self.datasetDir, os.path.join(self.managerDir, 'dataset/'))
-                self.datasetDir = os.path.join(self.managerDir, 'dataset/')
-            # Reference to the read only dataset
-            else:
-                os.symlink(self.datasetDir, os.path.join(self.managerDir, 'dataset/'))
-            # Load directory: look for files which ends with "partitions_list.txt"
-            self.loadDirectory()
+            self.datasetDir = pathUtils.copyDir(self.datasetDir, self.managerDir, key='dataset')
         else:
             # Create the folder in which everything will be written
             self.datasetDir = pathUtils.createDir(self.datasetDir, key='dataset')
+
+    def initDataset(self):
+        if self.existingDataset:
+            self.loadDirectory()
+        else:
             self.createNewPartitions()
 
     def createNewPartitions(self):
@@ -210,7 +202,6 @@ class DatasetManager:
             self.dataset.currentSample = 0
         idx = self.dataset.currentSample
         data = {'in': np.array([]), 'out': np.array([])}
-        # Todo: manage batched on upper levels
         if get_inputs:
             if batched:
                 data['in'] = self.dataset.data['in'][idx: idx + batch_size]
