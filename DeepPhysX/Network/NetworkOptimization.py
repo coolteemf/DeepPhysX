@@ -6,6 +6,8 @@ class NetworkOptimization:
         self.lr = lr
         self.optimizer_class = optimizer
         self.optimizer = None
+        # Description
+        self.description = ""
 
     def setLoss(self):
         # if loss is not None:
@@ -26,3 +28,12 @@ class NetworkOptimization:
         # loss.backward()
         # self.optimizer.step()
         raise NotImplementedError
+
+    def getDescription(self):
+        if len(self.description) == 0:
+            self.description += "\nCORE NetworkOptimization\n"
+            self.description += "   Loss class, loss: {}, {}\n".format(self.loss_class.__name__, self.loss)
+            self.description += "   Learning rate: {}\n".format(self.lr)
+            self.description += "   Optimizer class, optimizer: {}, {}\n".format(self.optimizer_class.__name__,
+                                                                                 self.optimizer)
+        return self.description

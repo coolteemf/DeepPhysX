@@ -4,6 +4,7 @@ class Network:
         self.type = network_type
         self.name = network_name
         self.device = None
+        # Description
         self.description = ""
 
     def forward(self, x):
@@ -32,7 +33,7 @@ class Network:
 
     def getDescription(self):
         if len(self.description) == 0:
-            self.description += "\nBASE NETWORK\n"
+            self.description += "\nCORE Network\n"
             self.description += "   Name: {}\n".format(self.name)
             self.description += "   Type: {}\n".format(self.type)
         return self.description
