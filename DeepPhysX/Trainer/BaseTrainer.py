@@ -17,9 +17,12 @@ class BaseTrainer:
         # Training variables
         self.sessionName = session_name
         self.nbEpochs = nb_epochs
-        self.batchSize = batch_size
+        self.epoch = 0
         self.nbBatches = nb_batches
+        self.batchSize = batch_size
+        self.batch = 0
         self.nbSamples = nb_batches * batch_size
+        self.loss = None
 
         # Dataset variables
         self.datasetConfig = dataset_config
@@ -35,19 +38,19 @@ class BaseTrainer:
                                manager_dir=manager_dir)
 
     def execute(self):
-        # TODO: add test_every ?
         self.trainBegin()
-        loss = None
-        for epoch in range(self.nbEpochs):
+        while self.epochCondition():
             self.epochBegin()
-            for batch in range(self.nbBatches):
+            self.batch = 0
+            while self.batchCondition():
                 self.batchBegin()
-                data = self.manager.getData(epoch=epoch, batch_size=self.batchSize)
-                inputs, ground_truth = data['in'], data['out']
-                prediction = self.manager.predict(inputs=inputs)
-                loss = self.manager.optimizeNetwork(prediction=prediction, ground_truth=ground_truth)
-                self.batchEnd(loss, epoch, batch)
-            self.epochEnd(loss, epoch)
+                self.loss = self.manager.optimizeNetwork(self.epoch, self.batchSize)
+                self.batchTrainingIndicator()
+                self.incrementBatch()
+                self.batchEnd()
+            self.epochTrainingIndicator()
+            self.incrementEpoch()
+            self.epochEnd()
         self.trainEnd()
 
     def validate(self, size):
@@ -56,9 +59,8 @@ class BaseTrainer:
         # TODO: move from this file
         with no_grad():
             for i in range(size):
-                data = self.manager.environmentManager.getData(1, True, True)
-                inputs, ground_truth = data['in'], data['out']
-                prediction = np.argmax(self.manager.predict(inputs=inputs).numpy())
+                inputs, ground_truth = self.manager.environmentManager.getData(1, True, True)
+                prediction = np.argmax(self.manager.getPrediction(inputs=inputs).numpy())
                 if prediction == ground_truth[0]:
                     success_count += 1
         print("Success Rate =", success_count * 100.0 / size)
@@ -67,20 +69,37 @@ class BaseTrainer:
         pass
 
     def trainEnd(self):
-        # self.manager.close()
-        pass
+        self.manager.close()
 
     def epochBegin(self):
         self.manager.datasetManager.dataset.shuffle()
 
-    def epochEnd(self, loss, epoch):
-        self.manager.statsManager.add_trainEpochLoss(loss.item(), epoch)
-        if epoch % 100 == 0:
-            print(loss.item())
+    def epochCondition(self):
+        return self.epoch < self.nbEpochs
+
+    def epochTrainingIndicator(self):
+        self.manager.statsManager.add_trainEpochLoss(self.loss.item(), self.epoch)
+        if self.epoch % 100 == 0:
+            print(self.loss.item())
+
+    def incrementEpoch(self):
+        self.epoch += 1
+
+    def epochEnd(self):
+        pass
 
     def batchBegin(self):
         pass
 
-    def batchEnd(self, loss, epoch, batch):
-        self.manager.statsManager.add_trainBatchLoss(loss.item(), epoch * self.nbBatches + batch)
-        self.manager.statsManager.add_trainTestBatchLoss(loss.item(), None, epoch * self.nbBatches + batch)  # why ?
+    def batchCondition(self):
+        return self.batch < self.nbBatches
+
+    def batchTrainingIndicator(self):
+        self.manager.statsManager.add_trainBatchLoss(self.loss.item(), self.epoch * self.nbBatches + self.batch)
+        self.manager.statsManager.add_trainTestBatchLoss(self.loss.item(), None, self.epoch * self.nbBatches + self.batch)  # why ?
+
+    def incrementBatch(self):
+        self.batch += 1
+
+    def batchEnd(self):
+        pass

@@ -6,7 +6,7 @@ def main():
 
     # Single environment
     single_environment_config = EnvironmentConfig(environment_class=Environment,
-                                                  simulation_per_step=1,
+                                                  simulations_per_step=1,
                                                   max_wrong_samples_per_step=10,
                                                   always_create_data=False,
                                                   multiprocessing=1)
@@ -16,7 +16,7 @@ def main():
 
     # Multiple environment
     multiple_environment_config = EnvironmentConfig(environment_class=Environment,
-                                                    simulation_per_step=5,
+                                                    simulations_per_step=5,
                                                     max_wrong_samples_per_step=6,
                                                     always_create_data=True,
                                                     multiprocessing=3)

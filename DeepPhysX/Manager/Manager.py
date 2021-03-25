@@ -3,7 +3,6 @@ import os
 from .DatasetManager import DatasetManager
 from .NetworkManager import NetworkManager
 from .EnvironmentManager import EnvironmentManager
-# Todo: add statsManager
 from .StatsManager import StatsManager
 import DeepPhysX.utils.pathUtils as pathUtils
 
@@ -62,21 +61,21 @@ class Manager:
 
     def getData(self, epoch, batch_size=1, get_inputs=True, get_outputs=True):
         if (self.environmentManager is not None) and (epoch == 0 or self.environmentConfig.alwaysCreateData):
-            print("Getting data from environment")
             data = self.environmentManager.getData(batch_size=batch_size, get_inputs=get_inputs, get_outputs=get_outputs)
             self.datasetManager.addData(data)
         else:
-            # print("Getting data from dataset")
             data = self.datasetManager.getData(batch_size=batch_size, get_inputs=get_inputs, get_outputs=get_outputs)
-        return data
+        return data['in'], data['out']
 
-    def predict(self, inputs):
+    def getPrediction(self, inputs):
         return self.networkManager.network.forward(inputs)
 
     def computeLoss(self, prediction, ground_truth):
         return self.networkManager.computeLoss(prediction, ground_truth)
 
-    def optimizeNetwork(self, prediction, ground_truth):
+    def optimizeNetwork(self, epoch, batch_size):
+        inputs, ground_truth = self.getData(epoch=epoch, batch_size=batch_size)
+        prediction = self.getPrediction(inputs=inputs)
         return self.networkManager.optimizeNetwork(prediction=prediction, ground_truth=ground_truth)
 
     def close(self):

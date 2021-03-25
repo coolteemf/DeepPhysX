@@ -39,7 +39,8 @@ class NetworkManager:
     def setNetwork(self):
         self.network = self.networkConfig.createNetwork()
         self.optimization = self.networkConfig.createOptimization()
-        self.optimization.setLoss()
+        if self.optimization.loss is not None:
+            self.optimization.setLoss()
         # If training mode
         if self.training:
             self.optimization.setOptimizer(self.network)
