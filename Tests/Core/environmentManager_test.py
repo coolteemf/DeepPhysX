@@ -1,4 +1,4 @@
-from .environment import MyEnvironment
+from MyEnvironment import MyEnvironment
 from DeepPhysX.Environment.EnvironmentConfig import EnvironmentConfig
 from DeepPhysX.Manager.EnvironmentManager import EnvironmentManager
 
