@@ -20,6 +20,7 @@ class EnvironmentConfig:
         else:
             self.multiprocessMethod = multiprocess_method
         # Description
+        self.descriptionName = "CORE EnvironmentConfig"
         self.description = ""
 
     def createEnvironment(self):
@@ -29,7 +30,7 @@ class EnvironmentConfig:
 
     def getDescription(self):
         if len(self.description) == 0:
-            self.description += "\nCORE EnvironmentConfig:\n"
+            self.description += "\n{}\n".format(self.descriptionName)
             self.description += "   (environment) Environment class: {}\n".format(self.environment_class.__name__)
             self.description += "   (environment) Environment config: {}\n".format(self.environmentConfig)
             self.description += "   (environmentManager) Always create data: {}\n".format(self.alwaysCreateData)

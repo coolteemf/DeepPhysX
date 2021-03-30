@@ -68,7 +68,7 @@ class Manager:
         return data['in'], data['out']
 
     def getPrediction(self, inputs):
-        return self.networkManager.network.forward(inputs)
+        return self.networkManager.getPrediction(inputs)
 
     def computeLoss(self, prediction, ground_truth):
         return self.networkManager.computeLoss(prediction, ground_truth)
@@ -77,6 +77,10 @@ class Manager:
         inputs, ground_truth = self.getData(epoch=epoch, batch_size=batch_size)
         prediction = self.getPrediction(inputs=inputs)
         return self.networkManager.optimizeNetwork(prediction=prediction, ground_truth=ground_truth)
+
+    def saveNetwork(self):
+        if self.networkManager.saveEachEpoch:
+            self.networkManager.saveNetwork()
 
     def close(self):
         if self.datasetManager is not None:

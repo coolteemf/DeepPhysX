@@ -1,9 +1,7 @@
 import os
-import shutil
-
-import DeepPhysX.utils.pathUtils as pathUtils
 
 from DeepPhysX.Network.NetworkConfig import NetworkConfig
+import DeepPhysX.utils.pathUtils as pathUtils
 
 
 class NetworkManager:
@@ -39,7 +37,7 @@ class NetworkManager:
     def setNetwork(self):
         self.network = self.networkConfig.createNetwork()
         self.optimization = self.networkConfig.createOptimization()
-        if self.optimization.loss is not None:
+        if self.optimization.loss_class is not None:
             self.optimization.setLoss()
         # If training mode
         if self.training:
@@ -47,8 +45,7 @@ class NetworkManager:
             self.network.setTrain()
             # Re-train an existing network, copy directory
             if self.existingNetwork:
-                shutil.copytree(self.networkDir, os.path.join(self.managerDir, 'network/'))
-                self.networkDir = os.path.join(self.managerDir, 'network/')
+                self.networkDir = pathUtils.copyDir(self.networkDir, self.managerDir, key='network')
             # Create a new network directory
             else:
                 self.networkDir = pathUtils.createDir(self.networkDir, key='network')
@@ -61,26 +58,43 @@ class NetworkManager:
                 quit(0)
             # Reference the existing network
             else:
-                os.symlink(self.networkDir, os.path.join(self.managerDir, 'network/'))
+                self.networkDir = pathUtils.copyDir(self.networkDir, self.managerDir, key='network')
+                # Get eventual epoch saved networks
                 networks_list = [os.path.join(self.networkDir, f) for f in os.listdir(self.networkDir) if
-                                 os.path.isfile(os.path.join(self.networkDir, f)) and f.endswith('.pth')]
+                                 os.path.isfile(os.path.join(self.networkDir, f)) and f.endswith('.pth') and
+                                 f.__contains__('_network_')]
+                networks_list = sorted(networks_list)
+                # Add the final saved network
+                last_saved_network = [os.path.join(self.networkDir, f) for f in os.listdir(self.networkDir) if
+                                      os.path.isfile(os.path.join(self.networkDir, f)) and f.endswith('network.pth')]
+                networks_list = networks_list + last_saved_network
                 which_network = self.networkConfig.whichNetwork
-                if len(networks_list) > 1 and which_network == -1:
-                    print("There is more than one network in this directory, loading the first one by default.")
-                    print("If you want to load another one please use the 'which_network' variable.")
-                    which_network = 0
-                if which_network > len(networks_list) > 0:
-                    print("The selected network doesn't exist (index is too big), loading the first one by default.")
-                    which_network = 0
                 if len(networks_list) == 0:
-                    print("There is no network in {}. Shutting down.".format(self.networkDir))
+                    print("NetworkManager: There is no network in {}. Shutting down.".format(self.networkDir))
                     quit(0)
+                elif len(networks_list) == 1:
+                    which_network = 0
+                elif len(networks_list) > 1 and which_network is None:
+                    print("There is more than one network in this directory, loading the most trained by default.")
+                    print("If you want to load another network please use the 'which_network' variable.")
+                    which_network = -1
+                elif which_network > len(networks_list) > 1:
+                    print("The selected network doesn't exist (index is too big), loading the most trained by default.")
+                    which_network = -1
+                print("NetworkManager: Loading network from {}.".format(networks_list[which_network]))
                 self.network.loadParameters(networks_list[which_network])
 
-    def optimizeNetwork(self, prediction, ground_truth):
+    def optimizeNetwork(self, inputs, ground_truth):
+        inputs = self.network.transformFromNumpy(inputs)
+        prediction = self.network.forward(inputs)
         loss = self.optimization.computeLoss(prediction, ground_truth)
         self.optimization.optimize(loss)
         return loss
+
+    def getPrediction(self, inputs):
+        inputs = self.network.transformFromNumpy(inputs)
+        outputs = self.network.forward(inputs)
+        return self.network.transformToNumpy(outputs)
 
     def computeLoss(self, prediction, ground_truth):
         return self.optimization.computeLoss(prediction, ground_truth)

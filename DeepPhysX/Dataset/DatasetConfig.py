@@ -11,6 +11,7 @@ class DatasetConfig:
         self.generateData = generate_data
         self.shuffleDataset = shuffle_dataset
         # Description
+        self.descriptionName = "CORE DatasetConfig"
         self.description = ""
 
     def createDataset(self):
@@ -18,7 +19,7 @@ class DatasetConfig:
 
     def getDescription(self):
         if len(self.description) == 0:
-            self.description += "\nCORE DatasetConfig:\n"
+            self.description += "\n{}\n".format(self.descriptionName)
             self.description += "   (dataset) Dataset class: {}\n".format(self.dataset_class.__name__)
             self.description += "   (dataset) Max size: {}\n".format(self.maxSize)
             self.description += "   (dataset) Dataset config: {}\n".format(self.datasetConfig)

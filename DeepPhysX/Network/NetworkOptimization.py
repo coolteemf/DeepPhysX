@@ -7,6 +7,7 @@ class NetworkOptimization:
         self.optimizer_class = optimizer
         self.optimizer = None
         # Description
+        self.descriptionName = "CORE NetworkOptimization"
         self.description = ""
 
     def setLoss(self):
@@ -31,7 +32,7 @@ class NetworkOptimization:
 
     def getDescription(self):
         if len(self.description) == 0:
-            self.description += "\nCORE NetworkOptimization\n"
+            self.description += "\n{}\n".format(self.descriptionName)
             self.description += "   Loss class, loss: {}, {}\n".format(self.loss_class.__name__, self.loss)
             self.description += "   Learning rate: {}\n".format(self.lr)
             self.description += "   Optimizer class, optimizer: {}, {}\n".format(self.optimizer_class.__name__,

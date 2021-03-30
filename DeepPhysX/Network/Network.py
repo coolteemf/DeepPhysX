@@ -5,6 +5,7 @@ class Network:
         self.name = network_name
         self.device = None
         # Description
+        self.descriptionName = "CORE Network"
         self.description = ""
 
     def forward(self, x):
@@ -31,9 +32,15 @@ class Network:
     def nbParameters(self):
         raise NotImplementedError
 
+    def transformFromNumpy(self, x):
+        raise NotImplementedError
+
+    def transformToNumpy(self, x):
+        raise NotImplementedError
+
     def getDescription(self):
         if len(self.description) == 0:
-            self.description += "\nCORE Network\n"
+            self.description += "\n{}\n".format(self.descriptionName)
             self.description += "   Name: {}\n".format(self.name)
             self.description += "   Type: {}\n".format(self.type)
         return self.description

@@ -14,6 +14,7 @@ class Dataset:
         self.outShape = None
         self.outFlatShape = None
         # Description
+        self.descriptionName = "CORE Dataset"
         self.description = ""
 
     def reset(self):
@@ -62,7 +63,7 @@ class Dataset:
 
     def getDescription(self):
         if len(self.description) == 0:
-            self.description += "\nCORE Dataset:\n"
+            self.description += "\n{}\n".format(self.descriptionName)
             self.description += "   Max size: {}\n".format(self.maxSize)
             self.description += "   Input shape, input flat shape: {}, {}\n".format(self.inShape, self.inFlatShape)
             self.description += "   Output shape, output flat shape: {}, {}\n".format(self.outShape, self.outFlatShape)

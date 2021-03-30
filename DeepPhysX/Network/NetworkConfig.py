@@ -4,7 +4,7 @@ from .NetworkOptimization import NetworkOptimization
 class NetworkConfig:
 
     def __init__(self, network_class, network_name="", network_type="", loss=None, lr=None, optimizer=None,
-                 network_dir=None, save_each_epoch=False, which_network=1):
+                 network_dir=None, save_each_epoch=False, which_network=None):
         # Network variables
         self.network_class = network_class
         self.networkConfig = network_name, network_type
@@ -18,6 +18,7 @@ class NetworkConfig:
         self.whichNetwork = which_network
         self.saveEachEpoch = save_each_epoch and self.trainingMaterials
         # Description
+        self.descriptionName = "CORE NetworkConfig"
         self.description = ""
 
     def createNetwork(self):
@@ -28,7 +29,7 @@ class NetworkConfig:
 
     def getDescription(self):
         if len(self.description) == 0:
-            self.description += "\nCORE NetworkConfig\n"
+            self.description += "\n{}\n".format(self.descriptionName)
             self.description += "   (network) Network class: {}\n".format(self.network_class.__name__)
             self.description += "   (network) Network config: {}\n".format(self.networkConfig)
             self.description += "   (optimization) Optimization class: {}\n".format(self.optimization_class.__name__)

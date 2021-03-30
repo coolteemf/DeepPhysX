@@ -51,6 +51,7 @@ class BaseTrainer:
             self.epochTrainingIndicator()
             self.incrementEpoch()
             self.epochEnd()
+            self.saveNetwork()
         self.trainEnd()
 
     def validate(self, size):
@@ -87,6 +88,9 @@ class BaseTrainer:
 
     def epochEnd(self):
         pass
+
+    def saveNetwork(self):
+        self.manager.saveNetwork()
 
     def batchBegin(self):
         pass
