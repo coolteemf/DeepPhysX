@@ -1,15 +1,16 @@
+from .Network import Network
 from .NetworkOptimization import NetworkOptimization
 
 
 class NetworkConfig:
 
-    def __init__(self, network_class, network_name="", network_type="", loss=None, lr=None, optimizer=None,
-                 network_dir=None, save_each_epoch=False, which_network=None):
+    def __init__(self, network_class=Network, optimization_class=NetworkOptimization, network_name="", network_type="",
+                 loss=None, lr=None, optimizer=None, network_dir=None, save_each_epoch=False, which_network=None):
         # Network variables
         self.network_class = network_class
         self.networkConfig = network_name, network_type
         # Optimization variables
-        self.optimization_class = NetworkOptimization
+        self.optimization_class = optimization_class
         self.optimizationConfig = loss, lr, optimizer
         self.trainingMaterials = (lr is not None) and (optimizer is not None)
         # NetworkManager variables
