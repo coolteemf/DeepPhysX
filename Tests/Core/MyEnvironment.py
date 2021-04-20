@@ -24,7 +24,7 @@ class MyEnvironment(Environment):
 
     def step(self):
         self.stepCount += 1
-        print("{} - Step n°{}".format(self.name, self.stepCount))
+        # print("{} - Step n°{}".format(self.name, self.stepCount))
         self.inputs = round(random.uniform(-math.pi, math.pi), 2)
         self.outputs = math.sin(self.inputs)
 

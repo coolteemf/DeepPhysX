@@ -7,6 +7,7 @@ class EnvironmentConfig:
                  always_create_data=False, multiprocessing=1, multiprocess_method=None):
         # Environment variables
         self.environment_class = environment_class
+        self.environmentClassName = environment_class.__name__
         self.environmentConfig = simulations_per_step, max_wrong_samples_per_step
         # EnvironmentManager variables
         self.alwaysCreateData = always_create_data

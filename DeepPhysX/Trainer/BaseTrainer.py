@@ -79,9 +79,9 @@ class BaseTrainer:
         return self.epoch < self.nbEpochs
 
     def epochTrainingIndicator(self):
-        self.manager.statsManager.add_trainEpochLoss(self.loss.item(), self.epoch)
+        self.manager.statsManager.add_trainEpochLoss(self.loss['item'], self.epoch)
         if self.epoch % 100 == 0:
-            print(self.loss.item())
+            print(self.loss['item'])
 
     def incrementEpoch(self):
         self.epoch += 1
@@ -99,8 +99,9 @@ class BaseTrainer:
         return self.batch < self.nbBatches
 
     def batchTrainingIndicator(self):
-        self.manager.statsManager.add_trainBatchLoss(self.loss.item(), self.epoch * self.nbBatches + self.batch)
-        self.manager.statsManager.add_trainTestBatchLoss(self.loss.item(), None, self.epoch * self.nbBatches + self.batch)  # why ?
+        pass
+        #self.manager.statsManager.add_trainBatchLoss(self.loss['item'], self.epoch * self.nbBatches + self.batch)
+        #self.manager.statsManager.add_trainTestBatchLoss(self.loss['item'], None, self.epoch * self.nbBatches + self.batch)  # why ?
 
     def incrementBatch(self):
         self.batch += 1

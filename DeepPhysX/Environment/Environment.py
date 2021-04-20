@@ -15,6 +15,7 @@ class Environment:
         self.outputSize = None
 
         self.description = ""
+        self.descriptionName = "CORE Environment"
 
         self.create()
 
@@ -38,7 +39,7 @@ class Environment:
 
     def getDescription(self):
         if len(self.description) == 0:
-            self.description += "\nCORE Environment:\n"
+            self.description += "\n{}\n".format(self.descriptionName)
             self.description += "   Name: {}\n".format(self.name)
             self.description += "   Simulations per step: {}\n".format(self.simulationsPerStep)
             self.description += "   Max wrong samples per step: {}\n".format(self.maxWrongSamplesPerStep)

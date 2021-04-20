@@ -19,7 +19,7 @@ class StatsManager:
         self.writer = tb.SummaryWriter(log_dir)
         self.sliding_window_size = sliding_window_size
         self.values = np.full((4, sliding_window_size), np.inf)
-        print("Values in stats manager:", self.values)
+        #print("Values in stats manager:", self.values)
         self.current_value = np.zeros(4, dtype=np.int32)
         self.train_loss = np.array([])
         self.tag_dict = {}

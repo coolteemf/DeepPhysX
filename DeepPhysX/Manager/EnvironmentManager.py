@@ -76,9 +76,12 @@ class EnvironmentManager:
         return inputs, outputs
 
     def processStep(self, env, conn):
+        print("DEBUG", env.name)
         for _ in range(env.simulationsPerStep):
             env.step()
+
         conn.send(env)
+        print("DEBUG END")
         conn.close()
 
     def computeMultiplePool(self, batch_size, get_inputs, get_outputs):

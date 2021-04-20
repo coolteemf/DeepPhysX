@@ -75,8 +75,7 @@ class Manager:
 
     def optimizeNetwork(self, epoch, batch_size):
         inputs, ground_truth = self.getData(epoch=epoch, batch_size=batch_size)
-        prediction = self.getPrediction(inputs=inputs)
-        return self.networkManager.optimizeNetwork(prediction=prediction, ground_truth=ground_truth)
+        return self.networkManager.optimizeNetwork(inputs=inputs, ground_truth=ground_truth)
 
     def saveNetwork(self):
         if self.networkManager.saveEachEpoch:
