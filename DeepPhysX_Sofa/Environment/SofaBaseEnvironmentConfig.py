@@ -1,15 +1,15 @@
-from DeepPhysX.Environment.EnvironmentConfig import EnvironmentConfig
+from DeepPhysX.Environment.BaseEnvironmentConfig import BaseEnvironmentConfig
 
 import SofaRuntime
 import Sofa.Core
 
 
-class SofaEnvironmentConfig(EnvironmentConfig):
+class SofaBaseEnvironmentConfig(BaseEnvironmentConfig):
 
     def __init__(self, environment_class, simulations_per_step=1, max_wrong_samples_per_step=10,
                  always_create_data=False, multiprocessing=1, multiprocess_method=None):
-        EnvironmentConfig.__init__(self, environment_class, simulations_per_step, max_wrong_samples_per_step,
-                                   always_create_data, multiprocessing, multiprocess_method)
+        BaseEnvironmentConfig.__init__(self, environment_class, simulations_per_step, max_wrong_samples_per_step,
+                                       always_create_data, multiprocessing, multiprocess_method)
         self.rootNode = None
         self.descriptionName = "SOFA EnvironmentConfig"
 

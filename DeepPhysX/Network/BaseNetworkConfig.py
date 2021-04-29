@@ -1,4 +1,4 @@
-from .Network import Network
+from .BaseNetwork import Network
 from .NetworkOptimization import NetworkOptimization
 
 

@@ -1,14 +1,14 @@
 import torch
 from psutil import cpu_count
 
-from DeepPhysX.Network.Network import Network
+from DeepPhysX.Network.BaseNetwork import BaseNetwork
 
 
-class PyTorchNetwork(torch.nn.Module, Network):
+class PyTorchBaseNetwork(torch.nn.Module, BaseNetwork):
 
     def __init__(self, network_name, network_type):
         torch.nn.Module.__init__(self)
-        Network.__init__(self, network_name, network_type)
+        BaseNetwork.__init__(self, network_name, network_type)
         self.descriptionName = "PYTORCH Network"
 
     def setTrain(self):

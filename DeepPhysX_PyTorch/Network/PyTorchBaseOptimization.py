@@ -1,13 +1,13 @@
 import torch
 import numpy as np
 
-from DeepPhysX.Network.NetworkOptimization import NetworkOptimization
+from DeepPhysX.Network.BaseOptimization import BaseOptimization
 
 
-class PyTorchNetworkOptimization(NetworkOptimization):
+class PyTorchBaseOptimization(BaseOptimization):
 
     def __init__(self, loss, lr, optimizer):
-        NetworkOptimization.__init__(self, loss, lr, optimizer)
+        BaseOptimization.__init__(self, loss, lr, optimizer)
         self.descriptionName = "PYTORCH NetworkOptimization"
 
     def setLoss(self):

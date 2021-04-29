@@ -1,7 +1,7 @@
 import numpy as np
 
 
-class Dataset:
+class BaseDataset:
 
     def __init__(self, max_size):
         # Data storage

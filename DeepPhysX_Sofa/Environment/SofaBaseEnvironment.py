@@ -1,15 +1,15 @@
-from DeepPhysX.Environment.Environment import Environment
+from DeepPhysX.Environment.BaseEnvironment import BaseEnvironment
 
 import Sofa.Simulation
 
 
-class SofaEnvironment(Sofa.Core.Controller, Environment):
+class SofaBaseEnvironment(Sofa.Core.Controller, BaseEnvironment):
 
     def __init__(self, root_node, simulations_per_step=1, max_wrong_samples=10, idx_instance=1,
                  *args, **kwargs):
         Sofa.Core.Controller.__init__(self, *args, **kwargs)
         self.rootNode = root_node
-        Environment.__init__(self, simulations_per_step, max_wrong_samples, idx_instance)
+        BaseEnvironment.__init__(self, simulations_per_step, max_wrong_samples, idx_instance)
         self.descriptionName = "SOFA Environment"
 
     def create(self):
