@@ -1,10 +1,10 @@
-class NetworkOptimization:
+class BaseOptimization:
 
-    def __init__(self, loss, lr, optimizer):
-        self.loss_class = loss
+    def __init__(self, config):
+        self.loss_class = config.loss
         self.loss = None
-        self.lr = lr
-        self.optimizer_class = optimizer
+        self.lr = config.lr
+        self.optimizer_class = config.optimizer
         self.optimizer = None
         # Description
         self.descriptionName = "CORE NetworkOptimization"

@@ -1,14 +1,23 @@
 import os
+from .BaseEnvironment import BaseEnvironment
+from dataclasses import dataclass
 
 
-class EnvironmentConfig:
+class BaseEnvironmentConfig:
 
-    def __init__(self, environment_class, simulations_per_step=1, max_wrong_samples_per_step=10,
+    @dataclass
+    class BaseEnvironmentProperties:
+        simulations_per_step: int
+        max_wrong_samples_per_step: int
+
+    def __init__(self, environment_class=BaseEnvironment, simulations_per_step=1, max_wrong_samples_per_step=10,
                  always_create_data=False, multiprocessing=1, multiprocess_method=None):
+        # Environment configuration
+        self.environmentConfig = self.BaseEnvironmentProperties(simulations_per_step=simulations_per_step,
+                                                                max_wrong_samples_per_step=max_wrong_samples_per_step)
         # Environment variables
         self.environment_class = environment_class
         self.environmentClassName = environment_class.__name__
-        self.environmentConfig = simulations_per_step, max_wrong_samples_per_step
         # EnvironmentManager variables
         self.alwaysCreateData = always_create_data
         self.multiprocessing = min(max(multiprocessing, 1), os.cpu_count())  # Assert nb is between 1 and cpu_count
@@ -26,8 +35,8 @@ class EnvironmentConfig:
 
     def createEnvironment(self):
         if self.multiprocessing == 1:
-            return self.environment_class(*self.environmentConfig)
-        return [self.environment_class(*self.environmentConfig, i+1) for i in range(self.multiprocessing)]
+            return self.environment_class(self.environmentConfig)
+        return [self.environment_class(self.environmentConfig, i + 1) for i in range(self.multiprocessing)]
 
     def getDescription(self):
         if len(self.description) == 0:

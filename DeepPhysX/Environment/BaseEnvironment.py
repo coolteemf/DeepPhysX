@@ -1,13 +1,13 @@
 import numpy as np
 
 
-class Environment:
+class BaseEnvironment:
 
-    def __init__(self, simulations_per_step=1, max_wrong_samples_per_step=10, idx_instance=1):
+    def __init__(self, config, idx_instance=1):
 
         self.name = "Environment n°{}".format(idx_instance)
-        self.simulationsPerStep = simulations_per_step
-        self.maxWrongSamplesPerStep = max_wrong_samples_per_step
+        self.simulationsPerStep = config.simulations_per_step
+        self.maxWrongSamplesPerStep = config.max_wrong_samples_per_step
 
         self.inputs = np.array([])
         self.outputs = np.array([])
@@ -17,9 +17,9 @@ class Environment:
         self.description = ""
         self.descriptionName = "CORE Environment"
 
-        self.create()
+        self.create(config)
 
-    def create(self):
+    def create(self, config):
         print("WARNING: You have to implement environment create() method.")
 
     def reset(self):

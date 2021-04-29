@@ -6,9 +6,9 @@ from DeepPhysX.Network.BaseNetwork import BaseNetwork
 
 class PyTorchBaseNetwork(torch.nn.Module, BaseNetwork):
 
-    def __init__(self, network_name, network_type):
+    def __init__(self, config):
         torch.nn.Module.__init__(self)
-        BaseNetwork.__init__(self, network_name, network_type)
+        BaseNetwork.__init__(self, config)
         self.descriptionName = "PYTORCH Network"
 
     def setTrain(self):

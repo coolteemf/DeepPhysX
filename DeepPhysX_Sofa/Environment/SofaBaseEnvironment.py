@@ -5,14 +5,14 @@ import Sofa.Simulation
 
 class SofaBaseEnvironment(Sofa.Core.Controller, BaseEnvironment):
 
-    def __init__(self, root_node, simulations_per_step=1, max_wrong_samples=10, idx_instance=1,
+    def __init__(self, root_node, config, idx_instance=1,
                  *args, **kwargs):
         Sofa.Core.Controller.__init__(self, *args, **kwargs)
         self.rootNode = root_node
-        BaseEnvironment.__init__(self, simulations_per_step, max_wrong_samples, idx_instance)
+        BaseEnvironment.__init__(self, config, idx_instance)
         self.descriptionName = "SOFA Environment"
 
-    def create(self):
+    def create(self, config):
         print("[SOFA Environment] You have to implement environment create() method.")
 
     def reset(self):

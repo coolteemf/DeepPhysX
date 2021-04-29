@@ -1,8 +1,8 @@
-class Network:
+class BaseNetwork:
 
-    def __init__(self, network_name, network_type):
-        self.type = network_type
-        self.name = network_name
+    def __init__(self, config):
+        self.type = config.network_type
+        self.name = config.network_name
         self.device = None
         # Description
         self.descriptionName = "CORE Network"

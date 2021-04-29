@@ -1,13 +1,13 @@
 import os
 import numpy as np
 
-from DeepPhysX.Dataset.DatasetConfig import DatasetConfig
+from DeepPhysX.Dataset.BaseDatasetConfig import BaseDatasetConfig
 import DeepPhysX.utils.pathUtils as pathUtils
 
 
 class DatasetManager:
 
-    def __init__(self, session_name, dataset_config: DatasetConfig, manager_dir, trainer):
+    def __init__(self, session_name, dataset_config: BaseDatasetConfig, manager_dir, trainer):
 
         # Dataset variables
         self.datasetConfig = dataset_config

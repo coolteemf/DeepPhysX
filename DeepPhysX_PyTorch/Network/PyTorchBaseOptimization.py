@@ -6,8 +6,8 @@ from DeepPhysX.Network.BaseOptimization import BaseOptimization
 
 class PyTorchBaseOptimization(BaseOptimization):
 
-    def __init__(self, loss, lr, optimizer):
-        BaseOptimization.__init__(self, loss, lr, optimizer)
+    def __init__(self, config):
+        BaseOptimization.__init__(self, config)
         self.descriptionName = "PYTORCH NetworkOptimization"
 
     def setLoss(self):
@@ -15,7 +15,6 @@ class PyTorchBaseOptimization(BaseOptimization):
             self.loss = self.loss_class()
 
     def computeLoss(self, prediction, ground_truth):
-
         prediction = torch.from_numpy(prediction) if type(prediction) is np.ndarray else prediction
         ground_truth = torch.from_numpy(ground_truth) if type(ground_truth) is np.ndarray else ground_truth
         return self.loss(prediction, ground_truth)

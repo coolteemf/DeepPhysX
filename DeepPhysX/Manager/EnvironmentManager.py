@@ -1,13 +1,14 @@
 import os
 import numpy as np
 import multiprocessing as mp
+ray
 
-from DeepPhysX.Environment.EnvironmentConfig import EnvironmentConfig
+from DeepPhysX.Environment.BaseEnvironmentConfig import BaseEnvironmentConfig
 
 
 class EnvironmentManager:
 
-    def __init__(self, environment_config: EnvironmentConfig):
+    def __init__(self, environment_config: BaseEnvironmentConfig):
         self.environmentConfig = environment_config
         self.multiprocessing = environment_config.multiprocessing
         self.multiprocessMethod = environment_config.multiprocessMethod

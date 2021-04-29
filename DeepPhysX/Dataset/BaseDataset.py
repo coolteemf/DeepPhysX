@@ -3,10 +3,10 @@ import numpy as np
 
 class BaseDataset:
 
-    def __init__(self, max_size):
+    def __init__(self, config):
         # Data storage
         self.data = {'in': np.array([]), 'out': np.array([])}
-        self.maxSize = max_size
+        self.maxSize = config.max_size
         self.currentSample = 0
         # Sizes
         self.inShape = None

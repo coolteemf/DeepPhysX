@@ -1,17 +1,30 @@
-from .BaseNetwork import Network
-from .NetworkOptimization import NetworkOptimization
+from .BaseNetwork import BaseNetwork
+from .BaseOptimization import BaseOptimization
+from dataclasses import dataclass
+from typing import Any
 
 
-class NetworkConfig:
+class BaseNetworkConfig:
 
-    def __init__(self, network_class=Network, optimization_class=NetworkOptimization, network_name="", network_type="",
+    @dataclass
+    class BaseNetworkProperties:
+        network_name: str
+        network_type: str
+
+    @dataclass
+    class BaseOptimizationProperties:
+        loss: Any
+        lr: Any
+        optimizer: Any
+
+    def __init__(self, network_class=BaseNetwork, optimization_class=BaseOptimization, network_name="", network_type="",
                  loss=None, lr=None, optimizer=None, network_dir=None, save_each_epoch=False, which_network=None):
         # Network variables
         self.network_class = network_class
-        self.networkConfig = network_name, network_type
+        self.networkConfig = self.BaseNetworkProperties(network_name=network_name, network_type=network_type)
         # Optimization variables
         self.optimization_class = optimization_class
-        self.optimizationConfig = loss, lr, optimizer
+        self.optimizationConfig = self.BaseOptimizationProperties(loss=loss, lr=lr, optimizer=optimizer)
         self.trainingMaterials = (lr is not None) and (optimizer is not None)
         # NetworkManager variables
         self.networkDir = network_dir
@@ -23,10 +36,10 @@ class NetworkConfig:
         self.description = ""
 
     def createNetwork(self):
-        return self.network_class(*self.networkConfig)
+        return self.network_class(self.networkConfig)
 
     def createOptimization(self):
-        return self.optimization_class(*self.optimizationConfig)
+        return self.optimization_class(self.optimizationConfig)
 
     def getDescription(self):
         if len(self.description) == 0:

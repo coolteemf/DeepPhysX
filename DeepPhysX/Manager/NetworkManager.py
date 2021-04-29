@@ -1,12 +1,12 @@
 import os
 
-from DeepPhysX.Network.NetworkConfig import NetworkConfig
+from DeepPhysX.Network.BaseNetworkConfig import BaseNetworkConfig
 import DeepPhysX.utils.pathUtils as pathUtils
 
 
 class NetworkManager:
 
-    def __init__(self, session_name, network_config: NetworkConfig, manager_dir, trainer):
+    def __init__(self, session_name, network_config: BaseNetworkConfig, manager_dir, trainer):
 
         self.networkConfig = network_config
 
