@@ -2,8 +2,8 @@ import os
 import math
 import numpy as np
 
-from MyNetwork import MyNetwork, MyNetworkOptimisation
-from DeepPhysX.Network.NetworkConfig import NetworkConfig
+from MyNetwork import MyBaseNetwork, MyBaseOptimisation
+from DeepPhysX.Network.BaseNetworkConfig import BaseNetworkConfig
 from DeepPhysX.Manager.NetworkManager import NetworkManager
 
 
@@ -14,8 +14,8 @@ def main():
 
     # Reference
     print("TRAINING WITHOUT MANAGER")
-    net = MyNetwork()
-    opt = MyNetworkOptimisation(loss=None, lr=1e-6, optimizer=None)
+    net = MyBaseNetwork()
+    opt = MyBaseOptimisation(loss=None, lr=1e-6, optimizer=None)
     opt.setOptimizer(net)
     for t in range(2000):
         pred = net.forward(inputs)
@@ -27,12 +27,12 @@ def main():
 
     # Using networkManager
     print("\nTRAINING WITH MANAGER")
-    training_config = NetworkConfig(network_class=MyNetwork,
-                                    optimization_class=MyNetworkOptimisation,
-                                    network_name="myNetwork",
-                                    lr=1e-6,
-                                    network_dir=None,
-                                    save_each_epoch=False)
+    training_config = BaseNetworkConfig(network_class=MyBaseNetwork,
+                                        optimization_class=MyBaseOptimisation,
+                                        network_name="myNetwork",
+                                        lr=1e-6,
+                                        network_dir=None,
+                                        save_each_epoch=False)
     training_config.trainingMaterials = True
     training_manager = NetworkManager(session_name='TestSession',
                                       network_config=training_config,
@@ -49,11 +49,11 @@ def main():
 
     # Using for prediction only
     print("\nPREDICTION WITH MANAGER")
-    prediction_config = NetworkConfig(network_class=MyNetwork,
-                                      optimization_class=MyNetworkOptimisation,
-                                      network_name="myNetwork",
-                                      network_dir=network_dir,
-                                      which_network=0)
+    prediction_config = BaseNetworkConfig(network_class=MyBaseNetwork,
+                                          optimization_class=MyBaseOptimisation,
+                                          network_name="myNetwork",
+                                          network_dir=network_dir,
+                                          which_network=0)
     prediction_manager = NetworkManager(session_name='TestSession',
                                         network_config=prediction_config,
                                         manager_dir=os.path.join(os.getcwd(), 'networkManager/predict/'),

@@ -1,14 +1,12 @@
 import numpy as np
 
-from DeepPhysX.Dataset.Dataset import Dataset
-from DeepPhysX.Dataset.DatasetConfig import DatasetConfig
+from DeepPhysX.Dataset.BaseDatasetConfig import BaseDatasetConfig
 
 
 def main():
 
     # Dataset configuration
-    dataset_config = DatasetConfig(dataset_class=Dataset,
-                                   partition_size=1)
+    dataset_config = BaseDatasetConfig(partition_size=1)
     print(dataset_config.getDescription())
 
     # New dataset: dataset has the following format: {'in': [[in0], [in1], [in2]], 'out': [[out0], [out1], [out2]]}

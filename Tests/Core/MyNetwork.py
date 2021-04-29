@@ -1,13 +1,13 @@
 import numpy as np
 
-from DeepPhysX.Network.Network import Network
-from DeepPhysX.Network.NetworkOptimization import NetworkOptimization
+from DeepPhysX.Network.BaseNetwork import BaseNetwork
+from DeepPhysX.Network.BaseOptimization import BaseOptimization
 
 
-class MyNetwork(Network):
+class MyBaseNetwork(BaseNetwork):
 
     def __init__(self, network_name="", *args):
-        Network.__init__(self, network_name=network_name, network_type="MyNetwork")
+        BaseNetwork.__init__(self, network_name=network_name, network_type="MyNetwork")
         self.a = np.random.randn()
         self.b = np.random.randn()
         self.c = np.random.randn()
@@ -47,10 +47,10 @@ class MyNetwork(Network):
         return x
 
 
-class MyNetworkOptimisation(NetworkOptimization):
+class MyBaseOptimisation(BaseOptimization):
 
     def __init__(self, loss, lr, optimizer):
-        NetworkOptimization.__init__(self, loss=None, lr=lr, optimizer=None)
+        BaseOptimization.__init__(self, loss=None, lr=lr, optimizer=None)
         self.net = None
 
     def setLoss(self):

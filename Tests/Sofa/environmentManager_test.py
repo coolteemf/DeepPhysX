@@ -1,16 +1,16 @@
 from MyEnvironment import MyEnvironment
-from DeepPhysX_Sofa.Environment.SofaEnvironmentConfig import SofaEnvironmentConfig
+from DeepPhysX_Sofa.Environment.SofaBaseEnvironmentConfig import SofaBaseEnvironmentConfig
 from DeepPhysX.Manager.EnvironmentManager import EnvironmentManager
 
 
 def main():
 
     # Single environment management
-    single_environment_config = SofaEnvironmentConfig(environment_class=MyEnvironment,
-                                                      simulations_per_step=1,
-                                                      always_create_data=True,
-                                                      multiprocessing=1,
-                                                      multiprocess_method=None)
+    single_environment_config = SofaBaseEnvironmentConfig(environment_class=MyEnvironment,
+                                                          simulations_per_step=1,
+                                                          always_create_data=True,
+                                                          multiprocessing=1,
+                                                          multiprocess_method=None)
     single_environment_manager = EnvironmentManager(environment_config=single_environment_config)
     print(single_environment_config.getDescription())
     print(single_environment_manager.environment.getDescription())
@@ -33,11 +33,11 @@ def main():
     print("")
 
     # Multiple environment management
-    multiple_environment_config = SofaEnvironmentConfig(environment_class=MyEnvironment,
-                                                        simulations_per_step=1,
-                                                        always_create_data=True,
-                                                        multiprocessing=5,
-                                                        multiprocess_method='process')
+    multiple_environment_config = SofaBaseEnvironmentConfig(environment_class=MyEnvironment,
+                                                            simulations_per_step=1,
+                                                            always_create_data=True,
+                                                            multiprocessing=5,
+                                                            multiprocess_method='process')
     multiple_environment_manager = EnvironmentManager(environment_config=multiple_environment_config)
     print(multiple_environment_config.getDescription())
     for env in multiple_environment_manager.environment:

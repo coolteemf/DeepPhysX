@@ -1,11 +1,11 @@
-from DeepPhysX_Sofa.Environment.SofaEnvironment import SofaEnvironment
+from DeepPhysX_Sofa.Environment.SofaBaseEnvironment import SofaBaseEnvironment
 
 import SofaRuntime
 
-class MyEnvironment(SofaEnvironment):
+class MyEnvironment(SofaBaseEnvironment):
 
     def __init__(self, root_node, simulations_per_step=1, max_wrong_samples=10, idx_instance=1, *args, **kwargs):
-        SofaEnvironment.__init__(self, root_node, simulations_per_step, max_wrong_samples, idx_instance, *args, **kwargs)
+        SofaBaseEnvironment.__init__(self, root_node, simulations_per_step, max_wrong_samples, idx_instance, *args, **kwargs)
         self.val = idx_instance
         self.inputSize, self.outputSize = 3, 3
         self.descriptionName = "MyEnvironment"
@@ -32,6 +32,6 @@ class MyEnvironment(SofaEnvironment):
             MO[0][0:3] = [0, 0, 0]
 
     def getDescription(self):
-        SofaEnvironment.getDescription(self)
+        SofaBaseEnvironment.getDescription(self)
         self.description += "   Index: {}\n".format(self.val)
         return self.description

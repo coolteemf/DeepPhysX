@@ -2,8 +2,8 @@ import os
 
 import numpy as np
 
-from DeepPhysX.Dataset.Dataset import Dataset
-from DeepPhysX.Dataset.DatasetConfig import DatasetConfig
+from DeepPhysX.Dataset.BaseDataset import Dataset
+from DeepPhysX.Dataset.BaseDatasetConfig import DatasetConfig
 from DeepPhysX.Manager.DatasetManager import DatasetManager
 
 

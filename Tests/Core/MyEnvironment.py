@@ -2,15 +2,15 @@ import math
 import random
 import numpy as np
 
-from DeepPhysX.Environment.Environment import Environment
+from DeepPhysX.Environment.BaseEnvironment import BaseEnvironment
 
 
-class MyEnvironment(Environment):
+class MyBaseEnvironment(BaseEnvironment):
 
     def __init__(self, simulations_per_steps, max_wrong_samples_per_step, idx_instance=1):
-        Environment.__init__(self, simulations_per_step=simulations_per_steps,
-                             max_wrong_samples_per_step=max_wrong_samples_per_step,
-                             idx_instance=idx_instance)
+        BaseEnvironment.__init__(self, simulations_per_step=simulations_per_steps,
+                                 max_wrong_samples_per_step=max_wrong_samples_per_step,
+                                 idx_instance=idx_instance)
         self.stepCount = 0
         self.inputs = 0
         self.outputs = 0
