@@ -1,7 +1,6 @@
 import os
 import numpy as np
 import multiprocessing as mp
-ray
 
 from DeepPhysX.Environment.BaseEnvironmentConfig import BaseEnvironmentConfig
 
@@ -15,40 +14,42 @@ class EnvironmentManager:
         # Create single or multiple environments according to multiprocessing value
         self.environment = environment_config.createEnvironment()
 
-    def step(self, environment=None):
-        # Todo : not multiprocessing friendly...
-        if environment is None:
-            for _ in range(self.environment.simulationsPerStep):
-                self.environment.step()
-        else:
-            for _ in range(environment.simulationsPerStep):
-                environment.step()
-
     def getData(self, batch_size, get_inputs, get_outputs):
         # Getting data from single environment
         if self.multiprocessing == 1:
             inputs, outputs = self.computeSingleEnvironment(batch_size, get_inputs, get_outputs)
         # Getting data from multiple environments
         else:
-            if self.multiprocessMethod == 'process':
+            inputs = np.empty((batch_size, *self.environment.inputSize))
+            outputs = np.empty((batch_size, *self.environment.outputSize))
+            """if self.multiprocessMethod == 'process':
                 inputs, outputs = self.computeMultipleProcess(batch_size, get_inputs, get_outputs)
             else:
-                inputs, outputs = self.computeMultiplePool(batch_size, get_inputs, get_outputs)
+                inputs, outputs = self.computeMultiplePool(batch_size, get_inputs, get_outputs)"""
         return {'in': inputs, 'out': outputs}
 
     def computeSingleEnvironment(self, batch_size, get_inputs, get_outputs):
-        inputs = np.empty((batch_size, self.environment.inputSize))
-        outputs = np.empty((batch_size, self.environment.outputSize))
-        for i in range(batch_size):
+        inputs = np.empty((batch_size, *self.environment.inputSize))
+        outputs = np.empty((batch_size, *self.environment.outputSize))
+        i = 0
+        while i < batch_size:
             for _ in range(self.environment.simulationsPerStep):
                 self.environment.step()
             if get_inputs:
-                inputs[i] = self.environment.getInput()
+                self.environment.computeInput()
             if get_outputs:
+                self.environment.computeOutput()
+            if self.environment.checkSample(check_input=get_inputs, check_output=get_outputs):
+                inputs[i] = self.environment.getInput()
                 outputs[i] = self.environment.getOutput()
+                i += 1
+        if get_inputs:
+            inputs = self.environment.transformInputs(inputs)
+        if get_outputs:
+            outputs = self.environment.transformOutputs(outputs)
         return inputs, outputs
 
-    def computeMultipleProcess(self, batch_size, get_inputs, get_outputs):
+    """def computeMultipleProcess(self, batch_size, get_inputs, get_outputs):
         inputs = np.empty((batch_size, self.environment[0].inputSize))
         outputs = np.empty((batch_size, self.environment[0].outputSize))
         produced_samples = 0
@@ -77,12 +78,9 @@ class EnvironmentManager:
         return inputs, outputs
 
     def processStep(self, env, conn):
-        print("DEBUG", env.name)
         for _ in range(env.simulationsPerStep):
             env.step()
-
         conn.send(env)
-        print("DEBUG END")
         conn.close()
 
     def computeMultiplePool(self, batch_size, get_inputs, get_outputs):
@@ -108,8 +106,20 @@ class EnvironmentManager:
     def poolStep(self, env):
         for _ in range(env.simulationsPerStep):
             env.step()
-        return env
+        return env"""
 
     def close(self):
+        # Todo : delete environments
         pass
+
+
+
+    def step(self, environment=None):
+        # Todo : not multiprocessing friendly...
+        if environment is None:
+            for _ in range(self.environment.simulationsPerStep):
+                self.environment.step()
+        else:
+            for _ in range(environment.simulationsPerStep):
+                environment.step()
 

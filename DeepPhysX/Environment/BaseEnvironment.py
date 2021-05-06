@@ -9,8 +9,8 @@ class BaseEnvironment:
         self.simulationsPerStep = config.simulations_per_step
         self.maxWrongSamplesPerStep = config.max_wrong_samples_per_step
 
-        self.inputs = np.array([])
-        self.outputs = np.array([])
+        self.input = np.array([])
+        self.output = np.array([])
         self.inputSize = None
         self.outputSize = None
 
@@ -20,22 +20,31 @@ class BaseEnvironment:
         self.create(config)
 
     def create(self, config):
-        print("WARNING: You have to implement environment create() method.")
-
-    def reset(self):
         raise NotImplementedError
 
     def step(self):
         raise NotImplementedError
 
+    def computeInput(self):
+        raise NotImplementedError
+
+    def computeOutput(self):
+        raise NotImplementedError
+
+    def transformInputs(self, inputs):
+        return inputs
+
+    def transformOutputs(self, outputs):
+        return outputs
+
+    def checkSample(self, check_input=True, check_output=True):
+        return True
+
     def getInput(self):
-        return self.inputs
+        return self.input
 
     def getOutput(self):
-        return self.outputs
-
-    def checkSample(self):
-        raise NotImplementedError
+        return self.output
 
     def getDescription(self):
         if len(self.description) == 0:
@@ -43,6 +52,6 @@ class BaseEnvironment:
             self.description += "   Name: {}\n".format(self.name)
             self.description += "   Simulations per step: {}\n".format(self.simulationsPerStep)
             self.description += "   Max wrong samples per step: {}\n".format(self.maxWrongSamplesPerStep)
-            self.description += "   Inputs, size: {}\n".format(self.inputs, self.inputSize)
-            self.description += "   Outputs, size: {}\n".format(self.outputs, self.outputSize)
+            self.description += "   Inputs, size: {}\n".format(self.input, self.inputSize)
+            self.description += "   Outputs, size: {}\n".format(self.output, self.outputSize)
         return self.description

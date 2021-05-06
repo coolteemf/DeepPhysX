@@ -36,6 +36,7 @@ class NetworkManager:
 
     def setNetwork(self):
         self.network = self.networkConfig.createNetwork()
+        self.network.setDevice()
         self.optimization = self.networkConfig.createOptimization()
         if self.optimization.loss_class is not None:
             self.optimization.setLoss()
@@ -84,17 +85,26 @@ class NetworkManager:
                 print("NetworkManager: Loading network from {}.".format(networks_list[which_network]))
                 self.network.loadParameters(networks_list[which_network])
 
-    def optimizeNetwork(self, inputs, ground_truth):
-        inputs = self.network.transformFromNumpy(inputs)
-        prediction = self.network.forward(inputs)
+    def setData(self, data):
+        self.network.convertData(data)
+
+    def computePrediction(self):
+        self.network.transformInput()
+        self.network.predict()
+        self.network.transformPrediction()
+        self.network.transformGroundTruth()
+        return self.network.getPrediction(), self.network.getGroundTruth()
+
+    def optimizeNetwork(self, prediction, ground_truth):
+        print("NETWORK MANAGER DEBUG: prediction and ground truth data")
+        print(type(prediction))
+        print(type(ground_truth))
         loss = self.optimization.computeLoss(prediction, ground_truth)
-        self.optimization.optimize(loss)
+        print("NETWORK MANAGER DEBUG: point reached")
+        self.optimization.optimize()
         return loss
 
-    def getPrediction(self, inputs):
-        inputs = self.network.transformFromNumpy(inputs)
-        outputs = self.network.forward(inputs)
-        return self.network.transformToNumpy(outputs)
+
 
     def computeLoss(self, prediction, ground_truth):
         return self.optimization.computeLoss(prediction, ground_truth)

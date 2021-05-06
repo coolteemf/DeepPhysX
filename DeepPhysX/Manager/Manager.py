@@ -65,21 +65,14 @@ class Manager:
             self.datasetManager.addData(data)
         else:
             data = self.datasetManager.getData(batch_size=batch_size, get_inputs=get_inputs, get_outputs=get_outputs)
-        return data['in'], data['out']
+        self.networkManager.setData(data)
 
-    def getPrediction(self, inputs):
-        return self.networkManager.getPrediction(inputs)
-
-    def computeLoss(self, prediction, ground_truth):
-        return self.networkManager.computeLoss(prediction, ground_truth)
-
-    def optimizeNetwork(self, epoch, batch_size):
-        inputs, ground_truth = self.getData(epoch=epoch, batch_size=batch_size)
-        return self.networkManager.optimizeNetwork(inputs=inputs, ground_truth=ground_truth)
+    def optimizeNetwork(self):
+        prediction, ground_truth = self.networkManager.computePrediction()
+        return self.networkManager.optimizeNetwork(prediction, ground_truth)
 
     def saveNetwork(self):
-        if self.networkManager.saveEachEpoch:
-            self.networkManager.saveNetwork()
+        self.networkManager.saveNetwork()
 
     def close(self):
         if self.datasetManager is not None:
@@ -100,3 +93,12 @@ class Manager:
             # Todo: add minimal description
             manager_description += self.datasetManager.description()
         return manager_description
+
+
+
+
+    def getPrediction(self):
+        return self.networkManager.getPrediction()
+
+    def computeLoss(self, prediction, ground_truth):
+        return self.networkManager.computeLoss(prediction, ground_truth)

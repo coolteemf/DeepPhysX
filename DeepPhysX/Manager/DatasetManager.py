@@ -7,14 +7,14 @@ import DeepPhysX.utils.pathUtils as pathUtils
 
 class DatasetManager:
 
-    def __init__(self, session_name, dataset_config: BaseDatasetConfig, manager_dir, trainer):
+    def __init__(self, session_name, dataset_config, manager_dir, trainer):
 
         # Dataset variables
         self.datasetConfig = dataset_config
         self.dataset = dataset_config.createDataset()
         self.managerDir = manager_dir
         self.datasetDir = os.path.join(self.managerDir, 'dataset/') if dataset_config.datasetDir is None else dataset_config.datasetDir
-        self.maxSize = dataset_config.maxSize
+        self.maxSize = dataset_config.datasetConfig.max_size
         self.existingDataset = dataset_config.existingDataset
         self.shuffleDataset = dataset_config.shuffleDataset
         self.generateData = dataset_config.generateData
@@ -124,7 +124,6 @@ class DatasetManager:
             # Check whether if there is still available place in partitions
             actual_size = self.dataset.getSize()
             if actual_size[0] > self.maxSize or actual_size[1] > self.maxSize:
-                print("Saving through 'addData'")
                 self.saveData()
                 self.createNewPartitions()
                 self.dataset.reset()
@@ -166,7 +165,6 @@ class DatasetManager:
 
     def close(self):
         if self.generateData and not self.saved:
-            print("Saving through 'close'")
             self.saveData()
 
     def loadLastPartitions(self):

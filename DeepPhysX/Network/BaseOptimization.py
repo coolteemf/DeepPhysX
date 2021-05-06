@@ -3,6 +3,7 @@ class BaseOptimization:
     def __init__(self, config):
         self.loss_class = config.loss
         self.loss = None
+        self.loss_value = 0.
         self.lr = config.lr
         self.optimizer_class = config.optimizer
         self.optimizer = None
@@ -11,23 +12,15 @@ class BaseOptimization:
         self.description = ""
 
     def setLoss(self):
-        # if loss is not None:
-        #       self.loss = self.loss_class()
         raise NotImplementedError
 
     def computeLoss(self, prediction, ground_truth):
-        # return self.loss(prediction, ground_truth)
         raise NotImplementedError
 
     def setOptimizer(self, net):
-        # if self.optimizer_class is not None and lr is not None:
-        #       self.optimizer = self.optimizer_class(net.parameters(), self.lr)
         raise NotImplementedError
 
-    def optimize(self, loss):
-        # self.optimizer.zero_grad()
-        # loss.backward()
-        # self.optimizer.step()
+    def optimize(self):
         raise NotImplementedError
 
     def getDescription(self):

@@ -19,8 +19,8 @@ class BaseTrainer:
         self.nbEpochs = nb_epochs
         self.epoch = 0
         self.nbBatches = nb_batches
-        self.batchSize = batch_size
         self.batch = 0
+        self.batchSize = batch_size
         self.nbSamples = nb_batches * batch_size
         self.loss = None
 
@@ -41,18 +41,64 @@ class BaseTrainer:
         self.trainBegin()
         while self.epochCondition():
             self.epochBegin()
-            self.batch = 0
             while self.batchCondition():
                 self.batchBegin()
-                self.loss = self.manager.optimizeNetwork(self.epoch, self.batchSize)
-                self.batchTrainingIndicator()
-                self.incrementBatch()
+                self.optimize()
+                # self.loss = self.manager.optimizeNetwork(self.epoch, self.batchSize)
+                self.batchStats()
+                self.batchCount()
                 self.batchEnd()
-            self.epochTrainingIndicator()
-            self.incrementEpoch()
+            self.epochStats()
+            self.epochCount()
             self.epochEnd()
             self.saveNetwork()
         self.trainEnd()
+
+    def trainBegin(self):
+        pass
+
+    def trainEnd(self):
+        self.manager.close()
+
+    def epochBegin(self):
+        self.batch = 0
+        self.manager.datasetManager.dataset.shuffle()
+
+    def epochCondition(self):
+        return self.epoch < self.nbEpochs
+
+    def epochStats(self):
+        self.manager.statsManager.add_trainEpochLoss(self.loss['item'], self.epoch)
+        if self.epoch % 100 == 0:
+            print(self.loss['item'])
+
+    def epochCount(self):
+        self.epoch += 1
+
+    def epochEnd(self):
+        pass
+
+    def batchBegin(self):
+        pass
+
+    def batchCondition(self):
+        return self.batch < self.nbBatches
+
+    def batchStats(self):
+        # self.manager.statsManager.add_trainBatchLoss(self.loss['item'], self.epoch * self.nbBatches + self.batch)
+        # self.manager.statsManager.add_trainTestBatchLoss(self.loss['item'], None, self.epoch * self.nbBatches + self.batch)  # why ?
+        pass
+
+    def batchCount(self):
+        self.batch += 1
+
+    def batchEnd(self):
+        pass
+
+    def optimize(self):
+        # self.loss = self.manager.optimizeNetwork(self.epoch, self.batchSize)
+        self.manager.getData(self.epoch, self.batchSize)
+        self.loss = self.manager.optimizeNetwork()
 
     def validate(self, size):
         success_count = 0
@@ -66,45 +112,5 @@ class BaseTrainer:
                     success_count += 1
         print("Success Rate =", success_count * 100.0 / size)
 
-    def trainBegin(self):
-        pass
-
-    def trainEnd(self):
-        self.manager.close()
-
-    def epochBegin(self):
-        self.manager.datasetManager.dataset.shuffle()
-
-    def epochCondition(self):
-        return self.epoch < self.nbEpochs
-
-    def epochTrainingIndicator(self):
-        self.manager.statsManager.add_trainEpochLoss(self.loss['item'], self.epoch)
-        if self.epoch % 100 == 0:
-            print(self.loss['item'])
-
-    def incrementEpoch(self):
-        self.epoch += 1
-
-    def epochEnd(self):
-        pass
-
     def saveNetwork(self):
         self.manager.saveNetwork()
-
-    def batchBegin(self):
-        pass
-
-    def batchCondition(self):
-        return self.batch < self.nbBatches
-
-    def batchTrainingIndicator(self):
-        pass
-        #self.manager.statsManager.add_trainBatchLoss(self.loss['item'], self.epoch * self.nbBatches + self.batch)
-        #self.manager.statsManager.add_trainTestBatchLoss(self.loss['item'], None, self.epoch * self.nbBatches + self.batch)  # why ?
-
-    def incrementBatch(self):
-        self.batch += 1
-
-    def batchEnd(self):
-        pass
