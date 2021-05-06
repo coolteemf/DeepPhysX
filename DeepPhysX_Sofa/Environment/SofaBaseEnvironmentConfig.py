@@ -26,6 +26,13 @@ class SofaBaseEnvironmentConfig(BaseEnvironmentConfig):
         else:
             self.rootNode = [Sofa.Core.Node('rootNode'+str(i)) for i in range(self.multiprocessing)]
 
+    def initNodes(self):
+        if self.multiprocessing == 1:
+            Sofa.Simulation.init(self.rootNode)
+        else:
+            for node in self.rootNode:
+                Sofa.Simulation.init(node)
+
     def createEnvironment(self):
         if self.rootNode is None:
             self.setRootNodes()
@@ -35,6 +42,7 @@ class SofaBaseEnvironmentConfig(BaseEnvironmentConfig):
         else:
             environment = [self.rootNode[i].addObject(self.environment_class(self.rootNode[i], self.environmentConfig,
                                                                              i+1)) for i in range(len(self.rootNode))]
+        self.initNodes()
         return environment
 
     def addRequiredPlugins(self):

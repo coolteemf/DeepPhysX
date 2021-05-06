@@ -13,14 +13,7 @@ class SofaBaseEnvironment(Sofa.Core.Controller, BaseEnvironment):
         self.descriptionName = "SOFA Environment"
 
     def create(self, config):
-        print("[SOFA Environment] You have to implement environment create() method.")
-
-    def reset(self):
-        Sofa.Simulation.reset(self.rootNode)
-        self.onReset()
-
-    def onReset(self):
-        pass
+        raise NotImplementedError
 
     def step(self):
         Sofa.Simulation.animate(self.rootNode, self.rootNode.dt.value)
@@ -29,5 +22,17 @@ class SofaBaseEnvironment(Sofa.Core.Controller, BaseEnvironment):
     def onStep(self):
         pass
 
-    def checkSample(self):
-        pass
+    def computeInput(self):
+        raise NotImplementedError
+
+    def computeOutput(self):
+        raise NotImplementedError
+
+    def transformInputs(self, inputs):
+        return inputs
+
+    def transformOutputs(self, outputs):
+        return outputs
+
+    def checkSample(self, check_input=True, check_output=True):
+        return True
