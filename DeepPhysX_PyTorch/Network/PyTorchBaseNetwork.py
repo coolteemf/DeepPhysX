@@ -11,6 +11,9 @@ class PyTorchBaseNetwork(torch.nn.Module, BaseNetwork):
         BaseNetwork.__init__(self, config)
         self.descriptionName = "PYTORCH Network"
 
+    def forward(self, x):
+        raise NotImplementedError
+
     def setTrain(self):
         self.train()
 
@@ -23,6 +26,7 @@ class PyTorchBaseNetwork(torch.nn.Module, BaseNetwork):
         else:
             self.device = torch.device('cpu')
             torch.set_num_threads(cpu_count(logical=True) - 1)
+        self.to(self.device)
 
     def loadParameters(self, path):
         self.load_state_dict(torch.load(path))
@@ -42,3 +46,12 @@ class PyTorchBaseNetwork(torch.nn.Module, BaseNetwork):
 
     def transformToNumpy(self, x):
         return x.detach().numpy()
+
+    def transformInput(self):
+        pass
+
+    def transformPrediction(self):
+        pass
+
+    def transformGroundTruth(self):
+        pass

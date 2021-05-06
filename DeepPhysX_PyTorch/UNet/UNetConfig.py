@@ -32,7 +32,7 @@ class UNetConfig(PyTorchBaseNetworkConfig):
         if nb_dims not in [2, 3]:
             raise ValueError("[UNET_CONFIG] Nb of dimensions must be 2 or 3.")
 
-        self.networkConfig = self.UNetProperties(network_name=network_name, network_type=network_type, nb_dims=nb_dims,
+        self.networkConfig = self.UNetProperties(network_name=network_name, network_type='UNet', nb_dims=nb_dims,
                                                  first_layer_channels=first_layer_channels, border_mode=border_mode,
                                                  two_sublayers=two_sublayers, nb_input_channels=nb_input_channels,
                                                  steps=steps, nb_classes=nb_classes, skip_merge=skip_merge)

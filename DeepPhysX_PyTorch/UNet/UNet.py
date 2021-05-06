@@ -31,7 +31,7 @@ class UNet(PyTorchBaseNetwork):
     def __init__(self, config):
         PyTorchBaseNetwork.__init__(self, config)
 
-        self.maxPool = nn.MaxPool2d if config.nb_dims == 2 else nn.MaxPool3d
+        self.maxPool = nn.MaxPool2d(2) if config.nb_dims == 2 else nn.MaxPool3d(2)
         last_conv_layer = nn.Conv2d if config.nb_dims == 2 else nn.Conv3d
         up_conv_layer = nn.ConvTranspose2d if config.nb_dims == 2 else nn.ConvTranspose3d
 
@@ -56,7 +56,7 @@ class UNet(PyTorchBaseNetwork):
         # Down layers
         down_outputs = [self.architecture.encoder[0](x)]
         for unet_layer in self.architecture.encoder[1:]:
-            down_outputs.append(unet_layer(down_outputs[-1]))
+            down_outputs.append(unet_layer(self.maxPool(down_outputs[-1])))
         # feature_maps = down_outputs.copy()
         x = down_outputs[-1]
         for (up_conv_layer, unet_layer), down_output in zip(self.architecture.decoder[:-1], down_outputs[-2::-1]):
@@ -66,3 +66,16 @@ class UNet(PyTorchBaseNetwork):
         # feature_maps.append(self.architecture.decoder[-1](x))
         # return feature_maps[-1]
         return self.architecture.decoder[-1](x)
+
+    def transformInput(self):
+        self.input = self.input.float()
+
+    def transformOutputs(self, output):
+        # Todo
+        return output
+
+    def transformPrediction(self):
+        self.prediction = self.transformOutputs(self.prediction)
+
+    def transformGroundTruth(self):
+        self.ground_truth = self.transformOutputs(self.ground_truth)

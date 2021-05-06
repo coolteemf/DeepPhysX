@@ -1,6 +1,3 @@
-import torch
-import numpy as np
-
 from DeepPhysX.Network.BaseOptimization import BaseOptimization
 
 
@@ -15,15 +12,14 @@ class PyTorchBaseOptimization(BaseOptimization):
             self.loss = self.loss_class()
 
     def computeLoss(self, prediction, ground_truth):
-        prediction = torch.from_numpy(prediction) if type(prediction) is np.ndarray else prediction
-        ground_truth = torch.from_numpy(ground_truth) if type(ground_truth) is np.ndarray else ground_truth
-        return self.loss(prediction, ground_truth)
+        self.loss_value = self.loss(prediction, ground_truth)
+        return self.loss_value
 
     def setOptimizer(self, net):
         if (self.optimizer_class is not None) and (self.lr is not None):
             self.optimizer = self.optimizer_class(net.parameters(), self.lr)
 
-    def optimize(self, loss):
+    def optimize(self):
         self.optimizer.zero_grad()
-        loss.backward()
+        self.loss_value.backward()
         self.optimizer.step()
