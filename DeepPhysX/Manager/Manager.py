@@ -59,9 +59,10 @@ class Manager:
         self.statsManager = StatsManager(log_dir=os.path.join(self.managerDir, 'stats/'),
                                          sliding_window_size=stats_window)
 
-    def getData(self, epoch, batch_size=1, get_inputs=True, get_outputs=True):
+    def getData(self, epoch=0, batch_size=1, get_inputs=True, get_outputs=True, animate=True):
         if (self.environmentManager is not None) and (epoch == 0 or self.environmentConfig.alwaysCreateData):
-            data = self.environmentManager.getData(batch_size=batch_size, get_inputs=get_inputs, get_outputs=get_outputs)
+            data = self.environmentManager.getData(batch_size=batch_size, animate=animate,
+                                                   get_inputs=get_inputs, get_outputs=get_outputs)
             self.datasetManager.addData(data)
         else:
             data = self.datasetManager.getData(batch_size=batch_size, get_inputs=get_inputs, get_outputs=get_outputs)
@@ -70,6 +71,10 @@ class Manager:
     def optimizeNetwork(self):
         prediction, ground_truth = self.networkManager.computePrediction()
         return self.networkManager.optimizeNetwork(prediction, ground_truth)
+
+    def getPrediction(self):
+        prediction, ground_truth = self.networkManager.computePrediction()
+        return self.networkManager.computeLoss(prediction, ground_truth)
 
     def saveNetwork(self):
         self.networkManager.saveNetwork()
@@ -93,12 +98,3 @@ class Manager:
             # Todo: add minimal description
             manager_description += self.datasetManager.description()
         return manager_description
-
-
-
-
-    def getPrediction(self):
-        return self.networkManager.getPrediction()
-
-    def computeLoss(self, prediction, ground_truth):
-        return self.networkManager.computeLoss(prediction, ground_truth)

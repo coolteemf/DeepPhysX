@@ -4,3 +4,4 @@ __pycache__
 /build/
 /DeepPhysX.egg-info/
 /dist/
+/venv/

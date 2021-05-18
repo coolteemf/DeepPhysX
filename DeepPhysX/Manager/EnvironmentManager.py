@@ -14,10 +14,10 @@ class EnvironmentManager:
         # Create single or multiple environments according to multiprocessing value
         self.environment = environment_config.createEnvironment()
 
-    def getData(self, batch_size, get_inputs, get_outputs):
+    def getData(self, batch_size, get_inputs, get_outputs, animate):
         # Getting data from single environment
         if self.multiprocessing == 1:
-            inputs, outputs = self.computeSingleEnvironment(batch_size, get_inputs, get_outputs)
+            inputs, outputs = self.computeSingleEnvironment(batch_size, get_inputs, get_outputs, animate)
         # Getting data from multiple environments
         else:
             inputs = np.empty((batch_size, *self.environment.inputSize))
@@ -28,13 +28,14 @@ class EnvironmentManager:
                 inputs, outputs = self.computeMultiplePool(batch_size, get_inputs, get_outputs)"""
         return {'in': inputs, 'out': outputs}
 
-    def computeSingleEnvironment(self, batch_size, get_inputs, get_outputs):
+    def computeSingleEnvironment(self, batch_size, get_inputs, get_outputs, animate):
         inputs = np.empty((batch_size, *self.environment.inputSize))
         outputs = np.empty((batch_size, *self.environment.outputSize))
         i = 0
         while i < batch_size:
-            for _ in range(self.environment.simulationsPerStep):
-                self.environment.step()
+            if animate:
+                for _ in range(self.environment.simulationsPerStep):
+                    self.environment.step()
             if get_inputs:
                 self.environment.computeInput()
             if get_outputs:

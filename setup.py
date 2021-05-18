@@ -7,5 +7,5 @@ setup(
     description='Core project of the DeepPhysX environment',
     author='Mimesis',
     license='',
-    install_requires=["setuptools >= 50.0.0", "numpy >= 1.20.1", "wheel", "twine"]
+    install_requires=["setuptools", "numpy", "wheel", "twine"]
 )
