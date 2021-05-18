@@ -3,6 +3,7 @@ class BaseNetwork:
     def __init__(self, config):
         self.type = config.network_type
         self.name = config.network_name
+        self.config = config
         self.device = None
         self.input = None
         self.ground_truth = None
