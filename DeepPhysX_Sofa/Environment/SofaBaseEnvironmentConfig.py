@@ -33,14 +33,15 @@ class SofaBaseEnvironmentConfig(BaseEnvironmentConfig):
             for node in self.rootNode:
                 Sofa.Simulation.init(node)
 
-    def createEnvironment(self):
+    def createEnvironment(self, training):
         if self.rootNode is None:
             self.setRootNodes()
         self.addRequiredPlugins()
         if self.multiprocessing == 1:
-            environment = self.rootNode.addObject(self.environment_class(self.rootNode, self.environmentConfig, 0))
+            environment = self.rootNode.addObject(self.environment_class(self.rootNode, self.environmentConfig,
+                                                                         training, 0))
         else:
-            environment = [self.rootNode[i].addObject(self.environment_class(self.rootNode[i], self.environmentConfig,
+            environment = [self.rootNode[i].addObject(self.environment_class(self.rootNode[i], self.environmentConfig, training,
                                                                              i+1)) for i in range(len(self.rootNode))]
         self.initNodes()
         return environment

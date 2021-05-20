@@ -41,11 +41,12 @@ class PyTorchBaseNetwork(torch.nn.Module, BaseNetwork):
         return sum(p.numel() for p in self.parameters())
 
     def transformFromNumpy(self, x):
-        x = torch.from_numpy(x)
+        x = torch.from_numpy(x).to(self.device).float()
+        x.requires_grad = True
         return x
 
     def transformToNumpy(self, x):
-        return x.detach().numpy()
+        return x.cpu().detach().numpy()
 
     def transformInput(self):
         pass

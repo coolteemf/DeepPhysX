@@ -96,15 +96,9 @@ class NetworkManager:
         return self.network.getPrediction(), self.network.getGroundTruth()
 
     def optimizeNetwork(self, prediction, ground_truth):
-        print("NETWORK MANAGER DEBUG: prediction and ground truth data")
-        print(type(prediction))
-        print(type(ground_truth))
         loss = self.optimization.computeLoss(prediction, ground_truth)
-        print("NETWORK MANAGER DEBUG: point reached")
         self.optimization.optimize()
         return loss
-
-
 
     def computeLoss(self, prediction, ground_truth):
         return self.optimization.computeLoss(prediction, ground_truth)

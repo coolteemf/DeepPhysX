@@ -29,8 +29,8 @@ class BaseRunner:
             self.sampleEnd()
         self.runEnd()
 
-    def predict(self):
-        self.manager.getData()
+    def predict(self, animate=True):
+        self.manager.getData(animate=animate)
         return self.manager.getPrediction()
 
     def runBegin(self):

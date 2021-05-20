@@ -3,11 +3,12 @@ import numpy as np
 
 class BaseEnvironment:
 
-    def __init__(self, config, idx_instance=1):
+    def __init__(self, config, training, idx_instance=1):
 
         self.name = "Environment n°{}".format(idx_instance)
         self.simulationsPerStep = config.simulations_per_step
         self.maxWrongSamplesPerStep = config.max_wrong_samples_per_step
+        self.training = training
 
         self.input = np.array([])
         self.output = np.array([])

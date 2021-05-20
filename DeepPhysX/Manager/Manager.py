@@ -54,7 +54,7 @@ class Manager:
         if environment_config is None:
             self.environmentManager = None
         else:
-            self.environmentManager = EnvironmentManager(environment_config=environment_config)
+            self.environmentManager = EnvironmentManager(environment_config=environment_config, trainer=trainer)
         # Todo: manage conflict if environment and datasetDir are set
         self.statsManager = StatsManager(log_dir=os.path.join(self.managerDir, 'stats/'),
                                          sliding_window_size=stats_window)
@@ -74,7 +74,8 @@ class Manager:
 
     def getPrediction(self):
         prediction, ground_truth = self.networkManager.computePrediction()
-        return self.networkManager.computeLoss(prediction, ground_truth)
+        loss = self.networkManager.computeLoss(prediction, ground_truth)
+        return self.networkManager.network.transformToNumpy(prediction), loss
 
     def saveNetwork(self):
         self.networkManager.saveNetwork()

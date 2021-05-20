@@ -13,7 +13,7 @@ class PyTorchBaseOptimization(BaseOptimization):
 
     def computeLoss(self, prediction, ground_truth):
         self.loss_value = self.loss(prediction, ground_truth)
-        return self.loss_value
+        return self.loss_value.item()
 
     def setOptimizer(self, net):
         if (self.optimizer_class is not None) and (self.lr is not None):

@@ -68,9 +68,9 @@ class BaseTrainer:
         return self.epoch < self.nbEpochs
 
     def epochStats(self):
-        self.manager.statsManager.add_trainEpochLoss(self.loss['item'], self.epoch)
-        if self.epoch % 100 == 0:
-            print(self.loss['item'])
+        # self.manager.statsManager.add_trainEpochLoss(self.loss['item'], self.epoch)
+        if self.epoch % 10 == 0:
+            print(self.loss)
 
     def epochCount(self):
         self.epoch += 1

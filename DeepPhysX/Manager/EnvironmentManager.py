@@ -7,12 +7,12 @@ from DeepPhysX.Environment.BaseEnvironmentConfig import BaseEnvironmentConfig
 
 class EnvironmentManager:
 
-    def __init__(self, environment_config: BaseEnvironmentConfig):
+    def __init__(self, environment_config: BaseEnvironmentConfig, trainer):
         self.environmentConfig = environment_config
         self.multiprocessing = environment_config.multiprocessing
         self.multiprocessMethod = environment_config.multiprocessMethod
         # Create single or multiple environments according to multiprocessing value
-        self.environment = environment_config.createEnvironment()
+        self.environment = environment_config.createEnvironment(trainer)
 
     def getData(self, batch_size, get_inputs, get_outputs, animate):
         # Getting data from single environment

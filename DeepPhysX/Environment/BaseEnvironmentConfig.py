@@ -33,10 +33,10 @@ class BaseEnvironmentConfig:
         self.descriptionName = "CORE EnvironmentConfig"
         self.description = ""
 
-    def createEnvironment(self):
+    def createEnvironment(self, training):
         if self.multiprocessing == 1:
-            return self.environment_class(self.environmentConfig)
-        return [self.environment_class(self.environmentConfig, i + 1) for i in range(self.multiprocessing)]
+            return self.environment_class(self.environmentConfig, training)
+        return [self.environment_class(self.environmentConfig, training, i + 1) for i in range(self.multiprocessing)]
 
     def getDescription(self):
         if len(self.description) == 0:

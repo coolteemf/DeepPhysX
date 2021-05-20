@@ -1,22 +1,21 @@
-from DeepPhysX.Runner.BaseRunner import BaseRunner
+import Sofa
 
 
-class SofaBaseRunner(BaseRunner):
+class SofaRunner(Sofa.Core.Controller):
 
-    def __init__(self, session_name, network_config, dataset_config, environment_config=None,
-                 manager_dir=None, nb_samples=0):
-
-        super().__init__(session_name, network_config, dataset_config, environment_config, manager_dir,
-                         nb_samples)
-        self.runBegin()
+    def __init__(self, runner, *args, **kwargs):
+        Sofa.Core.Controller.__init__(self, *args, **kwargs)
+        self.runner = runner
+        self.runner.runBegin()
 
     def execute(self):
-        self.sampleBegin()
-        prediction, loss = self.predict()
-        self.sampleEnd()
+        self.runner.sampleBegin()
+        prediction, loss = self.runner.predict(animate=False)
+        self.runner.manager.environmentManager.environment.applyPrediction(prediction)
+        self.runner.sampleEnd()
 
     def onAnimateEndEvent(self, event):
-        if self.runningCondition():
+        if self.runner.runningCondition():
             self.execute()
         else:
-            self.runEnd()
+            self.runner.runEnd()
