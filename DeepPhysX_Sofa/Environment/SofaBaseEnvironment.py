@@ -8,7 +8,7 @@ class SofaBaseEnvironment(Sofa.Core.Controller, BaseEnvironment):
     def __init__(self, root_node, config, training, idx_instance=1,
                  *args, **kwargs):
         Sofa.Core.Controller.__init__(self, *args, **kwargs)
-        self.rootNode = root_node
+        self.root = root_node
         BaseEnvironment.__init__(self, config, training, idx_instance)
         self.descriptionName = "SOFA Environment"
 
@@ -16,7 +16,7 @@ class SofaBaseEnvironment(Sofa.Core.Controller, BaseEnvironment):
         raise NotImplementedError
 
     def step(self):
-        Sofa.Simulation.animate(self.rootNode, self.rootNode.dt.value)
+        Sofa.Simulation.animate(self.root, self.root.dt.value)
         self.onStep()
 
     def onStep(self):

@@ -1,4 +1,5 @@
 import torch
+import gc
 from psutil import cpu_count
 
 from DeepPhysX.Network.BaseNetwork import BaseNetwork
@@ -23,6 +24,8 @@ class PyTorchBaseNetwork(torch.nn.Module, BaseNetwork):
     def setDevice(self):
         if torch.cuda.is_available():
             self.device = torch.device('cuda')
+            gc.collect()
+            torch.cuda.empty_cache()
         else:
             self.device = torch.device('cpu')
             torch.set_num_threads(cpu_count(logical=True) - 1)

@@ -12,12 +12,12 @@ class MyEnvironment(SofaBaseEnvironment):
 
     def create(self):
         SofaRuntime.importPlugin('SofaBaseMechanics')
-        self.rootNode.gravity = [0, -9.81, 0]
-        self.rootNode.dt = 0.01
-        self.rootNode.addObject('DefaultVisualManagerLoop')
-        self.rootNode.addObject('DefaultAnimationLoop')
+        self.root.gravity = [0, -9.81, 0]
+        self.root.dt = 0.01
+        self.root.addObject('DefaultVisualManagerLoop')
+        self.root.addObject('DefaultAnimationLoop')
         # Add new nodes and objects in the scene
-        self.node = self.rootNode.addChild("Node1")
+        self.node = self.root.addChild("Node1")
         self.MO = self.node.addObject("MechanicalObject", name="DOF", template="Rigid3d", position="0 0 0   0 0 0 1",
                                       showObject="1")
         print("Scene created.")

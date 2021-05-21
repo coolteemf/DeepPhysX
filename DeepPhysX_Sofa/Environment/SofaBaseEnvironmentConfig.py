@@ -33,7 +33,7 @@ class SofaBaseEnvironmentConfig(BaseEnvironmentConfig):
             for node in self.rootNode:
                 Sofa.Simulation.init(node)
 
-    def createEnvironment(self, training):
+    def createEnvironment(self, training=True):
         if self.rootNode is None:
             self.setRootNodes()
         self.addRequiredPlugins()
