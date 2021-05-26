@@ -1,4 +1,5 @@
-from Example.Beam_Env.SingleBeamEnvironmentConfig import SingleBeamEnvironmentConfig
+from Example.Beam.BeamConfig import BeamConfig
+from Example.Beam.FEMBeam import FEMBeam
 
 # ENVIRONMENT PARAMETERS
 grid_resolution = [40, 10, 10]
@@ -12,7 +13,8 @@ p_grid = {'grid_resolution': grid_resolution,
 
 def createScene(root_node=None):
     # Environment config
-    env_config = SingleBeamEnvironmentConfig(root_node=root_node, p_grid=p_grid, always_create_data=True)
+    env_config = BeamConfig(environment_class=FEMBeam, root_node=root_node, p_grid=p_grid,
+                            always_create_data=True)
     env = env_config.createEnvironment(training=False)
     root_node = env.root
     return root_node

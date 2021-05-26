@@ -2,11 +2,16 @@ import os
 from torch.optim import Adam
 from torch.nn import MSELoss
 
-from Example.Beam_Env.BeamEnvironmentConfig import BeamEnvironmentConfig
 from DeepPhysX_PyTorch.FC.FCConfig import FCConfig
 from DeepPhysX.Dataset.BaseDatasetConfig import BaseDatasetConfig
 from DeepPhysX.Runner.BaseRunner import BaseRunner
 from DeepPhysX_Sofa.Runner.SofaBaseRunner import SofaRunner
+
+from Example.Beam.BeamConfig import BeamConfig
+from Example.Beam.NNBeam import NNBeam
+from Example.Beam.BothBeams import BothBeams
+from Example.Beam.BothBeamsInteraction import BothBeamsInteraction
+Beam = BothBeams
 
 # ENVIRONMENT PARAMETERS
 grid_resolution = [40, 10, 10]
@@ -26,8 +31,7 @@ layers_dim = [nb_dof * 3] + [nb_dof * 3 for _ in range(nb_hidden_layers + 1)] + 
 
 def createScene(root_node=None, runSofa=True):
     # Environment config
-    env_config = BeamEnvironmentConfig(root_node=root_node, p_grid=p_grid,
-                                       always_create_data=True)
+    env_config = BeamConfig(environment_class=Beam, root_node=root_node, p_grid=p_grid, always_create_data=True)
 
     # Network config
     net_config = FCConfig(network_name="beam_FC", save_each_epoch=True,
@@ -49,6 +53,7 @@ def createScene(root_node=None, runSofa=True):
 if __name__ == '__main__':
     root = createScene(runSofa=False)
     import Sofa.Gui
+
     Sofa.Gui.GUIManager.Init("main", "qglviewer")
     Sofa.Gui.GUIManager.createGUI(root, __file__)
     Sofa.Gui.GUIManager.SetDimension(1080, 1080)

@@ -4,10 +4,10 @@ import numpy as np
 from DeepPhysX_Sofa.Environment.SofaBaseEnvironment import SofaBaseEnvironment
 
 
-class BeamEnvironment(SofaBaseEnvironment):
+class BothBeams(SofaBaseEnvironment):
 
     def __init__(self, root_node, config, idx_instance=1, training=True):
-        super(BeamEnvironment, self).__init__(root_node, config, idx_instance)
+        super(BothBeams, self).__init__(root_node, config, idx_instance)
         self.config = config
 
     def create(self, config):
@@ -33,8 +33,8 @@ class BeamEnvironment(SofaBaseEnvironment):
         self.root.BeamFEM.addObject('QuadSetGeometryAlgorithms', template='Vec3d')
         self.root.BeamFEM.addObject('QuadSetTopologyModifier')
         self.root.BeamFEM.addObject('Hexa2QuadTopologicalMapping', input="@Hexa_Topology", output="@Quad_Topology")
-        self.MO = self.root.BeamFEM.addObject('MechanicalObject', src='@Grid', name='MO', showObject=True)
-        self.root.BeamFEM.addObject('SaintVenantKirchhoffMaterial', young_modulus=4500, poisson_ratio=0.45, name="StVK")
+        self.femMO = self.root.BeamFEM.addObject('MechanicalObject', src='@Grid', name='MO', showObject=True)
+        self.root.BeamFEM.addObject('NeoHookeanMaterial', young_modulus=4500, poisson_ratio=0.45, name="StVK")
         self.root.BeamFEM.addObject('HyperelasticForcefield', material="@StVK", template="Hexahedron",
                                     topology='@Hexa_Topology', printLog=True)
         self.root.BeamFEM.addObject('BoxROI', box=p_grid['fixed_box'], name='Fixed_Box')
@@ -47,10 +47,11 @@ class BeamEnvironment(SofaBaseEnvironment):
         self.root.BeamFEM.Visual.addObject('OglModel', name="oglModel", src='@../Grid', color='white')
         self.root.BeamFEM.Visual.addObject('BarycentricMapping', name="BaryMap2", input='@../MO', output='@./')
 
-        """if not(self.t)
         # Beam NN
         self.root.addChild('BeamNN')
-        self.root.BeamNN.addObject('RegularGridTopology', name='Grid', min=p_grid['min'], max=p_grid['max'],
+        grid_min = [p_grid['min'][0], p_grid['min'][1], p_grid['min'][2] - 2 * p_grid['max'][2]]
+        grid_max = [p_grid['max'][0], p_grid['max'][1], - p_grid['max'][2]]
+        self.root.BeamNN.addObject('RegularGridTopology', name='Grid', min=grid_min, max=grid_max,
                                    nx=g_res[0], ny=g_res[1], nz=g_res[2])
         self.root.BeamNN.addObject('HexahedronSetTopologyContainer', name='Hexa_Topology', src='@Grid')
         self.root.BeamNN.addObject('HexahedronSetGeometryAlgorithms', template='Vec3d')
@@ -59,43 +60,31 @@ class BeamEnvironment(SofaBaseEnvironment):
         self.root.BeamNN.addObject('QuadSetGeometryAlgorithms', template='Vec3d')
         self.root.BeamNN.addObject('QuadSetTopologyModifier')
         self.root.BeamNN.addObject('Hexa2QuadTopologicalMapping', input="@Hexa_Topology", output="@Quad_Topology")
-        self.MO = mechanical_node.addObject('MechanicalObject', src='@Grid', name='MO', showObject=True)
-        mechanical_node.addObject('SaintVenantKirchhoffMaterial', young_modulus=4500, poisson_ratio=0.45, name="StVK")
-        mechanical_node.addObject('HyperelasticForcefield', material="@StVK", template="Hexahedron",
-                                  topology='@Hexa_Topology', printLog=True)
-        mechanical_node.addObject('BoxROI', box=p_grid['fixed_box'], name='Fixed_Box')
-        self.constraint = mechanical_node.addObject('FixedConstraint', indices='@Fixed_Box.indices')
-        self.nb_dof = g_res[0] * g_res[1] * g_res[2]
-        self.CFF = mechanical_node.addObject('ConstantForceField', name='CFF', showArrowSize='0.1',
-                                             forces=[0 for _ in range(3 * self.nb_dof)],
-                                             indices=list(iter(range(self.nb_dof))))
-        #  /root/mechanical_node/visual
-        visual_node = mechanical_node.addChild('visual')
-        visual_node.addObject('OglModel', name="oglModel", src='@../Grid', color='white')
-        visual_node.addObject('BarycentricMapping', name="BaryMap2", input='@../MO', output='@./')"""
+        self.MO = self.root.BeamNN.addObject('MechanicalObject', src='@Grid', name='MO', showObject=True)
+        # Visual
+        self.root.BeamNN.addChild('Visual')
+        self.root.BeamNN.Visual.addObject('OglModel', name="oglModel", src='@../Grid', color='white')
+        self.root.BeamNN.Visual.addObject('BarycentricMapping', name="BaryMap2", input='@../MO', output='@./')
 
     def onSimulationInitDoneEvent(self, event):
         self.inputSize = self.MO.position.value.shape
         self.outputSize = self.MO.position.value.shape
 
     def onAnimateBeginEvent(self, event):
+        self.femMO.position.value = self.femMO.rest_position.value
         self.MO.position.value = self.MO.rest_position.value
-        F = np.random.random(self.MO.force.value.shape) - np.random.random(self.MO.force.value.shape)
-        self.CFF.forces.value = (0.01 / np.linalg.norm(F)) * F
-
-    def applyPrediction(self, prediction):
-        u0 = prediction[0]
-        u0 /= 0.01
-        #self.MO.position.value = u0 + self.MO.rest_position.array()
+        F = np.random.random(3) - np.random.random(3)
+        self.CFF.force.value = (4 / np.linalg.norm(F)) * F
 
     def computeInput(self):
-        self.input = copy.copy(self.CFF.forces.value)
+        F = copy.copy(self.CFF.forces.value)
+        F /= 100
+        self.input = F
 
     def computeOutput(self):
         self.output = copy.copy(self.MO.position.value - self.MO.rest_position.value)
 
-    def transformInputs(self, inputs):
-        return inputs
-
-    def transformOutputs(self, outputs):
-        return outputs
+    def applyPrediction(self, prediction):
+        u0 = prediction[0]
+        u0 /= 0.1
+        self.MO.position.value = u0 + self.MO.rest_position.array()
