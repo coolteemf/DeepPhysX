@@ -18,7 +18,7 @@ class FEMBeam(SofaBaseEnvironment):
 
         # Beam FEM
         self.root.addChild('BeamFEM')
-        self.root.BeamFEM.addObject('LegacyStaticODESolver', name='StaticSolver', newton_iterations=50,
+        self.root.BeamFEM.addObject('LegacyStaticODESolver', name='StaticSolver', newton_iterations=5,
                                     correction_tolerance_threshold=1e-6, residual_tolerance_threshold=1e-6,
                                     printLog=False)
         self.root.BeamFEM.addObject('ConjugateGradientSolver', name='LinearSolver', preconditioning_method='Diagonal',

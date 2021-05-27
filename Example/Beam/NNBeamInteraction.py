@@ -1,5 +1,5 @@
 import copy
-import numpy as np
+from Example.Beam.MouseForceManager import MouseForceManager
 
 from Example.Beam.NNBeam import NNBeam
 
@@ -10,20 +10,26 @@ class NNBeamInteraction(NNBeam):
         super(NNBeamInteraction, self).__init__(root_node, config, idx_instance)
         self.config = config
 
+    def create(self, config):
+        NNBeam.create(self, config)
+        self.sphere = self.root.BeamNN.addObject('SphereROI', centers=[0, 0, 0], radii=2, drawSphere=True)
+
+    def onSimulationInitDoneEvent(self, event):
+        NNBeam.onSimulationInitDoneEvent(self, event)
+        self.mouseManager = MouseForceManager(self.grid)
+
     def onAnimateBeginEvent(self, event):
         self.MO.position.value = self.MO.rest_position.value
-        F = np.random.random(3) - np.random.random(3)
-        self.CFF.force.value = F
 
     def computeInput(self):
         F = copy.copy(self.MO.force.value)
-        F /= 100
-        self.input = F
+        node = self.mouseManager.find_picked_node(F)
+        if node is not None:
+            local = self.mouseManager.find_neighbors(node)
+            centers = [self.MO.position.value[node]]
+            for l in local:
+                centers.append(self.MO.position.value[l])
+            self.sphere.centers.value = centers
+            self.sphere.radii.value = [0.5 for _ in range(len(local)+1)]
 
-    def computeOutput(self):
-        self.output = copy.copy(self.MO.position.value - self.MO.rest_position.value)
-
-    def applyPrediction(self, prediction):
-        u0 = prediction[0]
-        u0 /= 0.1
-        self.MO.position.value = u0 + self.MO.rest_position.array()
+        self.input = F / 800

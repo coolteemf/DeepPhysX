@@ -24,7 +24,7 @@ class BothBeams(SofaBaseEnvironment):
                                     correction_tolerance_threshold=1e-6, residual_tolerance_threshold=1e-6,
                                     printLog=False)
         self.root.BeamFEM.addObject('ConjugateGradientSolver', name='LinearSolver', preconditioning_method='Diagonal',
-                                    maximum_number_of_iterations=2000, residual_tolerance_threshold=1e-9,
+                                    maximum_number_of_iterations=500, residual_tolerance_threshold=1e-9,
                                     printLog=False)
         self.root.BeamFEM.addObject('HexahedronSetTopologyContainer', name='Hexa_Topology', src='@Grid')
         self.root.BeamFEM.addObject('HexahedronSetGeometryAlgorithms', template='Vec3d')
@@ -53,6 +53,9 @@ class BothBeams(SofaBaseEnvironment):
         grid_max = [p_grid['max'][0], p_grid['max'][1], - p_grid['max'][2]]
         self.root.BeamNN.addObject('RegularGridTopology', name='Grid', min=grid_min, max=grid_max,
                                    nx=g_res[0], ny=g_res[1], nz=g_res[2])
+        self.root.BeamFEM.addObject('LegacyStaticODESolver', name='StaticSolver', newton_iterations=0,
+                                    correction_tolerance_threshold=1e-6, residual_tolerance_threshold=1e-6,
+                                    printLog=False)
         self.root.BeamNN.addObject('HexahedronSetTopologyContainer', name='Hexa_Topology', src='@Grid')
         self.root.BeamNN.addObject('HexahedronSetGeometryAlgorithms', template='Vec3d')
         self.root.BeamNN.addObject('HexahedronSetTopologyModifier')
@@ -63,7 +66,7 @@ class BothBeams(SofaBaseEnvironment):
         self.MO = self.root.BeamNN.addObject('MechanicalObject', src='@Grid', name='MO', showObject=True)
         # Visual
         self.root.BeamNN.addChild('Visual')
-        self.root.BeamNN.Visual.addObject('OglModel', name="oglModel", src='@../Grid', color='white')
+        self.root.BeamNN.Visual.addObject('OglModel', name="oglModel", src='@../Grid', color='red')
         self.root.BeamNN.Visual.addObject('BarycentricMapping', name="BaryMap2", input='@../MO', output='@./')
 
     def onSimulationInitDoneEvent(self, event):
@@ -78,7 +81,7 @@ class BothBeams(SofaBaseEnvironment):
 
     def computeInput(self):
         F = copy.copy(self.CFF.forces.value)
-        F /= 100
+        F /= 10
         self.input = F
 
     def computeOutput(self):
@@ -86,5 +89,4 @@ class BothBeams(SofaBaseEnvironment):
 
     def applyPrediction(self, prediction):
         u0 = prediction[0]
-        u0 /= 0.1
         self.MO.position.value = u0 + self.MO.rest_position.array()

@@ -8,6 +8,7 @@ class BothBeamsInteraction(BothBeams):
 
     def __init__(self, root_node, config, idx_instance=1, training=True):
         super(BothBeamsInteraction, self).__init__(root_node, config, idx_instance)
+        self.config = config
 
     def onAnimateBeginEvent(self, event):
         self.femMO.position.value = self.femMO.rest_position.value
