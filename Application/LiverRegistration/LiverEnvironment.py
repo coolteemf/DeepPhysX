@@ -20,8 +20,8 @@ class LiverEnvironment(SofaBaseEnvironment):
         p_forces = config.p_forces
 
         # /root
-        surface_mesh_loader = self.rootNode.addObject('MeshObjLoader', name='surface_mesh',
-                                                      filename=p_liver['mesh_file'], translation=p_liver['translation'])
+        surface_mesh_loader = self.root.addObject('MeshObjLoader', name='surface_mesh',
+                                                  filename=p_liver['mesh_file'], translation=p_liver['translation'])
         self.visible_surface_nodes = extract_visible_nodes(camera_position=p_liver['camera_position'],
                                                            normals=surface_mesh_loader.normals.value,
                                                            positions=surface_mesh_loader.position.value,
@@ -31,7 +31,7 @@ class LiverEnvironment(SofaBaseEnvironment):
         print("3D grid: {} nodes, {} cells.".format(self.grid.number_of_nodes(), self.grid.number_of_cells()))
 
         # /root/mechanical_node
-        mechanical_node = self.rootNode.addChild('mechanical_node')
+        mechanical_node = self.root.addChild('mechanical_node')
         self.solver = mechanical_node.addObject('LegacyStaticODESolver', newton_iterations=10,
                                                 correction_tolerance_threshold=1e-6,
                                                 residual_tolerance_threshold=1e-6,
@@ -82,7 +82,7 @@ class LiverEnvironment(SofaBaseEnvironment):
         visual_node.addObject('BarycentricMapping', input='@../mo', output='@./')
         print("done")
 
-        return self.rootNode
+        return self.root
 
     def onSimulationInitDoneEvent(self, event):
         grid_shape = self.config.p_grid['grid_resolution']

@@ -99,11 +99,11 @@ class Liver(Unet_Training.Unet_Training):
             border_mode='same',
             two_sublayers=True
         )
-        self.manager.networkManager.setNetwork(config,
-                                               network=unet.UNet,
-                                               optimizer=Adam,
-                                               lr=1e-4,
-                                               loss=mse_loss)
+        self.manager.network_manager.setNetwork(config,
+                                                network=unet.UNet,
+                                                optimizer=Adam,
+                                                lr=1e-4,
+                                                loss=mse_loss)
         self.createGraph(node)
 
     def getInput(self, increment):
@@ -265,7 +265,7 @@ class Liver(Unet_Training.Unet_Training):
         Unet_Training.Unet_Training.onAnimateEndEvent(self, value)
 
         # Generate next forces
-        if self.manager.datasetManager.mode == "online_training":
+        if self.manager.dataset_manager.mode == "online_training":
             selected_centers = np.empty([0, 3])
             for j in range(nbSimultaneousForces):
                 distance_check = True

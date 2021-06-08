@@ -4,7 +4,7 @@ from torch.nn import MSELoss
 from BeamEnvironmentConfig import BeamEnvironmentConfig
 from DeepPhysX_PyTorch.FC.FCConfig import FCConfig
 from DeepPhysX.Dataset.BaseDatasetConfig import BaseDatasetConfig
-from DeepPhysX.Trainer.BaseTrainer import BaseTrainer
+from DeepPhysX.Pipelines.BaseTrainer import BaseTrainer
 
 # ENVIRONMENT PARAMETERS
 grid_resolution = [16, 4, 4]

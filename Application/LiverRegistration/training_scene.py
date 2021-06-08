@@ -1,13 +1,8 @@
 import os
 import numpy as np
-from torch.optim import Adam
-from torch.nn.functional import mse_loss
 
 from LiverEnvironmentConfig import LiverEnvironmentConfig
 from utils import compute_grid_resolution
-from DeepPhysX_PyTorch.UNet.UNetConfig import UNetConfig
-from DeepPhysX.Dataset.BaseDatasetConfig import BaseDatasetConfig
-from DeepPhysX.Trainer.BaseTrainer import BaseTrainer
 
 # ENVIRONMENT PARAMETERS
 # Liver variables

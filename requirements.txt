@@ -1,1 +1,4 @@
 setuptools
+numpy
+torch
+psutil

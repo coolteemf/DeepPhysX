@@ -25,4 +25,6 @@ class BeamConfig(SofaBaseEnvironmentConfig):
         self.rootNode.addObject('RequiredPlugin', pluginName=['SofaComponentAll', 'SofaLoader', 'SofaCaribou',
                                                               'SofaBaseTopology', 'SofaGeneralEngine', 'SofaEngine',
                                                               'SofaOpenglVisual', 'SofaBoundaryCondition',
-                                                              'SofaTopologyMapping'])
+                                                              'SofaTopologyMapping', 'SofaConstraint', 'SofaDeformable',
+                                                              'SofaGeneralObjectInteraction', 'SofaBaseMechanics',
+                                                              'SofaMiscCollision'])

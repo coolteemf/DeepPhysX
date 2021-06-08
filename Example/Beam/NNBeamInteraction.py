@@ -10,13 +10,14 @@ class NNBeamInteraction(NNBeam):
         super(NNBeamInteraction, self).__init__(root_node, config, idx_instance)
         self.config = config
 
-    def create(self, config):
-        NNBeam.create(self, config)
+    def createBehavior(self, config):
+        self.MO = self.root.BeamNN.addObject('MechanicalObject', src='@Grid', name='MO', template='Vec3d',
+                                             showObject=True)
         self.sphere = self.root.BeamNN.addObject('SphereROI', centers=[0, 0, 0], radii=2, drawSphere=True)
 
     def onSimulationInitDoneEvent(self, event):
         NNBeam.onSimulationInitDoneEvent(self, event)
-        self.mouseManager = MouseForceManager(self.grid)
+        self.mouseManager = MouseForceManager(self.grid, [0.2, 0.2, 0.2], self.surface)
 
     def onAnimateBeginEvent(self, event):
         self.MO.position.value = self.MO.rest_position.value
@@ -25,11 +26,15 @@ class NNBeamInteraction(NNBeam):
         F = copy.copy(self.MO.force.value)
         node = self.mouseManager.find_picked_node(F)
         if node is not None:
-            local = self.mouseManager.find_neighbors(node)
-            centers = [self.MO.position.value[node]]
+            F[node] = self.mouseManager.scale_max_force(F[node])
+            F, local = self.mouseManager.distribute_force(node, F, 0.01, 10)
+            centers = []
             for l in local:
                 centers.append(self.MO.position.value[l])
             self.sphere.centers.value = centers
-            self.sphere.radii.value = [0.5 for _ in range(len(local)+1)]
+            self.sphere.radii.value = [0.5 for _ in range(len(local) + 1)]
+        self.input = F
 
-        self.input = F / 800
+    def applyPrediction(self, prediction):
+        u0 = prediction[0] * 10
+        self.MO.position.value = u0 + self.MO.rest_position.array()
