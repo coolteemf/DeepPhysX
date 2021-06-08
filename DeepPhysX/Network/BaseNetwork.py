@@ -1,15 +1,17 @@
 class BaseNetwork:
 
     def __init__(self, config):
-        self.type = config.network_type
-        self.name = config.network_name
+        # Config
         self.config = config
         self.device = None
+        # Data
         self.input = None
         self.ground_truth = None
         self.prediction = None
         # Description
-        self.descriptionName = "CORE Network"
+        self.type = config.network_type
+        self.name = config.network_name
+        self.description_name = "BaseNetwork"
         self.description = ""
 
     def forward(self, x):
@@ -69,7 +71,7 @@ class BaseNetwork:
 
     def getDescription(self):
         if len(self.description) == 0:
-            self.description += "\n{}\n".format(self.descriptionName)
+            self.description += "\n{}\n".format(self.description_name)
             self.description += "   Name: {}\n".format(self.name)
             self.description += "   Type: {}\n".format(self.type)
         return self.description

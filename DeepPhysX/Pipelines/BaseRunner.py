@@ -1,25 +1,37 @@
+from DeepPhysX.Pipelines.BasePipeline import BasePipeline
 from DeepPhysX.Manager.Manager import Manager
+from DeepPhysX.Network.BaseNetworkConfig import BaseNetworkConfig
+from DeepPhysX.Dataset.BaseDatasetConfig import BaseDatasetConfig
+from DeepPhysX.Environment.BaseEnvironmentConfig import BaseEnvironmentConfig
 
 
-class BaseRunner:
+class BaseRunner(BasePipeline):
 
-    def __init__(self, session_name, network_config, dataset_config, environment_config=None,
-                 manager_dir=None, nb_samples=0):
+    def __init__(self, network_config=BaseNetworkConfig(), dataset_config=BaseDatasetConfig(),
+                 environment_config=BaseEnvironmentConfig(), session_name='default', session_dir=None,
+                 nb_samples=0, record_inputs=False, record_outputs=False):
 
-        if environment_config is None and dataset_config.dataset_dir is None:
-            print("BaseRunner: Need a data source (existing dataset directory or environment). Shutting down.")
-            quit(0)
+        BasePipeline.__init__(self, pipeline='prediction')
 
-        self.sessionName = session_name
-        self.nbSamples = nb_samples
-        self.idxSample = 0
+        # Todo: check arguments
+        # Check the arguments
+        if not isinstance(network_config, BaseNetworkConfig):
+            raise TypeError("[BASERUNNER] The network configuration must be a BaseNetworkConfig")
+        if not isinstance(environment_config, BaseEnvironmentConfig):
+            raise TypeError("[BASERUNNER] The environment configuration must be a BaseEnvironmentConfig")
+        if dataset_config is not None and not isinstance(dataset_config, BaseDatasetConfig):
+            raise TypeError("[BASERUNNER] The dataset configuration must be a BaseDatasetConfig")
 
-        self.datasetConfig = dataset_config
-        self.networkConfig = network_config
-        self.environmentConfig = environment_config
+        self.nb_samples = nb_samples
+        self.idx_sample = 0
 
-        self.manager = Manager(session_name=session_name, network_config=network_config, dataset_config=dataset_config,
-                               trainer=False, environment_config=environment_config, manager_dir=manager_dir)
+        # Tell if data is recording while predicting (output is recorded only if input too)
+        self.record_data = {'in': record_inputs,
+                            'out': record_outputs and record_inputs}
+
+        self.manager = Manager(pipeline=self, network_config=network_config, dataset_config=dataset_config,
+                               environment_config=environment_config, session_name=session_name,
+                               session_dir=session_dir)
 
     def execute(self):
         self.runBegin()
@@ -40,8 +52,8 @@ class BaseRunner:
         pass
 
     def runningCondition(self):
-        running = self.idxSample < self.nbSamples if self.nbSamples > 0 else True
-        self.idxSample += 1
+        running = self.idx_sample < self.nb_samples if self.nb_samples > 0 else True
+        self.idx_sample += 1
         return running
 
     def sampleBegin(self):

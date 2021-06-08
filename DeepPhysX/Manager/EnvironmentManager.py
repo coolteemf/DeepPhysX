@@ -7,7 +7,7 @@ from DeepPhysX.Environment.BaseEnvironmentConfig import BaseEnvironmentConfig
 
 class EnvironmentManager:
 
-    def __init__(self, environment_config: BaseEnvironmentConfig, trainer):
+    def __init__(self, environment_config=BaseEnvironmentConfig(), train=True):
         self.environmentConfig = environment_config
         self.multiprocessing = environment_config.multiprocessing
         self.multiprocessMethod = environment_config.multiprocessMethod

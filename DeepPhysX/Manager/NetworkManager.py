@@ -6,19 +6,33 @@ import DeepPhysX.utils.pathUtils as pathUtils
 
 class NetworkManager:
 
-    def __init__(self, session_name, network_config: BaseNetworkConfig, manager_dir, trainer):
+    def __init__(self, network_config=BaseNetworkConfig(), session_name='default', session_dir=None, train=True):
 
-        self.networkConfig = network_config
+        # Checking arguments
+        if not isinstance(network_config, BaseNetworkConfig):
+            raise TypeError("[NETWORKMANAGER] The network config must be a BaseNetworkConfig object.")
+        if type(session_name) != str:
+            raise TypeError("[NETWORKMANAGER] The session name must be a str.")
+        if session_dir is not None and type(session_dir) != str:
+            raise TypeError("[NETWORKMANAGER] The session directory must be a str.")
+        if type(train) != bool:
+            raise TypeError("[NETWORKMANAGER] The 'train' argument' must be a boolean.")
 
-        self.networkDir = os.path.join(manager_dir, 'network/') if network_config.networkDir is None else network_config.networkDir
-        self.managerDir = manager_dir
-        self.networkTemplateName = session_name + '_network_{}.pth'
+        self.network_config = network_config
 
-        self.existingNetwork = network_config.existingNetwork
-        self.training = self.checkTraining(trainer, network_config.trainingMaterials)
+        self.session_dir = session_dir if session_dir is not None else os.path.join(pathUtils.getFirstCaller(),
+                                                                                    session_name)
+        network_dir = network_config.network_dir
+        self.network_dir = network_dir if network_dir is not None else os.path.join(self.session_dir, 'network/')
+        self.network_template_name = session_name + '_network_{}.pth'
 
-        self.saveEachEpoch = network_config.saveEachEpoch
-        self.savedCounter = 0
+        self.existing_network = network_config.existing_network
+        if train and not network_config.training_stuff:
+            raise ValueError("[NETWORKMANAGER] You are training without loss and optimizer. Shutting down.")
+        self.training = train
+
+        self.save_each_epoch = network_config.save_each_epoch
+        self.saved_counter = 0
 
         self.network = None
         self.optimization = None
@@ -26,52 +40,43 @@ class NetworkManager:
 
         self.description = ""
 
-    def checkTraining(self, trainer, training_materials):
-        if trainer and not training_materials:
-            print("NetworkManager: You called Trainer without loss and optimizer. Shutting down.")
-            quit(0)
-        elif trainer:
-            return True
-        return False
-
     def setNetwork(self):
-        self.network = self.networkConfig.createNetwork()
+        self.network = self.network_config.createNetwork()
         self.network.setDevice()
-        self.optimization = self.networkConfig.createOptimization()
+        self.optimization = self.network_config.createOptimization()
         if self.optimization.loss_class is not None:
             self.optimization.setLoss()
         # If training mode
         if self.training:
-            self.optimization.setOptimizer(self.network)
             self.network.setTrain()
+            self.optimization.setOptimizer(self.network)
             # Re-train an existing network, copy directory
-            if self.existingNetwork:
-                self.networkDir = pathUtils.copyDir(self.networkDir, self.managerDir, key='network')
+            if self.existing_network:
+                self.network_dir = pathUtils.copyDir(self.network_dir, self.session_dir, dest_dir='network')
             # Create a new network directory
             else:
-                self.networkDir = pathUtils.createDir(self.networkDir, key='network')
+                self.network_dir = pathUtils.createDir(self.network_dir, check_existing='network')
         # If predict only
         else:
             self.network.setEval()
             # Need an existing network
-            if not self.existingNetwork:
+            if not self.existing_network:
                 print("NetworkManager: Need an existing network for prediction only. Shutting down")
                 quit(0)
             # Reference the existing network
             else:
-                self.networkDir = pathUtils.copyDir(self.networkDir, self.managerDir, key='network')
                 # Get eventual epoch saved networks
-                networks_list = [os.path.join(self.networkDir, f) for f in os.listdir(self.networkDir) if
-                                 os.path.isfile(os.path.join(self.networkDir, f)) and f.endswith('.pth') and
+                networks_list = [os.path.join(self.network_dir, f) for f in os.listdir(self.network_dir) if
+                                 os.path.isfile(os.path.join(self.network_dir, f)) and f.endswith('.pth') and
                                  f.__contains__('_network_')]
                 networks_list = sorted(networks_list)
                 # Add the final saved network
-                last_saved_network = [os.path.join(self.networkDir, f) for f in os.listdir(self.networkDir) if
-                                      os.path.isfile(os.path.join(self.networkDir, f)) and f.endswith('network.pth')]
+                last_saved_network = [os.path.join(self.network_dir, f) for f in os.listdir(self.network_dir) if
+                                      os.path.isfile(os.path.join(self.network_dir, f)) and f.endswith('network.pth')]
                 networks_list = networks_list + last_saved_network
-                which_network = self.networkConfig.whichNetwork
+                which_network = self.network_config.which_network
                 if len(networks_list) == 0:
-                    print("NetworkManager: There is no network in {}. Shutting down.".format(self.networkDir))
+                    print("NetworkManager: There is no network in {}. Shutting down.".format(self.network_dir))
                     quit(0)
                 elif len(networks_list) == 1:
                     which_network = 0
@@ -105,12 +110,12 @@ class NetworkManager:
 
     def saveNetwork(self, last_save=False, suffix=None):
         if last_save:
-            path = self.networkDir + "network.pth"
+            path = self.network_dir + "network.pth"
         elif suffix is not None:
-            path = self.networkDir + self.networkTemplateName.format(suffix)
+            path = self.network_dir + self.network_template_name.format(suffix)
         else:
-            path = self.networkDir + self.networkTemplateName.format(self.savedCounter)
-            self.savedCounter += 1
+            path = self.network_dir + self.network_template_name.format(self.saved_counter)
+            self.saved_counter += 1
         print("Saving network at {}.".format(path))
         self.network.saveParameters(path)
 
@@ -118,7 +123,7 @@ class NetworkManager:
         if self.training:
             self.saveNetwork(last_save=True)
         del self.network
-        del self.networkConfig
+        del self.network_config
 
     def getDescription(self, minimal=False):
         if len(self.description) == 0:
@@ -128,13 +133,13 @@ class NetworkManager:
             self.description += "   Number of parameters : {}\n".format(nb_param)
             # Cast nb_param to weight in bit(float = 32) to weight in Go(1bit = 1.25e-10Go)
             self.description += "   Weight in Go : {}\n".format(nb_param * 32 * 1.25e-10)
-            self.description += "   Configuration : {}\n".format(self.networkConfig)
+            self.description += "   Configuration : {}\n".format(self.network_config)
             self.description += "   Network : {}\n".format(self.network.type if minimal else self.network)
             self.description += "   Optimizer : {}, Learning rate : {}\n".format(self.optimization.optimizer,
                                                                                  self.optimization.lr)
             # self.description += "   Loss function : {}\n".format(str(self.loss).split(" ")[1])
-            self.description += "   Loss function : {}\n".format(self.optimization.loss)
-            self.description += "   Save each epoch : {}\n".format(self.saveEachEpoch)
+            self.description += "   Loss function : {}\n".format(self.optimization.loss_value)
+            self.description += "   Save each epoch : {}\n".format(self.save_each_epoch)
         return self.description
 
 

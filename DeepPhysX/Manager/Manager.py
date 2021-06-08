@@ -1,101 +1,129 @@
 import os
 
-from .DatasetManager import DatasetManager
-from .NetworkManager import NetworkManager
-from .EnvironmentManager import EnvironmentManager
-from .StatsManager import StatsManager
+from DeepPhysX.Pipelines.BasePipeline import BasePipeline
+from DeepPhysX.Pipelines.BaseRunner import BaseRunner
+from DeepPhysX.Manager.DatasetManager import DatasetManager
+from DeepPhysX.Dataset.BaseDatasetConfig import BaseDatasetConfig
+from DeepPhysX.Manager.NetworkManager import NetworkManager
+from DeepPhysX.Network.BaseNetworkConfig import BaseNetworkConfig
+from DeepPhysX.Manager.EnvironmentManager import EnvironmentManager
+from DeepPhysX.Environment.BaseEnvironmentConfig import BaseEnvironmentConfig
+from DeepPhysX.Manager.StatsManager import StatsManager
 import DeepPhysX.utils.pathUtils as pathUtils
 
 
 class Manager:
 
-    def __init__(self, session_name, network_config, dataset_config, trainer, environment_config=None,
-                 manager_dir=None, stats_window=50):
+    def __init__(self, pipeline=BasePipeline(), network_config=BaseNetworkConfig(), dataset_config=BaseDatasetConfig(),
+                 environment_config=BaseEnvironmentConfig(), session_name='default', session_dir=None, stats_window=50):
 
-        self.sessionName = session_name
-        self.networkConfig = network_config
-        self.datasetConfig = dataset_config
-        self.environmentConfig = environment_config
+        # Todo: checking the arguments
 
         # Trainer: must create a new session to avoid overwriting
-        if trainer:
+        if pipeline.pipeline == 'training':
+            self.train = True
+            create_dataset = True
+            create_environment = True # Todo: Might also be false if the dataset already exists...
             # Create manager directory from the session name
-            self.managerDir = os.path.join(pathUtils.getFirstCaller(), self.sessionName)
+            self.session_dir = os.path.join(pathUtils.getFirstCaller(), session_name)
             # Avoid unwanted overwritten data
-            self.managerDir = pathUtils.createDir(self.managerDir, key=self.sessionName)
+            self.session_dir = pathUtils.createDir(self.session_dir, check_existing=session_name)
             # Set other dir if they are None
-            if self.datasetConfig.datasetDir is None:
-                self.datasetConfig.datasetDir = os.path.join(self.managerDir, 'dataset/')
-            if self.networkConfig.networkDir is None:
-                self.networkConfig.networkDir = os.path.join(self.managerDir, 'network/')
-        # Runner: load an existing session or create a custom new one
-        else:
-            # Create a custom session
-            if manager_dir is None:
-                # Must at least give a network path
-                if self.networkConfig.networkDir is None:
-                    raise Warning("You must at least give a network directory to the Runner. Shutting down.")
-                # Create manager directory from the session name
-                self.managerDir = os.path.join(pathUtils.getFirstCaller(), self.sessionName)
-                self.managerDir = pathUtils.createDir(self.managerDir, key=self.sessionName)
-                # Work in a full existing session
-            # Todo: disputable
-            else:
-                self.managerDir = manager_dir
-                self.datasetConfig.datasetDir = os.path.join(self.managerDir, 'dataset/')
-                self.datasetConfig.existingDataset = True
-                self.networkConfig.networkDir = os.path.join(self.managerDir, 'network/')
-                self.networkConfig.existingNetwork = True
-        # Create managers
-        self.datasetManager = DatasetManager(session_name=self.sessionName, dataset_config=self.datasetConfig,
-                                             manager_dir=self.managerDir, trainer=trainer)
-        self.networkManager = NetworkManager(session_name=self.sessionName, network_config=self.networkConfig,
-                                             manager_dir=self.managerDir, trainer=trainer)
-        if environment_config is None:
-            self.environmentManager = None
-        else:
-            self.environmentManager = EnvironmentManager(environment_config=environment_config, trainer=trainer)
-        # Todo: manage conflict if environment and datasetDir are set
-        self.statsManager = StatsManager(log_dir=os.path.join(self.managerDir, 'stats/'),
-                                         sliding_window_size=stats_window)
+            # if self.dataset_config.dataset_dir is None:
+            #     self.dataset_config.dataset_dir = os.path.join(self.session_dir, 'dataset/')
+            if network_config.network_dir is None:
+                network_config.network_dir = os.path.join(self.session_dir, 'network/')
+            # Dataset
+            self.always_create_data = environment_config.alwaysCreateData
 
-    def getData(self, epoch=0, batch_size=1, get_inputs=True, get_outputs=True, animate=True):
-        if (self.environmentManager is not None) and (epoch == 0 or self.environmentConfig.alwaysCreateData):
-            data = self.environmentManager.getData(batch_size=batch_size, animate=animate,
-                                                   get_inputs=get_inputs, get_outputs=get_outputs)
-            self.datasetManager.addData(data)
+        # Prediction: work in an existing session
+        elif pipeline.pipeline == 'prediction':
+            if not isinstance(pipeline, BaseRunner):
+                raise TypeError("[MANAGER] The prediction pipeline must be a BaseRunner object.")
+            self.train = False
+            create_environment = True
+            create_dataset = pipeline.record_data['in']
+            self.record_data = pipeline.record_data
+            # Find the session directory with the name
+            if session_dir is None:
+                if session_name is None:
+                    raise ValueError("[MANAGER] Prediction needs at least the session directory or the session name.")
+                self.session_dir = os.path.join(pathUtils.getFirstCaller(), session_name)
+            # Find the session name with the directory
+            else:
+                self.session_dir = session_dir
+                session_name = session_name if session_name is not None else os.path.basename(session_dir)
+            if not os.path.exists(self.session_dir):
+                raise ValueError("[MANAGER] The session directory {} does not exists.".format(self.session_dir))
+
         else:
-            data = self.datasetManager.getData(batch_size=batch_size, get_inputs=get_inputs, get_outputs=get_outputs)
-        self.networkManager.setData(data)
+            raise ValueError("[MANAGER] The pipeline must be either training or prediction.")
+
+        # Create managers
+        # Always create the network manager (man it's DEEP physics here...)
+        self.network_manager = NetworkManager(network_config=network_config, session_name=session_name,
+                                              session_dir=self.session_dir, train=self.train)
+        # Create the dataset manager for training or for prediction when recording data
+        self.dataset_manager = DatasetManager(dataset_config=dataset_config, session_name=session_name,
+                                              session_dir=self.session_dir, train=self.train) if create_dataset else None
+        # Create the environment manager for prediction or for training when dataset does not exists
+        self.environment_manager = EnvironmentManager(environment_config=environment_config,
+                                                      train=self.train) if create_environment else None
+        # Create the stats manager for training
+        self.stats_manager = StatsManager(log_dir=os.path.join(self.session_dir, 'stats/'),
+                                          sliding_window_size=stats_window) if self.train else None
+
+    def getData(self, epoch=0, batch_size=1, animate=True):
+        # Training
+        if self.train:
+            # Get data from environment if used and if the data should be created at this epoch
+            if (self.environment_manager is not None) and (epoch == 0 or self.always_create_data):
+                data = self.environment_manager.getData(batch_size=batch_size, animate=animate,
+                                                        get_inputs=True, get_outputs=True)
+                self.dataset_manager.addData(data)
+            # Get data from the dataset
+            else:
+                data = self.dataset_manager.getData(batch_size=batch_size, get_inputs=True, get_outputs=True)
+        # Prediction
+        else:
+            # Get data from environment
+            get_inputs, get_outputs = self.record_data['in'], self.record_data['out']
+            data = self.environment_manager.getData(batch_size=batch_size, animate=animate, get_inputs=get_inputs,
+                                                    get_outputs=get_outputs)
+            # Record data
+            if self.dataset_manager is not None:
+                self.dataset_manager.addData(data)
+        # Send data to the network
+        self.network_manager.setData(data)
 
     def optimizeNetwork(self):
-        prediction, ground_truth = self.networkManager.computePrediction()
-        return self.networkManager.optimizeNetwork(prediction, ground_truth)
+        prediction, ground_truth = self.network_manager.computePrediction()
+        return self.network_manager.optimizeNetwork(prediction, ground_truth)
 
     def getPrediction(self):
-        prediction, ground_truth = self.networkManager.computePrediction()
-        loss = self.networkManager.computeLoss(prediction, ground_truth)
-        return self.networkManager.network.transformToNumpy(prediction), loss
+        prediction, ground_truth = self.network_manager.computePrediction()
+        loss = self.network_manager.computeLoss(prediction, ground_truth)
+        return self.network_manager.network.transformToNumpy(prediction), loss
 
     def saveNetwork(self):
-        self.networkManager.saveNetwork()
+        self.network_manager.saveNetwork()
 
     def close(self):
-        if self.datasetManager is not None:
-            self.datasetManager.close()
-        if self.networkManager is not None:
-            self.networkManager.close()
-        if self.environmentManager is not None:
-            self.environmentManager.close()
-        if self.statsManager is not None:
-            self.statsManager.close()
+        if self.dataset_manager is not None:
+            self.dataset_manager.close()
+        if self.network_manager is not None:
+            self.network_manager.close()
+        if self.environment_manager is not None:
+            self.environment_manager.close()
+        if self.stats_manager is not None:
+            self.stats_manager.close()
 
     def getDescription(self):
         manager_description = ""
-        if self.networkManager is not None:
+        if self.network_manager is not None:
             # Todo: add minimal description
-            manager_description = self.networkManager.description()
-        if self.datasetManager is not None:
+            manager_description = self.network_manager.description()
+        if self.dataset_manager is not None:
             # Todo: add minimal description
-            manager_description += self.datasetManager.description()
+            manager_description += self.dataset_manager.description()
         return manager_description

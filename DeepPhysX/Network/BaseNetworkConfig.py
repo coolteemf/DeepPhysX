@@ -1,7 +1,8 @@
-from .BaseNetwork import BaseNetwork
-from .BaseOptimization import BaseOptimization
 from dataclasses import dataclass
 from typing import Any
+
+from DeepPhysX.Network.BaseNetwork import BaseNetwork
+from DeepPhysX.Network.BaseOptimization import BaseOptimization
 
 
 class BaseNetworkConfig:
@@ -14,43 +15,74 @@ class BaseNetworkConfig:
     @dataclass
     class BaseOptimizationProperties:
         loss: Any
-        lr: Any
+        lr: float
         optimizer: Any
 
-    def __init__(self, network_class=BaseNetwork, optimization_class=BaseOptimization, network_name="", network_type="",
-                 loss=None, lr=None, optimizer=None, network_dir=None, save_each_epoch=False, which_network=None):
-        # Network variables
+    def __init__(self, network_class=BaseNetwork, optimization_class=BaseOptimization, network_dir=None,
+                 network_name='Network', network_type='BaseNetwork', which_network=0, save_each_epoch=False,
+                 loss=None, lr=None, optimizer=None):
+
+        # Check the arguments before to configure anything
+        if network_dir is not None and type(network_dir) != str:
+            raise TypeError("[BASENETWORKCONFIG] The network directory must be a str.")
+        if type(network_name) != str:
+            raise TypeError("[BASENETWORKCONFIG] The network name must be a str.")
+        if type(network_type) != str:
+            raise TypeError("[BASENETWORKCONFIG] The network type must be a str.")
+        if type(which_network) != int:
+            raise TypeError("[BASENETWORKCONFIG] The argument 'which network' must be an int.")
+        if type(save_each_epoch) != bool:
+            raise TypeError("[BASENETWORKCONFIG] The argument 'save each epoch' must be set to True or False.")
+
+        # Network class
         self.network_class = network_class
-        self.networkConfig = self.BaseNetworkProperties(network_name=network_name, network_type=network_type)
-        # Optimization variables
+        # Network configuration
+        self.network_config = self.BaseNetworkProperties(network_name=network_name, network_type=network_type)
+
+        # Optimization class
         self.optimization_class = optimization_class
-        self.optimizationConfig = self.BaseOptimizationProperties(loss=loss, lr=lr, optimizer=optimizer)
-        self.trainingMaterials = (lr is not None) and (optimizer is not None)
+        # Optimization configuration
+        self.optimization_config = self.BaseOptimizationProperties(loss=loss, lr=lr, optimizer=optimizer)
+        self.training_stuff = (loss is not None) and (optimizer is not None)
+
         # NetworkManager variables
-        self.networkDir = network_dir
-        self.existingNetwork = False if network_dir is None else True
-        self.whichNetwork = which_network
-        self.saveEachEpoch = save_each_epoch and self.trainingMaterials
+        self.network_dir = network_dir
+        self.existing_network = False if network_dir is None else True
+        self.which_network = which_network
+        self.save_each_epoch = save_each_epoch and self.training_stuff
+
         # Description
-        self.descriptionName = "CORE NetworkConfig"
+        self.description_name = "NetworkConfig"
         self.description = ""
 
     def createNetwork(self):
-        return self.network_class(self.networkConfig)
+        try:
+            network = self.network_class(self.network_config)
+        except:
+            raise TypeError("[BASENETWORKCONFIG] The given network class is not a BaseNetwork child class.")
+        if not isinstance(network, BaseNetwork):
+            raise TypeError("[BASENETWORKCONFIG] The network class must be a BaseNetwork child object.")
+        return network
 
     def createOptimization(self):
-        return self.optimization_class(self.optimizationConfig)
+        try:
+            optimization = self.optimization_class(self.optimization_config)
+        except:
+            raise TypeError("[BASENETWORKCONFIG] The given optimization class is not a BaseOptimization child class.")
+        if not isinstance(optimization, BaseOptimization):
+            raise TypeError("[BASENETWORKCONFIG] The optimization class must be a BaseOptimization child object.")
+        return optimization
 
     def getDescription(self):
         if len(self.description) == 0:
-            self.description += "\n{}\n".format(self.descriptionName)
+            self.description += "\n{}\n".format(self.description_name)
             self.description += "   (network) Network class: {}\n".format(self.network_class.__name__)
-            self.description += "   (network) Network config: {}\n".format(self.networkConfig)
+            self.description += "   (network) Network config: {}\n".format(self.network_config)
             self.description += "   (optimization) Optimization class: {}\n".format(self.optimization_class.__name__)
-            self.description += "   (optimization) Optimization config: {}\n".format(self.optimizationConfig)
-            self.description += "   (optimization) Training materials: {}\n".format(self.trainingMaterials)
-            self.description += "   (networkManager) Network directory: {}\n".format(self.networkDir)
-            self.description += "   (networkManager) Existing network: {}\n".format(self.existingNetwork)
-            self.description += "   (networkManager) Which network: {}\n".format(self.whichNetwork)
-            self.description += "   (networkManager) Save each epoch: {}\n".format(self.saveEachEpoch)
+            self.description += "   (optimization) Optimization config: {}\n".format(self.optimization_config)
+            self.description += "   (optimization) Training materials: {}\n".format(self.training_stuff)
+            self.description += "   (networkManager) Network directory: {}\n".format(self.network_dir)
+            self.description += "   (networkManager) Existing network: {}\n".format(self.existing_network)
+            self.description += "   (networkManager) Which network: {}\n".format(self.which_network)
+            self.description += "   (networkManager) Save each epoch: {}\n".format(self.save_each_epoch)
         return self.description
