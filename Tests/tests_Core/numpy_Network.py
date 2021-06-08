@@ -4,10 +4,10 @@ from DeepPhysX.Network.BaseNetwork import BaseNetwork
 from DeepPhysX.Network.BaseOptimization import BaseOptimization
 
 
-class MyBaseNetwork(BaseNetwork):
+class NumpyNetwork(BaseNetwork):
 
-    def __init__(self, network_name="", *args):
-        BaseNetwork.__init__(self, network_name=network_name, network_type="MyNetwork")
+    def __init__(self, config):
+        BaseNetwork.__init__(self, config)
         self.a = np.random.randn()
         self.b = np.random.randn()
         self.c = np.random.randn()
@@ -28,14 +28,14 @@ class MyBaseNetwork(BaseNetwork):
         pass
 
     def loadParameters(self, path):
-        params = np.loadtxt(path)
+        params = np.load(path)
         self.a, self.b, self.c, self.d = params[0], params[1], params[2], params[3]
 
     def getParameters(self):
         return np.array([self.a, self.b, self.c, self.d])
 
     def saveParameters(self, path):
-        np.savetxt(path, self.getParameters())
+        np.save(path, self.getParameters())
 
     def nbParameters(self):
         return len(self.getParameters())
@@ -47,30 +47,31 @@ class MyBaseNetwork(BaseNetwork):
         return x
 
 
-class MyBaseOptimisation(BaseOptimization):
+class NumpyOptimisation(BaseOptimization):
 
-    def __init__(self, loss, lr, optimizer):
-        BaseOptimization.__init__(self, loss=None, lr=lr, optimizer=None)
+    def __init__(self, config):
+        BaseOptimization.__init__(self, config)
         self.net = None
 
     def setLoss(self):
         pass
 
     def computeLoss(self, prediction, ground_truth):
-        return {'item': np.square(prediction - ground_truth).sum(),
-                'grad': 2.0 * (prediction - ground_truth)}
+        self.loss_value = {'item': np.square(prediction - ground_truth).sum(),
+                           'grad': 2.0 * (prediction - ground_truth)}
+        return self.loss_value['item']
 
     def setOptimizer(self, net):
         self.net = net
 
-    def optimize(self, loss):
-        grad = loss['grad']
+    def optimize(self):
+        grad = self.loss_value['grad']
         data = self.net.data
         grad_a = grad.sum()
-        grad_b = (grad * data).sum()
-        grad_c = (grad * data ** 2).sum()
-        grad_d = (grad * data ** 3).sum()
         self.net.a -= self.lr * grad_a
+        grad_b = (grad * data).sum()
         self.net.b -= self.lr * grad_b
+        grad_c = (grad * data ** 2).sum()
         self.net.c -= self.lr * grad_c
+        grad_d = (grad * data ** 3).sum()
         self.net.d -= self.lr * grad_d

@@ -26,14 +26,14 @@ def main():
                                           shuffle_dataset=True)
     create_dataset_manager = DatasetManager(session_name='TestSession',
                                             dataset_config=create_dataset_config,
-                                            manager_dir=os.path.join(os.getcwd(), 'datasetManager/create/'),
+                                            session_dir=os.path.join(os.getcwd(), 'datasetManager/create/'),
                                             trainer=True)
     print(create_dataset_manager.getDescription())
     for epoch in range(2):
         train_idx, test_idx = 0, 0
         train_idx = generate(create_dataset_manager, train_idx, 'train', epoch, 50)
         test_idx = generate(create_dataset_manager, test_idx, 'test', epoch, 25)
-    dataset_dir = create_dataset_manager.datasetDir
+    dataset_dir = create_dataset_manager.dataset_dir
     create_dataset_manager.close()
 
     # Loading an existing dataset
@@ -44,7 +44,7 @@ def main():
                                         shuffle_dataset=True)
     load_dataset_manager = DatasetManager(session_name='TestSession',
                                           dataset_config=load_dataset_config,
-                                          manager_dir=os.path.join(os.getcwd(), 'datasetManager/load/'),
+                                          session_dir=os.path.join(os.getcwd(), 'datasetManager/load/'),
                                           trainer=True)
     for _ in range(5):
         sample = load_dataset_manager.getNextSample(batched=True)

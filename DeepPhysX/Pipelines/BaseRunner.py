@@ -6,7 +6,7 @@ class BaseRunner:
     def __init__(self, session_name, network_config, dataset_config, environment_config=None,
                  manager_dir=None, nb_samples=0):
 
-        if environment_config is None and dataset_config.datasetDir is None:
+        if environment_config is None and dataset_config.dataset_dir is None:
             print("BaseRunner: Need a data source (existing dataset directory or environment). Shutting down.")
             quit(0)
 

@@ -1,6 +1,6 @@
 from MyEnvironment import MyBaseEnvironment
 from MyNetwork import MyBaseNetwork, MyBaseOptimisation
-from DeepPhysX.Trainer.BaseTrainer import BaseTrainer
+from DeepPhysX.Pipelines.BaseTrainer import BaseTrainer
 from DeepPhysX.Dataset.BaseDataset import Dataset
 from DeepPhysX.Dataset.BaseDatasetConfig import DatasetConfig
 from DeepPhysX.Network.BaseNetworkConfig import BaseNetworkConfig
@@ -23,7 +23,7 @@ def main():
                                        lr=1e-6,
                                        network_dir=None,
                                        save_each_epoch=False)
-    network_config.trainingMaterials = True
+    network_config.training_stuff = True
 
     # Train with single processing
     single_environment_config = BaseEnvironmentConfig(environment_class=MyBaseEnvironment,

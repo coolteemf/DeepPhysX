@@ -53,16 +53,16 @@ def main():
                                                save_each_epoch=False)
     training_manager = NetworkManager(session_name='TestSession',
                                       network_config=training_config,
-                                      manager_dir=os.path.join(os.getcwd(), 'networkManager/train/'),
-                                      trainer=True)
+                                      session_dir=os.path.join(os.getcwd(), 'networkManager/train/'),
+                                      train=True)
     for epoch in range(3000):
         data, target = createData(64)
         loss = training_manager.optimizeNetwork(data, target)
         if epoch % 300 == 0:
             print(loss.item())
-            if training_manager.saveEachEpoch:
+            if training_manager.save_each_epoch:
                 training_manager.saveNetwork()
-    network_dir = training_manager.networkDir
+    network_dir = training_manager.network_dir
     training_manager.close()
 
     # Using for prediction only
@@ -75,8 +75,8 @@ def main():
                                                  which_network=0)
     prediction_manager = NetworkManager(session_name='TestSession',
                                         network_config=prediction_config,
-                                        manager_dir=os.path.join(os.getcwd(), 'networkManager/predict/'),
-                                        trainer=False)
+                                        session_dir=os.path.join(os.getcwd(), 'networkManager/predict/'),
+                                        train=False)
     result_str = "Target: sin({:.2f})={:.2f} // Prediction: sin({:.2f})={:.2f} // Error: {}"
     for _ in range(10):
         data, target = createData()

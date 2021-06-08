@@ -9,7 +9,7 @@ class BaseTrainer:
     def __init__(self, session_name, nb_epochs, nb_batches, batch_size,
                  network_config, dataset_config, environment_config=None, manager_dir=None):
 
-        if environment_config is None and dataset_config.datasetDir is None:
+        if environment_config is None and dataset_config.dataset_dir is None:
             print("BaseTrainer: You have to give me a dataset source (existing dataset directory or simulation to "
                   "create data on the fly")
             quit(0)
