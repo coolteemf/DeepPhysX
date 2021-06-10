@@ -7,12 +7,12 @@ from DeepPhysX.Environment.BaseEnvironmentConfig import BaseEnvironmentConfig
 
 class EnvironmentManager:
 
-    def __init__(self, environment_config=BaseEnvironmentConfig(), train=True):
+    def __init__(self, environment_config: BaseEnvironmentConfig):
         self.environmentConfig = environment_config
         self.multiprocessing = environment_config.multiprocessing
-        self.multiprocessMethod = environment_config.multiprocessMethod
+        self.multiprocessMethod = environment_config.multiprocess_method
         # Create single or multiple environments according to multiprocessing value
-        self.environment = environment_config.createEnvironment(trainer)
+        self.environment = environment_config.createEnvironment()
 
     def getData(self, batch_size, get_inputs, get_outputs, animate):
         # Getting data from single environment
@@ -20,8 +20,8 @@ class EnvironmentManager:
             inputs, outputs = self.computeSingleEnvironment(batch_size, get_inputs, get_outputs, animate)
         # Getting data from multiple environments
         else:
-            inputs = np.empty((batch_size, *self.environment.inputSize))
-            outputs = np.empty((batch_size, *self.environment.outputSize))
+            inputs = np.empty((batch_size, *self.environment.input_size))
+            outputs = np.empty((batch_size, *self.environment.output_size))
             """if self.multiprocessMethod == 'process':
                 inputs, outputs = self.computeMultipleProcess(batch_size, get_inputs, get_outputs)
             else:
@@ -29,12 +29,12 @@ class EnvironmentManager:
         return {'in': inputs, 'out': outputs}
 
     def computeSingleEnvironment(self, batch_size, get_inputs, get_outputs, animate):
-        inputs = np.empty((batch_size, *self.environment.inputSize))
-        outputs = np.empty((batch_size, *self.environment.outputSize))
+        inputs = np.empty((batch_size, *self.environment.input_size))
+        outputs = np.empty((batch_size, *self.environment.output_size))
         i = 0
         while i < batch_size:
             if animate:
-                for _ in range(self.environment.simulationsPerStep):
+                for _ in range(self.environment.simulations_per_step):
                     self.environment.step()
             if get_inputs:
                 self.environment.computeInput()
@@ -42,7 +42,7 @@ class EnvironmentManager:
                 self.environment.computeOutput()
             if self.environment.checkSample(check_input=get_inputs, check_output=get_outputs):
                 inputs[i] = self.environment.getInput()
-                outputs[i] = self.environment.getOutput()
+                outputs[i] = self.environment.getOutput() if get_outputs else outputs[i]
                 i += 1
         if get_inputs:
             inputs = self.environment.transformInputs(inputs)
@@ -118,9 +118,9 @@ class EnvironmentManager:
     def step(self, environment=None):
         # Todo : not multiprocessing friendly...
         if environment is None:
-            for _ in range(self.environment.simulationsPerStep):
+            for _ in range(self.environment.simulations_per_step):
                 self.environment.step()
         else:
-            for _ in range(environment.simulationsPerStep):
+            for _ in range(environment.simulations_per_step):
                 environment.step()
 

@@ -1,7 +1,6 @@
 import os
 
 from DeepPhysX.Pipelines.BasePipeline import BasePipeline
-from DeepPhysX.Pipelines.BaseRunner import BaseRunner
 from DeepPhysX.Manager.DatasetManager import DatasetManager
 from DeepPhysX.Dataset.BaseDatasetConfig import BaseDatasetConfig
 from DeepPhysX.Manager.NetworkManager import NetworkManager
@@ -14,61 +13,62 @@ import DeepPhysX.utils.pathUtils as pathUtils
 
 class Manager:
 
-    def __init__(self, pipeline=BasePipeline(), network_config=BaseNetworkConfig(), dataset_config=BaseDatasetConfig(),
-                 environment_config=BaseEnvironmentConfig(), session_name='default', session_dir=None, stats_window=50):
+    def __init__(self, pipeline: BasePipeline, network_config: BaseNetworkConfig, dataset_config: BaseDatasetConfig,
+                 environment_config: BaseEnvironmentConfig, session_name='default', session_dir=None, new_session=True,
+                 stats_window=50):
 
         # Todo: checking the arguments
+        self.record_data = pipeline.record_data
 
         # Trainer: must create a new session to avoid overwriting
-        if pipeline.pipeline == 'training':
+        if pipeline.type == 'training':
             self.train = True
+            create_environment = None
             create_dataset = True
-            create_environment = True # Todo: Might also be false if the dataset already exists...
             # Create manager directory from the session name
             self.session_dir = os.path.join(pathUtils.getFirstCaller(), session_name)
             # Avoid unwanted overwritten data
-            self.session_dir = pathUtils.createDir(self.session_dir, check_existing=session_name)
-            # Set other dir if they are None
-            # if self.dataset_config.dataset_dir is None:
-            #     self.dataset_config.dataset_dir = os.path.join(self.session_dir, 'dataset/')
-            if network_config.network_dir is None:
-                network_config.network_dir = os.path.join(self.session_dir, 'network/')
-            # Dataset
-            self.always_create_data = environment_config.alwaysCreateData
+            if new_session:
+                self.session_dir = pathUtils.createDir(self.session_dir, check_existing=session_name)
 
         # Prediction: work in an existing session
-        elif pipeline.pipeline == 'prediction':
-            if not isinstance(pipeline, BaseRunner):
-                raise TypeError("[MANAGER] The prediction pipeline must be a BaseRunner object.")
+        elif pipeline.type == 'prediction':
             self.train = False
             create_environment = True
             create_dataset = pipeline.record_data['in']
-            self.record_data = pipeline.record_data
             # Find the session directory with the name
             if session_dir is None:
                 if session_name is None:
-                    raise ValueError("[MANAGER] Prediction needs at least the session directory or the session name.")
+                    raise ValueError("[Manager] Prediction needs at least the session directory or the session name.")
                 self.session_dir = os.path.join(pathUtils.getFirstCaller(), session_name)
             # Find the session name with the directory
             else:
                 self.session_dir = session_dir
                 session_name = session_name if session_name is not None else os.path.basename(session_dir)
             if not os.path.exists(self.session_dir):
-                raise ValueError("[MANAGER] The session directory {} does not exists.".format(self.session_dir))
+                raise ValueError("[Manager] The session directory {} does not exists.".format(self.session_dir))
 
         else:
-            raise ValueError("[MANAGER] The pipeline must be either training or prediction.")
+            raise ValueError("[Manager] The pipeline must be either training or prediction.")
 
-        # Create managers
-        # Always create the network manager (man it's DEEP physics here...)
-        self.network_manager = NetworkManager(network_config=network_config, session_name=session_name,
-                                              session_dir=self.session_dir, train=self.train)
         # Create the dataset manager for training or for prediction when recording data
         self.dataset_manager = DatasetManager(dataset_config=dataset_config, session_name=session_name,
-                                              session_dir=self.session_dir, train=self.train) if create_dataset else None
-        # Create the environment manager for prediction or for training when dataset does not exists
-        self.environment_manager = EnvironmentManager(environment_config=environment_config,
-                                                      train=self.train) if create_environment else None
+                                              session_dir=self.session_dir, new_session=new_session, train=self.train,
+                                              record_data=self.record_data) if create_dataset else None
+
+        # Create the environment manager for prediction or for training when dataset does not exists or partially exists
+        if create_environment is None:
+            create_environment = self.dataset_manager.create_environment
+        if create_environment:
+            self.environment_manager = EnvironmentManager(environment_config=environment_config)
+            self.always_create_data = environment_config.always_create_data
+        else:
+            self.environment_manager = None
+
+        # Always create the network manager (man it's DEEP physics here...)
+        self.network_manager = NetworkManager(network_config=network_config, session_name=session_name,
+                                              session_dir=self.session_dir, new_session=new_session, train=self.train)
+
         # Create the stats manager for training
         self.stats_manager = StatsManager(log_dir=os.path.join(self.session_dir, 'stats/'),
                                           sliding_window_size=stats_window) if self.train else None
@@ -87,7 +87,7 @@ class Manager:
         # Prediction
         else:
             # Get data from environment
-            get_inputs, get_outputs = self.record_data['in'], self.record_data['out']
+            get_inputs, get_outputs = True, self.record_data['out']
             data = self.environment_manager.getData(batch_size=batch_size, animate=animate, get_inputs=get_inputs,
                                                     get_outputs=get_outputs)
             # Record data

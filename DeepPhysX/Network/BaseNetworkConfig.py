@@ -22,17 +22,19 @@ class BaseNetworkConfig:
                  network_name='Network', network_type='BaseNetwork', which_network=0, save_each_epoch=False,
                  loss=None, lr=None, optimizer=None):
 
+        self.name = self.__class__.__name__
+
         # Check the arguments before to configure anything
         if network_dir is not None and type(network_dir) != str:
-            raise TypeError("[BASENETWORKCONFIG] The network directory must be a str.")
+            raise TypeError("[{}] The network directory must be a str.".format(self.name))
         if type(network_name) != str:
-            raise TypeError("[BASENETWORKCONFIG] The network name must be a str.")
+            raise TypeError("[{}] The network name must be a str.".format(self.name))
         if type(network_type) != str:
-            raise TypeError("[BASENETWORKCONFIG] The network type must be a str.")
+            raise TypeError("[{}] The network type must be a str.".format(self.name))
         if type(which_network) != int:
-            raise TypeError("[BASENETWORKCONFIG] The argument 'which network' must be an int.")
+            raise TypeError("[{}] The argument 'which network' must be an int.".format(self.name))
         if type(save_each_epoch) != bool:
-            raise TypeError("[BASENETWORKCONFIG] The argument 'save each epoch' must be set to True or False.")
+            raise TypeError("[{}] The argument 'save each epoch' must be set to True or False.".format(self.name))
 
         # Network class
         self.network_class = network_class
@@ -52,30 +54,29 @@ class BaseNetworkConfig:
         self.save_each_epoch = save_each_epoch and self.training_stuff
 
         # Description
-        self.description_name = "NetworkConfig"
         self.description = ""
 
     def createNetwork(self):
         try:
             network = self.network_class(self.network_config)
         except:
-            raise TypeError("[BASENETWORKCONFIG] The given network class is not a BaseNetwork child class.")
+            raise TypeError("[{}] The given network class is not a BaseNetwork child class.".format(self.name))
         if not isinstance(network, BaseNetwork):
-            raise TypeError("[BASENETWORKCONFIG] The network class must be a BaseNetwork child object.")
+            raise TypeError("[{}] The network class must be a BaseNetwork child object.".format(self.name))
         return network
 
     def createOptimization(self):
         try:
             optimization = self.optimization_class(self.optimization_config)
         except:
-            raise TypeError("[BASENETWORKCONFIG] The given optimization class is not a BaseOptimization child class.")
+            raise TypeError("[{}] The given optimization class is not a BaseOptimization child class.".format(self.name))
         if not isinstance(optimization, BaseOptimization):
-            raise TypeError("[BASENETWORKCONFIG] The optimization class must be a BaseOptimization child object.")
+            raise TypeError("[{}] The optimization class must be a BaseOptimization child object.".format(self.name))
         return optimization
 
     def getDescription(self):
         if len(self.description) == 0:
-            self.description += "\n{}\n".format(self.description_name)
+            self.description += "\n{}\n".format(self.name)
             self.description += "   (network) Network class: {}\n".format(self.network_class.__name__)
             self.description += "   (network) Network config: {}\n".format(self.network_config)
             self.description += "   (optimization) Optimization class: {}\n".format(self.optimization_class.__name__)

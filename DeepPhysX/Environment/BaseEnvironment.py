@@ -3,20 +3,17 @@ import numpy as np
 
 class BaseEnvironment:
 
-    def __init__(self, config, training, idx_instance=1):
+    def __init__(self, config, idx_instance=1):
 
         self.name = "Environment n°{}".format(idx_instance)
-        self.simulationsPerStep = config.simulations_per_step
-        self.maxWrongSamplesPerStep = config.max_wrong_samples_per_step
-        self.training = training
+        self.simulations_per_step = config.simulations_per_step
+        self.max_wrong_samples_per_step = config.max_wrong_samples_per_step
 
-        self.input = np.array([])
-        self.output = np.array([])
-        self.inputSize = None
-        self.outputSize = None
+        self.input, self.output = np.array([]), np.array([])
+        self.input_size, self.output_size = None, None
 
         self.description = ""
-        self.descriptionName = "CORE Environment"
+        self.description_name = "BaseEnvironment"
 
         self.create(config)
 
@@ -49,10 +46,10 @@ class BaseEnvironment:
 
     def getDescription(self):
         if len(self.description) == 0:
-            self.description += "\n{}\n".format(self.descriptionName)
+            self.description += "\n{}\n".format(self.description_name)
             self.description += "   Name: {}\n".format(self.name)
-            self.description += "   Simulations per step: {}\n".format(self.simulationsPerStep)
-            self.description += "   Max wrong samples per step: {}\n".format(self.maxWrongSamplesPerStep)
-            self.description += "   Inputs, size: {}\n".format(self.input, self.inputSize)
-            self.description += "   Outputs, size: {}\n".format(self.output, self.outputSize)
+            self.description += "   Simulations per step: {}\n".format(self.simulations_per_step)
+            self.description += "   Max wrong samples per step: {}\n".format(self.max_wrong_samples_per_step)
+            self.description += "   Inputs, size: {}\n".format(self.input, self.input_size)
+            self.description += "   Outputs, size: {}\n".format(self.output, self.output_size)
         return self.description

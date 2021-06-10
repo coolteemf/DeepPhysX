@@ -2,13 +2,17 @@ import numpy as np
 from torch import no_grad
 
 from DeepPhysX.Pipelines.BasePipeline import BasePipeline
+from DeepPhysX.Network.BaseNetworkConfig import BaseNetworkConfig
+from DeepPhysX.Dataset.BaseDatasetConfig import BaseDatasetConfig
+from DeepPhysX.Environment.BaseEnvironmentConfig import BaseEnvironmentConfig
 from DeepPhysX.Manager.Manager import Manager
 
 
 class BaseTrainer(BasePipeline):
 
-    def __init__(self, session_name, nb_epochs, nb_batches, batch_size,
-                 network_config, dataset_config, environment_config=None, manager_dir=None):
+    def __init__(self, network_config: BaseNetworkConfig, dataset_config: BaseDatasetConfig,
+                 environment_config: BaseEnvironmentConfig, session_name='default', session_dir=None,
+                 new_session=True, nb_epochs=0, nb_batches=0, batch_size=0):
 
         BasePipeline.__init__(self, pipeline='training')
 
@@ -18,7 +22,6 @@ class BaseTrainer(BasePipeline):
             quit(0)
 
         # Storage variables
-        self.session_name = session_name
 
         # Training variables
         self.nb_epochs = nb_epochs
@@ -31,19 +34,18 @@ class BaseTrainer(BasePipeline):
 
         # Testing variables
 
-
         # Dataset variables
-        self.datasetConfig = dataset_config
+        self.dataset_config = dataset_config
 
         # Network variables
-        self.networkConfig = network_config
+        self.network_config = network_config
 
         # Simulation variables
-        self.environmentConfig = environment_config
+        self.environment_config = environment_config
 
-        self.manager = Manager(network_config=self.networkConfig, dataset_config=dataset_config,
-                               environment_config=self.environmentConfig, session_name=self.session_name,
-                               session_dir=manager_dir)
+        self.manager = Manager(pipeline=self, network_config=self.network_config, dataset_config=dataset_config,
+                               environment_config=self.environment_config, session_name=session_name,
+                               session_dir=session_dir, new_session=new_session)
 
     def execute(self):
         self.trainBegin()

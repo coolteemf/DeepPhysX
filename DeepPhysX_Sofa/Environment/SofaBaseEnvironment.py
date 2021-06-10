@@ -5,12 +5,12 @@ import Sofa.Simulation
 
 class SofaBaseEnvironment(Sofa.Core.Controller, BaseEnvironment):
 
-    def __init__(self, root_node, config, training, idx_instance=1,
+    def __init__(self, root_node, config, idx_instance=1,
                  *args, **kwargs):
         Sofa.Core.Controller.__init__(self, *args, **kwargs)
         self.root = root_node
-        BaseEnvironment.__init__(self, config, training, idx_instance)
-        self.descriptionName = "SOFA Environment"
+        BaseEnvironment.__init__(self, config, idx_instance)
+        self.description_name = "SOFA Environment"
 
     def create(self, config):
         raise NotImplementedError

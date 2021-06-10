@@ -1,6 +1,7 @@
 class BaseNetwork:
 
     def __init__(self, config):
+        self.name = self.__class__.__name__
         # Config
         self.config = config
         self.device = None
@@ -11,7 +12,6 @@ class BaseNetwork:
         # Description
         self.type = config.network_type
         self.name = config.network_name
-        self.description_name = "BaseNetwork"
         self.description = ""
 
     def forward(self, x):
@@ -71,7 +71,7 @@ class BaseNetwork:
 
     def getDescription(self):
         if len(self.description) == 0:
-            self.description += "\n{}\n".format(self.description_name)
+            self.description += "\n{}\n".format(self.name)
             self.description += "   Name: {}\n".format(self.name)
             self.description += "   Type: {}\n".format(self.type)
         return self.description

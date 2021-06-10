@@ -1,6 +1,7 @@
 class BaseOptimization:
 
     def __init__(self, config):
+        self.name = self.__class__.__name__
         # Loss
         self.loss_class = config.loss
         self.loss = None
@@ -10,7 +11,6 @@ class BaseOptimization:
         self.optimizer = None
         self.lr = config.lr
         # Description
-        self.description_name = "BaseNetworkOptimization"
         self.description = ""
 
     def setLoss(self):
@@ -27,7 +27,7 @@ class BaseOptimization:
 
     def getDescription(self):
         if len(self.description) == 0:
-            self.description += "\n{}\n".format(self.description_name)
+            self.description += "\n{}\n".format(self.name)
             self.description += "   Loss class, loss: {}, {}\n".format(self.loss_class.__name__, self.loss)
             self.description += "   Learning rate: {}\n".format(self.lr)
             self.description += "   Optimizer class, optimizer: {}, {}\n".format(self.optimizer_class.__name__,

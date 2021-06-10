@@ -6,7 +6,8 @@ import DeepPhysX.utils.pathUtils as pathUtils
 
 class NetworkManager:
 
-    def __init__(self, network_config=BaseNetworkConfig(), session_name='default', session_dir=None, train=True):
+    def __init__(self, network_config: BaseNetworkConfig, session_name='default', session_dir=None, new_session=True,
+                 train=True):
 
         # Checking arguments
         if not isinstance(network_config, BaseNetworkConfig):
@@ -26,7 +27,7 @@ class NetworkManager:
         self.network_dir = network_dir if network_dir is not None else os.path.join(self.session_dir, 'network/')
         self.network_template_name = session_name + '_network_{}.pth'
 
-        self.existing_network = network_config.existing_network
+        self.existing_network = network_config.existing_network or os.path.exists(self.network_dir)
         if train and not network_config.training_stuff:
             raise ValueError("[NETWORKMANAGER] You are training without loss and optimizer. Shutting down.")
         self.training = train

@@ -7,23 +7,33 @@ from DeepPhysX.Environment.BaseEnvironmentConfig import BaseEnvironmentConfig
 
 class BaseRunner(BasePipeline):
 
-    def __init__(self, network_config=BaseNetworkConfig(), dataset_config=BaseDatasetConfig(),
-                 environment_config=BaseEnvironmentConfig(), session_name='default', session_dir=None,
-                 nb_samples=0, record_inputs=False, record_outputs=False):
+    def __init__(self, network_config: BaseNetworkConfig, dataset_config: BaseDatasetConfig,
+                 environment_config: BaseEnvironmentConfig, session_name='default', session_dir=None,
+                 nb_steps=0, record_inputs=False, record_outputs=False):
 
         BasePipeline.__init__(self, pipeline='prediction')
+
+        self.name = self.__class__.__name__
 
         # Todo: check arguments
         # Check the arguments
         if not isinstance(network_config, BaseNetworkConfig):
-            raise TypeError("[BASERUNNER] The network configuration must be a BaseNetworkConfig")
+            raise TypeError("[BaseRunner] The network configuration must be a BaseNetworkConfig")
         if not isinstance(environment_config, BaseEnvironmentConfig):
-            raise TypeError("[BASERUNNER] The environment configuration must be a BaseEnvironmentConfig")
+            raise TypeError("[BaseRunner] The environment configuration must be a BaseEnvironmentConfig")
         if dataset_config is not None and not isinstance(dataset_config, BaseDatasetConfig):
-            raise TypeError("[BASERUNNER] The dataset configuration must be a BaseDatasetConfig")
+            raise TypeError("[BaseRunner] The dataset configuration must be a BaseDatasetConfig")
+        if type(session_name) != str:
+            raise TypeError("[BaseRunner] The network config must be a BaseNetworkConfig object.")
+        if session_dir is not None and type(session_dir) != str:
+            raise TypeError("[BaseRunner] The session directory must be a str.")
+        if type(nb_steps) != int or nb_steps < 0:
+            raise TypeError("[BaseRunner] The number of steps must be a positive int")
 
-        self.nb_samples = nb_samples
-        self.idx_sample = 0
+        self.nb_samples = nb_steps
+        self.idx_step = 0
+        self.prediction = None
+        self.loss_value = 0.
 
         # Tell if data is recording while predicting (output is recorded only if input too)
         self.record_data = {'in': record_inputs,
@@ -37,7 +47,7 @@ class BaseRunner(BasePipeline):
         self.runBegin()
         while self.runningCondition():
             self.sampleBegin()
-            prediction, loss = self.predict()
+            self.prediction, self.loss_value = self.predict()
             self.sampleEnd()
         self.runEnd()
 
@@ -52,8 +62,8 @@ class BaseRunner(BasePipeline):
         pass
 
     def runningCondition(self):
-        running = self.idx_sample < self.nb_samples if self.nb_samples > 0 else True
-        self.idx_sample += 1
+        running = self.idx_step < self.nb_samples if self.nb_samples > 0 else True
+        self.idx_step += 1
         return running
 
     def sampleBegin(self):
@@ -61,3 +71,6 @@ class BaseRunner(BasePipeline):
 
     def sampleEnd(self):
         pass
+
+    def close(self):
+        self.manager.close()
