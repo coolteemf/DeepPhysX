@@ -1,11 +1,10 @@
 from DeepPhysX.Network.BaseOptimization import BaseOptimization
 
 
-class PyTorchBaseOptimization(BaseOptimization):
+class TorchOptimization(BaseOptimization):
 
     def __init__(self, config):
         BaseOptimization.__init__(self, config)
-        self.descriptionName = "PYTORCH NetworkOptimization"
 
     def setLoss(self):
         if self.loss_class is not None:

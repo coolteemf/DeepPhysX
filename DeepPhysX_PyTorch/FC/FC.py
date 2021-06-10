@@ -1,10 +1,10 @@
 import torch
 import torch.nn as nn
 
-from DeepPhysX_PyTorch.Network.PyTorchBaseNetwork import PyTorchBaseNetwork
+from DeepPhysX_PyTorch.Network.TorchNetwork import TorchNetwork
 
 
-class FC(PyTorchBaseNetwork):
+class FC(TorchNetwork):
 
     class FCLayer(nn.Module):
 
@@ -18,7 +18,7 @@ class FC(PyTorchBaseNetwork):
             return self.linear(x)
 
     def __init__(self, config):
-        PyTorchBaseNetwork.__init__(self, config)
+        TorchNetwork.__init__(self, config)
 
         self.layers = []
         for i in range(len(self.config.dim_layers) - 1):

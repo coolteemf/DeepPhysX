@@ -5,12 +5,11 @@ from psutil import cpu_count
 from DeepPhysX.Network.BaseNetwork import BaseNetwork
 
 
-class PyTorchBaseNetwork(torch.nn.Module, BaseNetwork):
+class TorchNetwork(torch.nn.Module, BaseNetwork):
 
     def __init__(self, config):
         torch.nn.Module.__init__(self)
         BaseNetwork.__init__(self, config)
-        self.descriptionName = "PYTORCH Network"
 
     def forward(self, x):
         raise NotImplementedError
@@ -30,6 +29,7 @@ class PyTorchBaseNetwork(torch.nn.Module, BaseNetwork):
             self.device = torch.device('cpu')
             torch.set_num_threads(cpu_count(logical=True) - 1)
         self.to(self.device)
+        print("[{}]: Device is {}".format(self.name, self.device))
 
     def loadParameters(self, path):
         self.load_state_dict(torch.load(path))

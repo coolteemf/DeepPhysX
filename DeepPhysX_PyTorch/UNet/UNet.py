@@ -1,12 +1,12 @@
 import torch
 import torch.nn as nn
 
-from DeepPhysX_PyTorch.Network.PyTorchBaseNetwork import PyTorchBaseNetwork
+from DeepPhysX_PyTorch.Network.TorchNetwork import TorchNetwork
 from DeepPhysX_PyTorch.EncoderDecoder.EncoderDecoder import EncoderDecoder
 from .utils import crop_and_merge
 
 
-class UNet(PyTorchBaseNetwork):
+class UNet(TorchNetwork):
 
     class UNetLayer(nn.Module):
 
@@ -29,7 +29,7 @@ class UNet(PyTorchBaseNetwork):
             return self.unetLayer(x)
 
     def __init__(self, config):
-        PyTorchBaseNetwork.__init__(self, config)
+        TorchNetwork.__init__(self, config)
 
         self.maxPool = nn.MaxPool2d(2) if config.nb_dims == 2 else nn.MaxPool3d(2)
         last_conv_layer = nn.Conv2d if config.nb_dims == 2 else nn.Conv3d

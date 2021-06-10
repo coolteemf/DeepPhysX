@@ -1,12 +1,12 @@
-from DeepPhysX_PyTorch.Network.PyTorchBaseNetworkConfig import PyTorchBaseNetworkConfig
+from DeepPhysX_PyTorch.Network.TorchNetworkConfig import TorchNetworkConfig
 from .UNet import UNet
 from dataclasses import dataclass
 
 
-class UNetConfig(PyTorchBaseNetworkConfig):
+class UNetConfig(TorchNetworkConfig):
 
     @dataclass
-    class UNetProperties(PyTorchBaseNetworkConfig.PyTorchBaseNetworkProperties):
+    class UNetProperties(TorchNetworkConfig.TorchNetworkProperties):
         nb_dims: int
         first_layer_channels: int
         border_mode: str
@@ -21,10 +21,10 @@ class UNetConfig(PyTorchBaseNetworkConfig):
                  steps=4, first_layer_channels=64, nb_classes=2, nb_input_channels=1, two_sublayers=True,
                  nb_dims=2, border_mode='valid', skip_merge=False):
 
-        PyTorchBaseNetworkConfig.__init__(self, network_class=UNet, network_name=network_name,
-                                          network_type='UNet', loss=loss, lr=lr, optimizer=optimizer,
-                                          network_dir=network_dir, save_each_epoch=save_each_epoch,
-                                          which_network=which_network)
+        TorchNetworkConfig.__init__(self, network_class=UNet, network_name=network_name,
+                                    network_type='UNet', loss=loss, lr=lr, optimizer=optimizer,
+                                    network_dir=network_dir, save_each_epoch=save_each_epoch,
+                                    which_network=which_network)
 
         if border_mode not in ['valid', 'same']:
             raise ValueError(
