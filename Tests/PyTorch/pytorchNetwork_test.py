@@ -1,21 +1,21 @@
 import torch
 
-from DeepPhysX_PyTorch.Network.PyTorchBaseNetwork import PyTorchBaseNetwork
-from DeepPhysX_PyTorch.Network.PyTorchBaseNetworkConfig import PyTorchBaseNetworkConfig
+from DeepPhysX_PyTorch.Network.TorchNetwork import TorchNetwork
+from DeepPhysX_PyTorch.Network.TorchNetworkConfig import TorchNetworkConfig
 
 
 def main():
 
     # Network configuration
-    network_config = PyTorchBaseNetworkConfig(network_class=PyTorchBaseNetwork,
-                                              network_name="MyNetwork",
-                                              network_type="Empty",
-                                              loss=torch.nn.MSELoss,
-                                              lr=1e-3,
-                                              optimizer=torch.optim.SGD,
-                                              network_dir=None,
-                                              save_each_epoch=False,
-                                              which_network=1)
+    network_config = TorchNetworkConfig(network_class=TorchNetwork,
+                                        network_name="MyNetwork",
+                                        network_type="Empty",
+                                        loss=torch.nn.MSELoss,
+                                        lr=1e-3,
+                                        optimizer=torch.optim.SGD,
+                                        network_dir=None,
+                                        save_each_epoch=False,
+                                        which_network=1)
     print(network_config.getDescription())
 
     # Network optimization

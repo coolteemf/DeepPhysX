@@ -5,7 +5,7 @@ import random
 import numpy as np
 
 from MyNetwork import MyNetwork
-from DeepPhysX_PyTorch.Network.PyTorchBaseNetworkConfig import PyTorchBaseNetworkConfig
+from DeepPhysX_PyTorch.Network.TorchNetworkConfig import TorchNetworkConfig
 from DeepPhysX.Manager.NetworkManager import NetworkManager
 
 
@@ -43,14 +43,14 @@ def main():
 
     # Using NetworkManager
     print("\nTRAINING WITH MANAGER")
-    training_config = PyTorchBaseNetworkConfig(network_class=MyNetwork,
-                                               network_name="myNetwork",
-                                               network_type="MyNetwork",
-                                               loss=torch.nn.MSELoss,
-                                               lr=0.05,
-                                               optimizer=torch.optim.SGD,
-                                               network_dir=None,
-                                               save_each_epoch=False)
+    training_config = TorchNetworkConfig(network_class=MyNetwork,
+                                         network_name="myNetwork",
+                                         network_type="MyNetwork",
+                                         loss=torch.nn.MSELoss,
+                                         lr=0.05,
+                                         optimizer=torch.optim.SGD,
+                                         network_dir=None,
+                                         save_each_epoch=False)
     training_manager = NetworkManager(session_name='TestSession',
                                       network_config=training_config,
                                       session_dir=os.path.join(os.getcwd(), 'networkManager/train/'),
@@ -67,12 +67,12 @@ def main():
 
     # Using for prediction only
     print("\nPREDICTION WITH MANAGER")
-    prediction_config = PyTorchBaseNetworkConfig(network_class=MyNetwork,
-                                                 network_name="myNetwork",
-                                                 network_type="MyNetwork",
-                                                 loss=torch.nn.L1Loss,
-                                                 network_dir=network_dir,
-                                                 which_network=0)
+    prediction_config = TorchNetworkConfig(network_class=MyNetwork,
+                                           network_name="myNetwork",
+                                           network_type="MyNetwork",
+                                           loss=torch.nn.L1Loss,
+                                           network_dir=network_dir,
+                                           which_network=0)
     prediction_manager = NetworkManager(session_name='TestSession',
                                         network_config=prediction_config,
                                         session_dir=os.path.join(os.getcwd(), 'networkManager/predict/'),

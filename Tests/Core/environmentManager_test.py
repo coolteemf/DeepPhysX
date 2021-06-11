@@ -16,7 +16,7 @@ def main():
         single_environment_manager.step()
     print("")
     single_environment_manager.environment.reset()
-    single_environment_manager.environment.simulationsPerStep = 3
+    single_environment_manager.environment.simulations_per_step = 3
     for _ in range(2):
         data = single_environment_manager.getData(batch_size=3, get_inputs=True, get_outputs=False)
         print("Data steps for {} : {}".format(single_environment_manager.environment.name, list(data['in'])))

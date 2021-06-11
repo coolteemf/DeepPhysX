@@ -21,7 +21,7 @@ def main():
     print("")
     # Multi steps
     single_environment_manager.environment.reset()
-    single_environment_manager.environment.simulationsPerStep = 3
+    single_environment_manager.environment.simulations_per_step = 3
     for _ in range(10):
         single_environment_manager.step()
     print(single_environment_manager.environment.getInput())

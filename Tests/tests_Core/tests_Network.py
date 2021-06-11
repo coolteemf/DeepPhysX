@@ -84,13 +84,11 @@ class TestNetworkManager(unittest.TestCase):
 
     def test_init(self):
         with self.assertRaises(TypeError):
-            NetworkManager(session_name=None)
-            NetworkManager(session_dir=0)
-            NetworkManager(train='True')
+            NetworkManager(self.network_config, session_name=None)
+            NetworkManager(self.network_config, session_dir=0)
+            NetworkManager(self.network_config, train='True')
         with self.assertRaises(ValueError):
-            NetworkManager(train=True)
-        with self.assertRaises(NotImplementedError):
-            NetworkManager(train=False)
+            NetworkManager(self.network_config, train=True)
 
     def test_setNetwork(self):
         self.network_config.training_stuff = True
@@ -122,6 +120,7 @@ class TestNetworkManager(unittest.TestCase):
 
     def test_saveNetwork(self):
         self.network_config.training_stuff = True
+        self.network_config.save_each_epoch = True
         manager = NetworkManager(network_config=self.network_config, session_dir=self.session_dir)
         parameters = manager.network.getParameters()
         for _ in range(3):

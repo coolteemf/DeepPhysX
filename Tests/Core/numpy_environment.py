@@ -11,9 +11,9 @@ class NumpyEnvironment(BaseEnvironment):
 
     def create(self, config):
         self.input = np.random.randn(1)
-        self.input_size = self.input.size
+        self.input_size = self.input.shape
         self.output = self.input
-        self.output_size = self.output.size
+        self.output_size = self.output.shape
 
     def step(self):
         self.idx_step += 1

@@ -1,12 +1,12 @@
 import torch
 
-from DeepPhysX_PyTorch.Network.PyTorchBaseNetwork import PyTorchBaseNetwork
+from DeepPhysX_PyTorch.Network.TorchNetwork import TorchNetwork
 
 
-class MyNetwork(PyTorchBaseNetwork):
+class MyNetwork(TorchNetwork):
 
     def __init__(self, network_name="MyNetwork_Name", *args):
-        PyTorchBaseNetwork.__init__(self, network_name=network_name, network_type="MyNetwork")
+        TorchNetwork.__init__(self, network_name=network_name, network_type="MyNetwork")
         self.fc1 = torch.nn.Linear(1, 10)
         self.fc2 = torch.nn.Linear(10, 10)
         self.fc3 = torch.nn.Linear(10, 1)
