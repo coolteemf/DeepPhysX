@@ -68,12 +68,11 @@ class NetworkManager:
             else:
                 # Get eventual epoch saved networks
                 networks_list = [os.path.join(self.network_dir, f) for f in os.listdir(self.network_dir) if
-                                 os.path.isfile(os.path.join(self.network_dir, f)) and f.endswith('.pth') and
-                                 f.__contains__('_network_')]
+                                 os.path.isfile(os.path.join(self.network_dir, f)) and f.__contains__('_network_.')]
                 networks_list = sorted(networks_list)
                 # Add the final saved network
                 last_saved_network = [os.path.join(self.network_dir, f) for f in os.listdir(self.network_dir) if
-                                      os.path.isfile(os.path.join(self.network_dir, f)) and f.endswith('network.pth')]
+                                      os.path.isfile(os.path.join(self.network_dir, f)) and f.__contains__('network.')]
                 networks_list = networks_list + last_saved_network
                 which_network = self.network_config.which_network
                 if len(networks_list) == 0:
@@ -109,16 +108,16 @@ class NetworkManager:
     def computeLoss(self, prediction, ground_truth):
         return self.optimization.computeLoss(prediction, ground_truth)
 
-    def saveNetwork(self, last_save=False, suffix=None):
+    def saveNetwork(self, last_save=False):
         if last_save:
-            path = self.network_dir + "network.pth"
-        elif suffix is not None:
-            path = self.network_dir + self.network_template_name.format(suffix)
-        else:
+            path = self.network_dir + "network"
+            print("Saving network at {}.".format(path))
+            self.network.saveParameters(path)
+        elif self.save_each_epoch:
             path = self.network_dir + self.network_template_name.format(self.saved_counter)
             self.saved_counter += 1
-        print("Saving network at {}.".format(path))
-        self.network.saveParameters(path)
+            print("Saving network at {}.".format(path))
+            self.network.saveParameters(path)
 
     def close(self):
         if self.training:

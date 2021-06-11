@@ -68,6 +68,7 @@ class BaseTrainer(BasePipeline):
         pass
 
     def trainEnd(self):
+        print(self.manager.network_manager.network.getParameters())
         self.manager.close()
 
     def epochBegin(self):

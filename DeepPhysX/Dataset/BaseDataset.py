@@ -37,8 +37,6 @@ class BaseDataset:
         side = "inputs" if side == 'in' else "outputs"
         if type(data) != np.ndarray:
             raise TypeError("[BASEDATASET] Loaded {} must be numpy array, {} found.".format(side, type(data)))
-        if len(data.shape) < 2:
-            raise ValueError("[BASEDATASET] Loaded {} shape must be dim > 2, {} found.".format(side, type(data)))
 
     def add(self, side, data, partition_file):
         self.check_data(side, data)
@@ -54,17 +52,19 @@ class BaseDataset:
             for i in range(len(data)):
                 self.data_out = np.concatenate((self.data_out, data[i].flatten()[None, :]))
                 np.save(partition_file, data[i].flatten())
+        print(self.data_in, self.data_out)
 
     def load(self, side, data):
         self.check_data(side, data)
         if side == 'in':
             if self.inFlatShape is None:
                 self.init_data_size(side, data[0])
-            self.data_in = np.concatenate((self.data_in, data), axis=0)
+            self.data_in = np.concatenate((self.data_in, data[None, :]), axis=0)
         else:
             if self.outFlatShape is None:
                 self.init_data_size(side, data[0])
-            self.data_out = np.concatenate((self.data_out, data), axis=0)
+            self.data_out = np.concatenate((self.data_out, data[None, :]), axis=0)
+        print(self.data_in, self.data_out)
 
     def shuffle(self):
         index = np.arange(len(self.data_in))

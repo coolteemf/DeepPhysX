@@ -34,7 +34,7 @@ class DatasetManager:
         self.idx_partitions = [0, 0, 0]
         self.current_in_partition_name, self.current_out_partition_name = None, None
         self.current_in_partition, self.current_out_partition = None, None
-        self.saved = False
+        self.saved = True
 
         # Init dataset directories
         self.session_dir = session_dir if session_dir is not None else os.path.join(pathUtils.getFirstCaller(),
@@ -57,7 +57,7 @@ class DatasetManager:
                 self.dataset_dir = os.path.join(self.session_dir, 'dataset/')
                 self.loadDirectory()
             # Need an environment if existing dataset with inputs without corresponding outputs
-            self.create_environment = self.requireEnvironment()
+            self.create_environment = True if new_session and dataset_dir is None else self.requireEnvironment()
 
         # Prediction
         else:
@@ -79,7 +79,7 @@ class DatasetManager:
             self.list_in_partitions[self.mode].append(current_part_in)
             partitions_list_file.write(current_part_in + '\n')
             self.current_in_partition_name = self.dataset_dir + current_part_in
-            self.current_in_partition = open(self.current_in_partition_name, 'wb')
+            self.current_in_partition = open(self.current_in_partition_name, 'ab')
 
         if self.record_data['out']:
             current_part_out = self.partitions_templates[self.mode].format('OUT', self.idx_partitions[self.mode])
@@ -87,7 +87,7 @@ class DatasetManager:
             self.list_out_partitions[self.mode].append(current_part_out)
             partitions_list_file.write(current_part_out + '\n')
             self.current_out_partition_name = self.dataset_dir + current_part_out
-            self.current_out_partition = open(self.current_out_partition_name, 'wb')
+            self.current_out_partition = open(self.current_out_partition_name, 'ab')
 
         self.idx_partitions[self.mode] += 1
         partitions_list_file.close()
@@ -149,52 +149,14 @@ class DatasetManager:
                 reader = open(self.dataset_dir + partitions_list_file[0])
                 partitions_list = reader.read().splitlines()
                 reader.close()
-            self.addPartitionsToList(partitions_list, mode)
-
-        # Load the dataset
-        self.loadPartitions()
-
-    def addPartitionsToList(self, partitions_list, mode):
-        nb_parts = len(partitions_list)
-        partitions_in = sorted([f for f in partitions_list if f.__contains__('IN')])
-        partitions_out = sorted([f for f in partitions_list if f.__contains__('OUT')])
-        if nb_parts != len(partitions_in) + len(partitions_out):
-            raise ValueError("[{}] The number of partitions is ambiguous.".format(self.name))
-        self.list_in_partitions[self.modes[mode]] = partitions_in
-        self.list_out_partitions[self.modes[mode]] = partitions_out
-
-    def loadPartitions(self):
-        if not self.generate_data:
-            self.dataset.reset()
-            # No partitions for the actual mode
-            if len(self.partitions_lists[self.mode]) == 0:
-                print("Load Partition: No partition found for {} mode".format(self.mode))
-            # Single partition for the actual mode
-            elif len(self.partitions_lists[self.mode]) == 1:
-                self.loadLastPartitions()
-            # Multiple partitions
-            else:
-                for i in range(len(self.partitions_lists[self.mode]) // 2):
-                    self.current_partition_names = {'in': self.dataset_dir + self.partitions_lists[self.mode][2 * i],
-                                                    'out': self.dataset_dir + self.partitions_lists[self.mode][
-                                                        2 * i + 1]}
-                    data_in = np.load(self.current_partition_names['in'])
-                    data_out = np.load(self.current_partition_names['out'])
-                    self.dataset.load(data_in, data_out)
-            if self.shuffle_dataset:
-                self.dataset.shuffle()
-
-    def loadLastPartitions(self):
-
-        if self.record_data['in']:
-            self.current_in_partition_name = self.dataset_dir + self.list_in_partitions[self.mode][-1]
-            data_in = np.load(self.current_partition_names['in'])
-            self.dataset.load('in', data_in)
-
-        if self.record_data['out']:
-            self.current_out_partition_name = self.dataset_dir + self.list_out_partitions[self.mode][-1]
-            data_out = np.load(self.current_partition_names['out'])
-            self.dataset.load('out', data_out)
+            # Add partitions to lists
+            nb_parts = len(partitions_list)
+            partitions_in = sorted([f for f in partitions_list if f.__contains__('IN')])
+            partitions_out = sorted([f for f in partitions_list if f.__contains__('OUT')])
+            if nb_parts != len(partitions_in) + len(partitions_out):
+                raise ValueError("[{}] The number of partitions is ambiguous.".format(self.name))
+            self.list_in_partitions[self.modes[mode]] = partitions_in
+            self.list_out_partitions[self.modes[mode]] = partitions_out
 
     def requireEnvironment(self):
         # Called while training to check if each inputs as an output, otherwise need an environment to compute it
@@ -226,7 +188,10 @@ class DatasetManager:
         # Nothing has to be done if you do not change mode
         if mode == self.mode:
             return
-        if self.record_data['in'] or self.record_data['out']:
+        if self.mode == self.modes['running']:
+            print("[{}] It's not possible to switch dataset mode while running.".format(self.name))
+            return
+        else:
             # Save dataset before changing mode
             if not self.saved:
                 self.saveData()
@@ -239,31 +204,43 @@ class DatasetManager:
             else:
                 print("Change to {} mode, load last partition".format(self.mode))
                 self.loadLastPartitions()
-        else:
-            self.mode = mode
-            self.dataset.reset()
-            self.loadPartitions()
 
-    def close(self):
-        if not self.saved:
-            self.saveData()
+    def loadLastPartitions(self):
+        # Input
+        self.current_in_partition_name = self.dataset_dir + self.list_in_partitions[self.mode][-1]
+        with open(self.current_in_partition_name, 'rb') as in_file:
+            in_size = os.fstat(in_file.fileno()).st_size
+            while self.dataset.data_in.nbytes < in_size:
+                in_size -= 128  # Each array takes 128 extra bytes in memory
+                data_in = np.load(in_file)
+                self.dataset.load('in', data_in)
+        # Output
+        self.current_out_partition_name = self.dataset_dir + self.list_out_partitions[self.mode][-1]
+        with open(self.current_out_partition_name, 'rb') as out_file:
+            out_size = os.fstat(out_file.fileno()).st_size
+            while self.dataset.data_out.nbytes < out_size:
+                out_size -= 128  # Each array takes 128 extra bytes in memory
+                data_out = np.load(out_file)
+                self.dataset.load('out', data_out)
 
     def getData(self, get_inputs, get_outputs, batch_size=1, batched=True):
-        if self.dataset.currentSample >= len(self.dataset.data['in']):
-            self.dataset.shuffle()
+        if self.current_in_partition_name is None or self.dataset.currentSample >= len(self.dataset.data_in):
+            self.loadPartitions()
+            if self.shuffle_dataset:
+                self.dataset.shuffle()
             self.dataset.currentSample = 0
         idx = self.dataset.currentSample
         data = {'in': np.array([]), 'out': np.array([])}
         if get_inputs:
             if batched:
-                data['in'] = self.dataset.data['in'][idx: idx + batch_size]
+                data['in'] = self.dataset.data_in[idx: idx + batch_size]
             else:
-                data['in'] = np.squeeze(self.dataset.data['in'][idx: idx + batch_size], axis=0)
+                data['in'] = np.squeeze(self.dataset.data_in[idx: idx + batch_size], axis=0)
         if get_outputs:
             if batched:
-                data['out'] = self.dataset.data['out'][idx: idx + batch_size]
+                data['out'] = self.dataset.data_out[idx: idx + batch_size]
             else:
-                data['out'] = np.squeeze(self.dataset.data['out'][idx: idx + batch_size], axis=0)
+                data['out'] = np.squeeze(self.dataset.data_out[idx: idx + batch_size], axis=0)
         self.dataset.currentSample += batch_size
         return data
 
@@ -278,6 +255,67 @@ class DatasetManager:
 
     def getNextOutput(self, batched=False):
         return self.getData(get_inputs=False, get_outputs=True, batched=batched)
+
+    def loadPartitions(self):
+        self.dataset.reset()
+        # Testing mode
+        if self.mode == self.modes['validation']:
+            if len(self.list_in_partitions[self.mode]) == 0:
+                raise ValueError("[{}] No partitions to read for testing mode.")
+            elif len(self.list_in_partitions[self.mode]) == 1:
+                self.loadLastPartitions()
+            else:
+                self.loadMultiplePartitions([self.mode])
+        # Training mode, loadPartition not called in running mode
+        else:
+            print('here')
+            # Mixed dataset
+            if len(self.list_in_partitions[self.modes['running']]) > 0:
+                self.loadMultiplePartitions([self.modes['training'], self.modes['running']])
+            else:
+                if len(self.list_in_partitions[self.mode]) == 0:
+                    raise ValueError("[{}] No partitions to read for training mode.")
+                elif len(self.list_in_partitions[self.mode]) == 1:
+                    self.loadLastPartitions()
+                else:
+                    self.loadMultiplePartitions([self.mode])
+
+    def loadMultiplePartitions(self, modes):
+        in_filenames, out_filenames = [], []
+        for mode in modes:
+            in_filenames += [self.dataset_dir + partition for partition in self.list_in_partitions[mode]]
+            out_filenames += [self.dataset_dir + partition for partition in self.list_out_partitions[mode]]
+        in_files = [open(filename, 'rb') for filename in in_filenames]
+        out_files = [open(filename, 'rb') for filename in out_filenames]
+        in_sizes = [os.stat(in_file.fileno()).st_size for in_file in in_files]
+        out_sizes = [os.stat(out_file.fileno()).st_size for out_file in out_files]
+        in_loaded = [0. for _ in range(len(in_sizes))]
+        out_loaded = [0. for _ in range(len(out_sizes))]
+        end_partition = False
+        idx_file = 0
+        while self.dataset.memory_size() < self.max_size and not end_partition:
+            in_sizes[idx_file] -= 128
+            data_in = np.load(in_files[idx_file])
+            in_loaded[idx_file] += data_in.nbytes
+            self.dataset.load('in', data_in)
+            if in_loaded[idx_file] >= in_sizes[idx_file]:
+                end_partition = True
+
+            try:
+                out_sizes[idx_file] -= 128
+                data_out = np.load(out_files[idx_file])
+                out_loaded[idx_file] += data_out.nbytes
+                self.dataset.load('out', data_out)
+                if out_loaded[idx_file] >= out_sizes[idx_file]:
+                    end_partition = True
+            except:
+                pass
+
+            idx_file = (idx_file + 1) % len(in_files)
+
+    def close(self):
+        if not self.saved:
+            self.saveData()
 
     def getDescription(self):
         if len(self.description) == 0:

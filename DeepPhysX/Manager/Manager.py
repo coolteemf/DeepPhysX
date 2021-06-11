@@ -7,7 +7,7 @@ from DeepPhysX.Manager.NetworkManager import NetworkManager
 from DeepPhysX.Network.BaseNetworkConfig import BaseNetworkConfig
 from DeepPhysX.Manager.EnvironmentManager import EnvironmentManager
 from DeepPhysX.Environment.BaseEnvironmentConfig import BaseEnvironmentConfig
-from DeepPhysX.Manager.StatsManager import StatsManager
+# from DeepPhysX.Manager.StatsManager import StatsManager
 import DeepPhysX.utils.pathUtils as pathUtils
 
 
@@ -70,8 +70,8 @@ class Manager:
                                               session_dir=self.session_dir, new_session=new_session, train=self.train)
 
         # Create the stats manager for training
-        self.stats_manager = StatsManager(log_dir=os.path.join(self.session_dir, 'stats/'),
-                                          sliding_window_size=stats_window) if self.train else None
+        # self.stats_manager = StatsManager(log_dir=os.path.join(self.session_dir, 'stats/'),
+        #                                   sliding_window_size=stats_window) if self.train else None
 
     def getData(self, epoch=0, batch_size=1, animate=True):
         # Training
@@ -87,9 +87,8 @@ class Manager:
         # Prediction
         else:
             # Get data from environment
-            get_inputs, get_outputs = True, self.record_data['out']
-            data = self.environment_manager.getData(batch_size=batch_size, animate=animate, get_inputs=get_inputs,
-                                                    get_outputs=get_outputs)
+            data = self.environment_manager.getData(batch_size=batch_size, animate=animate, get_inputs=True,
+                                                    get_outputs=True)
             # Record data
             if self.dataset_manager is not None:
                 self.dataset_manager.addData(data)
@@ -115,8 +114,8 @@ class Manager:
             self.network_manager.close()
         if self.environment_manager is not None:
             self.environment_manager.close()
-        if self.stats_manager is not None:
-            self.stats_manager.close()
+        # if self.stats_manager is not None:
+        #     self.stats_manager.close()
 
     def getDescription(self):
         manager_description = ""
