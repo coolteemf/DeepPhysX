@@ -55,21 +55,23 @@ def createScene(root_node=None):
                           dim_output=3, dim_layers=layers_dim)
     # Dataset config
     dataset_config = BaseDatasetConfig()
-    BaseDatasetConfig(partition_size=1, generate_data=True, shuffle_dataset=True)
+    BaseDatasetConfig(partition_size=1, shuffle_dataset=True)
     # Runner
-    man_dir = os.path.dirname(os.path.realpath(__file__)) + '/beam_FC_trained2'
+    man_dir = os.path.dirname(os.path.realpath(__file__)) + '/beam_FC_prediction'
     runner = BaseRunner(session_name="beam_FC_prediction", dataset_config=dataset_config,
-                        environment_config=env_config, network_config=net_config, session_dir=man_dir, nb_samples=0)
+                        environment_config=env_config, network_config=net_config, session_dir=man_dir, nb_steps=0,
+                        record_inputs=True, record_outputs=True)
     root_node = runner.manager.environment_manager.environment.root
     root_node.addObject(SofaRunner(runner=runner))
-    return root_node
+    return root_node, runner
 
 
 if __name__ == '__main__':
-    root = createScene()
+    root, runner = createScene()
     import Sofa.Gui
     Sofa.Gui.GUIManager.Init("main", "qglviewer")
     Sofa.Gui.GUIManager.createGUI(root, __file__)
     Sofa.Gui.GUIManager.SetDimension(1080, 1080)
     Sofa.Gui.GUIManager.MainLoop(root)
     Sofa.Gui.GUIManager.closeGUI()
+    runner.close()

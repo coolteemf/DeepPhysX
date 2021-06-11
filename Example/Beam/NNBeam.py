@@ -69,8 +69,8 @@ class NNBeam(SofaBaseEnvironment):
         pass
 
     def onSimulationInitDoneEvent(self, event):
-        self.inputSize = self.MO.position.value.shape
-        self.outputSize = self.MO.position.value.shape
+        self.input_size = self.MO.position.value.shape
+        self.output_size = self.MO.position.value.shape
         self.idx = self.surface.quads.value.reshape(-1)
 
     def onAnimateBeginEvent(self, event):
