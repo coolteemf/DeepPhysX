@@ -279,6 +279,7 @@ class DatasetManager:
                     self.loadLastPartitions()
                 else:
                     self.loadMultiplePartitions([self.mode])
+        print(self.dataset.data_in)
 
     def loadMultiplePartitions(self, modes):
         in_filenames, out_filenames = [], []

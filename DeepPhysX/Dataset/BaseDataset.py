@@ -4,16 +4,17 @@ import numpy as np
 class BaseDataset:
 
     def __init__(self, config):
+
+        # Description
+        self.name = self.__class__.__name__
+        self.description = ""
+
         # Data storage
         self.data_in, self.data_out = np.array([]), np.array([])
         self.max_size = config.max_size
         self.currentSample = 0
-        # Sizes
         self.inShape, self.inFlatShape = None, None
         self.outShape, self.outFlatShape = None, None
-        # Description
-        self.descriptionName = "BaseDataset"
-        self.description = ""
 
     def init_data_size(self, side, data):
         if side == 'in':
@@ -36,7 +37,7 @@ class BaseDataset:
     def check_data(self, side, data):
         side = "inputs" if side == 'in' else "outputs"
         if type(data) != np.ndarray:
-            raise TypeError("[BASEDATASET] Loaded {} must be numpy array, {} found.".format(side, type(data)))
+            raise TypeError("[{}] Loaded {} must be numpy array, {} found.".format(self.name, side, type(data)))
 
     def add(self, side, data, partition_file):
         self.check_data(side, data)
@@ -52,19 +53,17 @@ class BaseDataset:
             for i in range(len(data)):
                 self.data_out = np.concatenate((self.data_out, data[i].flatten()[None, :]))
                 np.save(partition_file, data[i].flatten())
-        print(self.data_in, self.data_out)
 
     def load(self, side, data):
         self.check_data(side, data)
         if side == 'in':
             if self.inFlatShape is None:
-                self.init_data_size(side, data[0])
+                self.init_data_size(side, data)
             self.data_in = np.concatenate((self.data_in, data[None, :]), axis=0)
         else:
             if self.outFlatShape is None:
-                self.init_data_size(side, data[0])
+                self.init_data_size(side, data)
             self.data_out = np.concatenate((self.data_out, data[None, :]), axis=0)
-        print(self.data_in, self.data_out)
 
     def shuffle(self):
         index = np.arange(len(self.data_in))
@@ -79,7 +78,7 @@ class BaseDataset:
 
     def getDescription(self):
         if len(self.description) == 0:
-            self.description += "\n{}\n".format(self.descriptionName)
+            self.description += "\n{}\n".format(self.name)
             self.description += "   Max size: {}\n".format(self.max_size)
             self.description += "   Input shape, input flat shape: {}, {}\n".format(self.inShape, self.inFlatShape)
             self.description += "   Output shape, output flat shape: {}, {}\n".format(self.outShape, self.outFlatShape)

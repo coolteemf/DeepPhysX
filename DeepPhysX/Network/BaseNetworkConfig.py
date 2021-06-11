@@ -6,7 +6,6 @@ from DeepPhysX.Network.BaseOptimization import BaseOptimization
 
 
 class BaseNetworkConfig:
-
     @dataclass
     class BaseNetworkProperties:
         network_name: str
@@ -22,7 +21,9 @@ class BaseNetworkConfig:
                  network_name='Network', network_type='BaseNetwork', which_network=0, save_each_epoch=False,
                  loss=None, lr=None, optimizer=None):
 
+        # Description
         self.name = self.__class__.__name__
+        self.description = ""
 
         # Check the arguments before to configure anything
         if network_dir is not None and type(network_dir) != str:
@@ -53,9 +54,6 @@ class BaseNetworkConfig:
         self.which_network = which_network
         self.save_each_epoch = save_each_epoch and self.training_stuff
 
-        # Description
-        self.description = ""
-
     def createNetwork(self):
         try:
             network = self.network_class(self.network_config)
@@ -69,7 +67,8 @@ class BaseNetworkConfig:
         try:
             optimization = self.optimization_class(self.optimization_config)
         except:
-            raise TypeError("[{}] The given optimization class is not a BaseOptimization child class.".format(self.name))
+            raise TypeError(
+                "[{}] The given optimization class is not a BaseOptimization child class.".format(self.name))
         if not isinstance(optimization, BaseOptimization):
             raise TypeError("[{}] The optimization class must be a BaseOptimization child object.".format(self.name))
         return optimization

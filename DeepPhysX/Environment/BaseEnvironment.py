@@ -13,7 +13,7 @@ class BaseEnvironment:
         self.input_size, self.output_size = None, None
 
         self.description = ""
-        self.description_name = "BaseEnvironment"
+        self.description_name = self.__class__.__name__
 
         self.create(config)
 
