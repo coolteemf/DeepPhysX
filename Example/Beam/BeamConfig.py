@@ -1,12 +1,14 @@
-from DeepPhysX_Sofa.Environment.SofaBaseEnvironmentConfig import SofaBaseEnvironmentConfig
+import os
 from dataclasses import dataclass
 import SofaRuntime
-import os
+
+from DeepPhysX_Sofa.Environment.SofaEnvironmentConfig import SofaEnvironmentConfig
 
 
-class BeamConfig(SofaBaseEnvironmentConfig):
+class BeamConfig(SofaEnvironmentConfig):
+
     @dataclass
-    class BeamProperties(SofaBaseEnvironmentConfig.SofaBaseEnvironmentProperties):
+    class BeamProperties(SofaEnvironmentConfig.SofaEnvironmentProperties):
         p_grid: dict
         p_forces: dict
 

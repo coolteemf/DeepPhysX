@@ -1,6 +1,5 @@
 import numpy as np
 import math
-from time import time_ns
 
 
 class MouseForceManager:
@@ -26,9 +25,9 @@ class MouseForceManager:
         return None if len(idx) == 0 else idx[0]
 
     def find_neighbors(self, node, radius):
-        nodes_in_area = []
+        nodes_in_area = [node]
         center = np.array(self.positions[node])
-        potential_nodes = [node]
+        potential_nodes = self.neighbors[node]
         for p_n in potential_nodes:
             pos = np.array(self.positions[p_n])
             if np.linalg.norm(pos - center) < radius:
@@ -39,6 +38,7 @@ class MouseForceManager:
         return nodes_in_area
 
     def scale_max_force(self, force):
+        force = np.copy(force)
         scales = [abs(force[i]) / self.max_force[i] for i in range(3)]
         scale = max(scales)
         if scale > 1:

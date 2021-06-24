@@ -3,7 +3,7 @@ from DeepPhysX.Environment.BaseEnvironment import BaseEnvironment
 import Sofa.Simulation
 
 
-class SofaBaseEnvironment(Sofa.Core.Controller, BaseEnvironment):
+class SofaEnvironment(Sofa.Core.Controller, BaseEnvironment):
 
     def __init__(self, root_node, config, idx_instance=1,
                  *args, **kwargs):

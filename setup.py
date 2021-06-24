@@ -2,7 +2,7 @@ from setuptools import find_packages, setup
 
 setup(
     name='DeepPhysX',
-    packages=find_packages(include=['DeepPhysX']),
+    packages=find_packages(include=['DeepPhysX', 'DeepPhysX_PyTorch', 'DeepPhysX_Sofa']),
     version='20.12.00',
     description='Core project of the DeepPhysX environment',
     author='Mimesis',

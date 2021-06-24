@@ -1,23 +1,23 @@
 from DeepPhysX.Environment.BaseEnvironmentConfig import BaseEnvironmentConfig
-from .SofaBaseEnvironment import SofaBaseEnvironment
+from .SofaEnvironment import SofaEnvironment
 from dataclasses import dataclass
 
 import Sofa.Core
 
 
-class SofaBaseEnvironmentConfig(BaseEnvironmentConfig):
+class SofaEnvironmentConfig(BaseEnvironmentConfig):
 
     @dataclass
-    class SofaBaseEnvironmentProperties(BaseEnvironmentConfig.BaseEnvironmentProperties):
+    class SofaEnvironmentProperties(BaseEnvironmentConfig.BaseEnvironmentProperties):
         pass
 
-    def __init__(self, environment_class=SofaBaseEnvironment, simulations_per_step=1, max_wrong_samples_per_step=10,
+    def __init__(self, environment_class=SofaEnvironment, simulations_per_step=1, max_wrong_samples_per_step=10,
                  always_create_data=False, multiprocessing=1, multiprocess_method=None, root_node=None):
         BaseEnvironmentConfig.__init__(self, environment_class, simulations_per_step, max_wrong_samples_per_step,
                                        always_create_data, multiprocessing, multiprocess_method)
         self.rootNode = root_node
-        self.environmentConfig = self.SofaBaseEnvironmentProperties(simulations_per_step=simulations_per_step,
-                                                                    max_wrong_samples_per_step=max_wrong_samples_per_step)
+        self.environmentConfig = self.SofaEnvironmentProperties(simulations_per_step=simulations_per_step,
+                                                                max_wrong_samples_per_step=max_wrong_samples_per_step)
         self.descriptionName = "SOFA EnvironmentConfig"
 
     def setRootNodes(self):
@@ -38,10 +38,9 @@ class SofaBaseEnvironmentConfig(BaseEnvironmentConfig):
             self.setRootNodes()
         self.addRequiredPlugins()
         if self.multiprocessing == 1:
-            environment = self.rootNode.addObject(self.environment_class(self.rootNode, self.environmentConfig,
-                                                                         training, 0))
+            environment = self.rootNode.addObject(self.environment_class(self.rootNode, self.environmentConfig, 0))
         else:
-            environment = [self.rootNode[i].addObject(self.environment_class(self.rootNode[i], self.environmentConfig, training,
+            environment = [self.rootNode[i].addObject(self.environment_class(self.rootNode[i], self.environmentConfig,
                                                                              i+1)) for i in range(len(self.rootNode))]
         self.initNodes()
         return environment

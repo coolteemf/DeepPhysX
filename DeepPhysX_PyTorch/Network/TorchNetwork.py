@@ -38,6 +38,7 @@ class TorchNetwork(torch.nn.Module, BaseNetwork):
         return self.state_dict()
 
     def saveParameters(self, path):
+        path = path + '.pth'
         torch.save(self.state_dict(), path)
 
     def nbParameters(self):

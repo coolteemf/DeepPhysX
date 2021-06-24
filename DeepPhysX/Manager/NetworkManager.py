@@ -25,7 +25,7 @@ class NetworkManager:
                                                                                     session_name)
         network_dir = network_config.network_dir
         self.network_dir = network_dir if network_dir is not None else os.path.join(self.session_dir, 'network/')
-        self.network_template_name = session_name + '_network_{}.pth'
+        self.network_template_name = session_name + '_network_{}'
 
         self.existing_network = network_config.existing_network or os.path.exists(self.network_dir)
         if train and not network_config.training_stuff:

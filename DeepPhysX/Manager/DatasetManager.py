@@ -12,6 +12,23 @@ class DatasetManager:
 
         self.name = self.__class__.__name__
 
+        # Checking arguments
+        if not isinstance(dataset_config, BaseDatasetConfig):
+            raise TypeError("[DATASETMANAGER] The dataset config must be a BaseDatasetConfig object.")
+        if type(session_name) != str:
+            raise TypeError("[DATASETMANAGER] The session name must be a str.")
+        if session_dir is not None and type(session_dir) != str:
+            raise TypeError("[DATASETMANAGER] The session directory must be a str.")
+        if type(new_session) != bool:
+            raise TypeError("[DATASETMANAGER] The 'new_network' argument must be a boolean.")
+        if type(train) != bool:
+            raise TypeError("[DATASETMANAGER] The 'train' argument must be a boolean.")
+        if record_data is not None and type(record_data) != dict:
+            raise TypeError("[DATASETMANAGER] The 'record_data' argument must be a dict.")
+        elif record_data is not None:
+            if type(record_data['in']) != bool or type(record_data['out']) != bool:
+                raise TypeError("[DATASETMANAGER] The values of 'record_data' must be booleans.")
+
         # Create the dataset
         self.dataset = dataset_config.createDataset()
 

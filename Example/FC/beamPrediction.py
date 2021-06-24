@@ -1,4 +1,5 @@
 import os
+import sys
 from torch.optim import Adam
 from torch.nn import MSELoss
 
@@ -7,23 +8,20 @@ from DeepPhysX.Dataset.BaseDatasetConfig import BaseDatasetConfig
 from DeepPhysX.Pipelines.BaseRunner import BaseRunner
 from DeepPhysX_Sofa.Runner.SofaBaseRunner import SofaRunner
 
-import sys
 from Example.Beam.BeamConfig import BeamConfig
-if len(sys.argv) == 1 or sys.argv[1] == 'NNBeam':
-    from Example.Beam.NNBeam import NNBeam as Beam
-elif sys.argv[1] == 'NNBeamInteraction':
-    from Example.Beam.NNBeamInteraction import NNBeamInteraction as Beam
-elif sys.argv[1] == 'NNBeamCollision':
-    from Example.Beam.NNBeamCollision import NNBeamCollision as Beam
-elif sys.argv[1] == 'BothBeams':
-    from Example.Beam.BothBeams import BothBeams as Beam
-elif sys.argv[1] == 'BothBeamsInteraction':
-    from Example.Beam.BothBeamsInteraction import BothBeamsInteraction as Beam
-elif sys.argv[1] == 'NNBeamBall':
-    from Example.Beam.NNBeamBall import NNBeamBall as Beam
-else:
-    print("Unknown Environment with name", sys.argv[1])
-    quit(0)
+from Example.Beam.NNBeam import NNBeam as Beam
+
+scene_map = {'1': 'NNBeam', '2': 'NNBeamMouse', '3': 'NNBeamFloor', '4': 'NNBeamCollision', '5': 'NNBeamDynamics'}
+arg = '1' if (sys.argv[1] not in scene_map.keys()) and (sys.argv[1] not in scene_map.values()) else sys.argv[1]
+scene = scene_map[arg] if (arg in scene_map.keys()) else arg
+scene_rep = 'Example.Beam.' + scene
+exec("from %s import %s as Beam" % (scene_rep, scene))
+
+
+# elif sys.argv[1] == 'BothBeams':
+#     from Example.Beam.BothBeams import BothBeams as Beam
+# elif sys.argv[1] == 'BothBeamsInteraction':
+#     from Example.Beam.BothBeamsInteraction import BothBeamsInteraction as Beam
 
 
 # ENVIRONMENT PARAMETERS
@@ -33,12 +31,8 @@ grid_max = [100., 25., 25.]
 fixed_box = [0., 0., 0., 0., 25., 25.]
 free_box = [49.5, -0.5, -0.5, 100.5, 25.5, 25.5]
 all_box = [0., 0., 0., 100.5, 25.5, 25.5]
-p_grid = {'grid_resolution': grid_resolution,
-          'min': grid_min,
-          'max': grid_max,
-          'fixed_box': fixed_box,
-          'free_box': free_box,
-          'all_box': all_box}
+p_grid = {'grid_resolution': grid_resolution, 'min': grid_min, 'max': grid_max,
+          'fixed_box': fixed_box, 'free_box': free_box, 'all_box': all_box}
 
 # NETWORK PARAMETERS
 nb_hidden_layers = 2
@@ -60,7 +54,7 @@ def createScene(root_node=None):
     man_dir = os.path.dirname(os.path.realpath(__file__)) + '/beam_FC_prediction'
     runner = BaseRunner(session_name="beam_FC_prediction", dataset_config=dataset_config,
                         environment_config=env_config, network_config=net_config, session_dir=man_dir, nb_steps=0,
-                        record_inputs=True, record_outputs=True)
+                        record_inputs=False, record_outputs=False)
     root_node = runner.manager.environment_manager.environment.root
     root_node.addObject(SofaRunner(runner=runner))
     return root_node, runner

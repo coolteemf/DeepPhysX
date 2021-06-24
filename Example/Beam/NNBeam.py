@@ -2,10 +2,10 @@ import copy
 import numpy as np
 import os
 
-from DeepPhysX_Sofa.Environment.SofaBaseEnvironment import SofaBaseEnvironment
+from DeepPhysX_Sofa.Environment.SofaEnvironment import SofaEnvironment
 
 
-class NNBeam(SofaBaseEnvironment):
+class NNBeam(SofaEnvironment):
 
     def __init__(self, root_node, config, idx_instance=1, training=True):
         super(NNBeam, self).__init__(root_node, config, idx_instance)
@@ -13,72 +13,61 @@ class NNBeam(SofaBaseEnvironment):
         self.nbSteps = 0
 
     def create(self, config):
-        # Get parameters
+        # Grid resolution
         p_grid = config.p_grid
         g_res = p_grid['grid_resolution']
         self.nb_dof = g_res[0] * g_res[1] * g_res[2]
 
-        # Beam FEM
-        self.root.addChild('BeamNN')
-        self.root.BeamNN.addObject('LegacyStaticODESolver', name='StaticSolver', newton_iterations=0, printLog=False)
-        # Geometry
-        self.grid = self.root.BeamNN.addObject('RegularGridTopology', name='Grid', min=p_grid['min'], max=p_grid['max'],
+        # Beam
+        self.root.addChild('beamNN')
+        self.root.beamNN.addObject('LegacyStaticODESolver', name='StaticSolver', newton_iterations=0, printLog=False)
+        self.grid = self.root.beamNN.addObject('RegularGridTopology', name='Grid', min=p_grid['min'], max=p_grid['max'],
                                                nx=g_res[0], ny=g_res[1], nz=g_res[2])
-        self.root.BeamNN.addObject('HexahedronSetTopologyContainer', name='HexaTopology', src='@Grid')
-        self.root.BeamNN.addObject('HexahedronSetGeometryAlgorithms', template='Vec3d')
-        self.root.BeamNN.addObject('HexahedronSetTopologyModifier')
-        self.surface = self.root.BeamNN.addObject('QuadSetTopologyContainer', name='QuadTopology', src='@HexaTopology')
-        self.root.BeamNN.addObject('QuadSetGeometryAlgorithms', template='Vec3d')
-        self.root.BeamNN.addObject('QuadSetTopologyModifier')
-        self.root.BeamNN.addObject('Hexa2QuadTopologicalMapping', input="@HexaTopology", output="@QuadTopology")
+        self.MO = self.root.beamNN.addObject('MechanicalObject', src='@Grid', name='MO', template='Vec3d',
+                                             showObject=False)
+        self.root.beamNN.addObject('HexahedronSetTopologyContainer', name='HexaTopology', src='@Grid')
+        self.root.beamNN.addObject('HexahedronSetGeometryAlgorithms', template='Vec3d')
+        self.root.beamNN.addObject('HexahedronSetTopologyModifier')
+        self.surface = self.root.beamNN.addObject('QuadSetTopologyContainer', name='QuadTopology', src='@HexaTopology')
+        self.root.beamNN.addObject('QuadSetGeometryAlgorithms', template='Vec3d')
+        self.root.beamNN.addObject('QuadSetTopologyModifier')
+        self.root.beamNN.addObject('Hexa2QuadTopologicalMapping', input="@HexaTopology", output="@QuadTopology")
         # Behavior
-        self.createBehavior(p_grid)
+        self.createBehavior(config)
         # Visual
-        self.createVisual()
+        self.createVisual(config)
         # Collision
-        self.createCollision()
+        self.createCollision(config)
 
-    def createBehavior(self, p_grid):
-        self.MO = self.root.BeamNN.addObject('MechanicalObject', src='@Grid', name='MO', template='Vec3d',
-                                             showObject=True)
-        self.root.BeamNN.addObject('BoxROI', box=p_grid['free_box'], name='FreeBox')
-        self.CFF = self.root.BeamNN.addObject('ConstantForceField', name='CFF', showArrowSize='2.5',
-                                              force=[0, 0, 0], indices='@FreeBox.indices')
+    def createBehavior(self, config):
+        p_grid = config.p_grid
+        self.root.beamNN.addObject('BoxROI', box=p_grid['free_box'], name='FreeBox')
+        self.CFF = self.root.beamNN.addObject('ConstantForceField', name='CFF', showArrowSize='2.5', force=[0, 0, 0],
+                                              indices='@FreeBox.indices')
 
-    def createVisual(self):
-        self.root.BeamNN.addChild('Visual')
-        file = os.pardir + '/Beam/Beam_really_smooth.obj'
-        self.root.BeamNN.Visual.addObject('MeshObjLoader', name="Mesh", filename=file,
-                                          translation=[100, 12.5, 12.5])
-        self.root.BeamNN.Visual.addObject('OglModel', name="oglModel", src='@Mesh', color='white')
-        # self.root.BeamNN.Visual.addObject('OglModel', name="oglModel", src='@../Grid', color='white')
-        self.root.BeamNN.Visual.addObject('BarycentricMapping', name="BaryMap2", input='@../MO', output='@./')
+    def createVisual(self, config):
+        self.root.addObject('VisualStyle', displayFlags="showVisualModels")
+        self.root.beamNN.addChild('visual')
+        # file = os.pardir + '/Beam/Beam_really_smooth.obj'
+        # self.root.beamNN.visual.addObject('MeshObjLoader', name="Mesh", filename=file, translation=[100, 12.5, 12.5])
+        # self.root.beamNN.visual.addObject('OglModel', name="oglModel", src='@Mesh', color='white')
+        self.root.beamNN.visual.addObject('OglModel', name="oglModel", src='@../Grid', color='white')
+        self.root.beamNN.visual.addObject('BarycentricMapping', name="BaryMap2", input='@../MO', output='@./')
 
-    def createCollision(self):
-        # self.root.BeamNN.addChild('Collision')
-        # self.root.BeamNN.Collision.addObject('TriangleSetTopologyContainer', name='TriTopology', src='@../QuadTopology')
-        # self.root.BeamNN.Collision.addObject('TriangleSetGeometryAlgorithms', template='Vec3d')
-        # self.root.BeamNN.Collision.addObject('TriangleSetTopologyModifier')
-        # self.root.BeamNN.Collision.addObject('Quad2TriangleTopologicalMapping', input="@../QuadTopology",
-        #                                      output="@TriTopology")
-        # self.root.BeamNN.Collision.addObject('OglModel', name="oglModel")
-        # self.root.BeamNN.Collision.addObject('BarycentricMapping', name='debug', input='@../MO', output='@./')
-        # self.root.BeamNN.Collision.addObject('TriangleCollisionModel')
-        # self.root.BeamNN.Collision.addObject('LineCollisionModel')
-        # self.root.BeamNN.Collision.addObject('PointCollisionModel')
+    def createCollision(self, config):
         pass
 
     def onSimulationInitDoneEvent(self, event):
         self.input_size = self.MO.position.value.shape
         self.output_size = self.MO.position.value.shape
-        self.idx = self.surface.quads.value.reshape(-1)
+        self.idx_surface = self.surface.quads.value.reshape(-1)
 
-    def onAnimateBeginEvent(self, event):
-        self.MO.position.value = self.MO.rest_position.value
-        t, t2 = np.cos(2.0*np.pi*self.nbSteps/100), np.sin(2.0*np.pi*self.nbSteps/100)
-        F = np.array([0.0, np.sin(t)*np.sin(t2), np.sin(t)*np.cos(t2)])
-        # F = np.random.rand(3) - np.random.rand(3)
-        self.CFF.force.value = F
+    # def onAnimateBeginEvent(self, event):
+    #     # self.MO.position.value = self.MO.rest_position.value
+    #     t, t2 = np.cos(2.0*np.pi*self.nbSteps/200), np.sin(2.0*np.pi*self.nbSteps/200)
+    #     # F = np.array([0.0, np.sin(t)*np.sin(t2), np.sin(t)*np.cos(t2)])
+    #     F = np.array([0.0, np.sin(t) * np.sin(t2), 0.0])
+    #     self.CFF.force.value = F
 
     def onAnimateEndEvent(self, event):
         self.nbSteps += 1
@@ -86,8 +75,8 @@ class NNBeam(SofaBaseEnvironment):
     def computeInput(self):
         f = copy.copy(self.MO.force.value)
         F = np.zeros_like(f)
-        F[self.idx] = f[self.idx]
-        self.input = F / 5
+        F[self.idx_surface] = f[self.idx_surface]
+        self.input = F
 
     def computeOutput(self):
         self.output = copy.copy(self.MO.position.value - self.MO.rest_position.value)
