@@ -1,63 +1,133 @@
+"""
+Training scene: FEM simulated beam with random deformations (launch with the script run.py in this repository)
+"""
+
 import copy
+import random
 import numpy as np
 
-from DeepPhysX_Sofa.Environment.SofaBaseEnvironment import SofaBaseEnvironment
+from DeepPhysX_Sofa.Environment.SofaEnvironment import SofaEnvironment
 
 
-class FEMBeam(SofaBaseEnvironment):
+class FEMBeam(SofaEnvironment):
 
-    def __init__(self, root_node, config, idx_instance=1, training=True):
+    def __init__(self, root_node, config, idx_instance=1):
         super(FEMBeam, self).__init__(root_node, config, idx_instance)
         self.config = config
+        self.nb_steps = 0
+        self.nb_converged = 0.
+        self.converged = False
 
     def create(self, config):
-        # Get parameters
+        # Get the scene parameters
         p_grid = config.p_grid
         g_res = p_grid['grid_resolution']
-        self.nb_dof = g_res[0] * g_res[1] * g_res[2]
+        self.nb_node = g_res[0] * g_res[1] * g_res[2]
+        self.grid_size = config.p_grid['min'] + config.p_grid['max']
 
-        # Beam FEM
-        self.root.addChild('BeamFEM')
-        self.root.BeamFEM.addObject('LegacyStaticODESolver', name='StaticSolver', newton_iterations=5,
+        # BEAM FEM
+        self.root.addChild('beamFEM')
+        # ODE solver + static solver
+        self.root.beamFEM.addObject('LegacyStaticODESolver', name='ODESolver', newton_iterations=20,
                                     correction_tolerance_threshold=1e-6, residual_tolerance_threshold=1e-6,
                                     printLog=False)
-        self.root.BeamFEM.addObject('ConjugateGradientSolver', name='LinearSolver', preconditioning_method='Diagonal',
-                                    maximum_number_of_iterations=2000, residual_tolerance_threshold=1e-9,
+        self.root.beamFEM.addObject('ConjugateGradientSolver', name='StaticSolver', preconditioning_method='Diagonal',
+                                    maximum_number_of_iterations=1000, residual_tolerance_threshold=1e-9,
                                     printLog=False)
-        self.root.BeamFEM.addObject('RegularGridTopology', name='Grid', min=p_grid['min'], max=p_grid['max'],
+        # Grid topology of the beam
+        self.root.beamFEM.addObject('RegularGridTopology', name='Grid', min=p_grid['min'], max=p_grid['max'],
                                     nx=g_res[0], ny=g_res[1], nz=g_res[2])
-        self.root.BeamFEM.addObject('HexahedronSetTopologyContainer', name='Hexa_Topology', src='@Grid')
-        self.root.BeamFEM.addObject('HexahedronSetGeometryAlgorithms', template='Vec3d')
-        self.root.BeamFEM.addObject('HexahedronSetTopologyModifier')
-        self.root.BeamFEM.addObject('QuadSetTopologyContainer', name='Quad_Topology', src='@Hexa_Topology')
-        self.root.BeamFEM.addObject('QuadSetGeometryAlgorithms', template='Vec3d')
-        self.root.BeamFEM.addObject('QuadSetTopologyModifier')
-        self.root.BeamFEM.addObject('Hexa2QuadTopologicalMapping', input="@Hexa_Topology", output="@Quad_Topology")
-        self.MO = self.root.BeamFEM.addObject('MechanicalObject', src='@Grid', name='MO', template='Vec3d', showObject=True)
-        self.root.BeamFEM.addObject('NeoHookeanMaterial', young_modulus=4500, poisson_ratio=0.45, name="StVK")
-        self.root.BeamFEM.addObject('HyperelasticForcefield', material="@StVK", template="Hexahedron",
+        self.MO = self.root.beamFEM.addObject('MechanicalObject', src='@Grid', name='MO', template='Vec3d',
+                                              showObject=True)
+        self.root.beamFEM.addObject('HexahedronSetTopologyContainer', name='Hexa_Topology', src='@Grid')
+        self.root.beamFEM.addObject('HexahedronSetGeometryAlgorithms', template='Vec3d')
+        self.root.beamFEM.addObject('HexahedronSetTopologyModifier')
+        # Surface of the grid
+        self.surface = self.root.beamFEM.addObject('QuadSetTopologyContainer', name='Quad_Topology',
+                                                   src='@Hexa_Topology')
+        self.root.beamFEM.addObject('QuadSetGeometryAlgorithms', template='Vec3d')
+        self.root.beamFEM.addObject('QuadSetTopologyModifier')
+        self.root.beamFEM.addObject('Hexa2QuadTopologicalMapping', input="@Hexa_Topology", output="@Quad_Topology")
+        # Simulated hyperelastic material
+        self.root.beamFEM.addObject('NeoHookeanMaterial', young_modulus=4500, poisson_ratio=0.45, name="StVK")
+        self.root.beamFEM.addObject('HyperelasticForcefield', material="@StVK", template="Hexahedron",
                                     topology='@Hexa_Topology', printLog=True)
-        self.root.BeamFEM.addObject('BoxROI', box=p_grid['fixed_box'], name='Fixed_Box')
-        self.root.BeamFEM.addObject('FixedConstraint', indices='@Fixed_Box.indices')
-        self.CFF = self.root.BeamFEM.addObject('ConstantForceField', name='CFF', showArrowSize='0.1',
-                                               forces=[0 for _ in range(3 * self.nb_dof)],
-                                               indices=list(iter(range(self.nb_dof))))
-        # Visual
-        self.root.BeamFEM.addChild('Visual')
-        self.root.BeamFEM.Visual.addObject('OglModel', name="oglModel", src='@../Grid', color='white')
-        self.root.BeamFEM.Visual.addObject('BarycentricMapping', name="BaryMap2", input='@../MO', output='@./')
+        # Fixed section of the beam
+        self.root.beamFEM.addObject('BoxROI', box=p_grid['fixed_box'], name='Fixed_Box')
+        self.root.beamFEM.addObject('FixedConstraint', indices='@Fixed_Box.indices')
+        # External forces applied on the surface
+        self.box = self.root.beamFEM.addObject('BoxROI', name='ForceBox', box=self.grid_size, drawBoxes=True,
+                                               drawSize=1)
+        self.CFF = self.root.beamFEM.addObject('ConstantForceField', name='CFF', showArrowSize='0.1',
+                                               forces=[0 for _ in range(3 * self.nb_node)],
+                                               indices=list(iter(range(self.nb_node))))
+        # Visual model
+        self.root.beamFEM.addChild('Visual')
+        self.root.beamFEM.Visual.addObject('OglModel', name="oglModel", src='@../Grid', color='white')
+        self.root.beamFEM.Visual.addObject('BarycentricMapping', name="BaryMap2", input='@../MO', output='@./')
 
     def onSimulationInitDoneEvent(self, event):
-        self.inputSize = self.MO.position.value.shape
-        self.outputSize = self.MO.position.value.shape
+        # Get the data sizes
+        self.input_size = self.MO.position.value.shape
+        self.output_size = self.MO.position.value.shape
+        # Get the indices of node on the surface
+        self.idx_surface = self.surface.quads.value.reshape(-1)
+        # Store the shape of the input force (nb_nodes * 3)
+        self.force_like = copy.copy(self.CFF.forces.value)
 
     def onAnimateBeginEvent(self, event):
+        # Reset position
         self.MO.position.value = self.MO.rest_position.value
+        # Create a random box ROI, select nodes of the surface
+        indices = []
+        while len(indices) == 0:    # We need the intersection between box and surface to be non empty
+            x_min = random.randint(self.grid_size[0], self.grid_size[3] - 10)
+            x_max = random.randint(x_min + 10, self.grid_size[3])
+            y_min = random.randint(self.grid_size[1], self.grid_size[4] - 10)
+            y_max = random.randint(y_min + 10, self.grid_size[4])
+            z_min = random.randint(self.grid_size[2], self.grid_size[5] - 10)
+            z_max = random.randint(z_min + 10, self.grid_size[5])
+            # Set a new bounding box
+            self.root.beamFEM.removeObject(self.box)
+            self.box = self.root.beamFEM.addObject('BoxROI', name='ForceBox', drawBoxes=True, drawSize=1,
+                                                   box=[x_min, y_min, z_min, x_max, y_max, z_max])
+            self.box.init()
+            # Get the intersection with the surface
+            indices = list(self.box.indices.value)
+            indices = list(set(indices).intersection(set(self.idx_surface)))
+        # Create a random constant force field for the nodes in the bbox
         F = np.random.random(3) - np.random.random(3)
-        self.CFF.force.value = (3 / np.linalg.norm(F)) * F
+        K = np.random.randint(10, 25)
+        F = (K / np.linalg.norm(F)) * F
+        # Set a new constant force field (variable number of indices)
+        self.root.beamFEM.removeObject(self.CFF)
+        self.CFF = self.root.beamFEM.addObject('ConstantForceField', name='CFF', showArrowSize='0.1',
+                                               indices=indices, force=list(F))
+        self.CFF.init()
+
+    def onAnimateEndEvent(self, event):
+        # Count the steps
+        self.nb_steps += 1
+        # Check whether if the solver diverged or not
+        self.converged = self.root.beamFEM.ODESolver.converged.value
+        self.nb_converged += self.root.beamFEM.ODESolver.converged.value
+        if self.nb_steps % 50 == 0:
+            print("Converge rate:", self.nb_converged / self.nb_steps)
 
     def computeInput(self):
-        self.input = copy.copy(self.CFF.forces.value)
+        # Compute the input force to give to the network
+        f = copy.copy(self.CFF.forces.value)
+        ind = copy.copy(self.CFF.indices.value)
+        F = np.zeros_like(self.force_like)
+        # All forces are zero except on the CFF (intersection between box ROI and surface)
+        for i in range(len(f)):
+            F[ind[i]] = f[i]
+        self.input = F
 
     def computeOutput(self):
+        # Compute the output deformation to compare with the prediction of the network
         self.output = copy.copy(self.MO.position.value - self.MO.rest_position.value)
+
+    def applyPrediction(self, prediction):
+        # Needed for prediction only
+        pass

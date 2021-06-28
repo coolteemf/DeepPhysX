@@ -10,10 +10,11 @@ else:
     raise ValueError("Unknown Environment with name", sys.argv[1])
 
 # ENVIRONMENT PARAMETERS
-grid_resolution = [20, 5, 5]
+grid_resolution = [26, 5, 5]
 # grid_resolution = [40, 10, 10]
 grid_min = [0., 0., 0.]
-grid_max = [100, 25, 25]
+# grid_max = [100, 25, 25]
+grid_max = [100, 15, 15]
 fixed_box = [0., 0., 0., 0., 25, 25]
 p_grid = {'grid_resolution': grid_resolution, 'min': grid_min, 'max': grid_max, 'fixed_box': fixed_box}
 

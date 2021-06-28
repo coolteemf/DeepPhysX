@@ -14,7 +14,7 @@ class SofaRunner(Sofa.Core.Controller):
         self.runner.manager.environment_manager.environment.applyPrediction(prediction)
         self.runner.sampleEnd()
 
-    def onAnimateBeginEvent(self, event):
+    def onAnimateEndEvent(self, event):
         if self.runner.runningCondition():
             self.execute()
         else:

@@ -7,7 +7,7 @@ from DeepPhysX.Manager.NetworkManager import NetworkManager
 from DeepPhysX.Network.BaseNetworkConfig import BaseNetworkConfig
 from DeepPhysX.Manager.EnvironmentManager import EnvironmentManager
 from DeepPhysX.Environment.BaseEnvironmentConfig import BaseEnvironmentConfig
-# from DeepPhysX.Manager.StatsManager import StatsManager
+from DeepPhysX.Manager.StatsManager import StatsManager
 import DeepPhysX.utils.pathUtils as pathUtils
 
 
@@ -70,8 +70,8 @@ class Manager:
                                               session_dir=self.session_dir, new_session=new_session, train=self.train)
 
         # Create the stats manager for training
-        # self.stats_manager = StatsManager(log_dir=os.path.join(self.session_dir, 'stats/'),
-        #                                   sliding_window_size=stats_window) if self.train else None
+        self.stats_manager = StatsManager(log_dir=os.path.join(self.session_dir, 'stats/'),
+                                          sliding_window_size=stats_window) if self.train else None
 
     def getData(self, epoch=0, batch_size=1, animate=True):
         # Training

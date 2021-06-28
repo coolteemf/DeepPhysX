@@ -1,6 +1,11 @@
-import copy
-from Example.Beam.MouseForceManager import MouseForceManager
+"""
+Prediction scene: NN simulated beam with collision with a sphere (launch with the script beamPrediction in FC repository)
+"""
 
+import copy
+import numpy as np
+
+from Example.Beam.MouseForceManager import MouseForceManager
 from Example.Beam.NNBeam import NNBeam
 
 
@@ -9,51 +14,93 @@ class NNBeamCollision(NNBeam):
     def __init__(self, root_node, config, idx_instance=1, training=True):
         super(NNBeamCollision, self).__init__(root_node, config, idx_instance)
         self.config = config
+        self.force_step = 0
 
-    def createBehavior(self, p_grid):
+    def createBehavior(self, config):
+        # Ball behavior
+        self.root.addChild('sphere')
+        self.root.sphere.addObject('EulerImplicitSolver', name='DynamicSolver')
+        self.root.sphere.addObject('CGLinearSolver', name='LinearSolver', iterations=100, tolerance=1.0e-8,
+                                   threshold=1.0e-8)
+        self.root.sphere.addObject('MechanicalObject', name='MO', showObject=True, template='Rigid3d',
+                                   position=[90, 40, 10, 0, 0, 0, 1])
+        self.root.sphere.addObject('UniformMass', totalMass=0.1)
 
+    def createVisual(self, config):
+        # Visual style of the scene
+        self.root.addObject('VisualStyle', displayFlags="showCollisionModels hideVisualModels")
 
-        self.root.addObject('DefaultPipeline')
-        self.root.addObject('FreeMotionAnimationLoop')
-        self.root.addObject('GenericConstraintSolver', tolerance="1e-6", maxIterations="10")
+    def createCollision(self, config):
+        # Collision pipeline
+        self.root.addObject('DefaultPipeline', depth=8)
         self.root.addObject('BruteForceDetection')
-        # self.root.addObject('RuleBasedContactManager', responseParams="mu=" + str(0.0), name='Response',
-        #                     response='FrictionContact')
-        # self.root.addObject('LocalMinDistance', alarmDistance=10, contactDistance=5, angleCone=0.01)
-
-
-        self.MO = self.root.BeamNN.addObject('MechanicalObject', src='@Grid', name='MO', template='Vec3d',
-                                             showObject=True)
-        # Ball
-        self.root.addChild('BallFEM')
-        self.root.BallFEM.addObject('EulerImplicitSolver', name='DynamicSolver')
-        self.root.BallFEM.addObject('ConjugateGradientSolver', name='LinearSolver')
-        self.root.BallFEM.addObject('MechanicalObject', name='MO', showObject=True, template='Rigid3d',
-                                    position=[50, 50, 50, 0, 0, 0, 1])
-        self.root.BallFEM.addObject('UniformMass', totalMass=10)
-        # Collision
-        self.root.BallFEM.addChild('Collision')
-        self.root.BallFEM.Collision.addObject('MeshObjLoader', name="loader", filename="mesh/ball.obj",
-                                              scale=5)
-        self.root.BallFEM.Collision.addObject('MechanicalObject', src='@loader', template='Vec3d', showObject=False)
-        self.root.BallFEM.Collision.addObject('PointCollisionModel')
-        self.root.BallFEM.Collision.addObject('RigidMapping')
+        self.root.addObject('MinProximityIntersection', alarmDistance=1, contactDistance=0.1)
+        self.root.addObject('DefaultContactManager', name="Response", response="default")
+        # Beam collision model
+        self.root.beamNN.addChild('collision')
+        p_grid = config.p_grid
+        g_res = p_grid['grid_resolution']
+        self.root.beamNN.collision.addObject('RegularGridTopology', name='Grid', min=p_grid['min'], max=p_grid['max'],
+                                             nx=g_res[0], ny=g_res[1], nz=g_res[2])
+        self.CMO = self.root.beamNN.collision.addObject('MechanicalObject', src='@Grid', name='MO', template='Vec3d',
+                                                        showObject=False)
+        self.root.beamNN.collision.addObject('TriangleCollisionModel', bothSide=True)
+        self.root.beamNN.collision.addObject('LineCollisionModel')
+        self.root.beamNN.collision.addObject('PointCollisionModel')
+        # Ball collision model
+        self.root.sphere.addChild('collision')
+        self.root.sphere.collision.addObject('MeshObjLoader', name="loader", filename="mesh/sphere_05.obj",
+                                             scale=0.05)
+        self.root.sphere.collision.addObject('MeshTopology', src='@loader')
+        self.root.sphere.collision.addObject('MechanicalObject', src='@loader', template='Vec3d', showObject=False)
+        self.root.sphere.collision.addObject('PointCollisionModel')
+        self.root.sphere.collision.addObject('TriangleCollisionModel')
+        self.root.sphere.collision.addObject('LineCollisionModel')
+        self.root.sphere.collision.addObject('RigidMapping')
 
     def onSimulationInitDoneEvent(self, event):
         NNBeam.onSimulationInitDoneEvent(self, event)
-        self.mouseManager = MouseForceManager(self.grid, [2, 2, 2], self.surface)
+        self.mouse_manager = MouseForceManager(topology=self.grid, max_force=[5.0] * 3, surface=self.surface)
+        self.last_U = np.zeros((self.nb_node, 3))
 
     def onAnimateBeginEvent(self, event):
-        self.MO.position.value = self.MO.rest_position.value
+        pass
 
     def computeInput(self):
-        F = copy.copy(self.MO.force.value)
-        node = self.mouseManager.find_picked_node(F)
+        # Compute the input force to give to the network
+        F = copy.copy(self.CMO.force.value)
+        # Find the node touched by the sphere
+        node = self.mouse_manager.find_picked_node(F)
         if node is not None:
-            F[node] = self.mouseManager.scale_max_force(F[node])
-            F, local = self.mouseManager.distribute_force(node, F, 2.5, 8)
-        self.input = F
+            # Scale the force value to fit the range of inputs learned by the network
+            F[node] = self.mouse_manager.scale_max_force(force=F[node])
+            # Distribute the forces on neighbors (gamma : Gaussian compression / radius : neighborhood)
+            F, local = self.mouse_manager.distribute_force(node=node, forces=F, gamma=0.25, radius=5)
+        # Interpolate force
+        if np.linalg.norm(F) > 0.0:
+            self.force_step = 0.25
+            self.sum_forces = copy.copy(F)
+            final_force = np.multiply(self.sum_forces, self.force_step)
+        else:
+            if 0 < self.force_step < 0.999:
+                self.force_step += 0.25
+                final_force = np.multiply(self.sum_forces, self.force_step)
+            else:
+                final_force = np.zeros((self.nb_node, 3))
+        self.input = final_force
 
     def applyPrediction(self, prediction):
-        u0 = prediction[0] * 10
-        self.MO.position.value = u0 + self.MO.rest_position.array()
+        U = prediction[0]
+        # Interpolate deformation
+        if np.linalg.norm(self.input) > 0.0:
+            self.last_U = U
+            self.MO.position.value = self.MO.rest_position.value + U
+            self.CMO.position.value = self.CMO.rest_position.array() + U
+            # print("New input force || f || = ", np.linalg.norm(self.input), " -- || last U || =",
+            #       np.linalg.norm(self.last_U))
+        else:
+            self.last_U = np.multiply(self.last_U, 0.75)
+            self.CMO.position.value = self.last_U + self.CMO.rest_position.array()
+            self.MO.position.value = self.MO.rest_position.value + self.last_U
+            # if np.linalg.norm(self.last_U) > 0.0001:
+            #     print("Interpolating to rest position -- || last U || =", np.linalg.norm(self.last_U))

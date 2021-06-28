@@ -1,3 +1,7 @@
+"""
+Prediction scene: NN simulated beam with contact with the floor (launch with the script beamPrediction in FC repository)
+"""
+
 import os
 import copy
 import numpy as np
@@ -12,24 +16,24 @@ class NNBeamFloor(NNBeam):
         super(NNBeamFloor, self).__init__(root_node, config, idx_instance)
 
     def createBehavior(self, config):
-        # Beam behaviour
+        # Beam behaviour : see NNBeam.py
         NNBeam.createBehavior(self, config)
-        self.CFF.showArrowSize.value = 0.0
-        # Floor behaviour
+        # Rigid floor
         self.root.addChild("floor")
         filename = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'floor.obj')
-        self.root.floor.addObject('MeshObjLoader', name="loader", filename=filename)
+        self.root.floor.addObject('MeshObjLoader', name="loader", filename=filename, translation=[0, -3, 0])
         self.root.floor.addObject('MeshTopology', src='@loader')
         self.root.floor.addObject('MechanicalObject', src='@loader', template='Vec3d', showObject=False)
 
     def createVisual(self, config):
+        # Visual style of the scene
         self.root.addObject('VisualStyle', displayFlags="showCollisionModels hideVisualModels hideBehavior")
 
     def createCollision(self, config):
         # Collision pipeline
         self.root.addObject('DefaultPipeline', depth=8)
         self.root.addObject('BruteForceDetection')
-        self.root.addObject('MinProximityIntersection', alarmDistance=2, contactDistance=0.5)
+        self.root.addObject('MinProximityIntersection', alarmDistance=2, contactDistance=0.75)
         self.root.addObject('DefaultContactManager', name="Response", response="default")
         # Beam collision model
         self.root.beamNN.addChild('collision')
@@ -50,13 +54,21 @@ class NNBeamFloor(NNBeam):
 
     def onSimulationInitDoneEvent(self, event):
         NNBeam.onSimulationInitDoneEvent(self, event)
-        self.mouseManager = MouseForceManager(self.grid, [2.] * 3, self.surface)
-        self.max_force = np.zeros_like(self.MO.force.value)
+        # Apply constant force field on the top
+        self.root.beamNN.removeObject(self.box)
+        self.box = self.root.beamNN.addObject('BoxROI', name='ForceBox', drawBoxes=True, drawSize=1,
+                                              box=self.config.p_grid['top_box'])
+        self.box.init()
+        indices = list(self.box.indices.value)
+        indices = list(set(indices).intersection(set(self.idx_surface)))
+        F = np.array([0.0, -0.5, 0.0])
+        self.root.beamNN.removeObject(self.CFF)
+        self.CFF = self.root.beamNN.addObject('ConstantForceField', name='CFF', showArrowSize='1',
+                                              indices=indices, force=list(F))
+        self.CFF.init()
 
     def onAnimateBeginEvent(self, event):
-        # self.MO.position.value = self.MO.rest_position.value
-        F = np.array([0.0, -0.2, 0.0])
-        self.CFF.force.value = F
+        pass
 
     def computeInput(self):
         # Get applied forces
@@ -71,6 +83,9 @@ class NNBeamFloor(NNBeam):
         self.input = F + C
 
     def applyPrediction(self, prediction):
-        u0 = ((1e-3 / self.nb_dof) / self.root.dt.value ** 2) * prediction[0]
-        self.MO.position.value = self.MO.position.array() + u0
+        # Dynamical factor
+        U = ((1e-3 / self.nb_node) / self.root.dt.value ** 2) * prediction[0]
+        # Add the displacement to the initial position
+        self.MO.position.value = self.MO.position.array() + U
+        # The mechanical and collision models are the same
         self.CMO.position.value = self.MO.position.value

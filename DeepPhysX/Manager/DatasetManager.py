@@ -250,12 +250,12 @@ class DatasetManager:
         data = {'in': np.array([]), 'out': np.array([])}
         if get_inputs:
             if batched:
-                data['in'] = self.dataset.data_in[idx: idx + batch_size]
+                data['in'] = self.dataset.data_in[idx: idx + batch_size].reshape((-1, *self.dataset.inShape))
             else:
                 data['in'] = np.squeeze(self.dataset.data_in[idx: idx + batch_size], axis=0)
         if get_outputs:
             if batched:
-                data['out'] = self.dataset.data_out[idx: idx + batch_size]
+                data['out'] = self.dataset.data_out[idx: idx + batch_size].reshape((-1, *self.dataset.outShape))
             else:
                 data['out'] = np.squeeze(self.dataset.data_out[idx: idx + batch_size], axis=0)
         self.dataset.currentSample += batch_size
@@ -285,7 +285,6 @@ class DatasetManager:
                 self.loadMultiplePartitions([self.mode])
         # Training mode, loadPartition not called in running mode
         else:
-            print('here')
             # Mixed dataset
             if len(self.list_in_partitions[self.modes['running']]) > 0:
                 self.loadMultiplePartitions([self.modes['training'], self.modes['running']])
@@ -296,7 +295,6 @@ class DatasetManager:
                     self.loadLastPartitions()
                 else:
                     self.loadMultiplePartitions([self.mode])
-        print(self.dataset.data_in)
 
     def loadMultiplePartitions(self, modes):
         in_filenames, out_filenames = [], []

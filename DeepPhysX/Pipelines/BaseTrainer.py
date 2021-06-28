@@ -1,6 +1,3 @@
-import numpy as np
-from torch import no_grad
-
 from DeepPhysX.Pipelines.BasePipeline import BasePipeline
 from DeepPhysX.Network.BaseNetworkConfig import BaseNetworkConfig
 from DeepPhysX.Dataset.BaseDatasetConfig import BaseDatasetConfig
@@ -26,7 +23,7 @@ class BaseTrainer(BasePipeline):
         # Training variables
         self.nb_epochs = nb_epochs
         self.id_epoch = 0
-        self.nb_bathes = nb_batches
+        self.nb_batches = nb_batches
         self.batch_size = batch_size
         self.id_batch = 0
         self.nb_samples = nb_batches * batch_size
@@ -54,7 +51,6 @@ class BaseTrainer(BasePipeline):
             while self.batchCondition():
                 self.batchBegin()
                 self.optimize()
-                # self.loss = self.manager.optimizeNetwork(self.epoch, self.batchSize)
                 self.batchStats()
                 self.batchCount()
                 self.batchEnd()
@@ -64,64 +60,59 @@ class BaseTrainer(BasePipeline):
             self.saveNetwork()
         self.trainEnd()
 
+    def optimize(self):
+        self.manager.getData(self.id_epoch, self.batch_size)
+        self.loss_value = self.manager.optimizeNetwork()
+
+    def saveNetwork(self):
+        self.manager.saveNetwork()
+
     def trainBegin(self):
         pass
 
     def trainEnd(self):
-        print(self.manager.network_manager.network.getParameters())
         self.manager.close()
 
     def epochBegin(self):
         self.id_batch = 0
         self.manager.dataset_manager.dataset.shuffle()
 
+    def epochEnd(self):
+        pass
+
     def epochCondition(self):
         return self.id_epoch < self.nb_epochs
 
     def epochStats(self):
         # self.manager.statsManager.add_trainEpochLoss(self.loss['item'], self.epoch)
-        if self.id_epoch % 10 == 0:
+        if (self.id_epoch + 1) % 5 == 0:
             print(self.loss_value)
 
     def epochCount(self):
         self.id_epoch += 1
 
-    def epochEnd(self):
-        pass
-
     def batchBegin(self):
         pass
-
-    def batchCondition(self):
-        return self.id_batch < self.nb_bathes
-
-    def batchStats(self):
-        # self.manager.statsManager.add_trainBatchLoss(self.loss['item'], self.epoch * self.nbBatches + self.batch)
-        # self.manager.statsManager.add_trainTestBatchLoss(self.loss['item'], None, self.epoch * self.nbBatches + self.batch)  # why ?
-        pass
-
-    def batchCount(self):
-        self.id_batch += 1
 
     def batchEnd(self):
         pass
 
-    def optimize(self):
-        # self.loss = self.manager.optimizeNetwork(self.epoch, self.batchSize)
-        self.manager.getData(self.id_epoch, self.batch_size)
-        self.loss_value = self.manager.optimizeNetwork()
+    def batchCondition(self):
+        return self.id_batch < self.nb_batches
 
-    def validate(self, size):
-        success_count = 0
-        # TODO: find alternative to no_grad()
-        # TODO: move from this file
-        with no_grad():
-            for i in range(size):
-                inputs, ground_truth = self.manager.environment_manager.getData(1, True, True)
-                prediction = np.argmax(self.manager.getPrediction(inputs=inputs).numpy())
-                if prediction == ground_truth[0]:
-                    success_count += 1
-        print("Success Rate =", success_count * 100.0 / size)
+    def batchStats(self):
+        self.manager.stats_manager.add_trainBatchLoss(self.loss_value, self.id_epoch * self.nb_batches + self.id_batch)
+        # self.manager.statsManager.add_trainTestBatchLoss(self.loss['item'], None, self.epoch * self.nbBatches + self.batch)  # why ?
 
-    def saveNetwork(self):
-        self.manager.saveNetwork()
+    def batchCount(self):
+        self.id_batch += 1
+
+    # def validate(self, size):
+    #     success_count = 0
+    #     with no_grad():
+    #         for i in range(size):
+    #             inputs, ground_truth = self.manager.environment_manager.getData(1, True, True)
+    #             prediction = np.argmax(self.manager.getPrediction(inputs=inputs).numpy())
+    #             if prediction == ground_truth[0]:
+    #                 success_count += 1
+    #     print("Success Rate =", success_count * 100.0 / size)

@@ -59,6 +59,7 @@ class NetworkManager:
                 self.network_dir = pathUtils.createDir(self.network_dir, check_existing='network')
         # If predict only
         else:
+            print("eval")
             self.network.setEval()
             # Need an existing network
             if not self.existing_network:

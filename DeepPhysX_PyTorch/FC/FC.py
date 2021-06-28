@@ -12,10 +12,11 @@ class FC(TorchNetwork):
             super().__init__()
             self.nbInChannels = nb_input_channels
             self.nbOutChannels = nb_output_channels
-            self.linear = nn.Sequential(nn.Linear(self.nbInChannels, self.nbOutChannels))
+            self.linear = nn.Sequential(nn.Linear(self.nbInChannels, self.nbOutChannels, False))
 
         def forward(self, x):
-            return self.linear(x)
+            res = self.linear(x)
+            return res
 
     def __init__(self, config):
         TorchNetwork.__init__(self, config)
@@ -28,4 +29,6 @@ class FC(TorchNetwork):
         self.linear = nn.Sequential(*(self.layers[:-1]))
 
     def forward(self, x):
-        return self.linear(x.view(x.shape[0], -1)).view(x.shape[0], -1, self.config.dim_output)
+        # print("\nin\n", x)
+        res = self.linear(x.view(x.shape[0], -1)).view(x.shape[0], -1, self.config.dim_output)
+        return res

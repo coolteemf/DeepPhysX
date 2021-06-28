@@ -11,33 +11,28 @@ from DeepPhysX_Sofa.Runner.SofaBaseRunner import SofaRunner
 from Example.Beam.BeamConfig import BeamConfig
 from Example.Beam.NNBeam import NNBeam as Beam
 
-scene_map = {'1': 'NNBeam', '2': 'NNBeamMouse', '3': 'NNBeamFloor', '4': 'NNBeamCollision', '5': 'NNBeamDynamics'}
-arg = '1' if (sys.argv[1] not in scene_map.keys()) and (sys.argv[1] not in scene_map.values()) else sys.argv[1]
-scene = scene_map[arg] if (arg in scene_map.keys()) else arg
-scene_rep = 'Example.Beam.' + scene
-exec("from %s import %s as Beam" % (scene_rep, scene))
-
-
-# elif sys.argv[1] == 'BothBeams':
-#     from Example.Beam.BothBeams import BothBeams as Beam
-# elif sys.argv[1] == 'BothBeamsInteraction':
-#     from Example.Beam.BothBeamsInteraction import BothBeamsInteraction as Beam
-
+if len(sys.argv) > 1:
+    scene_map = {'1': 'NNBeam', '2': 'NNBeamMouse', '3': 'NNBeamFloor', '4': 'NNBeamCollision'}
+    arg = '1' if (sys.argv[1] not in scene_map.keys()) and (sys.argv[1] not in scene_map.values()) else sys.argv[1]
+    scene = scene_map[arg] if (arg in scene_map.keys()) else arg
+    scene_rep = 'Example.Beam.' + scene
+    exec("from %s import %s as Beam" % (scene_rep, scene))
 
 # ENVIRONMENT PARAMETERS
-grid_resolution = [40, 10, 10]
+grid_resolution = [25, 5, 5]    # [40, 10, 10]
 grid_min = [0., 0., 0.]
-grid_max = [100., 25., 25.]
+grid_max = [100, 15, 15]        # [100., 25., 25.]
 fixed_box = [0., 0., 0., 0., 25., 25.]
 free_box = [49.5, -0.5, -0.5, 100.5, 25.5, 25.5]
+top_box = [89.5, 14.5, -0.5, 100.5, 15.5, 15.5]
 all_box = [0., 0., 0., 100.5, 25.5, 25.5]
 p_grid = {'grid_resolution': grid_resolution, 'min': grid_min, 'max': grid_max,
-          'fixed_box': fixed_box, 'free_box': free_box, 'all_box': all_box}
+          'fixed_box': fixed_box, 'free_box': free_box, 'all_box': all_box, 'top_box': top_box}
 
 # NETWORK PARAMETERS
 nb_hidden_layers = 2
-nb_dof = grid_resolution[0] * grid_resolution[1] * grid_resolution[2]
-layers_dim = [nb_dof * 3] + [nb_dof * 3 for _ in range(nb_hidden_layers + 1)] + [nb_dof * 3]
+nb_node = grid_resolution[0] * grid_resolution[1] * grid_resolution[2]
+layers_dim = [nb_node * 3] + [nb_node * 3 for _ in range(nb_hidden_layers + 1)] + [nb_node * 3]
 
 
 def createScene(root_node=None):
@@ -51,8 +46,8 @@ def createScene(root_node=None):
     dataset_config = BaseDatasetConfig()
     BaseDatasetConfig(partition_size=1, shuffle_dataset=True)
     # Runner
-    man_dir = os.path.dirname(os.path.realpath(__file__)) + '/beam_FC_prediction'
-    runner = BaseRunner(session_name="beam_FC_prediction", dataset_config=dataset_config,
+    man_dir = os.path.dirname(os.path.realpath(__file__)) + '/session'
+    runner = BaseRunner(session_name="session", dataset_config=dataset_config,
                         environment_config=env_config, network_config=net_config, session_dir=man_dir, nb_steps=0,
                         record_inputs=False, record_outputs=False)
     root_node = runner.manager.environment_manager.environment.root

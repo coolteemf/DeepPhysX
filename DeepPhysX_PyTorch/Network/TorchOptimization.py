@@ -11,6 +11,9 @@ class TorchOptimization(BaseOptimization):
             self.loss = self.loss_class()
 
     def computeLoss(self, prediction, ground_truth):
+        self.p, self.gt = prediction, ground_truth
+        # print("prediction\n", prediction)
+        # print("ground truth\n", ground_truth)
         self.loss_value = self.loss(prediction, ground_truth)
         return self.loss_value.item()
 
@@ -20,5 +23,6 @@ class TorchOptimization(BaseOptimization):
 
     def optimize(self):
         self.optimizer.zero_grad()
+        self.p.retain_grad()
         self.loss_value.backward()
         self.optimizer.step()

@@ -32,7 +32,7 @@ class TorchNetwork(torch.nn.Module, BaseNetwork):
         print("[{}]: Device is {}".format(self.name, self.device))
 
     def loadParameters(self, path):
-        self.load_state_dict(torch.load(path))
+        self.load_state_dict(torch.load(path, map_location=self.device))
 
     def getParameters(self):
         return self.state_dict()
@@ -45,8 +45,8 @@ class TorchNetwork(torch.nn.Module, BaseNetwork):
         return sum(p.numel() for p in self.parameters())
 
     def transformFromNumpy(self, x):
-        x = torch.from_numpy(x).to(self.device).float()
-        x.requires_grad = True
+        x = torch.as_tensor(x, dtype=torch.float, device=self.device)
+        x.requires_grad_()
         return x
 
     def transformToNumpy(self, x):
