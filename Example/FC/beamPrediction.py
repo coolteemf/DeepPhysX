@@ -13,7 +13,8 @@ from Example.Beam.BeamConfig import BeamConfig
 from Example.Beam.NNBeam import NNBeam as Beam
 
 if len(sys.argv) > 1:
-    scene_map = {'1': 'NNBeam', '2': 'NNBeamMouse', '3': 'NNBeamFloor', '4': 'NNBeamCollision', '5': 'NNBeamCompare'}
+    scene_map = {'1': 'NNBeam', '2': 'NNBeamMouse', '3': 'NNBeamFloor', '4': 'NNBeamCollision', '5': 'NNBeamCompare',
+                 '6': 'NNBeamCompareConstant'}
     arg = '1' if (sys.argv[1] not in scene_map.keys()) and (sys.argv[1] not in scene_map.values()) else sys.argv[1]
     scene = scene_map[arg] if (arg in scene_map.keys()) else arg
     scene_rep = 'Example.Beam.' + scene
@@ -22,10 +23,10 @@ if len(sys.argv) > 1:
 # ENVIRONMENT PARAMETERS
 grid_resolution = [25, 5, 5]    # [40, 10, 10]
 grid_min = [0., 0., 0.]
-grid_max = [100, 15, 15]        # [100., 25., 25.]
+grid_max = [100, 15, 15]       # [100., 25., 25.]
 fixed_box = [0., 0., 0., 0., 25., 25.]
 free_box = [49.5, -0.5, -0.5, 100.5, 25.5, 25.5]
-top_box = [89.5, 14.5, -0.5, 100.5, 15.5, 15.5]
+top_box = [49.5, 24.5, -0.5, 100.5, 25.5, 25.5]     # [89.5, 14.5, -0.5, 100.5, 15.5, 15.5]
 all_box = [0., 0., 0., 100.5, 25.5, 25.5]
 p_grid = {'grid_resolution': grid_resolution, 'min': grid_min, 'max': grid_max,
           'fixed_box': fixed_box, 'free_box': free_box, 'all_box': all_box, 'top_box': top_box}
