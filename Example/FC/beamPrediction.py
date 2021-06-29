@@ -12,7 +12,7 @@ from Example.Beam.BeamConfig import BeamConfig
 from Example.Beam.NNBeam import NNBeam as Beam
 
 if len(sys.argv) > 1:
-    scene_map = {'1': 'NNBeam', '2': 'NNBeamMouse', '3': 'NNBeamFloor', '4': 'NNBeamCollision'}
+    scene_map = {'1': 'NNBeam', '2': 'NNBeamMouse', '3': 'NNBeamFloor', '4': 'NNBeamCollision', '5': 'NNBeamCompare'}
     arg = '1' if (sys.argv[1] not in scene_map.keys()) and (sys.argv[1] not in scene_map.values()) else sys.argv[1]
     scene = scene_map[arg] if (arg in scene_map.keys()) else arg
     scene_rep = 'Example.Beam.' + scene

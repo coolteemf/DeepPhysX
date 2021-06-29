@@ -77,7 +77,7 @@ class NNBeam(SofaEnvironment):
         # Get the data sizes
         self.input_size = self.MO.position.value.shape
         self.output_size = self.MO.position.value.shape
-        # Store the shape of the input force
+        # Get the indices of node on the surface
         self.idx_surface = self.surface.quads.value.reshape(-1)
 
     def onAnimateBeginEvent(self, event):
