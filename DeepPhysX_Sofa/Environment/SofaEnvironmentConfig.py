@@ -1,4 +1,4 @@
-from DeepPhysX.Environment.BaseEnvironmentConfig import BaseEnvironmentConfig
+from DeepPhysX_Core.Environment.BaseEnvironmentConfig import BaseEnvironmentConfig
 from .SofaEnvironment import SofaEnvironment
 from dataclasses import dataclass
 
@@ -16,8 +16,8 @@ class SofaEnvironmentConfig(BaseEnvironmentConfig):
         BaseEnvironmentConfig.__init__(self, environment_class, simulations_per_step, max_wrong_samples_per_step,
                                        always_create_data, multiprocessing, multiprocess_method)
         self.rootNode = root_node
-        self.environmentConfig = self.SofaEnvironmentProperties(simulations_per_step=simulations_per_step,
-                                                                max_wrong_samples_per_step=max_wrong_samples_per_step)
+        self.environment_config = self.SofaEnvironmentProperties(simulations_per_step=simulations_per_step,
+                                                                 max_wrong_samples_per_step=max_wrong_samples_per_step)
         self.descriptionName = "SOFA EnvironmentConfig"
 
     def setRootNodes(self):
@@ -38,10 +38,10 @@ class SofaEnvironmentConfig(BaseEnvironmentConfig):
             self.setRootNodes()
         self.addRequiredPlugins()
         if self.multiprocessing == 1:
-            environment = self.rootNode.addObject(self.environment_class(self.rootNode, self.environmentConfig, 0))
+            environment = self.rootNode.addObject(self.environment_class(self.rootNode, self.environment_config, 0))
         else:
-            environment = [self.rootNode[i].addObject(self.environment_class(self.rootNode[i], self.environmentConfig,
-                                                                             i+1)) for i in range(len(self.rootNode))]
+            environment = [self.rootNode[i].addObject(self.environment_class(self.rootNode[i], self.environment_config,
+                                                                             i + 1)) for i in range(len(self.rootNode))]
         self.initNodes()
         return environment
 

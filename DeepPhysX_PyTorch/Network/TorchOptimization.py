@@ -1,4 +1,4 @@
-from DeepPhysX.Network.BaseOptimization import BaseOptimization
+from DeepPhysX_Core.Network.BaseOptimization import BaseOptimization
 
 
 class TorchOptimization(BaseOptimization):

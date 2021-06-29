@@ -1,5 +1,5 @@
 import os
-from DeepPhysX.Environment.BaseEnvironment import BaseEnvironment
+from DeepPhysX_Core.Environment.BaseEnvironment import BaseEnvironment
 from dataclasses import dataclass
 
 

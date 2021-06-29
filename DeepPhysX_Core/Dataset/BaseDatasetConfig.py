@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from DeepPhysX.Dataset.BaseDataset import BaseDataset
+from DeepPhysX_Core.Dataset.BaseDataset import BaseDataset
 
 
 class BaseDatasetConfig:

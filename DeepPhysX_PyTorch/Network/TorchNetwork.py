@@ -2,7 +2,7 @@ import torch
 import gc
 from psutil import cpu_count
 
-from DeepPhysX.Network.BaseNetwork import BaseNetwork
+from DeepPhysX_Core.Network.BaseNetwork import BaseNetwork
 
 
 class TorchNetwork(torch.nn.Module, BaseNetwork):

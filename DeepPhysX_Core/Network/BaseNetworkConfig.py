@@ -1,8 +1,8 @@
 from dataclasses import dataclass
 from typing import Any
 
-from DeepPhysX.Network.BaseNetwork import BaseNetwork
-from DeepPhysX.Network.BaseOptimization import BaseOptimization
+from DeepPhysX_Core.Network.BaseNetwork import BaseNetwork
+from DeepPhysX_Core.Network.BaseOptimization import BaseOptimization
 
 
 class BaseNetworkConfig:

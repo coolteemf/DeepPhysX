@@ -1,8 +1,8 @@
-from DeepPhysX.Pipelines.BasePipeline import BasePipeline
-from DeepPhysX.Network.BaseNetworkConfig import BaseNetworkConfig
-from DeepPhysX.Dataset.BaseDatasetConfig import BaseDatasetConfig
-from DeepPhysX.Environment.BaseEnvironmentConfig import BaseEnvironmentConfig
-from DeepPhysX.Manager.Manager import Manager
+from DeepPhysX_Core.Pipelines.BasePipeline import BasePipeline
+from DeepPhysX_Core.Network.BaseNetworkConfig import BaseNetworkConfig
+from DeepPhysX_Core.Dataset.BaseDatasetConfig import BaseDatasetConfig
+from DeepPhysX_Core.Environment.BaseEnvironmentConfig import BaseEnvironmentConfig
+from DeepPhysX_Core.Manager.Manager import Manager
 
 
 class BaseTrainer(BasePipeline):

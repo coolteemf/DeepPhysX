@@ -1,7 +1,7 @@
 import os
 
-from DeepPhysX.Network.BaseNetworkConfig import BaseNetworkConfig
-import DeepPhysX.utils.pathUtils as pathUtils
+from DeepPhysX_Core.Network.BaseNetworkConfig import BaseNetworkConfig
+import DeepPhysX_Core.utils.pathUtils as pathUtils
 
 
 class NetworkManager:

@@ -1,4 +1,4 @@
-from DeepPhysX.Network.BaseNetworkConfig import BaseNetworkConfig
+from DeepPhysX_Core.Network.BaseNetworkConfig import BaseNetworkConfig
 from DeepPhysX_PyTorch.Network.TorchNetwork import TorchNetwork
 from DeepPhysX_PyTorch.Network.TorchOptimization import TorchOptimization
 from dataclasses import dataclass

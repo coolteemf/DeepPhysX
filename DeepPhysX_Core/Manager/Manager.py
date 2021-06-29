@@ -1,14 +1,14 @@
 import os
 
-from DeepPhysX.Pipelines.BasePipeline import BasePipeline
-from DeepPhysX.Manager.DatasetManager import DatasetManager
-from DeepPhysX.Dataset.BaseDatasetConfig import BaseDatasetConfig
-from DeepPhysX.Manager.NetworkManager import NetworkManager
-from DeepPhysX.Network.BaseNetworkConfig import BaseNetworkConfig
-from DeepPhysX.Manager.EnvironmentManager import EnvironmentManager
-from DeepPhysX.Environment.BaseEnvironmentConfig import BaseEnvironmentConfig
-from DeepPhysX.Manager.StatsManager import StatsManager
-import DeepPhysX.utils.pathUtils as pathUtils
+from DeepPhysX_Core.Pipelines.BasePipeline import BasePipeline
+from DeepPhysX_Core.Manager.DatasetManager import DatasetManager
+from DeepPhysX_Core.Dataset.BaseDatasetConfig import BaseDatasetConfig
+from DeepPhysX_Core.Manager.NetworkManager import NetworkManager
+from DeepPhysX_Core.Network.BaseNetworkConfig import BaseNetworkConfig
+from DeepPhysX_Core.Manager.EnvironmentManager import EnvironmentManager
+from DeepPhysX_Core.Environment.BaseEnvironmentConfig import BaseEnvironmentConfig
+from DeepPhysX_Core.Manager.StatsManager import StatsManager
+import DeepPhysX_Core.utils.pathUtils as pathUtils
 
 
 class Manager:

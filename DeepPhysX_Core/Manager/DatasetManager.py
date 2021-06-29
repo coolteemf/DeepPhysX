@@ -1,8 +1,8 @@
 import os
 import numpy as np
 
-from DeepPhysX.Dataset.BaseDatasetConfig import BaseDatasetConfig
-import DeepPhysX.utils.pathUtils as pathUtils
+from DeepPhysX_Core.Dataset.BaseDatasetConfig import BaseDatasetConfig
+import DeepPhysX_Core.utils.pathUtils as pathUtils
 
 
 class DatasetManager:

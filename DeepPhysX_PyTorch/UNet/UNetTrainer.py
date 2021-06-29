@@ -1,4 +1,4 @@
-from DeepPhysX.Pipelines.BaseTrainer import BaseTrainer
+from DeepPhysX_Core.Pipelines.BaseTrainer import BaseTrainer
 
 
 class UNet_Trainer(BaseTrainer):

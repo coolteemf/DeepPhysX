@@ -2,7 +2,7 @@ import os
 import numpy as np
 import multiprocessing as mp
 
-from DeepPhysX.Environment.BaseEnvironmentConfig import BaseEnvironmentConfig
+from DeepPhysX_Core.Environment.BaseEnvironmentConfig import BaseEnvironmentConfig
 
 
 class EnvironmentManager:
