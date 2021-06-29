@@ -2,8 +2,8 @@ from torch.optim import Adam
 from torch.nn import MSELoss
 
 from DeepPhysX_PyTorch.FC.FCConfig import FCConfig
-from DeepPhysX.Dataset.BaseDatasetConfig import BaseDatasetConfig
-from DeepPhysX.Pipelines.BaseTrainer import BaseTrainer
+from DeepPhysX_Core.Dataset.BaseDatasetConfig import BaseDatasetConfig
+from DeepPhysX_Core.Pipelines.BaseTrainer import BaseTrainer
 
 from Example.Beam.BeamConfig import BeamConfig
 from Example.Beam.FEMBeam import FEMBeam as Beam
