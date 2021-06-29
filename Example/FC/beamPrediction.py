@@ -1,5 +1,6 @@
 import os
 import sys
+sys.path.append(os.getcwd())
 from torch.optim import Adam
 from torch.nn import MSELoss
 
