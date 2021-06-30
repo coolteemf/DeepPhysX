@@ -19,7 +19,7 @@ grid_resolution = [25, 5, 5]
 grid_min = [0., 0., 0.]
 grid_max = [100, 15, 15]
 fixed_box = [0., 0., 0., 0., 15, 15]
-p_grid = {'grid_resolution': grid_resolution, 'min': grid_min, 'max': grid_max, 'fixed_box': fixed_box}
+p_grid = {'grid_resolution': grid_resolution, 'grid_min': grid_min, 'grid_max': grid_max, 'fixed_box': fixed_box}
 
 # TRAINING PARAMETERS
 nb_hidden_layers = 2

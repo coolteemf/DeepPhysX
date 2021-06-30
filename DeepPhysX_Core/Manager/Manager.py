@@ -14,8 +14,7 @@ import DeepPhysX_Core.utils.pathUtils as pathUtils
 class Manager:
 
     def __init__(self, pipeline: BasePipeline, network_config: BaseNetworkConfig, dataset_config: BaseDatasetConfig,
-                 environment_config: BaseEnvironmentConfig, session_name='default', session_dir=None, new_session=True,
-                 stats_window=50):
+                 environment_config: BaseEnvironmentConfig, session_name='default', session_dir=None, new_session=True):
 
         # Todo: checking the arguments
         self.record_data = pipeline.record_data
@@ -70,8 +69,7 @@ class Manager:
                                               session_dir=self.session_dir, new_session=new_session, train=self.train)
 
         # Create the stats manager for training
-        self.stats_manager = StatsManager(log_dir=os.path.join(self.session_dir, 'stats/'),
-                                          sliding_window_size=stats_window) if self.train else None
+        self.stats_manager = StatsManager(log_dir=os.path.join(self.session_dir, 'stats/')) if self.train else None
 
     def getData(self, epoch=0, batch_size=1, animate=True):
         # Training

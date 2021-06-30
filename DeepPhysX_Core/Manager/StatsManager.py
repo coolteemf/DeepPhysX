@@ -14,7 +14,7 @@ def generateDefaultMaterial():
     return {'material': {'cls': 'MeshStandardMaterial', 'roughness': 1, 'metalness': 0, 'color': '#8888ff'}}
 
 
-class DataManager:
+class StatsManager:
     def __init__(self, log_dir, keep_losses=False):
         self.log_dir = log_dir
         self.writer = tb.SummaryWriter(log_dir)
