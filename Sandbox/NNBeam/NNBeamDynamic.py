@@ -4,10 +4,10 @@ from Sandbox.BeamConfig.MouseForceManager import MouseForceManager
 from Sandbox.NNBeam.NNBeam import NNBeam
 
 
-class NNBeamDynamics(NNBeam):
+class NNBeamDynamic(NNBeam):
 
     def __init__(self, root_node, config, idx_instance=1, training=True):
-        super(NNBeamDynamics, self).__init__(root_node, config, idx_instance)
+        super(NNBeamDynamic, self).__init__(root_node, config, idx_instance)
         self.config = config
         self.last_U = None
 

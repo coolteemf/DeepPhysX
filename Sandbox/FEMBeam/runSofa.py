@@ -24,7 +24,7 @@ if len(sys.argv) > 1:
 
 
 # ENVIRONMENT PARAMETERS
-grid_resolution = [26, 5, 5]    # [40, 10, 10]
+grid_resolution = [25, 5, 5]    # [40, 10, 10]
 grid_min = [0., 0., 0.]
 grid_max = [100, 15, 15]        # [100, 25, 25]
 fixed_box = [0., 0., 0., 0., 25, 25]

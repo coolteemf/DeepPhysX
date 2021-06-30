@@ -25,9 +25,9 @@ p_grid = {'grid_resolution': grid_resolution, 'min': grid_min, 'max': grid_max, 
 nb_hidden_layers = 2
 nb_node = grid_resolution[0] * grid_resolution[1] * grid_resolution[2]
 layers_dim = [nb_node * 3] + [nb_node * 3 for _ in range(nb_hidden_layers + 1)] + [nb_node * 3]
-nb_epoch = 1
-nb_batch = 20
-batch_size = 5
+nb_epoch = 10
+nb_batch = 15
+batch_size = 32
 
 
 def createScene(root_node=None):
