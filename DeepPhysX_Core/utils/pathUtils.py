@@ -10,7 +10,7 @@ def createDir(dirname, check_existing):
         copies_list = [folder for folder in os.listdir(parent) if
                        os.path.isdir(os.path.join(parent, folder)) and
                        folder.__contains__(check_existing)]
-        new_name = os.path.basename(os.path.normpath(dirname)) + '({})/'.format(len(copies_list))
+        new_name = os.path.basename(os.path.normpath(dirname)) + '_{}/'.format(len(copies_list))
         dirname = os.path.join(parent, new_name)
         print("Create a new directory {} for this session.".format(dirname))
     os.makedirs(dirname)

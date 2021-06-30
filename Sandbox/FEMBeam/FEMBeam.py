@@ -160,6 +160,9 @@ class FEMBeam(SofaEnvironment):
         # Compute the output deformation to compare with the prediction of the network
         self.output = copy.copy(self.MO.position.value - self.MO.rest_position.value)
 
+    def checkSample(self, check_input=True, check_output=True):
+        return self.converged
+
     def applyPrediction(self, prediction):
         """
         Apply the prediction of the network in the Sofa environment. Automatically called by EnvironmentManager.
