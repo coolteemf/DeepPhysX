@@ -6,7 +6,7 @@ Script used to train a FC network on FEM beam deformations
 import torch
 
 from Sandbox.BeamConfig.BeamConfig import BeamConfig
-from Example.Beam.FEMBeam import FEMBeam as Beam
+from Sandbox.FEMBeam.FEMBeam import FEMBeam as Beam
 
 from DeepPhysX_PyTorch.FC.FCConfig import FCConfig
 from DeepPhysX_Core.Dataset.BaseDatasetConfig import BaseDatasetConfig
