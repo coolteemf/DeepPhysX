@@ -76,6 +76,7 @@ class BaseTrainer(BasePipeline):
     def epochBegin(self):
         self.id_batch = 0
         self.manager.dataset_manager.dataset.shuffle()
+        print("Epoch", self.id_epoch)
 
     def epochEnd(self):
         pass
@@ -106,6 +107,7 @@ class BaseTrainer(BasePipeline):
 
     def batchCount(self):
         self.id_batch += 1
+        print(self.id_batch, self.loss_value)
 
     # def validate(self, size):
     #     success_count = 0

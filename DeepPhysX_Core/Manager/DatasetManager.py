@@ -57,6 +57,7 @@ class DatasetManager:
         self.session_dir = session_dir if session_dir is not None else os.path.join(pathUtils.getFirstCaller(),
                                                                                     session_name)
         dataset_dir = dataset_config.dataset_dir
+        self.new_session = new_session
 
         # Training
         if train:
@@ -73,8 +74,6 @@ class DatasetManager:
             else:  # Train from this session's dataset
                 self.dataset_dir = os.path.join(self.session_dir, 'dataset/')
                 self.loadDirectory()
-            # Need an environment if existing dataset with inputs without corresponding outputs
-            self.create_environment = True if new_session and dataset_dir is None else self.requireEnvironment()
 
         # Prediction
         else:
@@ -177,6 +176,8 @@ class DatasetManager:
 
     def requireEnvironment(self):
         # Called while training to check if each inputs as an output, otherwise need an environment to compute it
+        if self.new_session:
+            return True
         for mode in range(3):
             if len(self.list_in_partitions[mode]) > len(self.list_out_partitions[mode]):
                 return True

@@ -32,7 +32,7 @@ batch_size = 32
 
 def createScene(root_node=None):
     # Environment config
-    env_config = BeamConfig(environment_class=Beam, root_node=root_node, p_grid=p_grid, always_create_data=True)
+    env_config = BeamConfig(environment_class=Beam, root_node=root_node, p_grid=p_grid, always_create_data=False)
 
     # Network config
     net_config = FCConfig(network_name="beam_FC", save_each_epoch=False,

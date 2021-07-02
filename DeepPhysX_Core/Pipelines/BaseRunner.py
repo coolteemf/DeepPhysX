@@ -15,7 +15,6 @@ class BaseRunner(BasePipeline):
 
         self.name = self.__class__.__name__
 
-        # Todo: check arguments
         # Check the arguments
         if not isinstance(network_config, BaseNetworkConfig):
             raise TypeError("[BaseRunner] The network configuration must be a BaseNetworkConfig")
@@ -36,8 +35,7 @@ class BaseRunner(BasePipeline):
         self.loss_value = 0.
 
         # Tell if data is recording while predicting (output is recorded only if input too)
-        self.record_data = {'in': record_inputs,
-                            'out': record_outputs and record_inputs}
+        self.record_data = (record_inputs, record_outputs and record_inputs)
 
         self.manager = Manager(pipeline=self, network_config=network_config, dataset_config=dataset_config,
                                environment_config=environment_config, session_name=session_name,

@@ -14,6 +14,8 @@ class EnvironmentManager:
         # Create single or multiple environments according to multiprocessing value
         self.environment = environment_config.createEnvironment()
 
+        self.always_create_data = environment_config.always_create_data
+
     def getData(self, batch_size, get_inputs, get_outputs, animate):
         # Getting data from single environment
         if self.multiprocessing == 1:
@@ -112,7 +114,6 @@ class EnvironmentManager:
     def close(self):
         # Todo : delete environments
         pass
-
 
 
     def step(self, environment=None):
