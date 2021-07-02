@@ -5,11 +5,11 @@ import Sofa.Simulation
 
 class SofaEnvironment(Sofa.Core.Controller, BaseEnvironment):
 
-    def __init__(self, root_node, config, idx_instance=1,
+    def __init__(self, root_node, config, idx_instance=1, visualizer_class=None,
                  *args, **kwargs):
         Sofa.Core.Controller.__init__(self, *args, **kwargs)
         self.root = root_node
-        BaseEnvironment.__init__(self, config, idx_instance)
+        BaseEnvironment.__init__(self, config=config, idx_instance=idx_instance, visualizer_class=visualizer_class)
         self.description_name = "SOFA Environment"
 
     def create(self, config):
@@ -39,3 +39,6 @@ class SofaEnvironment(Sofa.Core.Controller, BaseEnvironment):
 
     def applyPrediction(self, prediction):
         raise NotImplementedError
+
+    def initVisualizer(self):
+        pass

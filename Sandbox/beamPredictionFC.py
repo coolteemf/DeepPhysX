@@ -14,8 +14,8 @@ import Sofa.Gui
 
 from DeepPhysX_PyTorch.FC.FCConfig import FCConfig
 from DeepPhysX_Core.Dataset.BaseDatasetConfig import BaseDatasetConfig
-from DeepPhysX_Core.Pipelines.BaseRunner import BaseRunner
 from DeepPhysX_Sofa.Runner.SofaRunner import SofaRunner
+from DeepPhysX_Core.Visualizer.MeshVisualizer import MeshVisualizer
 
 from Sandbox.BeamConfig.BeamConfig import BeamConfig
 from Sandbox.NNBeam.NNBeam import NNBeam as Beam
@@ -55,7 +55,8 @@ def createScene(root_node=None):
     :return: root_node
     """
     # Environment config
-    env_config = BeamConfig(environment_class=Beam, root_node=root_node, p_grid=p_grid, always_create_data=True)
+    env_config = BeamConfig(environment_class=Beam, root_node=root_node, p_grid=p_grid, always_create_data=True,
+                            visualizer_class=MeshVisualizer)
     # Network config
     net_config = FCConfig(network_name="beam_FC", save_each_epoch=True,
                           loss=torch.nn.MSELoss, lr=1e-5, optimizer=torch.optim.Adam,

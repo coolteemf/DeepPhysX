@@ -1,5 +1,6 @@
 import os
 from DeepPhysX_Core.Environment.BaseEnvironment import BaseEnvironment
+from DeepPhysX_Core.Visualizer.VedoVisualizer import VedoVisualizer
 from dataclasses import dataclass
 
 
@@ -10,7 +11,8 @@ class BaseEnvironmentConfig:
         max_wrong_samples_per_step: int
 
     def __init__(self, environment_class=BaseEnvironment, simulations_per_step=1, max_wrong_samples_per_step=10,
-                 always_create_data=False, multiprocessing=1, multiprocess_method=None):
+                 always_create_data=False, visualizer_class=None,
+                 multiprocessing=1, multiprocess_method=None):
 
         # Description
         self.name = self.__class__.__name__
@@ -18,21 +20,22 @@ class BaseEnvironmentConfig:
 
         # Check the arguments before to configure anything
         if type(simulations_per_step) != int and simulations_per_step < 1:
-            raise TypeError("[{}] The number of simulations per step must be an int > 1.".format(self.name))
+            raise TypeError(f"[{self.name}] The number of simulations per step must be an int > 1.")
         if type(max_wrong_samples_per_step) != int and max_wrong_samples_per_step < 0:
-            raise TypeError("[{}] The number of max wrong samples per step must be a positive int.".format(self.name))
+            raise TypeError(f"[{self.name}] The number of max wrong samples per step must be a positive int.")
         if type(always_create_data) != bool:
-            raise TypeError("[{}] Always create data must be a boolean.".format(self.name))
+            raise TypeError(f"[{self.name}] Always create data must be a boolean.")
         if type(multiprocessing) != int and multiprocessing < 0:
-            raise TypeError("[{}] The multiprocessing number must be a positive int.".format(self.name))
+            raise TypeError(f"[{self.name}] The multiprocessing number must be a positive int.")
         if multiprocess_method is not None and multiprocess_method not in ['process', 'pool']:
-            raise ValueError("[{}] The multiprocessing method must be either process or pool.".format(self.name))
+            raise ValueError(f"[{self.name}] The multiprocessing method must be either process or pool.")
 
         # Environment configuration
         self.environment_config = self.BaseEnvironmentProperties(simulations_per_step=simulations_per_step,
                                                                  max_wrong_samples_per_step=max_wrong_samples_per_step)
         # Environment variables
         self.environment_class = environment_class
+        self.visualizer_class = visualizer_class
         # EnvironmentManager variables
         self.always_create_data = always_create_data
         self.multiprocessing = min(max(multiprocessing, 1), os.cpu_count())  # Assert nb is between 1 and cpu_count
@@ -41,23 +44,27 @@ class BaseEnvironmentConfig:
                 self.multiprocess_method = multiprocess_method
             else:
                 self.multiprocess_method = 'process'
-                print("[{}]: The default multiprocessing method is set to 'process'.".format(self.name))
+                print(f"[{self.name}]: The default multiprocessing method is set to 'process'.")
         else:
             self.multiprocess_method = multiprocess_method
 
     def createEnvironment(self):
         if self.multiprocessing == 1:
             try:
-                environment = self.environment_class(self.environment_config)
+                environment = self.environment_class(config=self.environment_config,
+                                                     visualizer_class=self.visualizer_class)
             except:
                 raise TypeError("[{}] The given environment class is not a BaseEnvironment class.".format(self.name))
             if not isinstance(environment, BaseEnvironment):
                 raise TypeError("[{}] The environment class must be a BaseEnvironment class.".format(self.name))
+            if self.visualizer_class is not None and not isinstance(environment.visualizer, VedoVisualizer):
+                raise TypeError(f"[{self.name}] The visualizer must be of VedoVisualizer type.")
             return environment
         else:
             try:
-                environments = [self.environment_class(self.environment_config,
-                                                       i + 1) for i in range(self.multiprocessing)]
+                environments = [self.environment_class(config=self.environment_config,
+                                                       visualizer_class=self.visualizer_class,
+                                                       idx_instance=i+1) for i in range(self.multiprocessing)]
             except:
                 raise TypeError("[{}] The given environment class is not a BaseEnvironment class.".format(self.name))
             if not isinstance(environments[0], BaseEnvironment):

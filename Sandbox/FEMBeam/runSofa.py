@@ -12,6 +12,8 @@ import sys
 sys.path.append(os.getcwd())
 import Sofa.Gui
 
+from DeepPhysX_Core.Visualizer.MeshVisualizer import MeshVisualizer
+
 from Sandbox.BeamConfig.BeamConfig import BeamConfig
 from Sandbox.FEMBeam.FEMBeam import FEMBeam as Beam
 
@@ -38,7 +40,8 @@ def createScene(root_node=None):
     :return: root_node
     """
     # Environment config
-    env_config = BeamConfig(environment_class=Beam, root_node=root_node, p_grid=p_grid, always_create_data=True)
+    env_config = BeamConfig(environment_class=Beam, root_node=root_node, p_grid=p_grid, always_create_data=True,
+                            visualizer_class=MeshVisualizer)
     # Manually create and init the environment from the configuration object
     env = env_config.createEnvironment()
     return env.root

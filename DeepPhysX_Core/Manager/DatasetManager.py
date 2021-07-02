@@ -7,13 +7,13 @@ import DeepPhysX_Core.utils.pathUtils as pathUtils
 
 class DatasetManager:
 
-    def __init__(self, dataset_config: BaseDatasetConfig, session_name='default', session_dir=None, new_session=True,
+    def __init__(self, dataset_config=None, session_name='default', session_dir=None, new_session=True,
                  train=True, record_data=None):
 
         self.name = self.__class__.__name__
 
         # Checking arguments
-        if not isinstance(dataset_config, BaseDatasetConfig):
+        if dataset_config is not None and not isinstance(dataset_config, BaseDatasetConfig):
             raise TypeError("[DATASETMANAGER] The dataset config must be a BaseDatasetConfig object.")
         if type(session_name) != str:
             raise TypeError("[DATASETMANAGER] The session name must be a str.")
@@ -30,6 +30,7 @@ class DatasetManager:
                 raise TypeError("[DATASETMANAGER] The values of 'record_data' must be booleans.")
 
         # Create the dataset
+        dataset_config = BaseDatasetConfig() if dataset_config is None else dataset_config
         self.dataset = dataset_config.createDataset()
 
         # Get dataset parameters

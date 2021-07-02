@@ -14,10 +14,11 @@ from DeepPhysX_Sofa.Environment.SofaEnvironmentConfig import SofaEnvironmentConf
 class BeamConfig(SofaEnvironmentConfig):
 
     def __init__(self, environment_class=None, simulations_per_step=1, always_create_data=False, root_node=None,
-                 p_grid=None):
+                 visualizer_class=None, p_grid=None):
         # Parent class constructor
         super(BeamConfig, self).__init__(environment_class=environment_class, simulations_per_step=simulations_per_step,
-                                         always_create_data=always_create_data, root_node=root_node)
+                                         always_create_data=always_create_data, root_node=root_node,
+                                         visualizer_class=visualizer_class)
         # Environment parameters
         self.environment_config = self.BeamProperties(simulations_per_step=simulations_per_step,
                                                       max_wrong_samples_per_step=10,

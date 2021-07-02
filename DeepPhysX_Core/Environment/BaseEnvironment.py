@@ -3,11 +3,12 @@ import numpy as np
 
 class BaseEnvironment:
 
-    def __init__(self, config, idx_instance=1):
+    def __init__(self, config, idx_instance=1, visualizer_class=None):
 
         self.name = "Environment n°{}".format(idx_instance)
         self.simulations_per_step = config.simulations_per_step
         self.max_wrong_samples_per_step = config.max_wrong_samples_per_step
+        self.visualizer = visualizer_class() if visualizer_class is not None else None
 
         self.input, self.output = np.array([]), np.array([])
         self.input_size, self.output_size = None, None
@@ -43,6 +44,13 @@ class BaseEnvironment:
 
     def getOutput(self):
         return self.output
+
+    def initVisualizer(self):
+        pass
+
+    def renderVisualizer(self):
+        if self.visualizer is not None:
+            self.visualizer.render()
 
     def getDescription(self):
         if len(self.description) == 0:

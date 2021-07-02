@@ -14,8 +14,8 @@ from DeepPhysX_Sofa.Environment.SofaEnvironment import SofaEnvironment
 # Inherit from SofaEnvironment which allow to implement and create a Sofa scene in the DeepPhysX_Core pipeline
 class NNBeam(SofaEnvironment):
 
-    def __init__(self, root_node, config, idx_instance=1):
-        super(NNBeam, self).__init__(root_node, config, idx_instance)
+    def __init__(self, root_node, config, idx_instance=1, visualizer_class=None):
+        super(NNBeam, self).__init__(root_node, config, idx_instance, visualizer_class)
         # Scene configuration
         self.config = config
         # Keep a track of the actual step number
@@ -106,6 +106,13 @@ class NNBeam(SofaEnvironment):
         self.output_size = self.MO.position.value.shape
         # Get the indices of node on the surface
         self.idx_surface = self.surface.quads.value.reshape(-1)
+        self.initVisualizer()
+
+    def initVisualizer(self):
+        # Visualizer
+        if self.visualizer is not None:
+            self.visualizer.addPoints(positions=self.MO.position.value)
+            self.visualizer.addMesh(positions=self.MO.position.value, cells=self.surface.quads.value)
 
     def onAnimateBeginEvent(self, event):
         """
@@ -174,3 +181,5 @@ class NNBeam(SofaEnvironment):
         # Add the displacement to the initial position
         U = prediction[0]
         self.MO.position.value = self.MO.rest_position.array() + U
+        # Render
+        self.renderVisualizer()

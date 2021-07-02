@@ -6,15 +6,20 @@ import Sofa.Core
 
 
 class SofaEnvironmentConfig(BaseEnvironmentConfig):
-
     @dataclass
     class SofaEnvironmentProperties(BaseEnvironmentConfig.BaseEnvironmentProperties):
         pass
 
     def __init__(self, environment_class=SofaEnvironment, simulations_per_step=1, max_wrong_samples_per_step=10,
-                 always_create_data=False, multiprocessing=1, multiprocess_method=None, root_node=None):
-        BaseEnvironmentConfig.__init__(self, environment_class, simulations_per_step, max_wrong_samples_per_step,
-                                       always_create_data, multiprocessing, multiprocess_method)
+                 always_create_data=False, visualizer_class=None,
+                 multiprocessing=1, multiprocess_method=None, root_node=None):
+        BaseEnvironmentConfig.__init__(self, environment_class=environment_class,
+                                       simulations_per_step=simulations_per_step,
+                                       max_wrong_samples_per_step=max_wrong_samples_per_step,
+                                       always_create_data=always_create_data,
+                                       visualizer_class=visualizer_class,
+                                       multiprocessing=multiprocessing,
+                                       multiprocess_method=multiprocess_method)
         self.rootNode = root_node
         self.environment_config = self.SofaEnvironmentProperties(simulations_per_step=simulations_per_step,
                                                                  max_wrong_samples_per_step=max_wrong_samples_per_step)
@@ -24,7 +29,7 @@ class SofaEnvironmentConfig(BaseEnvironmentConfig):
         if self.multiprocessing == 1:
             self.rootNode = Sofa.Core.Node('rootNode')
         else:
-            self.rootNode = [Sofa.Core.Node('rootNode'+str(i)) for i in range(self.multiprocessing)]
+            self.rootNode = [Sofa.Core.Node('rootNode' + str(i)) for i in range(self.multiprocessing)]
 
     def initNodes(self):
         if self.multiprocessing == 1:
@@ -38,13 +43,18 @@ class SofaEnvironmentConfig(BaseEnvironmentConfig):
             self.setRootNodes()
         self.addRequiredPlugins()
         if self.multiprocessing == 1:
-            environment = self.rootNode.addObject(self.environment_class(self.rootNode, self.environment_config, 0))
+            environment = self.rootNode.addObject(self.environment_class(root_node=self.rootNode,
+                                                                         config=self.environment_config,
+                                                                         idx_instance=0,
+                                                                         visualizer_class=self.visualizer_class))
         else:
-            environment = [self.rootNode[i].addObject(self.environment_class(self.rootNode[i], self.environment_config,
-                                                                             i + 1)) for i in range(len(self.rootNode))]
+            environment = [self.rootNode[i].addObject(self.environment_class(root_node=self.rootNode[i],
+                                                                             config=self.environment_config,
+                                                                             idx_instance=i + 1,
+                                                                             visualizer_class=self.visualizer_class))
+                           for i in range(len(self.rootNode))]
         self.initNodes()
         return environment
 
     def addRequiredPlugins(self):
         pass
-

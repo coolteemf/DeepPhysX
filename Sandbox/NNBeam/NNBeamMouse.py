@@ -12,8 +12,8 @@ from Sandbox.NNBeam.NNBeam import NNBeam
 
 class NNBeamMouse(NNBeam):
 
-    def __init__(self, root_node, config, idx_instance=1):
-        super(NNBeamMouse, self).__init__(root_node, config, idx_instance)
+    def __init__(self, root_node, config, idx_instance=1, visualizer_class=None):
+        super(NNBeamMouse, self).__init__(root_node, config, idx_instance, visualizer_class)
         self.config = config
 
     def createBehavior(self, config):
@@ -24,6 +24,10 @@ class NNBeamMouse(NNBeam):
         NNBeam.onSimulationInitDoneEvent(self, event)
         # Mouse manager : avoid too local forces, divide on neighbors
         self.mouse_manager = MouseForceManager(topology=self.grid, max_force=[5.] * 3, surface=self.surface)
+        # Visualizer
+        if self.visualizer is not None:
+            self.visualizer.addPoints(positions=self.MO.position.value)
+            self.visualizer.addMesh(positions=self.MO.position.value, cells=self.surface.quads.value)
 
     def onAnimateBeginEvent(self, event):
         # Reset position
