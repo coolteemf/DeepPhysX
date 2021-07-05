@@ -8,13 +8,13 @@ import os
 import copy
 import numpy as np
 
-from Sandbox.NNBeam.NNBeam import NNBeam
+from Sandbox.Beam.NNBeam.NNBeam import NNBeam
 
 
 class NNBeamContact(NNBeam):
 
-    def __init__(self, root_node, config, idx_instance):
-        super(NNBeamContact, self).__init__(root_node, config, idx_instance)
+    def __init__(self, root_node, config, idx_instance, visualizer_class=None):
+        super(NNBeamContact, self).__init__(root_node, config, idx_instance, visualizer_class)
 
     def createBehavior(self, config):
         # Beam behaviour : see NNBeam.py

@@ -5,13 +5,13 @@ Script used to train a FC network on FEM beam deformations
 
 import torch
 
-from Sandbox.BeamConfig.BeamConfig import BeamConfig
-from Sandbox.FEMBeam.FEMBeam import FEMBeam as Beam
+from Sandbox.Beam.BeamConfig.BeamConfig import BeamConfig
+from Sandbox.Beam.FEMBeam.FEMBeam import FEMBeam as Beam
 
 from DeepPhysX_PyTorch.FC.FCConfig import FCConfig
 from DeepPhysX_Core.Dataset.BaseDatasetConfig import BaseDatasetConfig
 from DeepPhysX_Core.Pipelines.BaseTrainer import BaseTrainer
-
+from DeepPhysX_Core.Visualizer.MeshVisualizer import MeshVisualizer
 
 
 # ENVIRONMENT PARAMETERS
@@ -32,7 +32,8 @@ batch_size = 32
 
 def createScene(root_node=None):
     # Environment config
-    env_config = BeamConfig(environment_class=Beam, root_node=root_node, p_grid=p_grid, always_create_data=False)
+    env_config = BeamConfig(environment_class=Beam, root_node=root_node, p_grid=p_grid, always_create_data=False,
+                            visualizer_class=MeshVisualizer)
 
     # Network config
     net_config = FCConfig(network_name="beam_FC", save_each_epoch=False,
@@ -42,7 +43,7 @@ def createScene(root_node=None):
     # Dataset config
     dataset_config = BaseDatasetConfig(partition_size=1, shuffle_dataset=True)
 
-    trainer = BaseTrainer(session_name="beam_FC_training_625", dataset_config=dataset_config,
+    trainer = BaseTrainer(session_name="trainings/beam_FC_625", dataset_config=dataset_config,
                           environment_config=env_config, network_config=net_config,
                           nb_epochs=nb_epoch, nb_batches=nb_batch, batch_size=batch_size)
     trainer.execute()

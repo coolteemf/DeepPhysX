@@ -14,8 +14,8 @@ import Sofa.Gui
 
 from DeepPhysX_Core.Visualizer.MeshVisualizer import MeshVisualizer
 
-from Sandbox.BeamConfig.BeamConfig import BeamConfig
-from Sandbox.FEMBeam.FEMBeam import FEMBeam as Beam
+from Sandbox.Beam.BeamConfig.BeamConfig import BeamConfig
+from Sandbox.Beam.FEMBeam.FEMBeam import FEMBeam as Beam
 
 if len(sys.argv) > 1:
     scene_map = {'0': 'FEMBeam', '1': 'FEMBeamMouse'}

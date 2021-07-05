@@ -1,13 +1,13 @@
 import copy
 
-from Sandbox.BeamConfig.MouseForceManager import MouseForceManager
-from Sandbox.NNBeam.NNBeam import NNBeam
+from Sandbox.Beam.BeamConfig.MouseForceManager import MouseForceManager
+from Sandbox.Beam.NNBeam.NNBeam import NNBeam
 
 
 class NNBeamDynamic(NNBeam):
 
-    def __init__(self, root_node, config, idx_instance=1, training=True):
-        super(NNBeamDynamic, self).__init__(root_node, config, idx_instance)
+    def __init__(self, root_node, config, idx_instance=1, visualizer_class=None):
+        super(NNBeamDynamic, self).__init__(root_node, config, idx_instance, visualizer_class)
         self.config = config
         self.last_U = None
 
