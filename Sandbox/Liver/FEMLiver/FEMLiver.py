@@ -121,6 +121,7 @@ class FEMLiver(SofaEnvironment):
         # Visualizer
         if self.visualizer is not None:
             self.visualizer.addMesh(positions=self.visu.position.value, cells=self.visu.triangles.value)
+            self.renderVisualizer()
 
     def onAnimateBeginEvent(self, event):
         """
