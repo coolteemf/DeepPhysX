@@ -39,8 +39,8 @@ class DatasetManager:
         self.record_data = record_data if record_data is not None else {'in': True, 'out': True}
 
         # Partition variables
-        self.modes = {'training': 0, 'validation': 1, 'running': 2}
-        self.mode = self.modes['training'] if train else self.modes['running']
+        self.modes = {'Training': 0, 'Validation': 1, 'Running': 2}
+        self.mode = self.modes['Training'] if train else self.modes['Running']
         self.partitions_templates = (session_name + '_training_{}_{}.npy',
                                      session_name + '_validation_{}_{}.npy',
                                      session_name + '_running_{}_{}.npy')
@@ -59,7 +59,6 @@ class DatasetManager:
                                                                                     session_name)
         dataset_dir = dataset_config.dataset_dir
         self.new_session = new_session
-
         # Training
         if train:
             if new_session:
@@ -68,9 +67,14 @@ class DatasetManager:
                                                            check_existing='dataset')
                     self.createNewPartitions()
                 else:  # Train from another session's dataset
-                    self.dataset_dir = pathUtils.copyDir(src_dir=dataset_dir,
-                                                         dest_parent_dir=self.session_dir,
-                                                         dest_dir='dataset')
+                    if dataset_dir[-1] != "/":
+                        dataset_dir += "/"
+                    if dataset_dir[-8:] != "dataset/":
+                        dataset_dir += "dataset/"
+                    self.dataset_dir = dataset_dir  # pathUtils.copyDir(src_dir=dataset_dir,
+                                                         # dest_parent_dir=self.session_dir,
+                                                         # dest_dir='dataset')
+                    print(f"{self.dataset_dir=}")
                     self.loadDirectory()
             else:  # Train from this session's dataset
                 self.dataset_dir = os.path.join(self.session_dir, 'dataset/')
@@ -150,7 +154,7 @@ class DatasetManager:
         if not os.path.isdir(self.dataset_dir):
             raise Warning("Loading directory: The given path is not an existing directory")
         # Look for file which ends with 'mode_partitions.txt'
-        for mode in ['training', 'validation', 'running']:
+        for mode in ['Training', 'Validation', 'Running']:
             partitions_list_file = [f for f in os.listdir(self.dataset_dir) if
                                     os.path.isfile(os.path.join(self.dataset_dir, f)) and
                                     f.endswith(mode[1:] + '_partitions.txt')]
@@ -187,6 +191,7 @@ class DatasetManager:
     def addData(self, data):
         self.saved = False
         # 1. Adding data to dataset
+        print(f'{self.current_in_partition=}')
         if self.record_data['in']:
             self.dataset.add('in', data['in'], self.current_in_partition)
         if self.record_data['out']:
@@ -207,7 +212,7 @@ class DatasetManager:
         # Nothing has to be done if you do not change mode
         if mode == self.mode:
             return
-        if self.mode == self.modes['running']:
+        if self.mode == self.modes['Running']:
             print("[{}] It's not possible to switch dataset mode while running.".format(self.name))
             return
         else:
@@ -280,7 +285,7 @@ class DatasetManager:
     def loadPartitions(self):
         self.dataset.reset()
         # Testing mode
-        if self.mode == self.modes['validation']:
+        if self.mode == self.modes['Validation']:
             if len(self.list_in_partitions[self.mode]) == 0:
                 raise ValueError("[{}] No partitions to read for testing mode.")
             elif len(self.list_in_partitions[self.mode]) == 1:
@@ -290,8 +295,8 @@ class DatasetManager:
         # Training mode, loadPartition not called in running mode
         else:
             # Mixed dataset
-            if len(self.list_in_partitions[self.modes['running']]) > 0:
-                self.loadMultiplePartitions([self.modes['training'], self.modes['running']])
+            if len(self.list_in_partitions[self.modes['Running']]) > 0:
+                self.loadMultiplePartitions([self.modes['Training'], self.modes['Running']])
             else:
                 if len(self.list_in_partitions[self.mode]) == 0:
                     raise ValueError("[{}] No partitions to read for training mode.")
