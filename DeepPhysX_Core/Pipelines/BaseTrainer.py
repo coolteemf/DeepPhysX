@@ -75,7 +75,7 @@ class BaseTrainer(BasePipeline):
 
     def epochBegin(self):
         self.id_batch = 0
-        self.manager.dataset_manager.dataset.shuffle()
+        self.manager.data_manager.dataset_manager.dataset.shuffle()
         print("Epoch", self.id_epoch)
 
     def epochEnd(self):
