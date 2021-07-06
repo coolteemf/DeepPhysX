@@ -2,7 +2,7 @@ import numpy as np
 
 from DeepPhysX_PyTorch.Network.TorchNetworkConfig import TorchNetworkConfig
 from DeepPhysX_PyTorch.UNet.UnetDataTransformation import UnetDataTransformation
-from DeepPhysX_PyTorch.UNet import UNet
+from DeepPhysX_PyTorch.UNet.UNet import UNet
 from dataclasses import dataclass
 
 
@@ -21,7 +21,7 @@ class UNetConfig(TorchNetworkConfig):
 
     def __init__(self, network_name="UNetName", data_transformation_class=UnetDataTransformation,
                  loss=None, lr=None, optimizer=None,
-                 network_dir=None, save_each_epoch=None, which_network=None,
+                 network_dir=None, save_each_epoch=None, which_network=0,
                  steps=4, first_layer_channels=64, nb_classes=2, nb_input_channels=1, two_sublayers=True,
                  nb_dims=2, border_mode='valid', skip_merge=False, grid_shape=None):
 
