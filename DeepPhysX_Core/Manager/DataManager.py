@@ -29,8 +29,6 @@ class DataManager:
 
         # Create dataset if required
         if create_dataset:
-            print(f"{session_dir=}")
-            print(f"{session_name=}")
             self.dataset_manager = DatasetManager(dataset_config=dataset_config, session_name=session_name,
                                                   session_dir=session_dir, new_session=new_session,
                                                   train=self.is_training, record_data=record_data)
@@ -49,6 +47,9 @@ class DataManager:
             # Get data from environment if used and if the data should be created at this epoch
             if data is None and self.environment_manager is not None and (epoch == 0 or self.environment_manager.always_create_data):
                 data = self.environment_manager.getData(batch_size=batch_size, animate=animate, get_inputs=True, get_outputs=True)
+                # We create a partition to write down the data in the case it's not already existing.
+                if self.dataset_manager.current_in_partition is None:
+                    self.dataset_manager.createNewPartitions()
                 self.dataset_manager.addData(data)
             # Force data from the dataset
             else:
