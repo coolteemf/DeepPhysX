@@ -26,7 +26,6 @@ class Manager:
             # Avoid unwanted overwritten data
             if new_session:
                 self.session_dir = pathUtils.createDir(self.session_dir, check_existing=session_name)
-
         # Prediction: work in an existing session
         elif pipeline.type == 'prediction':
             train = False
@@ -38,20 +37,20 @@ class Manager:
             # Find the session name with the directory
             else:
                 self.session_dir = session_dir
-                session_name = session_name if session_name is not None else os.path.basename(session_dir)
             if not os.path.exists(self.session_dir):
                 raise ValueError("[Manager] The session directory {} does not exists.".format(self.session_dir))
 
         else:
             raise ValueError("[Manager] The pipeline must be either training or prediction.")
 
+        self.session_name = (session_name if session_name is not None else os.path.basename(session_dir)).split("/")[-1]
         # Always create the network manager (man it's DEEP physics here...)
-        self.network_manager = NetworkManager(network_config=network_config, session_name=session_name,
+        self.network_manager = NetworkManager(network_config=network_config, session_name=self.session_name,
                                               session_dir=self.session_dir, new_session=new_session, train=train)
 
         # Always create the data manager for same reason
         self.data_manager = DataManager(dataset_config=dataset_config, environment_config=environment_config,
-                                        session_name=session_name, session_dir=session_dir, new_session=new_session,
+                                        session_name=self.session_name, session_dir=self.session_dir, new_session=new_session,
                                         training=train, record_data=pipeline.record_data)
 
         # Create the stats manager for training

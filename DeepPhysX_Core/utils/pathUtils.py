@@ -7,9 +7,10 @@ def createDir(dirname, check_existing):
     if os.path.isdir(dirname):
         print("Directory conflict: you are going to overwrite {}.".format(dirname))
         parent = os.path.abspath(os.path.join(dirname, os.pardir))
+        deepest_repertory = check_existing.split('/')[-1]
         copies_list = [folder for folder in os.listdir(parent) if
                        os.path.isdir(os.path.join(parent, folder)) and
-                       folder.__contains__(check_existing)]
+                       folder.__contains__(deepest_repertory)]
         new_name = os.path.basename(os.path.normpath(dirname)) + '_{}/'.format(len(copies_list))
         dirname = os.path.join(parent, new_name)
         print("Create a new directory {} for this session.".format(dirname))

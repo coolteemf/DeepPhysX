@@ -242,8 +242,10 @@ class DatasetManager:
                 data_out = np.load(out_file)
                 self.dataset.load('out', data_out)
 
-    def getData(self, get_inputs, get_outputs, batch_size=1, batched=True):
+    def getData(self, get_inputs, get_outputs, batch_size=1, batched=True, force_dataset_reload=False):
         if self.current_in_partition_name is None or self.dataset.currentSample >= len(self.dataset.data_in):
+            if not force_dataset_reload:
+                return None
             self.loadPartitions()
             if self.shuffle_dataset:
                 self.dataset.shuffle()
