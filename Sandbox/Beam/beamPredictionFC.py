@@ -17,8 +17,8 @@ from DeepPhysX_Core.Dataset.BaseDatasetConfig import BaseDatasetConfig
 from DeepPhysX_Sofa.Runner.SofaRunner import SofaRunner
 from DeepPhysX_Core.Visualizer.MeshVisualizer import MeshVisualizer
 
-from Sandbox.BeamConfig.BeamConfig import BeamConfig
-from Sandbox.NNBeam.NNBeam import NNBeam as Beam
+from Sandbox.Beam.BeamConfig.BeamConfig import BeamConfig
+from Sandbox.Beam.NNBeam.NNBeam import NNBeam as Beam
 
 if len(sys.argv) > 1:
     scene_map = {'0': 'NNBeam', '1': 'NNBeamCompare', '2': 'NNBeamMouse', '3': 'NNBeamContact', '4': 'NNBeamCollision',
@@ -64,12 +64,7 @@ def createScene(root_node=None):
     # Dataset config
     dataset_config = BaseDatasetConfig(partition_size=1, shuffle_dataset=True)
     # Runner
-    man_dir = os.path.dirname(os.path.realpath(__file__)) + '/trainings/session_2'
-    # runner = BaseRunner(session_name="session", dataset_config=dataset_config,
-    #                     environment_config=env_config, network_config=net_config, session_dir=man_dir, nb_steps=0,
-    #                     record_inputs=False, record_outputs=False)
-    # root_node = runner.manager.data_manager.environment_manager.environment.root
-    # root_node.addObject(SofaRunner(runner=runner))
+    man_dir = os.path.dirname(os.path.realpath(__file__)) + '/trainings/beam_FC_625'
     runner = SofaRunner(session_name="session", dataset_config=dataset_config,
                         environment_config=env_config, network_config=net_config, session_dir=man_dir, nb_steps=0,
                         record_inputs=False, record_outputs=False)

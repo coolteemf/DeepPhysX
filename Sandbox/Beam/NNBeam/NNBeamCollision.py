@@ -7,14 +7,14 @@ Launched with the python script '../beamPrediction.py'.
 import copy
 import numpy as np
 
-from Sandbox.BeamConfig.MouseForceManager import MouseForceManager
-from Sandbox.NNBeam.NNBeam import NNBeam
+from Sandbox.Beam.BeamConfig.MouseForceManager import MouseForceManager
+from Sandbox.Beam.NNBeam.NNBeam import NNBeam
 
 
 class NNBeamCollision(NNBeam):
 
-    def __init__(self, root_node, config, idx_instance=1, training=True):
-        super(NNBeamCollision, self).__init__(root_node, config, idx_instance)
+    def __init__(self, root_node, config, idx_instance=1, visualizer_class=None):
+        super(NNBeamCollision, self).__init__(root_node, config, idx_instance, visualizer_class)
         self.config = config
         self.force_step = 0
 

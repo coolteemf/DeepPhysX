@@ -6,8 +6,8 @@ Launched with the python script '../beamPrediction.py'.
 
 import copy
 
-from Sandbox.BeamConfig.MouseForceManager import MouseForceManager
-from Sandbox.NNBeam.NNBeam import NNBeam
+from Sandbox.Beam.BeamConfig.MouseForceManager import MouseForceManager
+from Sandbox.Beam.NNBeam.NNBeam import NNBeam
 
 
 class NNBeamMouse(NNBeam):

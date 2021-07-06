@@ -14,8 +14,8 @@ from DeepPhysX_Sofa.Environment.SofaEnvironment import SofaEnvironment
 # Inherit from SofaEnvironment which allow to implement and create a Sofa scene in the DeepPhysX_Core pipeline
 class NNBeamCompare(SofaEnvironment):
 
-    def __init__(self, root_node, config, idx_instance=1, training=True):
-        super(NNBeamCompare, self).__init__(root_node, config, idx_instance)
+    def __init__(self, root_node, config, idx_instance=1, visualizer_class=None):
+        super(NNBeamCompare, self).__init__(root_node, config, idx_instance, visualizer_class)
         # Scene configuration
         self.config = config
         # Keep a track of the actual step number

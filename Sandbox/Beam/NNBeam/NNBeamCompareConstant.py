@@ -6,13 +6,13 @@ Launched with the python script '../beamPrediction.py'.
 
 import numpy as np
 
-from Sandbox.NNBeam.NNBeamCompare import NNBeamCompare
+from Sandbox.Beam.NNBeam.NNBeamCompare import NNBeamCompare
 
 
 class NNBeamCompareConstant(NNBeamCompare):
 
-    def __init__(self, root_node, config, idx_instance=1, training=True):
-        super(NNBeamCompareConstant, self).__init__(root_node, config, idx_instance)
+    def __init__(self, root_node, config, idx_instance=1, visualizer_class=None):
+        super(NNBeamCompareConstant, self).__init__(root_node, config, idx_instance, visualizer_class)
 
     def onSimulationInitDoneEvent(self, event):
         NNBeamCompare.onSimulationInitDoneEvent(self, event)
