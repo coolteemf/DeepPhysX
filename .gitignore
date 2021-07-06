@@ -5,6 +5,7 @@ CMakeLists.txt.user
 #Directories to ignore
 __pycache__/
 build/
+.idea/
 cmake-build-release/
 cmake-build-debug/
 /DeepPhysX.egg-info/
