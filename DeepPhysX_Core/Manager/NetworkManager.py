@@ -38,12 +38,16 @@ class NetworkManager:
         self.network = None
         self.optimization = None
         self.setNetwork()
+        self.data_in = None
+        self.data_out = None
+        self.data_gt = None
 
         self.description = ""
 
     def setNetwork(self):
         self.network = self.network_config.createNetwork()
         self.network.setDevice()
+        self.data_transformation = self.network_config.createDataTransformation()
         self.optimization = self.network_config.createOptimization()
         if self.optimization.loss_class is not None:
             self.optimization.setLoss()
@@ -92,21 +96,25 @@ class NetworkManager:
                 self.network.loadParameters(networks_list[which_network])
 
     def setData(self, data):
-        self.network.convertData(data)
+        self.data_in = data['in']
+        self.data_gt = data['out']
 
     def computePrediction(self):
-        self.network.transformInput()
-        self.network.predict()
-        self.network.transformPrediction()
-        self.network.transformGroundTruth()
-        return self.network.getPrediction(), self.network.getGroundTruth()
+        self.data_in, self.data_gt = self.data_transformation.transformBeforePrediction(self.data_in, self.data_gt)
+        self.data_out = self.network.predict(self.data_in)
+        self.data_out, self.data_gt = self.data_transformation.transformAfterPrediction(self.data_out, self.data_gt)
+        return self.data_out
 
-    def optimizeNetwork(self, prediction, ground_truth):
+    def optimizeNetwork(self):
+        prediction = self.network.transformFromNumpy(self.data_out)
+        ground_truth = self.network.transformFromNumpy(self.data_gt)
         loss = self.optimization.computeLoss(prediction, ground_truth)
         self.optimization.optimize()
         return loss
 
-    def computeLoss(self, prediction, ground_truth):
+    def computeLoss(self):
+        prediction = self.network.transformFromNumpy(self.data_out)
+        ground_truth = self.network.transformFromNumpy(self.data_gt)
         return self.optimization.computeLoss(prediction, ground_truth)
 
     def saveNetwork(self, last_save=False):

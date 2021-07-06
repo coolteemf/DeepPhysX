@@ -3,6 +3,7 @@ from typing import Any
 
 from DeepPhysX_Core.Network.BaseNetwork import BaseNetwork
 from DeepPhysX_Core.Network.BaseOptimization import BaseOptimization
+from DeepPhysX_Core.Network.DataTransformation import DataTransformation
 
 
 class BaseNetworkConfig:
@@ -19,7 +20,7 @@ class BaseNetworkConfig:
 
     def __init__(self, network_class=BaseNetwork, optimization_class=BaseOptimization, network_dir=None,
                  network_name='Network', network_type='BaseNetwork', which_network=0, save_each_epoch=False,
-                 loss=None, lr=None, optimizer=None):
+                 data_transformation_class=DataTransformation, loss=None, lr=None, optimizer=None):
 
         # Description
         self.name = self.__class__.__name__
@@ -53,6 +54,7 @@ class BaseNetworkConfig:
         self.existing_network = False if network_dir is None else True
         self.which_network = which_network
         self.save_each_epoch = save_each_epoch and self.training_stuff
+        self.data_transformation_class = data_transformation_class
 
     def createNetwork(self):
         try:
@@ -72,6 +74,9 @@ class BaseNetworkConfig:
         if not isinstance(optimization, BaseOptimization):
             raise TypeError("[{}] The optimization class must be a BaseOptimization child object.".format(self.name))
         return optimization
+
+    def createDataTransformation(self):
+        return self.data_transformation_class(self)
 
     def getDescription(self):
         if len(self.description) == 0:

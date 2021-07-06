@@ -178,7 +178,6 @@ class FEMLiver(SofaEnvironment):
         self.converged = self.solver.converged.value
         self.nb_converged += int(self.converged)
         # Render
-        print("Rendering")
         self.renderVisualizer()
 
     def computeInput(self):

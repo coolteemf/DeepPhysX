@@ -66,16 +66,3 @@ class UNet(TorchNetwork):
         # feature_maps.append(self.architecture.decoder[-1](x))
         # return feature_maps[-1]
         return self.architecture.decoder[-1](x)
-
-    def transformInput(self):
-        self.input = self.input.float()
-
-    def transformOutputs(self, output):
-        # Todo
-        return output
-
-    def transformPrediction(self):
-        self.prediction = self.transformOutputs(self.prediction)
-
-    def transformGroundTruth(self):
-        self.ground_truth = self.transformOutputs(self.ground_truth)

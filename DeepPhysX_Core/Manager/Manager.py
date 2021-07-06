@@ -62,13 +62,13 @@ class Manager:
         self.network_manager.setData(data)
 
     def optimizeNetwork(self):
-        prediction, ground_truth = self.network_manager.computePrediction()
-        return self.network_manager.optimizeNetwork(prediction, ground_truth)
+        self.network_manager.computePrediction()
+        return self.network_manager.optimizeNetwork()
 
     def getPrediction(self):
-        prediction, ground_truth = self.network_manager.computePrediction()
-        loss = self.network_manager.computeLoss(prediction, ground_truth)
-        return self.network_manager.network.transformToNumpy(prediction), loss
+        prediction = self.network_manager.computePrediction()
+        loss = self.network_manager.computeLoss()
+        return prediction, loss
 
     def saveNetwork(self):
         self.network_manager.saveNetwork()
@@ -86,7 +86,7 @@ class Manager:
         if self.network_manager is not None:
             # Todo: add minimal description
             manager_description = self.network_manager.description()
-        if self.dataset_manager is not None:
+        if self.data_manager is not None:
             # Todo: add minimal description
-            manager_description += self.dataset_manager.description()
+            manager_description += self.data_manager.description()
         return manager_description
