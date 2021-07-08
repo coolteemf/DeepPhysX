@@ -41,6 +41,7 @@ class DataManager:
     def getData(self, epoch=0, batch_size=1, animate=True):
         # Training
         if self.is_training:
+            data = None
             # Try to fetch data from the dataset
             if self.allow_dataset_fetch:
                 data = self.dataset_manager.getData(batch_size=batch_size, get_inputs=True, get_outputs=True)
