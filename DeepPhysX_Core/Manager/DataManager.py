@@ -13,7 +13,7 @@ class DataManager:
         self.is_training = training
         self.dataset_manager = None
         self.network_manager = None
-
+        self.allow_dataset_fetch = True
         # Training
         if self.is_training:
             # Always create a dataset_manager for training
@@ -42,10 +42,12 @@ class DataManager:
         # Training
         if self.is_training:
             # Try to fetch data from the dataset
-            data = self.dataset_manager.getData(batch_size=batch_size, get_inputs=True, get_outputs=True)
+            if self.allow_dataset_fetch:
+                data = self.dataset_manager.getData(batch_size=batch_size, get_inputs=True, get_outputs=True)
             # If data could not be fetch, try to generate them from the environment
             # Get data from environment if used and if the data should be created at this epoch
             if data is None and self.environment_manager is not None and (epoch == 0 or self.environment_manager.always_create_data):
+                self.allow_dataset_fetch = False
                 data = self.environment_manager.getData(batch_size=batch_size, animate=animate, get_inputs=True, get_outputs=True)
                 # We create a partition to write down the data in the case it's not already existing.
                 if self.dataset_manager.current_in_partition is None:
