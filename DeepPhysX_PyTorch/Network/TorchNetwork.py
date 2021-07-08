@@ -51,12 +51,3 @@ class TorchNetwork(torch.nn.Module, BaseNetwork):
 
     def transformToNumpy(self, x):
         return x.cpu().detach().numpy()
-
-    def transformInput(self):
-        pass
-
-    def transformPrediction(self):
-        pass
-
-    def transformGroundTruth(self):
-        pass

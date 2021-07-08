@@ -53,6 +53,7 @@ class UNet(TorchNetwork):
         self.finalLayer = self.architecture.decoder[-1]
 
     def forward(self, x):
+        print(x.shape)
         # Down layers
         down_outputs = [self.architecture.encoder[0](x)]
         for unet_layer in self.architecture.encoder[1:]:
@@ -66,16 +67,3 @@ class UNet(TorchNetwork):
         # feature_maps.append(self.architecture.decoder[-1](x))
         # return feature_maps[-1]
         return self.architecture.decoder[-1](x)
-
-    def transformInput(self):
-        self.input = self.input.float()
-
-    def transformOutputs(self, output):
-        # Todo
-        return output
-
-    def transformPrediction(self):
-        self.prediction = self.transformOutputs(self.prediction)
-
-    def transformGroundTruth(self):
-        self.ground_truth = self.transformOutputs(self.ground_truth)

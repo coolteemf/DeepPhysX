@@ -121,6 +121,7 @@ class FEMLiver(SofaEnvironment):
         # Visualizer
         if self.visualizer is not None:
             self.visualizer.addMesh(positions=self.visu.position.value, cells=self.visu.triangles.value)
+            self.renderVisualizer()
 
     def onAnimateBeginEvent(self, event):
         """
@@ -178,7 +179,6 @@ class FEMLiver(SofaEnvironment):
         self.converged = self.solver.converged.value
         self.nb_converged += int(self.converged)
         # Render
-        print("Rendering")
         self.renderVisualizer()
 
     def computeInput(self):
