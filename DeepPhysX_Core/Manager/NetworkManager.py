@@ -102,13 +102,12 @@ class NetworkManager:
     def computePrediction(self):
         self.data_in, self.data_gt = self.data_transformation.transformBeforePrediction(self.data_in, self.data_gt)
         self.data_out = self.network.predict(self.data_in)
+        self.data_gt = self.network.transformFromNumpy(self.data_gt)
         self.data_out, self.data_gt = self.data_transformation.transformAfterPrediction(self.data_out, self.data_gt)
-        return self.data_out
+        return self.network.transformToNumpy(self.data_out)
 
     def optimizeNetwork(self):
-        prediction = self.network.transformFromNumpy(self.data_out)
-        ground_truth = self.network.transformFromNumpy(self.data_gt)
-        loss = self.optimization.computeLoss(prediction, ground_truth)
+        loss = self.optimization.computeLoss(self.data_out, self.data_gt)
         self.optimization.optimize()
         return loss
 

@@ -16,8 +16,7 @@ class BaseNetwork:
 
     def predict(self, x):
         x = self.transformFromNumpy(x)
-        y = self.forward(x)
-        return self.transformToNumpy(y)
+        return self.forward(x)
 
     def forward(self, x):
         raise NotImplementedError

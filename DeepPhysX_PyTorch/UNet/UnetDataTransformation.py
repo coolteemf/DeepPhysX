@@ -10,30 +10,32 @@ class UnetDataTransformation(DataTransformation):
 
         self.grid_shape = self.network_config.network_config.grid_shape
         self.nb_classes = self.network_config.network_config.nb_classes
+        self.nb_channels = self.network_config.network_config.nb_input_channels
         self.pad_widths = None
 
     def transformBeforePrediction(self, x, gt):
-        x = np.reshape(x, (-1, self.grid_shape[2], self.grid_shape[1], self.grid_shape[0], 1))
+        x = np.reshape(x, (-1, self.grid_shape[2], self.grid_shape[1], self.grid_shape[0], self.nb_channels))
         x = np.transpose(x, (0, 4, 1, 2, 3))
-        print(x.shape)
         gt = np.reshape(gt, (-1, self.grid_shape[2], self.grid_shape[1], self.grid_shape[0], self.nb_classes))
         gt = np.transpose(gt, (0, 4, 1, 2, 3))
         # Compute padding
         if self.pad_widths is None:
-            element_shape = x.shape[1:]
+            element_shape = x[0].shape[1:]
             pad_widths, _ = self.network_config.in_out_pad_widths(element_shape)
-            self.pad_widths = [(0, 0)] + pad_widths
+            self.pad_widths = [(0, 0), (0, 0)] + pad_widths
         # Apply padding
         x = self.padding(x)
         gt = self.padding(gt)
         return x, gt
 
     def transformAfterPrediction(self, y, gt):
-        y = np.transpose(y, (0, 2, 3, 4, 1))
-        gt = np.transpose(gt, (0, 2, 3, 4, 1))
         # Inverse padding
         y = self.inverse_padding(y)
         gt = self.inverse_padding(gt)
+        # y = np.transpose(y, (0, 2, 3, 4, 1))
+        # gt = np.transpose(gt, (0, 2, 3, 4, 1))
+        y.permute(0, 2, 3, 4, 1)
+        gt.permute(0, 2, 3, 4, 1)
         return y, gt
 
     def padding(self, data):
