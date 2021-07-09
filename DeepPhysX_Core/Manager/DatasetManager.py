@@ -191,7 +191,6 @@ class DatasetManager:
     def addData(self, data):
         self.saved = False
         # 1. Adding data to dataset
-        print(f'{self.current_in_partition=}')
         if self.record_data['in']:
             self.dataset.add('in', data['in'], self.current_in_partition)
         if self.record_data['out']:
