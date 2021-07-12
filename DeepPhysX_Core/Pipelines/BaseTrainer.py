@@ -174,13 +174,29 @@ class BaseTrainer(BasePipeline):
         """
         return self.id_batch < self.nb_batches
 
-
     def batchCount(self):
         """
         Allows user for custom update of batches count
         :return:
         """
         self.id_batch += 1
+
+    def __str__(self):
+        """
+        :return: String Contains training informations about the training process
+        """
+        description = ""
+        description += f"Training statistics :\n"
+        description += f"Number of epochs : {self.nb_epochs}\n"
+        description += f"Number of batches per epoch : {self.nb_batches}\n"
+        description += f"Number of samples per epoch : {self.nb_samples}\n"
+        description += f"Number of samples per batch : {self.batch_size}\n"
+        description += f"TOTAL : \n"
+        description += f"Number of batches : {self.nb_batches*self.nb_epochs}\n"
+        description += f"Number of samples : {self.nb_epochs * self.nb_samples}\n"
+        return description
+
+
 
     # def validate(self, size):
     #     success_count = 0
