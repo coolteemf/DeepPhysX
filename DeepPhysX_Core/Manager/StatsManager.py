@@ -1,6 +1,5 @@
 import tensorboardX as tb
 import numpy as np
-import torch
 
 
 def generateDefaultScene():
