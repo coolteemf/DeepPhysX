@@ -149,7 +149,3 @@ class NetworkManager:
             self.description += "   Loss function : {}\n".format(self.optimization.loss_value)
             self.description += "   Save each epoch : {}\n".format(self.save_each_epoch)
         return self.description
-
-
-
-
