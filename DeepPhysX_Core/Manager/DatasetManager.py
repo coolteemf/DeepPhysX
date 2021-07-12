@@ -71,10 +71,7 @@ class DatasetManager:
                         dataset_dir += "/"
                     if dataset_dir[-8:] != "dataset/":
                         dataset_dir += "dataset/"
-                    self.dataset_dir = dataset_dir  # pathUtils.copyDir(src_dir=dataset_dir,
-                                                         # dest_parent_dir=self.session_dir,
-                                                         # dest_dir='dataset')
-                    print(f"{self.dataset_dir=}")
+                    self.dataset_dir = dataset_dir
                     self.loadDirectory()
             else:  # Train from this session's dataset
                 self.dataset_dir = os.path.join(self.session_dir, 'dataset/')
@@ -191,7 +188,6 @@ class DatasetManager:
     def addData(self, data):
         self.saved = False
         # 1. Adding data to dataset
-        print(f'{self.current_in_partition=}')
         if self.record_data['in']:
             self.dataset.add('in', data['in'], self.current_in_partition)
         if self.record_data['out']:
