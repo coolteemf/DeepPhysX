@@ -51,7 +51,7 @@ p_grid = {'b_box': b_box, 'bbox_anchor': min_bbox.tolist(), 'bbox_size': bbox_si
           'nb_cells': [nb_cells_x, nb_cells_y, nb_cells_z], 'grid_resolution': grid_resolution}
 # Forces variables
 nb_simultaneous_forces = 20
-amplitude_scale = 0.05
+amplitude_scale = 0.1
 inter_distance_thresh = 0.06
 p_force = {'nb_simultaneous_forces': nb_simultaneous_forces, 'amplitude_scale': amplitude_scale,
            'inter_distance_thresh': inter_distance_thresh}

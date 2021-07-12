@@ -16,10 +16,10 @@ from Sandbox.Liver.LiverConfig.utils import extract_visible_nodes, from_sparse_t
 
 
 # Inherit from SofaEnvironment which allow to implement and create a Sofa scene in the DeepPhysX_Core pipeline
-class FEMLiverMultiDF(SofaEnvironment):
+class FEMLiver(SofaEnvironment):
 
     def __init__(self, root_node, config, idx_instance=1, visualizer_class=None):
-        super(FEMLiverMultiDF, self).__init__(root_node, config, idx_instance, visualizer_class)
+        super(FEMLiver, self).__init__(root_node, config, idx_instance, visualizer_class)
         # Scene configuration
         self.config = config
         # Keep a track of the actual step number and how many samples diverged during the animation
@@ -67,24 +67,16 @@ class FEMLiverMultiDF(SofaEnvironment):
 
         # /root/mechanical/embedded_surface
         embedded_surface = self.root.mechanical.addChild('embedded_surface')
-        embedded_surface.addObject('MechanicalObject', name='mo_embedded_surface', src='@../../surface_mesh')
+        self.surface_mo = embedded_surface.addObject('MechanicalObject', name='mo_embedded_surface', src='@../../surface_mesh')
         embedded_surface.addObject('TriangleSetTopologyContainer', name='triangle_topo', src='@../../surface_mesh')
         nb_forces = p_force['nb_simultaneous_forces']
-        self.spheres = [embedded_surface.addObject('SphereROI', name='sphere' + str(i), tags='ROI_SPHERE' + str(i),
-                                                   centers=p_liver['fixed_point'].tolist(), radii=0.015,
-                                                   drawSphere=True, drawSize=1)
-                        for i in range(nb_forces)]
-        self.force_fields = [embedded_surface.addObject('ConstantForceField', name='cff' + str(i), tags='CFF' + str(i),
-                                                        indices='0', forces=[0., 0., 0.],
-                                                        showArrowSize='0.2', showColor=[1, 0, 1, 1])
-                             for i in range(nb_forces)]
+        self.sphere = embedded_surface.addObject('SphereROI', name='sphere', tags='ROI_SPHERE',
+                                                 centers=p_liver['fixed_point'].tolist(), radii=0.015,
+                                                 drawSphere=True, drawSize=1)
+        self.force_field = embedded_surface.addObject('ConstantForceField', name='cff', tags='CFF',
+                                                      indices='0', forces=[0., 0., 0.],
+                                                      showArrowSize='0.2', showColor=[1, 0, 1, 1])
         embedded_surface.addObject('BarycentricMapping', input='@../mo', output='@./')
-
-        # /root/mechanical/embedded_surface/visible_points
-        visible_points = self.root.mechanical.embedded_surface.addChild('visible_points')
-        self.learn_on_mo = visible_points.addObject('MechanicalObject', name='learn_on_mo', tags="learnOn",
-                                                    position=self.visible_surface_nodes, showObject=True,
-                                                    showObjectScale=5, showColor=[1, 1, 1, 1])
 
         #  /root/mechanical/embedded_surface/rgbd_pcd
         rgbd_pcd = self.root.mechanical.embedded_surface.addChild('rgbd_pcd')
@@ -112,7 +104,7 @@ class FEMLiverMultiDF(SofaEnvironment):
                                                                    self.behaviour_state)
         self.nb_nodes_sparse_grid = len(self.behaviour_state.rest_position.value)
         # Get the data sizes
-        self.input_size = (self.nb_nodes_regular_grid, 1)
+        self.input_size = (self.nb_nodes_regular_grid, 3)
         self.output_size = (self.nb_nodes_regular_grid, 3)
         # Rendering
         self.initVisualizer()
@@ -131,41 +123,24 @@ class FEMLiverMultiDF(SofaEnvironment):
         """
         # Generate next forces
         p_force = self.config.p_force
-        selected_centers = np.empty([0, 3])
-        for j in range(p_force['nb_simultaneous_forces']):
-            distance_check = True
-            f = np.random.uniform(low=-1, high=1, size=(3,))
-            f = (f / np.linalg.norm(f)) * p_force['amplitude_scale'] * np.random.random(1)
+        f = np.random.uniform(low=-1, high=1, size=(3,))
+        f = (f / np.linalg.norm(f)) * p_force['amplitude_scale'] * np.random.random(1)
 
-            # Pick up a random visible surface point and apply translation
-            current_point = self.visible_surface_nodes[np.random.randint(len(self.visible_surface_nodes))]
-            # current_point += np.array(self.config.p_liver['translation'])
+        # Pick up a random visible surface point and apply translation
+        current_point = self.visible_surface_nodes[np.random.randint(len(self.visible_surface_nodes))]
+        # current_point += np.array(self.config.p_liver['translation'])
 
-            # Check if the current point is far enough from the already selected points
-            for p in range(selected_centers.shape[0]):
-                distance = np.linalg.norm(current_point - selected_centers[p])
-                if distance < p_force['inter_distance_thresh']:
-                    distance_check = False
+        # Set the centers of the ROI sphere to current point
+        self.sphere.centers.value = [current_point]
 
-            if distance_check:
-                # Set the centers of the ROI sphere to current point
-                selected_centers = np.concatenate((selected_centers, np.array([current_point])))
-                self.spheres[j].centers.value = [current_point]
+        # Build forces vector
+        forces_vector = []
+        for i in range(len(self.sphere.indices.array())):
+            forces_vector.append([f[0], f[1], f[2]])
 
-                # Build forces vector
-                forces_vector = []
-                for i in range(len(self.spheres[j].indices.array())):
-                    forces_vector.append([f[0], f[1], f[2]])
-
-                # Set forces and indices
-                self.force_fields[j].indices.value = self.spheres[j].indices.array()
-                self.force_fields[j].forces.value = forces_vector
-
-            else:
-                # If current point is too close to previously selected nodes, set forces to 0
-                self.spheres[j].centers.value = [self.config.p_liver['fixed_point'].tolist()]
-                self.force_fields[j].indices.value = [0]
-                self.force_fields[j].forces.value = [[0.0, 0.0, 0.0]]
+        # Set forces and indices
+        self.force_field.indices.value = self.sphere.indices.array()
+        self.force_field.forces.value = forces_vector
 
     def onAnimateEndEvent(self, event):
         """
@@ -186,20 +161,16 @@ class FEMLiverMultiDF(SofaEnvironment):
         Compute the input to be given to the network. Automatically called by EnvironmentManager.
         :return: None
         """
-        # Select random amount of visible surface
-        indices = [random.randint(0, len(self.rgbd_pcd_mo.position.array()) - 1) for _ in
-                   range(random.randint(50, 800))]
-        indices = np.unique(np.array(indices))
-        actual_positions_rgbd = self.rgbd_pcd_mo.position.array()[indices]
-        # Initialize distance field
-        DF_grid = np.zeros((self.nb_nodes_regular_grid, 1), dtype=np.double)
-        # Get list of nodes of the cells containing a point from the RGBD point cloud and for each node,
-        # compute distance to the considered point
-        for p in actual_positions_rgbd:
-            for node in self.grid.node_indices_of(self.grid.cell_index_containing(p)):
-                if node < self.nb_nodes_regular_grid and DF_grid[node][0] == 0:
-                    DF_grid[node] = np.linalg.norm(self.grid.node(node) - p)
-        self.input = DF_grid
+        f = copy.copy(self.force_field.forces.value)
+        ind = copy.copy(self.force_field.indices.value)
+        positions = self.surface_mo.position.array()[ind]
+        F = np.zeros((self.nb_nodes_regular_grid, 3))
+        for i in range(len(f)):
+            for node in self.grid.node_indices_of(self.grid.cell_index_containing(positions[i])):
+                # if node < self.nb_nodes_regular_grid:
+                if np.linalg.norm(F) == 0:
+                    F[node] = f[i]
+        self.input = F
 
     def computeOutput(self):
         """
@@ -209,7 +180,7 @@ class FEMLiverMultiDF(SofaEnvironment):
         actual_positions_on_regular_grid = np.zeros((self.nb_nodes_regular_grid, 3), dtype=np.double)
         actual_positions_on_regular_grid[self.idx_sparse_to_regular] = self.behaviour_state.position.array()
         self.output = copy.copy(np.subtract(actual_positions_on_regular_grid,
-                                            self.regular_grid_rest_shape[None, :]))
+                                            self.regular_grid_rest_shape))
 
     def checkSample(self, check_input=True, check_output=True):
         return self.converged
