@@ -131,7 +131,7 @@ class BaseTrainer(BasePipeline):
         """
         self.batch_progress_bar.print(counts=self.id_batch)
         self.epoch_progress_bar.print(counts=self.id_epoch)
-        self.manager.statsManager.add_trainEpochLoss(self.loss['item'], self.epoch)
+        self.manager.stats_manager.add_trainEpochLoss(self.loss_value['item'], self.id_epoch)
         pass
 
     def epochCondition(self):
