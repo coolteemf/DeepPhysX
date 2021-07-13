@@ -1,9 +1,10 @@
-import numpy as np
+import torch
+import torch.nn.functional as F
 
-from DeepPhysX_Core.Network.DataTransformation import DataTransformation
+from DeepPhysX_PyTorch.Network.TorchDataTransformation import TorchDataTransformation
 
 
-class UnetDataTransformation(DataTransformation):
+class UnetDataTransformation(TorchDataTransformation):
 
     def __init__(self, network_config):
         super().__init__(network_config)
@@ -13,40 +14,46 @@ class UnetDataTransformation(DataTransformation):
         self.nb_channels = self.network_config.network_config.nb_input_channels
         self.pad_widths = None
 
-    def transformBeforePrediction(self, x, gt):
-        x = np.reshape(x, (-1, self.grid_shape[2], self.grid_shape[1], self.grid_shape[0], self.nb_channels))
-        x = np.transpose(x, (0, 4, 1, 2, 3))
-        gt = np.reshape(gt, (-1, self.grid_shape[2], self.grid_shape[1], self.grid_shape[0], self.nb_classes))
-        gt = np.transpose(gt, (0, 4, 1, 2, 3))
+    @TorchDataTransformation.check_type
+    def transformBeforePrediction(self, data_in, data_gt):
+        data_in = torch.reshape(data_in,
+                                (-1, self.grid_shape[2], self.grid_shape[1], self.grid_shape[0], self.nb_channels))
+        data_in = data_in.permute((0, 4, 1, 2, 3))
+        data_gt = torch.reshape(data_gt,
+                                (-1, self.grid_shape[2], self.grid_shape[1], self.grid_shape[0], self.nb_classes))
         # Compute padding
         if self.pad_widths is None:
-            element_shape = x[0].shape[1:]
+            element_shape = data_in[0].shape[1:]
             pad_widths, _ = self.network_config.in_out_pad_widths(element_shape)
-            self.pad_widths = [(0, 0), (0, 0)] + pad_widths
+            # torch applies padding from last dim to first
+            pad_widths.reverse()
+            pad = ()
+            for p in pad_widths:
+                pad += p
+            self.pad_widths = pad + (0, 0, 0, 0)
         # Apply padding
-        x = self.padding(x)
-        gt = self.padding(gt)
-        return x, gt
+        data_in = self.padding(data_in)
+        return data_in, data_gt
 
-    def transformAfterPrediction(self, y, gt):
+    @TorchDataTransformation.check_type
+    def transformAfterPrediction(self, data_out, data_gt):
         # Inverse padding
-        y = self.inverse_padding(y)
-        gt = self.inverse_padding(gt)
-        # y = np.transpose(y, (0, 2, 3, 4, 1))
-        # gt = np.transpose(gt, (0, 2, 3, 4, 1))
-        y.permute(0, 2, 3, 4, 1)
-        gt.permute(0, 2, 3, 4, 1)
-        return y, gt
+        data_out = self.inverse_padding(data_out)
+        data_out = data_out.permute(0, 2, 3, 4, 1)
+        return data_out, data_gt
 
     def padding(self, data):
-        return np.pad(data, self.pad_widths, mode='constant')
+        return F.pad(data, self.pad_widths, mode='constant')
 
     def inverse_padding(self, data):
+        pad_widths = []
+        for i in range(len(self.pad_widths) // 2 - 1, -1, -1):
+            pad_widths.append((self.pad_widths[2*i], self.pad_widths[2*i + 1]))
         def tuple_to_slice(v):
             if v is None:
                 return slice(None)
             if v[1] == 0:
                 return slice(v[0], None)
             return slice(v[0], -v[1])
-        slices = tuple(map(tuple_to_slice, self.pad_widths))
+        slices = tuple(map(tuple_to_slice, pad_widths))
         return data[slices]
