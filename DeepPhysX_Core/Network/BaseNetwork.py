@@ -15,7 +15,6 @@ class BaseNetwork:
         self.description = ""
 
     def predict(self, x):
-        x = self.transformFromNumpy(x)
         return self.forward(x)
 
     def forward(self, x):

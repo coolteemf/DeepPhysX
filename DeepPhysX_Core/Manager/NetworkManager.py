@@ -95,26 +95,24 @@ class NetworkManager:
                 print("NetworkManager: Loading network from {}.".format(networks_list[which_network]))
                 self.network.loadParameters(networks_list[which_network])
 
-    def setData(self, data):
-        self.data_in = data['in']
-        self.data_gt = data['out']
+    def computePrediction(self, data):
+        data_in, data_gt = self.network.transformFromNumpy(data['in']), self.network.transformFromNumpy(data['out'])
+        data_in, data_gt = self.data_transformation.transformBeforePrediction(data_in, data_gt)
+        data_out = self.network.predict(data_in)
+        data_out, data_gt = self.data_transformation.transformAfterPrediction(data_out, data_gt)
+        return data_out, data_gt
 
-    def computePrediction(self):
-        self.data_in, self.data_gt = self.data_transformation.transformBeforePrediction(self.data_in, self.data_gt)
-        self.data_out = self.network.predict(self.data_in)
-        self.data_gt = self.network.transformFromNumpy(self.data_gt)
-        self.data_out, self.data_gt = self.data_transformation.transformAfterPrediction(self.data_out, self.data_gt)
-        return self.network.transformToNumpy(self.data_out)
-
-    def optimizeNetwork(self):
-        loss = self.optimization.computeLoss(self.data_out, self.data_gt)
+    def optimizeNetwork(self, data):
+        data_out, data_gt = self.computePrediction(data)
+        loss = self.optimization.computeLoss(data_out, data_gt)
         self.optimization.optimize()
         return loss
 
-    def computeLoss(self):
-        prediction = self.network.transformFromNumpy(self.data_out)
-        ground_truth = self.network.transformFromNumpy(self.data_gt)
-        return self.optimization.computeLoss(prediction, ground_truth)
+    def getPrediction(self, data):
+        data_out, data_gt = self.computePrediction(data)
+        loss = self.optimization.computeLoss(data_out, data_gt)
+        prediction = self.network.transformToNumpy(data_out)
+        return prediction, loss
 
     def saveNetwork(self, last_save=False):
         if last_save:

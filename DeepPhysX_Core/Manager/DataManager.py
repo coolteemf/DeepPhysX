@@ -14,6 +14,7 @@ class DataManager:
         self.dataset_manager = None
         self.network_manager = None
         self.allow_dataset_fetch = True
+        self.data = None
         # Training
         if self.is_training:
             # Always create a dataset_manager for training
@@ -64,7 +65,7 @@ class DataManager:
             # Record data
             if self.dataset_manager is not None:
                 self.dataset_manager.addData(data)
-        return data
+        self.data = data
 
     def close(self):
         if self.environment_manager is not None:

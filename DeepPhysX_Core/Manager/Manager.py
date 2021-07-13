@@ -57,17 +57,14 @@ class Manager:
         self.stats_manager = StatsManager(log_dir=os.path.join(self.session_dir, 'stats/')) if train else None
 
     def getData(self, epoch=0, batch_size=1, animate=True):
-        data = self.data_manager.getData(epoch=epoch, batch_size=batch_size, animate=animate)
-        # Send data to the network
-        self.network_manager.setData(data)
+        self.data_manager.getData(epoch=epoch, batch_size=batch_size, animate=animate)
 
     def optimizeNetwork(self):
-        self.network_manager.computePrediction()
-        return self.network_manager.optimizeNetwork()
+        loss = self.network_manager.optimizeNetwork(self.data_manager.data)
+        return loss
 
     def getPrediction(self):
-        prediction = self.network_manager.computePrediction()
-        loss = self.network_manager.computeLoss()
+        prediction, loss = self.network_manager.getPrediction(self.data_manager.data)
         return prediction, loss
 
     def saveNetwork(self):
@@ -78,8 +75,8 @@ class Manager:
             self.data_manager.close()
         if self.network_manager is not None:
             self.network_manager.close()
-        # if self.stats_manager is not None:
-        #     self.stats_manager.close()
+        if self.stats_manager is not None:
+            self.stats_manager.close()
 
     def getDescription(self):
         manager_description = ""
