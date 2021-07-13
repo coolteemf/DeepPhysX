@@ -1,31 +1,41 @@
 import vedo
+import copy
 
-from DeepPhysX_Core.Visualizer.VedoVisualizer import VedoVisualizer
 
-
-class MeshVisualizer(VedoVisualizer):
+class MeshVisualizer:
 
     def __init__(self, title='VedoVisualizer', interactive_window=False, show_axes=False):
-        VedoVisualizer.__init__(self, title, interactive_window, show_axes)
-        self.points = None
-        self.mesh = None
         self.data = {}
+        self.viewer = None
+        self.nb_view = 0
+        self.params = {'title': title, 'interactive': interactive_window, 'axes': show_axes}
 
-    def addPoints(self, positions):
-        self.points = vedo.Points(positions)
-        self.view += self.points
-        self.data[self.points] = positions
+    def addPoints(self, positions, at=0):
+        points = vedo.Points(positions)
+        at = self.addView(at)
+        self.data[points] = {'coords': positions, 'at': at}
 
-    def addMesh(self, positions, cells):
-        self.mesh = vedo.Mesh([positions, cells])
-        self.view += self.mesh
-        self.data[self.mesh] = positions
+    def addMesh(self, positions, cells, at=0):
+        mesh = vedo.Mesh([positions, cells])
+        at = self.addView(at)
+        self.data[mesh] = {'coords': positions, 'at': at}
+
+    def addView(self, at):
+        if at >= self.nb_view + 1:
+            at = self.nb_view + 1 if at > self.nb_view + 1 else at
+            self.nb_view += 1
+        return at
 
     def update(self):
-        for data in self.data.keys():
-            data.points(self.data[data])
+        for model in self.data.keys():
+            model.points(copy.copy(self.data[model]['coords']))
 
     def render(self):
+        if self.viewer is None:
+            self.viewer = vedo.Plotter(title=self.params['title'], axes=self.params['axes'], N=self.nb_view + 1,
+                                       interactive=self.params['interactive'])
+            for model in self.data.keys():
+                self.viewer.add(model, at=self.data[model]['at'])
         self.update()
-        self.view.render()
-        self.view.allowInteraction()
+        self.viewer.render()
+        self.viewer.allowInteraction()
