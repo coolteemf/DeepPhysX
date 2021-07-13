@@ -19,12 +19,6 @@ class SofaRunner(Sofa.Core.Controller, BaseRunner):
         self.root = self.manager.data_manager.environment_manager.environment.root
         self.root.addObject(self)
 
-    def execute(self):
-        self.runner.sampleBegin()
-        prediction, loss = self.runner.predict(animate=False)
-        self.runner.manager.data_manager.environment_manager.environment.applyPrediction(prediction)
-        self.runner.sampleEnd()
-
     def onAnimateEndEvent(self, event):
         if self.runningCondition():
             self.sampleBegin()
