@@ -52,6 +52,10 @@ class BaseEnvironment:
         if self.visualizer is not None:
             self.visualizer.render()
 
+    def save_wrong_sample(self, session_dir):
+        if self.visualizer is not None:
+            self.visualizer.saveSample(session_dir)
+
     def getDescription(self):
         if len(self.description) == 0:
             self.description += "\n{}\n".format(self.description_name)

@@ -7,8 +7,8 @@ from DeepPhysX_Core.Environment.BaseEnvironmentConfig import BaseEnvironmentConf
 
 class EnvironmentManager:
 
-    def __init__(self, environment_config: BaseEnvironmentConfig):
-        self.environmentConfig = environment_config
+    def __init__(self, environment_config: BaseEnvironmentConfig, session_dir=None):
+        self.session_dir = session_dir
         self.multiprocessing = environment_config.multiprocessing
         self.multiprocessMethod = environment_config.multiprocess_method
         # Create single or multiple environments according to multiprocessing value
@@ -46,6 +46,8 @@ class EnvironmentManager:
                 inputs[i] = self.environment.getInput()
                 outputs[i] = self.environment.getOutput() if get_outputs else outputs[i]
                 i += 1
+            else:
+                self.environment.save_wrong_sample(self.session_dir)
         if get_inputs:
             inputs = self.environment.transformInputs(inputs)
         if get_outputs:

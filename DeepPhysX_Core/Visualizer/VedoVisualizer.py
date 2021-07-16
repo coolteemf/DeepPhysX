@@ -1,0 +1,2 @@
+class VedoVisualizer:
+    pass

@@ -37,7 +37,8 @@ class DataManager:
         if create_environment is None:  # If None then the dataset_manager exists
             create_environment = self.dataset_manager.requireEnvironment()
         if create_environment:
-            self.environment_manager = EnvironmentManager(environment_config=environment_config)
+            self.environment_manager = EnvironmentManager(environment_config=environment_config,
+                                                          session_dir=session_dir)
 
     def getData(self, epoch=0, batch_size=1, animate=True):
         # Training

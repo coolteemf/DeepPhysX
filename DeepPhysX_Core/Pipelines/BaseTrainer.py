@@ -45,8 +45,7 @@ class BaseTrainer(BasePipeline):
         self.nb_samples = nb_batches * batch_size
         self.loss_value = None
 
-        self.epoch_progress_bar = ProgressBar(0, self.nb_epochs, c=1, title="Epochs progress bar")
-        self.batch_progress_bar = ProgressBar(0, self.nb_batches, c=2, title="Batches progress bar")
+        self.training_progress_bar = ProgressBar(start=0, stop=self.nb_samples, c='orange', title="Training")
 
         # Testing variables
 
@@ -89,7 +88,8 @@ class BaseTrainer(BasePipeline):
         :return:
         """
         self.manager.getData(self.id_epoch, self.batch_size)
-        self.loss_value = self.manager.optimizeNetwork()
+        prediction, self.loss_value = self.manager.optimizeNetwork()
+        self.manager.data_manager.environment_manager.environment.applyPrediction(prediction)
 
     def saveNetwork(self):
         """
@@ -129,9 +129,7 @@ class BaseTrainer(BasePipeline):
         Allows the user to run some post-epoch computations.
         :return:
         """
-        self.batch_progress_bar.print(counts=self.id_batch)
-        self.epoch_progress_bar.print(counts=self.id_epoch)
-        self.manager.stats_manager.add_trainEpochLoss(self.loss_value['item'], self.id_epoch)
+        self.manager.stats_manager.add_trainEpochLoss(self.loss_value, self.id_epoch)
         pass
 
     def epochCondition(self):
@@ -162,10 +160,10 @@ class BaseTrainer(BasePipeline):
         Allows the user to run some post-batch computations.
         :return:
         """
-        self.batch_progress_bar.print(counts=self.id_batch)
-        self.epoch_progress_bar.print(counts=self.id_epoch)
+        self.training_progress_bar.print(txt=f'Epoch n°{self.id_epoch + 1}/{self.nb_epochs} - ' +
+                                             f'Batch n°{self.id_batch + 1}/{self.nb_batches}',
+                                         counts=self.nb_batches * self.id_epoch + self.id_batch)
         self.manager.stats_manager.add_trainBatchLoss(self.loss_value, self.id_epoch * self.nb_batches + self.id_batch)
-        pass
 
     def batchCondition(self):
         """

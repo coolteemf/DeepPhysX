@@ -106,7 +106,8 @@ class NetworkManager:
         data_out, data_gt = self.computePrediction(data)
         loss = self.optimization.computeLoss(data_out, data_gt)
         self.optimization.optimize()
-        return loss
+        prediction = self.network.transformToNumpy(data_out)
+        return prediction, loss
 
     def getPrediction(self, data):
         data_out, data_gt = self.computePrediction(data)
