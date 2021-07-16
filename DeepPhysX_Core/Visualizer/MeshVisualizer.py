@@ -57,6 +57,10 @@ class MeshVisualizer(VedoVisualizer):
     def saveSample(self, session_dir):
         if self.folder is None:
             self.folder = os.path.join(session_dir, 'stats/wrong_samples')
+            os.makedirs(self.folder)
+            from DeepPhysX_Core.utils import wrong_samples
+            import shutil
+            shutil.copy(wrong_samples.__file__, self.folder)
         self.update()
         filename = os.path.join(self.folder, f'wrong_sample_{self.nb_saved}.npz')
         self.nb_saved += 1
