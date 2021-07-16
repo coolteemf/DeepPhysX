@@ -5,6 +5,7 @@ from DeepPhysX_Core.Environment.BaseEnvironmentConfig import BaseEnvironmentConf
 from DeepPhysX_Core.Manager.Manager import Manager
 
 from vedo import ProgressBar
+import sys
 
 
 class BaseTrainer(BasePipeline):
@@ -112,6 +113,8 @@ class BaseTrainer(BasePipeline):
         Allows the user to run some post-computations.
         :return:
         """
+        sys.stdout.write("\033[K")
+        self.training_progress_bar.print(counts=self.nb_samples)
         self.manager.close()
 
     def epochBegin(self):
@@ -160,6 +163,7 @@ class BaseTrainer(BasePipeline):
         Allows the user to run some post-batch computations.
         :return:
         """
+        sys.stdout.write("\033[K")
         self.training_progress_bar.print(txt=f'Epoch n°{self.id_epoch + 1}/{self.nb_epochs} - ' +
                                              f'Batch n°{self.id_batch + 1}/{self.nb_batches}',
                                          counts=self.nb_batches * self.id_epoch + self.id_batch)
