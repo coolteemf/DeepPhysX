@@ -44,37 +44,66 @@ class NNLiver(SofaEnvironment):
         self.grid = Grid3D(anchor_position=p_grid['bbox_anchor'], n=p_grid['nb_cells'], size=p_grid['bbox_size'])
         print(f"3D grid: {self.grid.number_of_nodes()} nodes, {self.grid.number_of_cells()} cells.")
 
+        # FEM MODEL
         # /root/mechanical
         mechanical = self.root.addChild('mechanical')
-        self.sparse_grid = mechanical.addObject('SparseGridTopology', name='sparse_grid', src='@../surface_mesh',
-                                                n=p_grid['grid_resolution'])
-        self.behaviour_state = mechanical.addObject('MechanicalObject', name='mo', src='@sparse_grid', showObject=False)
+        mechanical.addObject('LegacyStaticODESolver', name='ode_solver', newton_iterations=10,
+                             correction_tolerance_threshold=1e-6, residual_tolerance_threshold=1e-6, printLog=False)
+        mechanical.addObject('ConjugateGradientSolver', name='cg_solver', preconditioning_method='Diagonal',
+                             maximum_number_of_iterations=2000, residual_tolerance_threshold=1e-9, printLog=False)
+        mechanical.addObject('SparseGridTopology', name='sparse_grid', src='@../surface_mesh',
+                             n=p_grid['grid_resolution'])
         mechanical.addObject('BoxROI', name='b_box', box=p_grid['b_box'], drawBoxes=True, drawSize='1.0')
+        self.MO = mechanical.addObject('MechanicalObject', name='mo', src='@sparse_grid', showObject=False)
+        mechanical.addObject('SaintVenantKirchhoffMaterial', name="stvk", young_modulus=5000, poisson_ratio=0.4)
+        mechanical.addObject('HyperelasticForcefield', template="Hexahedron", material="@stvk", topology='@sparse_grid',
+                             printLog=True)
+        mechanical.addObject('BoxROI', name='fixed_box', box=p_liver['fixed_box'], drawBoxes=True)
+        mechanical.addObject('FixedConstraint', indices='@fixed_box.indices')
 
         # /root/mechanical/embedded_surface
         embedded_surface = self.root.mechanical.addChild('embedded_surface')
-        self.surface_mo = embedded_surface.addObject('MechanicalObject', name='mo_embedded_surface', src='@../../surface_mesh')
+        embedded_surface.addObject('MechanicalObject', name='mo_embedded_surface', src='@../../surface_mesh')
         embedded_surface.addObject('TriangleSetTopologyContainer', name='triangle_topo', src='@../../surface_mesh')
-        nb_forces = p_force['nb_simultaneous_forces']
-        self.sphere = embedded_surface.addObject('SphereROI', name='sphere', tags='ROI_SPHERE',
-                                                 centers=p_liver['fixed_point'].tolist(), radii=0.015,
-                                                 drawSphere=True, drawSize=1)
-        self.force_field = embedded_surface.addObject('ConstantForceField', name='cff', tags='CFF',
-                                                      indices='0', forces=[0., 0., 0.],
-                                                      showArrowSize='0.2', showColor=[1, 0, 1, 1])
+        self.fem_sphere = embedded_surface.addObject('SphereROI', name='sphere', tags='ROI_SPHERE',
+                                                     centers=p_liver['fixed_point'].tolist(), radii=0.015,
+                                                     drawSphere=True, drawSize=1)
+        self.fem_force_field = embedded_surface.addObject('ConstantForceField', name='cff', tags='CFF',
+                                                          indices='0', forces=[0., 0., 0.],
+                                                          showArrowSize='0.2', showColor=[1, 0, 1, 1])
         embedded_surface.addObject('BarycentricMapping', input='@../mo', output='@./')
-
-        #  /root/mechanical/embedded_surface/rgbd_pcd
-        rgbd_pcd = self.root.mechanical.embedded_surface.addChild('rgbd_pcd')
-        self.rgbd_pcd_mo = rgbd_pcd.addObject('MechanicalObject', name='mo_rgbd_pcd',
-                                              position=self.visible_surface_nodes, showObject=True,
-                                              showObjectScale=5, showColor=[1, 0, 0, 1])  # translation=translation)
-        rgbd_pcd.addObject('BarycentricMapping', input='@../../mo', output='@./')
 
         #  /root/mechanical/visual
         visual_node = self.root.mechanical.addChild('visual')
-        self.visu = visual_node.addObject('OglModel', src='@../../surface_mesh', color='green', useVBO=True)
+        visual_node.addObject('OglModel', src='@../../surface_mesh', color='green', useVBO=True)
         visual_node.addObject('BarycentricMapping', input='@../mo', output='@./')
+
+        # NN MODEL
+        # /root/network
+        network = self.root.addChild('network')
+        self.sparse_grid = network.addObject('SparseGridTopology', name='sparse_grid', src='@../surface_mesh',
+                                             n=p_grid['grid_resolution'])
+        self.behaviour_state = network.addObject('MechanicalObject', name='mo', src='@sparse_grid', showObject=False)
+        network.addObject('BoxROI', name='b_box', box=p_grid['b_box'], drawBoxes=True, drawSize='1.0')
+
+        # /root/network/embedded_surface
+        network_embedded_surface = self.root.network.addChild('network_embedded_surface')
+        self.surface_mo = network_embedded_surface.addObject('MechanicalObject', name='mo_embedded_surface',
+                                                             src='@../../surface_mesh')
+        network_embedded_surface.addObject('TriangleSetTopologyContainer', name='triangle_topo',
+                                           src='@../../surface_mesh')
+        self.sphere = network_embedded_surface.addObject('SphereROI', name='sphere', tags='ROI_SPHERE',
+                                                         centers=p_liver['fixed_point'].tolist(), radii=0.015,
+                                                         drawSphere=True, drawSize=1)
+        self.force_field = network_embedded_surface.addObject('ConstantForceField', name='cff', tags='CFF',
+                                                      indices='0', forces=[0., 0., 0.],
+                                                      showArrowSize='0.2', showColor=[1, 0, 1, 1])
+        network_embedded_surface.addObject('BarycentricMapping', input='@../mo', output='@./')
+
+        #  /root/mechanical/visual
+        network_visual_node = self.root.network.addChild('visual')
+        self.visu = network_visual_node.addObject('OglModel', src='@../../surface_mesh', color='green', useVBO=True)
+        network_visual_node.addObject('BarycentricMapping', input='@../mo', output='@./')
 
     def onSimulationInitDoneEvent(self, event):
         """
@@ -118,6 +147,7 @@ class NNLiver(SofaEnvironment):
 
         # Set the centers of the ROI sphere to current point
         self.sphere.centers.value = [current_point]
+        self.fem_sphere.centers.value = [current_point]
 
         # Build forces vector
         forces_vector = []
@@ -127,6 +157,8 @@ class NNLiver(SofaEnvironment):
         # Set forces and indices
         self.force_field.indices.value = self.sphere.indices.array()
         self.force_field.forces.value = forces_vector
+        self.fem_force_field.indices.value = self.fem_sphere.indices.array()
+        self.fem_force_field.forces.value = forces_vector
 
     def onAnimateEndEvent(self, event):
         """
@@ -170,13 +202,25 @@ class NNLiver(SofaEnvironment):
         """
         # Add the displacement to the initial position
         U = prediction[0]
-
+        print("a.", U.shape)
 
         # Mapping between regular and sparse grids
-        U = np.transpose(U, (1, 2, 3, 0))
+        # U = np.transpose(U, (1, 2, 3, 0))
+        # print("b.", U.shape)
         U = np.reshape(U, (self.nb_nodes_regular_grid, 3))
+        print("c.", U.shape)
         U_sparse = U[self.idx_sparse_to_regular]
+        print("d.", U_sparse.shape)
         self.behaviour_state.position.value = self.behaviour_state.rest_position.array() + U_sparse
 
         # Render
         self.renderVisualizer()
+
+        # Loss
+        U_target = copy.copy(np.subtract(self.MO.position.array(), self.MO.rest_position.array()))
+        print(np.linalg.norm(np.array(U_sparse)))
+        print(np.linalg.norm(np.array(U_target)))
+        import torch
+        criterion = torch.nn.MSELoss()
+        mse = criterion(torch.from_numpy(U_sparse), torch.from_numpy(U_target))
+        print("Effective loss =", mse.item())

@@ -2,3 +2,4 @@ setuptools
 numpy
 torch
 psutil
+vedo

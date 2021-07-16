@@ -15,7 +15,7 @@ import Sofa.Gui
 from DeepPhysX_Core.Visualizer.MeshVisualizer import MeshVisualizer
 
 from Sandbox.Liver.LiverConfig.LiverConfig import LiverConfig
-from Sandbox.Liver.FEMLiver.FEMLiver import FEMLiver as Liver
+from Sandbox.Liver.FEMLiver.TrainingLiver import TrainingLiver as Liver
 from Sandbox.Liver.LiverConfig.utils import compute_grid_resolution
 
 if len(sys.argv) > 1:
@@ -65,7 +65,7 @@ def createScene(root_node=None):
     """
     # Environment config
     env_config = LiverConfig(environment_class=Liver, root_node=root_node, always_create_data=True,
-                             p_liver=p_liver, p_grid=p_grid, p_force=p_force, visualizer_class=None)
+                             p_liver=p_liver, p_grid=p_grid, p_force=p_force, visualizer_class=MeshVisualizer)
     # Manually create and init the environment from the configuration object
     env = env_config.createEnvironment()
     return env.root

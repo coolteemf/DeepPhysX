@@ -45,7 +45,7 @@ p_grid = {'b_box': b_box, 'bbox_anchor': min_bbox.tolist(), 'bbox_size': bbox_si
           'nb_cells': [nb_cells_x, nb_cells_y, nb_cells_z], 'grid_resolution': grid_resolution}
 # Forces variables
 nb_simultaneous_forces = 20
-amplitude_scale = 0.05
+amplitude_scale = 0.1
 inter_distance_thresh = 0.06
 p_force = {'nb_simultaneous_forces': nb_simultaneous_forces, 'amplitude_scale': amplitude_scale,
            'inter_distance_thresh': inter_distance_thresh}
@@ -53,7 +53,7 @@ p_force = {'nb_simultaneous_forces': nb_simultaneous_forces, 'amplitude_scale': 
 # TRAINING PARAMETERS
 nb_epoch = 100
 nb_batch = 30
-batch_size = 5
+batch_size = 10
 
 
 def createScene(root_node=None):
@@ -63,7 +63,7 @@ def createScene(root_node=None):
 
     # Network config
     net_config = UNetConfig(network_name="liver_UNet", save_each_epoch=False,
-                            loss=torch.nn.MSELoss, lr=1e-5, optimizer=torch.optim.Adam,
+                            loss=torch.nn.MSELoss, lr=1e-6, optimizer=torch.optim.Adam,
                             data_transformation_class=UnetDataTransformation,
                             steps=3, first_layer_channels=128, nb_classes=3,
                             nb_input_channels=3, nb_dims=3, border_mode='same', two_sublayers=True,
@@ -71,7 +71,7 @@ def createScene(root_node=None):
     # Dataset config
     dataset_config = BaseDatasetConfig(partition_size=1, shuffle_dataset=True)
     # Runner
-    man_dir = os.path.dirname(os.path.abspath(__file__)) + '/trainings/liver_21'
+    man_dir = os.path.dirname(os.path.abspath(__file__)) + '/trainings/liver'
     runner = SofaRunner(session_name="session", dataset_config=dataset_config,
                         environment_config=env_config, network_config=net_config, session_dir=man_dir, nb_steps=0,
                         record_inputs=False, record_outputs=False)

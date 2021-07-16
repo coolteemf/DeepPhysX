@@ -9,6 +9,7 @@ import copy
 import random
 import numpy as np
 from time import time_ns as timer
+import Sofa.Simulation
 
 from DeepPhysX_Sofa.Environment.SofaEnvironment import SofaEnvironment
 from Caribou.Topology import Grid3D
@@ -121,6 +122,8 @@ class FEMLiver(SofaEnvironment):
         :param event: Sofa Event
         :return: None
         """
+        # Reset position
+        self.behaviour_state.position.value = self.behaviour_state.rest_position.value
         # Generate next forces
         p_force = self.config.p_force
         f = np.random.uniform(low=-1, high=1, size=(3,))
@@ -152,9 +155,12 @@ class FEMLiver(SofaEnvironment):
         self.nb_steps += 1
         # Check whether if the solver diverged or not
         self.converged = self.solver.converged.value
+        if not self.converged:
+            Sofa.Simulation.reset(self.root)
         self.nb_converged += int(self.converged)
         # Render
         self.renderVisualizer()
+        # self.computeInput()
 
     def computeInput(self):
         """
@@ -167,8 +173,7 @@ class FEMLiver(SofaEnvironment):
         F = np.zeros((self.nb_nodes_regular_grid, 3))
         for i in range(len(f)):
             for node in self.grid.node_indices_of(self.grid.cell_index_containing(positions[i])):
-                # if node < self.nb_nodes_regular_grid:
-                if np.linalg.norm(F) == 0:
+                if np.linalg.norm(F) == 0 and node < self.nb_nodes_regular_grid:
                     F[node] = f[i]
         self.input = F
 

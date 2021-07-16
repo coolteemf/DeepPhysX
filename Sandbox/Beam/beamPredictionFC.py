@@ -56,7 +56,7 @@ def createScene(root_node=None):
     """
     # Environment config
     env_config = BeamConfig(environment_class=Beam, root_node=root_node, p_grid=p_grid, always_create_data=True,
-                            visualizer_class=MeshVisualizer)
+                            visualizer_class=None)
     # Network config
     net_config = FCConfig(network_name="beam_FC", save_each_epoch=True,
                           loss=torch.nn.MSELoss, lr=1e-5, optimizer=torch.optim.Adam,

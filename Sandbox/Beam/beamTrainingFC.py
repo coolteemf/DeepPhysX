@@ -25,7 +25,7 @@ p_grid = {'grid_resolution': grid_resolution, 'grid_min': grid_min, 'grid_max': 
 nb_hidden_layers = 2
 nb_node = grid_resolution[0] * grid_resolution[1] * grid_resolution[2]
 layers_dim = [nb_node * 3] + [nb_node * 3 for _ in range(nb_hidden_layers + 1)] + [nb_node * 3]
-nb_epoch = 10
+nb_epoch = 100
 nb_batch = 15
 batch_size = 32
 
@@ -43,7 +43,7 @@ def createScene(root_node=None):
     # Dataset config
     dataset_config = BaseDatasetConfig(partition_size=1, shuffle_dataset=True)
 
-    trainer = BaseTrainer(session_name="trainings/beam_FC_625", dataset_config=dataset_config,
+    trainer = BaseTrainer(session_name="trainings/session_625", dataset_config=dataset_config,
                           environment_config=env_config, network_config=net_config,
                           nb_epochs=nb_epoch, nb_batches=nb_batch, batch_size=batch_size)
     trainer.execute()
