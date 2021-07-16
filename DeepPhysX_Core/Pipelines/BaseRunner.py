@@ -31,8 +31,6 @@ class BaseRunner(BasePipeline):
 
         self.nb_samples = nb_steps
         self.idx_step = 0
-        self.prediction = None
-        self.loss_value = 0.
 
         # Tell if data is recording while predicting (output is recorded only if input too)
         self.record_data = (record_inputs, record_outputs and record_inputs)
@@ -45,7 +43,8 @@ class BaseRunner(BasePipeline):
         self.runBegin()
         while self.runningCondition():
             self.sampleBegin()
-            self.prediction, self.loss_value = self.predict()
+            prediction, loss_value = self.predict()
+            self.manager.data_manager.environment_manager.environment.applyPrediction(prediction)
             self.sampleEnd()
         self.runEnd()
 
