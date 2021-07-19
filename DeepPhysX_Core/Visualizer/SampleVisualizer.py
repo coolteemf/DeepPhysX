@@ -18,24 +18,30 @@ class SampleVisualizer(VedoVisualizer):
         self.view.addButton(fnc=self.showPreviousSample, pos=(0.3, 0.005), states=["previous"])
         self.view.addButton(fnc=self.showNextSample, pos=(0.7, 0.005), states=["next"])
         # Load and show first sample
-        self.current_sample = self.loadSample()
-        self.view.show(self.current_sample)
+        self.current_sample = None
+        self.loadSample()
 
     def showPreviousSample(self):
         if self.id_sample > 0:
             self.id_sample -= 1
-            self.view.clear(self.current_sample)
-            self.current_sample = self.loadSample()
-            self.view.show(self.current_sample)
+        else:
+            self.id_sample = len(self.samples) - 1
+        self.loadSample()
 
     def showNextSample(self):
         if self.id_sample < len(self.samples) - 1:
             self.id_sample += 1
-            self.view.clear(self.current_sample)
-            self.current_sample = self.loadSample()
-            self.view.show(self.current_sample)
+        else:
+            self.id_sample = 0
+        self.loadSample()
 
     def loadSample(self):
+        # Clear previous sample in view
+        if self.current_sample is not None:
+            self.view.clear(self.current_sample)
+        # Load next sample from file
         filename = self.samples[self.id_sample]
         view = vedo.load(filename)
-        return view.actors
+        self.current_sample = view.actors
+        # Show current sample
+        self.view.show(self.current_sample)
