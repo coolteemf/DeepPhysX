@@ -5,10 +5,7 @@ NN simulated liver which predicts the deformations of the FEM deformed liver.
 """
 
 import copy
-import random
 import numpy as np
-from time import time_ns as timer
-import Sofa.Simulation
 
 from DeepPhysX_Sofa.Environment.SofaEnvironment import SofaEnvironment
 from Caribou.Topology import Grid3D
@@ -34,62 +31,96 @@ class TrainingLiver(SofaEnvironment):
         :return: None
         """
         # Get the parameters (liver, grid, force)
-        p_liver, p_grid, p_force = config.p_liver, config.p_grid, config.p_force
+        p_liver, p_grid = config.p_liver, config.p_grid
 
         # UMesh regular grid
         self.regular_grid = Grid3D(anchor_position=p_grid['bbox_anchor'], n=p_grid['nb_cells'],
                                    size=p_grid['bbox_size'])
         print(f"3D grid: {self.regular_grid.number_of_nodes()} nodes, {self.regular_grid.number_of_cells()} cells.")
 
-        # ROOT
-        surface_mesh = self.root.addObject('MeshObjLoader', name='surface_mesh', filename=p_liver['mesh_file'],
-                                           translation=p_liver['translation'])
+        # Root
+        self.surface_mesh = self.root.addObject('MeshObjLoader', name='surface_mesh', filename=p_liver['mesh_file'],
+                                                translation=p_liver['translation'])
+        self.visible_nodes = extract_visible_nodes(camera_position=p_liver['camera_position'],
+                                                   normals=self.surface_mesh.normals.value,
+                                                   positions=self.surface_mesh.position.value,
+                                                   dot_thresh=0.0, rand_thresh=0.0, distance_from_camera_thresh=1e6)
+        # Root children
+        self.createFEM(p_liver, p_grid)
+        self.createNN(p_liver, p_grid)
 
-        ## FEM NODE ##
+    def createFEM(self, p_liver, p_grid):
+        """
+        FEM node of the liver scene
+        :param p_liver:
+        :param p_grid:
+        :return:
+        """
         fem = self.root.addChild('fem')
+        # Solvers
         self.solver = fem.addObject('LegacyStaticODESolver', name='ode_solver', newton_iterations=10, printLog=False,
                                     correction_tolerance_threshold=1e-6, residual_tolerance_threshold=1e-6)
         fem.addObject('ConjugateGradientSolver', name='cg_solver', preconditioning_method='Diagonal',
                       maximum_number_of_iterations=2000, residual_tolerance_threshold=1e-9, printLog=False)
+        # Topology
         self.fem_sparse_grid = fem.addObject('SparseGridTopology', name='sparse_grid', src='@../surface_mesh',
                                              n=p_grid['grid_resolution'])
-        fem.addObject('BoxROI', name='b_box', box=p_grid['b_box'], drawBoxes=True, drawSize='1.0')
         self.fem_mo = fem.addObject('MechanicalObject', name='fem_mo', src='@sparse_grid', showObject=False)
+        fem.addObject('BoxROI', name='b_box', box=p_grid['b_box'], drawBoxes=True, drawSize='1.0')
+        # Material
         fem.addObject('SaintVenantKirchhoffMaterial', name="stvk", young_modulus=5000, poisson_ratio=0.4)
         fem.addObject('HyperelasticForcefield', template="Hexahedron", material="@stvk", topology='@sparse_grid',
                       printLog=True)
+        # Constraint
         fem.addObject('BoxROI', name='fixed_box', box=p_liver['fixed_box'], drawBoxes=True)
         fem.addObject('FixedConstraint', indices='@fixed_box.indices')
-        # surface #
+        # Surface
         fem_surface = self.root.fem.addChild('fem_surface')
-        self.surface_mo = fem_surface.addObject('MechanicalObject', name='mo_embedded_surface',
-                                                src='@../../surface_mesh')
+        self.fem_surface_mo = fem_surface.addObject('MechanicalObject', name='mo_embedded_surface',
+                                                    src='@../../surface_mesh')
         fem_surface.addObject('TriangleSetTopologyContainer', name='triangles', src='@../../surface_mesh')
-        self.sphere = fem_surface.addObject('SphereROI', name='sphere', tags='ROI_SPHERE', radii=0.015,
-                                            centers=p_liver['fixed_point'].tolist(), drawSphere=True, drawSize=1)
-        self.force_field = fem_surface.addObject('ConstantForceField', name='cff', tags='CFF', indices='0',
-                                                 forces=[0., 0., 0.], showArrowSize='0.2', showColor=[0, 0, 1, 1])
+        self.fem_sphere = fem_surface.addObject('SphereROI', name='sphere', tags='ROI_SPHERE', radii=0.015,
+                                                centers=p_liver['fixed_point'].tolist(), drawSphere=True, drawSize=1)
+        self.fem_force_field = fem_surface.addObject('ConstantForceField', name='cff', tags='CFF', indices='0',
+                                                     forces=[0., 0., 0.], showArrowSize='0.2', showColor=[0, 0, 1, 1])
         fem_surface.addObject('BarycentricMapping', input='@../fem_mo', output='@./')
-        # visible points #
+        # Visible points
         rgbd = self.root.fem.fem_surface.addChild('rgbd')
-        self.visible_nodes = extract_visible_nodes(camera_position=p_liver['camera_position'],
-                                                   normals=surface_mesh.normals.value,
-                                                   positions=surface_mesh.position.value,
-                                                   dot_thresh=0.0, rand_thresh=0.0, distance_from_camera_thresh=1e6)
         rgbd.addObject('MechanicalObject', name='mo_rgbd_pcd', position=self.visible_nodes,
                        showObject=True, showObjectScale=5, showColor=[1, 0, 0, 1])
         rgbd.addObject('BarycentricMapping', input='@../../fem_mo', output='@./')
-        # visual #
+        # Visual
         visual_node = self.root.fem.addChild('visual')
         self.fem_visu = visual_node.addObject('OglModel', src='@../../surface_mesh', color='green', useVBO=True)
         visual_node.addObject('BarycentricMapping', input='@../fem_mo', output='@./')
 
-        ## NN NODE ##
+    def createNN(self, p_liver, p_grid):
+        """
+        Neural Network part of the liver
+        :param p_liver:
+        :param p_grid:
+        :return:
+        """
         network = self.root.addChild('network')
+        # Topology
         self.nn_sparse_grid = network.addObject('SparseGridTopology', name='sparse_grid', src='@../surface_mesh',
                                                 n=p_grid['grid_resolution'])
         self.nn_mo = network.addObject('MechanicalObject', name='mo', src='@sparse_grid', showObject=False)
-        # visual #
+        network.addObject('BoxROI', name='b_box', box=p_grid['b_box'], drawBoxes=True, drawSize='1.0')
+        # Surface
+        network_embedded_surface = self.root.network.addChild('network_embedded_surface')
+        self.nn_surface_mo = network_embedded_surface.addObject('MechanicalObject', name='mo_embedded_surface',
+                                                                src='@../../surface_mesh')
+        network_embedded_surface.addObject('TriangleSetTopologyContainer', name='triangle_topo',
+                                           src='@../../surface_mesh')
+        self.nn_sphere = network_embedded_surface.addObject('SphereROI', name='sphere', tags='ROI_SPHERE',
+                                                            centers=p_liver['fixed_point'].tolist(), radii=0.015,
+                                                            drawSphere=True, drawSize=1)
+        self.nn_force_field = network_embedded_surface.addObject('ConstantForceField', name='cff', tags='CFF',
+                                                                 indices='0', forces=[0., 0., 0.],
+                                                                 showArrowSize='0.2', showColor=[1, 0, 1, 1])
+        network_embedded_surface.addObject('BarycentricMapping', input='@../mo', output='@./')
+        # Visual
         network_visual_node = self.root.network.addChild('visual')
         self.nn_visu = network_visual_node.addObject('OglModel', src='@../../surface_mesh', color='orange', useVBO=True)
         network_visual_node.addObject('BarycentricMapping', input='@../mo', output='@./')
@@ -134,14 +165,14 @@ class TrainingLiver(SofaEnvironment):
         # Pick up a random visible surface point
         current_point = self.visible_nodes[np.random.randint(len(self.visible_nodes))]
         # Set the centers of the ROI sphere to current point
-        self.sphere.centers.value = [current_point]
+        self.fem_sphere.centers.value = [current_point]
         # Build forces vector
         forces_vector = []
-        for i in range(len(self.sphere.indices.array())):
+        for i in range(len(self.fem_sphere.indices.array())):
             forces_vector.append(f)
         # Set forces and indices
-        self.force_field.indices.value = self.sphere.indices.array()
-        self.force_field.forces.value = forces_vector
+        self.fem_force_field.indices.value = self.fem_sphere.indices.array()
+        self.fem_force_field.forces.value = forces_vector
 
     def onAnimateEndEvent(self, event):
         """
@@ -156,23 +187,21 @@ class TrainingLiver(SofaEnvironment):
         self.nb_converged += int(self.converged)
         # Render
         self.renderVisualizer()
-        # self.computeInput()
-        # self.computeOutput()
-        # self.applyPrediction(None)
 
     def computeInput(self):
         """
         Compute the input to be given to the network. Automatically called by EnvironmentManager.
         :return: None
         """
-        f = copy.copy(self.force_field.forces.value)
-        ind = copy.copy(self.force_field.indices.value)
-        positions = self.surface_mo.position.array()[ind]
+        f = copy.copy(self.fem_force_field.forces.value)
+        ind = copy.copy(self.fem_force_field.indices.value)
+        positions = self.fem_surface_mo.position.array()[ind]
         F = np.zeros((self.nb_nodes_regular_grid, 3))
         for i in range(len(f)):
             for node in self.regular_grid.node_indices_of(self.regular_grid.cell_index_containing(positions[i])):
-                if np.linalg.norm(F) == 0 and node < self.nb_nodes_regular_grid:
-                    F[node] = f[i]
+                if node < self.nb_nodes_regular_grid:
+                    if np.linalg.norm(F[node]) == 0:
+                        F[node] = f[i]
         self.input = F
 
     def computeOutput(self):

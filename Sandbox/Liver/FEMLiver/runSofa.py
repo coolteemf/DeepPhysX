@@ -15,7 +15,7 @@ import Sofa.Gui
 from DeepPhysX_Core.Visualizer.MeshVisualizer import MeshVisualizer
 
 from Sandbox.Liver.LiverConfig.LiverConfig import LiverConfig
-from Sandbox.Liver.FEMLiver.TrainingLiver import TrainingLiver as Liver
+from Sandbox.Liver.TrainingLiver import TrainingLiver as Liver
 from Sandbox.Liver.LiverConfig.utils import compute_grid_resolution
 
 if len(sys.argv) > 1:
