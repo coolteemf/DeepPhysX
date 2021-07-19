@@ -43,7 +43,7 @@ class BaseTrainer(BasePipeline):
         self.nb_batches = nb_batches
         self.batch_size = batch_size
         self.id_batch = 0
-        self.nb_samples = nb_batches * batch_size
+        self.nb_samples = nb_batches * batch_size * nb_epochs
         self.loss_value = None
 
         self.training_progress_bar = ProgressBar(start=0, stop=self.nb_samples, c='orange', title="Training")
