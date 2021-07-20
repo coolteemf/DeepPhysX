@@ -14,8 +14,11 @@ class DataTransformation:
             return func(self, *args)
         return inner
 
-    def transformBeforePrediction(self, data_in, data_gt):
-        return data_in, data_gt
+    def transformBeforePrediction(self, data_in):
+        return data_in
 
-    def transformAfterPrediction(self, data_out, data_gt):
+    def transformBeforeLoss(self, data_out, data_gt):
         return data_out, data_gt
+
+    def transformBeforeApply(self, data_out):
+        return data_out

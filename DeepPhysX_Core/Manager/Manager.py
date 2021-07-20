@@ -60,11 +60,11 @@ class Manager:
         self.data_manager.getData(epoch=epoch, batch_size=batch_size, animate=animate)
 
     def optimizeNetwork(self):
-        prediction, loss = self.network_manager.optimizeNetwork(self.data_manager.data)
+        prediction, loss = self.network_manager.computePrediction(self.data_manager.data, optimize=True)
         return prediction, loss
 
     def getPrediction(self):
-        prediction, loss = self.network_manager.getPrediction(self.data_manager.data)
+        prediction, loss = self.network_manager.computePrediction(self.data_manager.data, optimize=False)
         return prediction, loss
 
     def saveNetwork(self):

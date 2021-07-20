@@ -95,23 +95,20 @@ class NetworkManager:
                 print("NetworkManager: Loading network from {}.".format(networks_list[which_network]))
                 self.network.loadParameters(networks_list[which_network])
 
-    def computePrediction(self, data):
+    def computePrediction(self, data, optimize):
+        # Getting data from the data manager
         data_in, data_gt = self.network.transformFromNumpy(data['in']), self.network.transformFromNumpy(data['out'])
-        data_in, data_gt = self.data_transformation.transformBeforePrediction(data_in, data_gt)
+        # Compute prediction
+        data_in = self.data_transformation.transformBeforePrediction(data_in)
         data_out = self.network.predict(data_in)
-        data_out, data_gt = self.data_transformation.transformAfterPrediction(data_out, data_gt)
-        return data_out, data_gt
-
-    def optimizeNetwork(self, data):
-        data_out, data_gt = self.computePrediction(data)
+        # Compute loss
+        data_out, data_gt = self.data_transformation.transformBeforeLoss(data_out, data_gt)
         loss = self.optimization.computeLoss(data_out, data_gt)
-        self.optimization.optimize()
-        prediction = self.network.transformToNumpy(data_out)
-        return prediction, loss
-
-    def getPrediction(self, data):
-        data_out, data_gt = self.computePrediction(data)
-        loss = self.optimization.computeLoss(data_out, data_gt)
+        # Optimizing network if training
+        if optimize:
+            self.optimization.optimize()
+        # Transform prediction to be compatible with environment
+        data_out = self.data_transformation.transformBeforeApply(data_out)
         prediction = self.network.transformToNumpy(data_out)
         return prediction, loss
 
