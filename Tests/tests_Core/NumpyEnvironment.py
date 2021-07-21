@@ -1,33 +1,46 @@
 import numpy as np
+from dataclasses import dataclass
 
 from DeepPhysX_Core.Environment.BaseEnvironment import BaseEnvironment
+from DeepPhysX_Core.Environment.BaseEnvironmentConfig import BaseEnvironmentConfig
 
 
 class NumpyEnvironment(BaseEnvironment):
 
-    def __init__(self, config, idx_instance=1, visualizer_class=None):
-        BaseEnvironment.__init__(self, config=config, idx_instance=idx_instance)
+    def __init__(self, config):
+        BaseEnvironment.__init__(self, config=config)
         self.idx_step = 0
-        self.a = np.random.randn()
-        self.b = np.random.randn()
-        self.c = np.random.randn()
-        self.d = np.random.randn()
+        # Environment parameters that must be learned by network
+        self.p = [round(np.random.randn(), 2) for _ in range(config.nb_parameters)]
 
-    def create(self, config):
-        self.input = np.random.randn(1)
-        self.input_size = self.input.size
-        self.output = self.input
-        self.output_size = self.output.size
+    def create(self):
+        self.input_size = np.random.randn(1).size
+        self.output_size = self.input_size
 
     def step(self):
-        self.idx_step += 1
+        self.idx_step += self.simulations_per_step
 
     def computeInput(self):
         self.input = np.random.randn(1).round(2)
 
     def computeOutput(self):
-        x = self.input
-        self.output = self.a + self.b * x + self.c * x ** 2 - self.d * x ** 3
+        self.output = 0
+        for i in range(len(self.p)):
+            self.output += self.p[i] * (self.input ** i)
 
     def reset(self):
         self.idx_step = 0
+
+
+class NumpyEnvironmentConfig(BaseEnvironmentConfig):
+    @dataclass
+    class NumpyEnvironmentProperties(BaseEnvironmentConfig.BaseEnvironmentProperties):
+        nb_parameters: int
+
+    def __init__(self, environment_class=NumpyEnvironment, simulations_per_step=1, max_wrong_samples_per_step=10,
+                 always_create_data=False, nb_parameters=4):
+        super(NumpyEnvironmentConfig, self).__init__(environment_class=environment_class,
+                                                     always_create_data=always_create_data)
+        self.environment_config = self.NumpyEnvironmentProperties(simulations_per_step=simulations_per_step,
+                                                                  max_wrong_samples_per_step=max_wrong_samples_per_step,
+                                                                  nb_parameters=nb_parameters)

@@ -7,37 +7,65 @@ from dataclasses import dataclass
 class BaseEnvironmentConfig:
     @dataclass
     class BaseEnvironmentProperties:
+        """
+        Class containing data to create Environment object.
+        """
         simulations_per_step: int
         max_wrong_samples_per_step: int
 
     def __init__(self, environment_class=BaseEnvironment, simulations_per_step=1, max_wrong_samples_per_step=10,
                  always_create_data=False, visualizer_class=None,
                  multiprocessing=1, multiprocess_method=None):
+        """
+        BaseEnvironmentConfig is a configuration class to parameterize and create a BaseEnvironment for the
+        EnvironmentManager.
 
-        # Description
+        :param environment_class: BaseEnvironment class from which an instance will be created
+        :param int simulations_per_step: Number of iterations to compute in the Environment at each time step
+        :param int max_wrong_samples_per_step: Maximum number of wrong samples to produce in a step
+        :param bool always_create_data: If True, data will always be created from environment. If False, data will be
+                                        created from the environment during the first epoch and then re-used from the
+                                        Dataset.
+        :param visualizer_class: Visualization class from which an instance ill be created
+        :param multiprocessing:
+        :param multiprocess_method:
+        """
+
         self.name = self.__class__.__name__
-        self.description = ""
 
-        # Check the arguments before to configure anything
-        if type(simulations_per_step) != int and simulations_per_step < 1:
-            raise TypeError(f"[{self.name}] The number of simulations per step must be an int > 1.")
-        if type(max_wrong_samples_per_step) != int and max_wrong_samples_per_step < 0:
-            raise TypeError(f"[{self.name}] The number of max wrong samples per step must be a positive int.")
+        # Check simulations_per_step type and value
+        if type(simulations_per_step) != int:
+            raise TypeError(f"[{self.name}] Wrong simulations_per_step type: int required, get "
+                            f"{type(simulations_per_step)}")
+        if simulations_per_step < 1:
+            raise ValueError(f"[{self.name}] Given simulations_per_step value is negative or null")
+        # Check max_wrong_samples_per_step type and value
+        if type(max_wrong_samples_per_step) != int:
+            raise TypeError(f"[{self.name}] Wrong max_wrong_samples_per_step type: int required, get "
+                            f"{type(max_wrong_samples_per_step)}")
+        if simulations_per_step < 1:
+            raise ValueError(f"[{self.name}] Given max_wrong_simulations_per_step value is negative or null")
+        # Check always_create_data type
         if type(always_create_data) != bool:
-            raise TypeError(f"[{self.name}] Always create data must be a boolean.")
+            raise TypeError(f"[{self.name}] Wrong always_create_data type: bool required, get "
+                            f"{type(always_create_data)}")
+
+        # Todo : Multiprocessing in Environment package level ?
         if type(multiprocessing) != int and multiprocessing < 0:
             raise TypeError(f"[{self.name}] The multiprocessing number must be a positive int.")
         if multiprocess_method is not None and multiprocess_method not in ['process', 'pool']:
             raise ValueError(f"[{self.name}] The multiprocessing method must be either process or pool.")
 
-        # Environment configuration
-        self.environment_config = self.BaseEnvironmentProperties(simulations_per_step=simulations_per_step,
-                                                                 max_wrong_samples_per_step=max_wrong_samples_per_step)
-        # Environment variables
+        # BaseEnvironment parameterization
         self.environment_class = environment_class
         self.visualizer_class = visualizer_class
-        # EnvironmentManager variables
+        self.environment_config = self.BaseEnvironmentProperties(simulations_per_step=simulations_per_step,
+                                                                 max_wrong_samples_per_step=max_wrong_samples_per_step)
+
+        # EnvironmentManager parameterization
         self.always_create_data = always_create_data
+
+        # Todo : Multiprocessing in Environment package level ?
         self.multiprocessing = min(max(multiprocessing, 1), os.cpu_count())  # Assert nb is between 1 and cpu_count
         if self.multiprocessing > 1:
             if multiprocess_method is not None:
@@ -49,21 +77,31 @@ class BaseEnvironmentConfig:
             self.multiprocess_method = multiprocess_method
 
     def createEnvironment(self):
+        """
+        :return: BaseEnvironment object from environment_class and its parameters
+        """
         if self.multiprocessing == 1:
+            # Create environment
             try:
-                environment = self.environment_class(config=self.environment_config,
-                                                     visualizer_class=self.visualizer_class)
+                environment = self.environment_class(config=self.environment_config)
             except:
-                raise TypeError("[{}] The given environment class is not a BaseEnvironment class.".format(self.name))
+                raise ValueError(f"[{self.name}] Given environment_class got an unexpected keyword argument 'config'")
             if not isinstance(environment, BaseEnvironment):
-                raise TypeError("[{}] The environment class must be a BaseEnvironment class.".format(self.name))
-            if self.visualizer_class is not None and not isinstance(environment.visualizer, VedoVisualizer):
-                raise TypeError(f"[{self.name}] The visualizer must be of VedoVisualizer type.")
+                raise TypeError(f"[{self.name}] Wrong environment_class type: BaseEnvironment required, get "
+                                f"{self.environment_class}")
+            environment.create()
+            # Create visualizer
+            if self.visualizer_class is not None:
+                if not isinstance(environment.visualizer, VedoVisualizer):
+                    raise TypeError(f"[{self.name}] The visualizer must be of VedoVisualizer type.")
+                else:
+                    environment.visualizer = self.visualizer_class()
             return environment
+
+        # Todo : Multiprocessing in Environment package level ?
         else:
             try:
                 environments = [self.environment_class(config=self.environment_config,
-                                                       visualizer_class=self.visualizer_class,
                                                        idx_instance=i+1) for i in range(self.multiprocessing)]
             except:
                 raise TypeError("[{}] The given environment class is not a BaseEnvironment class.".format(self.name))
@@ -71,11 +109,14 @@ class BaseEnvironmentConfig:
                 raise TypeError("[{}] The environment class must be a BaseEnvironment class.".format(self.name))
             return environments
 
-    def getDescription(self):
-        if len(self.description) == 0:
-            self.description += "\n{}\n".format(self.name)
-            self.description += "   (environment) Environment class: {}\n".format(self.environment_class.__name__)
-            self.description += "   (environment) Environment config: {}\n".format(self.environment_config)
-            self.description += "   (environmentManager) Always create data: {}\n".format(self.always_create_data)
-            self.description += "   (environmentManager) Multiprocessing value: {}\n".format(self.multiprocessing)
-        return self.description
+    def __str__(self):
+        """
+        :return: String containing information about the BaseEnvironmentConfig object
+        """
+        description = "\n"
+        description += f"{self.name}\n"
+        description += f"    Environment class: {self.environment_class.__name__}\n"
+        description += f"    Simulations per step: {self.environment_config.simulations_per_step}\n"
+        description += f"    Max wrong samples per step: {self.environment_config.max_wrong_samples_per_step}\n"
+        description += f"    Always create data: {self.always_create_data}\n"
+        return description

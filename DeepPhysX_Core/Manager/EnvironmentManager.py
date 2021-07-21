@@ -48,10 +48,6 @@ class EnvironmentManager:
                 i += 1
             else:
                 self.environment.save_wrong_sample(self.session_dir)
-        if get_inputs:
-            inputs = self.environment.transformInputs(inputs)
-        if get_outputs:
-            outputs = self.environment.transformOutputs(outputs)
         return inputs, outputs
 
     """def computeMultipleProcess(self, batch_size, get_inputs, get_outputs):
