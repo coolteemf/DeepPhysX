@@ -244,26 +244,26 @@ class DatasetManager:
                 self.dataset.load('out', data_out)
 
     def getData(self, get_inputs, get_outputs, batch_size=1, batched=True, force_dataset_reload=False):
-        if self.current_in_partition_name is None or self.dataset.currentSample >= len(self.dataset.data_in):
+        if self.current_in_partition_name is None or self.dataset.current_sample >= len(self.dataset.data_in):
             if not force_dataset_reload:
                 return None
             self.loadPartitions()
             if self.shuffle_dataset:
                 self.dataset.shuffle()
-            self.dataset.currentSample = 0
-        idx = self.dataset.currentSample
+            self.dataset.current_sample = 0
+        idx = self.dataset.current_sample
         data = {'in': np.array([]), 'out': np.array([])}
         if get_inputs:
             if batched:
-                data['in'] = self.dataset.data_in[idx: idx + batch_size].reshape((-1, *self.dataset.inShape))
+                data['in'] = self.dataset.data_in[idx: idx + batch_size].reshape((-1, *self.dataset.in_shape))
             else:
                 data['in'] = np.squeeze(self.dataset.data_in[idx: idx + batch_size], axis=0)
         if get_outputs:
             if batched:
-                data['out'] = self.dataset.data_out[idx: idx + batch_size].reshape((-1, *self.dataset.outShape))
+                data['out'] = self.dataset.data_out[idx: idx + batch_size].reshape((-1, *self.dataset.out_shape))
             else:
                 data['out'] = np.squeeze(self.dataset.data_out[idx: idx + batch_size], axis=0)
-        self.dataset.currentSample += batch_size
+        self.dataset.current_sample += batch_size
         return data
 
     def getNextBatch(self, batch_size):

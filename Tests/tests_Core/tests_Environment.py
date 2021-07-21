@@ -4,7 +4,7 @@ import numpy as np
 from DeepPhysX.Environment.BaseEnvironment import BaseEnvironment
 from DeepPhysX.Environment.BaseEnvironmentConfig import BaseEnvironmentConfig
 from DeepPhysX.Manager.EnvironmentManager import EnvironmentManager
-from Tests.tests_Core.numpy_environment import NumpyEnvironment
+from Tests.tests_Core.NumpyEnvironment import NumpyEnvironment
 
 
 class TestBaseEnvironmentConfig(unittest.TestCase):
