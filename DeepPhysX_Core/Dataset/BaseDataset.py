@@ -1,5 +1,6 @@
 import numpy as np
-
+import operator
+import functools
 
 class BaseDataset:
 
@@ -9,7 +10,7 @@ class BaseDataset:
         Given data is split into input data and output data.
         Saving data results in multiple partitions of input and output data.
 
-        :param config: BaseDatasetConfig.BaseDatasetProperties class containing BaseDataset parameters
+        :param BaseDatasetConfig.BaseDatasetProperties config:  Contains BaseDataset parameters
         """
 
         self.name = self.__class__.__name__
@@ -21,24 +22,24 @@ class BaseDataset:
         self.max_size = config.max_size
         self.current_sample = 0
 
-    def init_data_size(self, side, data):
+    def init_data_size(self, side, shape):
         """
         Keep in the original shape of data and its flat shape.
         Init data_in and data_out as arrays containing each flat sample.
 
-        :param str side: Tells if data is an input or an output
-        :param numpy.ndarray data:
+        :param str side: Values at 'in' or anything else. Define if the associated shape is correspond to input shape or output one.
+        :param numpy.ndarray shape: Shape of the corresponding tensor
         :return:
         """
         # Init data_in
         if side == 'in':
-            self.in_shape = data.shape
-            self.in_flat_shape = len(data.flatten())
+            self.in_shape = shape
+            self.in_flat_shape = functools.reduce(operator.mul, shape, 1)
             self.data_in = np.array([]).reshape((0, self.in_flat_shape))
         # Init data_out
         else:
-            self.out_shape = data.shape
-            self.out_flat_shape = len(data.flatten())
+            self.out_shape = shape
+            self.out_flat_shape = functools.reduce(operator.mul, shape, 1)
             self.data_out = np.array([]).reshape((0, self.out_flat_shape))
 
     def reset(self):
@@ -61,21 +62,21 @@ class BaseDataset:
         """
         Check if the data is a numpy array.
 
-        :param str side: Tells if data is an input or an output
-        :param numpy.array data:
+        :param str side: Values at 'in' or anything else. Define if the associated shape is correspond to input shape or output one.
+        :param numpy.ndarray data: Corresponding tensor
         :return:
         """
         side = "inputs" if side == 'in' else "outputs"
         if type(data) != np.ndarray:
-            raise TypeError(f"[{self.name}] Wrong data {side}: numpy.ndarray required, get {type(data)}")
+            raise TypeError(f"[{self.name}] Wrong data {side}: numpy.ndarray required, got {type(data)}")
 
     def add(self, side, data, partition_file):
         """
         Add new data to the dataset.
 
-        :param str side: Tells if data is an input or an output
-        :param numpy.array data:
-        :param partition_file:
+        :param str side: Values at 'in' or anything else. Define if the associated shape is correspond to input shape or output one.
+        :param numpy.ndarray data: Corresponding tensor
+        :param str partition_file: Path or string to the file in which to write the data
         :return:
         """
         # Check data type
@@ -84,28 +85,28 @@ class BaseDataset:
         if side == 'in':
             # Init sizes variables
             if self.in_flat_shape is None:
-                self.init_data_size(side, data[0])
-            # Store and save each sample in batch
-            for i in range(len(data)):
-                self.data_in = np.concatenate((self.data_in, data[i].flatten()[None, :]))
-                np.save(partition_file, data[i].flatten())
+                self.init_data_size(side, data[0].shape)
+            data_tensor = self.data_in
         # Adding output data
         else:
             # Init sizes variables
             if self.out_flat_shape is None:
-                self.init_data_size(side, data[0])
-            # Store and save each sample in batch
-            for i in range(len(data)):
-                self.data_out = np.concatenate((self.data_out, data[i].flatten()[None, :]))
-                np.save(partition_file, data[i].flatten())
+                self.init_data_size(side, data[0].shape)
+            data_tensor = self.data_out
+
+        # Store and save each sample in batch
+        for sample in data:
+            data_tensor = np.concatenate((data_tensor, sample.flatten()[None, :]))
+            np.save(partition_file, sample.flatten())
+
         self.current_sample = max(len(self.data_in), len(self.data_out))
 
     def load(self, side, data):
         """
         Add existing data to the dataset.
 
-        :param str side: Tells if data is an input or an output
-        :param numpy.array data:
+        :param str side: Values at 'in' or anything else. Define if the associated shape is correspond to input shape or output one.
+        :param numpy.ndarray data: Corresponding tensor
         :return:
         """
         self.check_data(side, data)
@@ -131,21 +132,18 @@ class BaseDataset:
 
         :return:
         """
-        # Shuffle the indices of samples in dataset
-        indices_in = np.arange(len(self.data_in))
-        np.random.shuffle(indices_in)
-        indices_out = np.arange(len(self.data_out))
-        np.random.shuffle(indices_out)
-        # Permute elements in data_in and data_out
-        inputs = np.empty_like(self.data_in)
-        outputs = np.empty_like(self.data_out)
-        for i in range(len(indices_in)):
-            inputs[i] = self.data_in[indices_in[i]]
-        for i in range(len(indices_out)):
-            outputs[i] = self.data_out[indices_out[i]]
-        # Update data with shuffled data
-        self.data_in = inputs
-        self.data_out = outputs
+
+        if self.in_flat_shape is None and self.out_flat_shape is None:
+            return
+        # Generate a shuffle pattern
+        shuffle_pattern = np.arange(self.data_in.shape[0])
+        np.random.shuffle(shuffle_pattern)
+        # Permute elements in data_in
+        if self.in_flat_shape is not None:
+            self.data_in = self.data_in[shuffle_pattern]
+        # Permute elements in data_out
+        if self.out_flat_shape is not None:
+            self.data_out = self.data_out[shuffle_pattern]
 
     def __str__(self):
         """
