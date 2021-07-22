@@ -34,6 +34,14 @@ class BaseEnvironment:
         """
         raise NotImplementedError
 
+    def close(self):
+        """
+        Close the environment
+
+        :return:
+        """
+        raise NotImplementedError
+
     def step(self):
         """
         Compute the number of steps specified by simulations_per_step

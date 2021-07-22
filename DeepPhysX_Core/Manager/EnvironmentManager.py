@@ -8,8 +8,13 @@ from DeepPhysX_Core.Environment.BaseEnvironmentConfig import BaseEnvironmentConf
 class EnvironmentManager:
 
     def __init__(self, environment_config: BaseEnvironmentConfig, session_dir=None):
+        """
+
+        :param BaseEnvironmentConfig environment_config:
+        :param str session_dir: Name of the directory in which to write all of the neccesary data
+        """
         self.session_dir = session_dir
-        self.multiprocessing = environment_config.multiprocessing
+        self.number_of_thread = environment_config.number_of_thread
         self.multiprocessMethod = environment_config.multiprocess_method
         # Create single or multiple environments according to multiprocessing value
         self.environment = environment_config.createEnvironment()
@@ -18,8 +23,9 @@ class EnvironmentManager:
 
     def getData(self, batch_size, get_inputs, get_outputs, animate):
         # Getting data from single environment
-        if self.multiprocessing == 1:
-            inputs, outputs = self.computeSingleEnvironment(batch_size, get_inputs, get_outputs, animate)
+        if self.number_of_thread == 1:
+            inputs, outputs = self.computeSingleThreadInputOutputFromEnvironment(batch_size, get_inputs, get_outputs,
+                                                                                 animate)
         # Getting data from multiple environments
         else:
             inputs = np.empty((batch_size, *self.environment.input_size))
@@ -30,25 +36,59 @@ class EnvironmentManager:
                 inputs, outputs = self.computeMultiplePool(batch_size, get_inputs, get_outputs)"""
         return {'in': inputs, 'out': outputs}
 
-    def computeSingleEnvironment(self, batch_size, get_inputs, get_outputs, animate):
-        inputs = np.empty((batch_size, *self.environment.input_size))
-        outputs = np.empty((batch_size, *self.environment.output_size))
-        i = 0
-        while i < batch_size:
+    def computeSingleThreadInputOutputFromEnvironment(self, batch_size, get_inputs, get_outputs, animate):
+        """
+        Compute a batch of data from the environment
+
+        :param int batch_size: Size of a batch
+        :param bool get_inputs: If True compute and return input
+        :param bool get_outputs: If True compute an return output
+        :param bool animate: If True run environment step
+
+        :return: dict of format {'in': numpy.ndarray, 'out': numpy.ndarray}
+        """
+
+        if get_inputs:
+            inputs = np.empty((0, *self.environment.input_size))
+
+            def input_condition(input_tensor):
+                return input_tensor.shape[0] <= batch_size
+        else:
+            inputs = np.array([])
+
+            def input_condition(input_tensor):
+                return True
+
+        if get_outputs:
+            outputs = np.empty((0, *self.environment.output_size))
+
+            def output_condition(output_tensor):
+                return output_tensor.shape[0] <= batch_size
+        else:
+            outputs = np.array([])
+
+            def output_condition(output_tensor):
+                return True
+
+        while input_condition(inputs) and output_condition(outputs):
             if animate:
                 for _ in range(self.environment.simulations_per_step):
                     self.environment.step()
+
             if get_inputs:
                 self.environment.computeInput()
+                if self.environment.checkSample(check_input=get_inputs, check_output=False):
+                    inputs = np.concatenate((inputs, self.environment.getInput()))
+                else:
+                    self.environment.save_wrong_sample(self.session_dir)
+
             if get_outputs:
                 self.environment.computeOutput()
-            if self.environment.checkSample(check_input=get_inputs, check_output=get_outputs):
-                inputs[i] = self.environment.getInput()
-                outputs[i] = self.environment.getOutput() if get_outputs else outputs[i]
-                i += 1
-            else:
-                self.environment.save_wrong_sample(self.session_dir)
-        return inputs, outputs
+                if self.environment.checkSample(check_input=False, check_output=get_outputs):
+                    outputs = np.concatenate((outputs, self.environment.getOutput()))
+                else:
+                    self.environment.save_wrong_sample(self.session_dir)
+        return {'in': inputs, 'out': outputs}
 
     """def computeMultipleProcess(self, batch_size, get_inputs, get_outputs):
         inputs = np.empty((batch_size, self.environment[0].inputSize))
@@ -57,7 +97,7 @@ class EnvironmentManager:
         while produced_samples < batch_size:
             process_list = []
             parent_conn_list = []
-            nb_samples = min(self.multiprocessing, batch_size - produced_samples)
+            nb_samples = min(self.number_of_thread, batch_size - produced_samples)
             # Start processes
             for i in range(nb_samples):
                 parent_conn, child_conn = mp.Pipe()
@@ -89,7 +129,7 @@ class EnvironmentManager:
         outputs = np.empty((batch_size, self.environment[0].outputSize))
         produced_samples = 0
         while produced_samples < batch_size:
-            nb_samples = min(self.multiprocessing, batch_size - produced_samples)
+            nb_samples = min(self.number_of_thread, batch_size - produced_samples)
             # Start pool
             with mp.Pool(processes=nb_samples) as pool:
                 self.environment[:nb_samples] = pool.map(self.poolStep, self.environment[:nb_samples])
@@ -110,16 +150,24 @@ class EnvironmentManager:
         return env"""
 
     def close(self):
-        # Todo : delete environments
-        pass
+        """
+        Close the environment
 
+        :return:
+        """
+        self.environment.close()
 
     def step(self, environment=None):
-        # Todo : not multiprocessing friendly...
+        """
+        Run a step of environment
+
+        :param BaseEnvirnment environment: Environment with an implement step function
+
+        :return:
+        """
         if environment is None:
             for _ in range(self.environment.simulations_per_step):
                 self.environment.step()
         else:
             for _ in range(environment.simulations_per_step):
                 environment.step()
-
