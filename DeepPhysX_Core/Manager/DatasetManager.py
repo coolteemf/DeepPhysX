@@ -7,9 +7,19 @@ import DeepPhysX_Core.utils.pathUtils as pathUtils
 
 class DatasetManager:
 
-    def __init__(self, dataset_config=None, session_name='default', session_dir=None, new_session=True,
+    def __init__(self, dataset_config: BaseDatasetConfig, session_name='default', session_dir=None, new_session=True,
                  train=True, record_data=None):
 
+        """
+        DatasetManager handle all operations with input / output files. Allows to save and read tensors from files.
+
+        :param BaseDatasetConfig dataset_config: Specialisation containing the parameters of the dataset manager
+        :param str session_name: Name of the newly created directory if session_dir is not defined
+        :param str session_dir: Name of the directory in which to write all of the neccesary data
+        :param bool new_session: Define the creation of new directories to store data
+        :param bool training: True if this session is a network training
+        :param dict record_data: Format {\'in\': bool, \'out\': bool} save the tensor when bool is True
+        """
         self.name = self.__class__.__name__
 
         # Checking arguments
@@ -86,6 +96,12 @@ class DatasetManager:
         self.description = ""
 
     def createNewPartitions(self):
+        """
+        Generate a new partition (file of a certain maximum size). Input and output are generated
+        independently if specified by record_data
+
+        :return:
+        """
         # Create in and out partitions
         print("New Partition: A new partition has been created with max size ~{}Gb".format(float(self.max_size) / 1e9))
         file = os.path.join(self.dataset_dir, self.partitions_list_files[self.mode])
@@ -111,6 +127,11 @@ class DatasetManager:
         partitions_list_file.close()
 
     def createRunningPartitions(self):
+        """
+        Run specific function. Handle partitions creation when not training.
+
+        :return:
+        """
         # 0. Check that the dataset repository is existing
         if not os.path.isdir(self.dataset_dir):
             raise Warning("[{}]: The given path is not an existing directory.".format(self.name))
@@ -146,6 +167,11 @@ class DatasetManager:
         self.createNewPartitions()
 
     def loadDirectory(self):
+        """
+        Load the desired directory. Try to find partition list and upload it.
+        No data loading here.
+        :return:
+        """
         # Load a directory according to the distribution given by the lists
         print("Loading directory: Read dataset from {}".format(self.dataset_dir))
         if not os.path.isdir(self.dataset_dir):
@@ -177,15 +203,25 @@ class DatasetManager:
             self.list_out_partitions[self.modes[mode]] = partitions_out
 
     def requireEnvironment(self):
-        # Called while training to check if each inputs as an output, otherwise need an environment to compute it
-        if self.new_session:
-            return True
-        for mode in range(3):
-            if len(self.list_in_partitions[mode]) > len(self.list_out_partitions[mode]):
-                return True
-        return False
+        """
+        Called while training to check if each inputs as an output, otherwise need an environment to compute it
+
+        :return: True if need to compute a new sample
+        """
+        return self.new_session or \
+               len(self.list_in_partitions[0]) > len(self.list_out_partitions[0]) or \
+               len(self.list_in_partitions[1]) > len(self.list_out_partitions[1]) or \
+               len(self.list_in_partitions[2]) > len(self.list_out_partitions[2])
 
     def addData(self, data):
+        """
+        Push the data in the dataset. If max size is reached generate a new partition and write into it.
+
+        :param dict data: Format {'in':numpy.ndarray, 'out':numpy.ndarray}  contain in 'in' input tensors and in
+        'out' output tensors.
+
+        :return:
+        """
         self.saved = False
         # 1. Adding data to dataset
         if self.record_data['in']:
@@ -200,11 +236,25 @@ class DatasetManager:
             self.dataset.reset()
 
     def saveData(self):
+        """
+        Close all open files
+
+        :return:
+        """
+
         self.saved = True
         self.current_in_partition.close()
         self.current_out_partition.close()
 
     def setMode(self, mode):
+        """
+        Set the DatasetManager working mode.
+
+        :param int mode: Recommended to use datasetManager.modes['name_of_desired_mode'] in order to correctly set up
+        the DatasetManager
+
+        :return:
+        """
         # Nothing has to be done if you do not change mode
         if mode == self.mode:
             return
@@ -226,6 +276,11 @@ class DatasetManager:
                 self.loadLastPartitions()
 
     def loadLastPartitions(self):
+        """
+        Load the last partition is the partion list
+
+        :return:
+        """
         # Input
         self.current_in_partition_name = self.dataset_dir + self.list_in_partitions[self.mode][-1]
         with open(self.current_in_partition_name, 'rb') as in_file:
@@ -243,9 +298,20 @@ class DatasetManager:
                 data_out = np.load(out_file)
                 self.dataset.load('out', data_out)
 
-    def getData(self, get_inputs, get_outputs, batch_size=1, batched=True, force_dataset_reload=False):
+    def getData(self, get_inputs, get_outputs, batch_size=1, batched=True, force_partition_reload=False):
+        """
+        Fetch tensors from the dataset or reload partitions if dataset is empty or specified.
+
+        :param bool get_inputs: If True fill the data['in'] field
+        :param bool get_outputs: If True fill the data['out'] field
+        :param int batch_size: Size of a batch
+        :param bool batched: Add an empty dimension before [4,100] -> [0,4,100]
+        :param bool force_partition_reload: If True force reload of partition
+
+        :return: dict of format {'in':numpy.ndarray, 'out':numpy.ndarray} filled with desired data
+        """
         if self.current_in_partition_name is None or self.dataset.current_sample >= len(self.dataset.data_in):
-            if not force_dataset_reload:
+            if not force_partition_reload:
                 return None
             self.loadPartitions()
             if self.shuffle_dataset:
@@ -267,18 +333,36 @@ class DatasetManager:
         return data
 
     def getNextBatch(self, batch_size):
+        """
+        :param int batch_size: Size of the batch
+        :return: dict of format {'in': numpy.ndarray, 'out': numpy.ndarray} filled with a batch of data
+        """
         return self.getData(get_inputs=True, get_outputs=True, batch_size=batch_size, batched=True)
 
     def getNextSample(self, batched=True):
+        """
+        :return: dict of format {'in': numpy.ndarray, 'out': numpy.ndarray} filled with a sample of data
+        """
         return self.getData(get_inputs=True, get_outputs=True, batched=batched)
 
     def getNextInput(self, batched=False):
+        """
+        :return: dict of format {'in': numpy.ndarray, 'out': numpy.ndarray} where only the input field is filled
+        """
         return self.getData(get_inputs=True, get_outputs=False, batched=batched)
 
     def getNextOutput(self, batched=False):
+        """
+       :return: dict of format {'in': numpy.ndarray, 'out': numpy.ndarray} where only the output field is filled
+       """
         return self.getData(get_inputs=False, get_outputs=True, batched=batched)
 
     def loadPartitions(self):
+        """
+        Load partitions as specified in the class initialisation. At the end of the function the dataset is non empty.
+
+        :return:
+        """
         self.dataset.reset()
         # Testing mode
         if self.mode == self.modes['Validation']:
@@ -302,6 +386,13 @@ class DatasetManager:
                     self.loadMultiplePartitions([self.mode])
 
     def loadMultiplePartitions(self, modes):
+        """
+        Specialisation of the loadPartitions function. It can load a list of partitions
+        :param int modes: Recommended to use datasetManager.modes['name_of_desired_mode'] in order to correctly load
+        the dataset
+
+        :return:
+        """
         in_filenames, out_filenames = [], []
         for mode in modes:
             in_filenames += [self.dataset_dir + partition for partition in self.list_in_partitions[mode]]
@@ -310,8 +401,8 @@ class DatasetManager:
         out_files = [open(filename, 'rb') for filename in out_filenames]
         in_sizes = [os.stat(in_file.fileno()).st_size for in_file in in_files]
         out_sizes = [os.stat(out_file.fileno()).st_size for out_file in out_files]
-        in_loaded = [0. for _ in range(len(in_sizes))]
-        out_loaded = [0. for _ in range(len(out_sizes))]
+        in_loaded = [0.] * in_sizes
+        out_loaded = [0.] * out_sizes
         end_partition = False
         idx_file = 0
         while self.dataset.memory_size() < self.max_size and not end_partition:
@@ -335,10 +426,18 @@ class DatasetManager:
             idx_file = (idx_file + 1) % len(in_files)
 
     def close(self):
+        """
+        Launch the close procedure of the dataset manager
+
+        :return:
+        """
         if not self.saved:
             self.saveData()
 
-    def getDescription(self):
+    def __str__(self):
+        """
+        :return: A string containing valuable information about the DatasetManager
+        """
         if len(self.description) == 0:
             self.description += "\nDATASET MANAGER:\n"
             self.description += "   Partition size: {}Go\n".format(self.max_size * 1e-9)
