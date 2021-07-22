@@ -140,7 +140,7 @@ class DatasetManager:
                                    os.path.isfile(os.path.join(self.dataset_dir, f)) and
                                    f.endswith('Running_partitions.txt')]
         # 1.1. No list file found, do a manual search for the partitions
-        if len(running_partitions_file) == 0:
+        if running_partitions_file:
             print("[{}] Listing file not found, searching for existing running partitions.".format(self.name))
             running_in_partitions = [f for f in os.listdir(self.dataset_dir) if
                                      os.path.isfile(os.path.join(self.dataset_dir, f)) and f.endswith('.npy') and
@@ -182,7 +182,7 @@ class DatasetManager:
                                     os.path.isfile(os.path.join(self.dataset_dir, f)) and
                                     f.endswith(mode[1:] + '_partitions.txt')]
             # If there is no such files then proceed to load any dataset found as in/out
-            if len(partitions_list_file) == 0:
+            if partitions_list_file:
                 print("Loading directory: Partitions list not found for {} mode, will consider any .npy file as "
                       "input/output.".format(mode))
                 partitions_list = [f for f in os.listdir(self.dataset_dir) if
@@ -260,7 +260,6 @@ class DatasetManager:
             return
         if self.mode == self.modes['Running']:
             print("[{}] It's not possible to switch dataset mode while running.".format(self.name))
-            return
         else:
             # Save dataset before changing mode
             if not self.saved:
@@ -353,13 +352,14 @@ class DatasetManager:
 
     def getNextOutput(self, batched=False):
         """
-       :return: dict of format {'in': numpy.ndarray, 'out': numpy.ndarray} where only the output field is filled
-       """
+        :return: dict of format {'in': numpy.ndarray, 'out': numpy.ndarray} where only the output field is filled
+        """
         return self.getData(get_inputs=False, get_outputs=True, batched=batched)
 
     def loadPartitions(self):
         """
-        Load partitions as specified in the class initialisation. At the end of the function the dataset is non empty.
+        Load partitions as specified in the class initialisation. At the end of the function the dataset hopefully
+        is non empty.
 
         :return:
         """
@@ -405,13 +405,13 @@ class DatasetManager:
         out_loaded = [0.] * out_sizes
         end_partition = False
         idx_file = 0
-        while self.dataset.memory_size() < self.max_size and not end_partition:
+        while self.dataset.memory_size() < self.max_size:
             in_sizes[idx_file] -= 128
             data_in = np.load(in_files[idx_file])
             in_loaded[idx_file] += data_in.nbytes
             self.dataset.load('in', data_in)
             if in_loaded[idx_file] >= in_sizes[idx_file]:
-                end_partition = True
+                break
 
             try:
                 out_sizes[idx_file] -= 128
@@ -419,7 +419,7 @@ class DatasetManager:
                 out_loaded[idx_file] += data_out.nbytes
                 self.dataset.load('out', data_out)
                 if out_loaded[idx_file] >= out_sizes[idx_file]:
-                    end_partition = True
+                    break
             except:
                 pass
 
