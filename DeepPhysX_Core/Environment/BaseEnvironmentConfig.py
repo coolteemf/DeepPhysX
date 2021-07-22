@@ -15,20 +15,20 @@ class BaseEnvironmentConfig:
 
     def __init__(self, environment_class=BaseEnvironment, simulations_per_step=1, max_wrong_samples_per_step=10,
                  always_create_data=False, visualizer_class=None,
-                 multiprocessing=1, multiprocess_method=None):
+                 number_of_thread=1, multiprocess_method=None):
         """
         BaseEnvironmentConfig is a configuration class to parameterize and create a BaseEnvironment for the
         EnvironmentManager.
 
-        :param environment_class: BaseEnvironment class from which an instance will be created
+        :param BaseEnvironment environment_class: Class from which an instance will be created
         :param int simulations_per_step: Number of iterations to compute in the Environment at each time step
         :param int max_wrong_samples_per_step: Maximum number of wrong samples to produce in a step
         :param bool always_create_data: If True, data will always be created from environment. If False, data will be
                                         created from the environment during the first epoch and then re-used from the
                                         Dataset.
-        :param visualizer_class: Visualization class from which an instance ill be created
-        :param multiprocessing:
-        :param multiprocess_method:
+        :param VedoVisualizer visualizer_class: Visualization class from which an instance ill be created
+        :param int number_of_thread: Number of thread to run
+        :param multiprocess_method: Values at \'process\' or \'pool\'
         """
 
         self.name = self.__class__.__name__
@@ -51,8 +51,8 @@ class BaseEnvironmentConfig:
                             f"{type(always_create_data)}")
 
         # Todo : Multiprocessing in Environment package level ?
-        if type(multiprocessing) != int and multiprocessing < 0:
-            raise TypeError(f"[{self.name}] The multiprocessing number must be a positive int.")
+        if type(number_of_thread) != int and number_of_thread < 0:
+            raise TypeError(f"[{self.name}] The number_of_thread number must be a positive int.")
         if multiprocess_method is not None and multiprocess_method not in ['process', 'pool']:
             raise ValueError(f"[{self.name}] The multiprocessing method must be either process or pool.")
 
@@ -66,8 +66,8 @@ class BaseEnvironmentConfig:
         self.always_create_data = always_create_data
 
         # Todo : Multiprocessing in Environment package level ?
-        self.multiprocessing = min(max(multiprocessing, 1), os.cpu_count())  # Assert nb is between 1 and cpu_count
-        if self.multiprocessing > 1:
+        self.number_of_thread = min(max(number_of_thread, 1), os.cpu_count())  # Assert nb is between 1 and cpu_count
+        if self.number_of_thread > 1:
             if multiprocess_method is not None:
                 self.multiprocess_method = multiprocess_method
             else:
@@ -80,7 +80,7 @@ class BaseEnvironmentConfig:
         """
         :return: BaseEnvironment object from environment_class and its parameters
         """
-        if self.multiprocessing == 1:
+        if self.number_of_thread == 1:
             # Create environment
             try:
                 environment = self.environment_class(config=self.environment_config)
@@ -102,7 +102,7 @@ class BaseEnvironmentConfig:
         else:
             try:
                 environments = [self.environment_class(config=self.environment_config,
-                                                       idx_instance=i+1) for i in range(self.multiprocessing)]
+                                                       idx_instance=i+1) for i in range(self.number_of_thread)]
             except:
                 raise TypeError("[{}] The given environment class is not a BaseEnvironment class.".format(self.name))
             if not isinstance(environments[0], BaseEnvironment):

@@ -3,15 +3,15 @@ import numpy as np
 
 class BaseEnvironment:
 
-    def __init__(self, config, idx_instance=1):
+    def __init__(self, config, instance_id=1):
         """
         BaseEnvironment is an environment class to compute simulated data for the network and its optimization process.
 
-        :param config: BaseEnvironmentConfig.BaseEnvironmentProperties class containing BaseEnvironment parameters
-        :param idx_instance:
+        :param BaseEnvironmentConfig.BaseEnvironmentProperties config: Class containing BaseEnvironment parameters
+        :param int instance_id: ID of the instance
         """
 
-        self.name = self.__class__.__name__ + f"n°{idx_instance}"
+        self.name = self.__class__.__name__ + f"n°{instance_id}"
 
         # Step variables
         self.simulations_per_step = config.simulations_per_step
@@ -62,8 +62,8 @@ class BaseEnvironment:
         """
         Check if the current sample is an outlier.
 
-        :param bool check_input:
-        :param bool check_output:
+        :param bool check_input: True if input tensor need to be checked
+        :param bool check_output: True if output tensor need to be checked
         :return: Current data can be used or not.
         """
         return True
