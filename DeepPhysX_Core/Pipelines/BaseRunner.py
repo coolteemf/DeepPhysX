@@ -17,11 +17,11 @@ class BaseRunner(BasePipeline):
         :param BaseNetworkConfig network_config: Specialisation containing the parameters of the network manager
         :param BaseDatasetConfig dataset_config: Specialisation containing the parameters of the dataset manager
         :param BaseEnvironmentConfig environment_config: Specialisation containing the parameters of the environment manager
-        :param String session_name: Name of the newly created directory if session_dir is not defined
-        :param String session_dir: Name of the directory in which to write all of the neccesary data
+        :param str session_name: Name of the newly created directory if session_dir is not defined
+        :param str session_dir: Name of the directory in which to write all of the neccesary data
         :param int nb_steps: Number of simulation step to play
-        :param Bool record_inputs: Save or not the input in a numpy file
-        :param Bool record_outputs: Save or not the output in a numpy file
+        :param bool record_inputs: Save or not the input in a numpy file
+        :param bool record_outputs: Save or not the output in a numpy file
         """
 
         BasePipeline.__init__(self, pipeline='prediction')
@@ -72,8 +72,8 @@ class BaseRunner(BasePipeline):
         """
         Pull the data from the manager and return the prediction
 
-        :param Bool animate:
-        :return: Tuple (numpy array, float)
+        :param bool animate: True if getData fetch from the environment
+        :return: tuple (numpy.ndarray, float)
         """
         self.manager.getData(animate=animate)
         return self.manager.getPrediction()
@@ -100,7 +100,7 @@ class BaseRunner(BasePipeline):
         """
         Condition that characterize the end of the runnning process
 
-        :return: Boolean : False if the training needs to stop.
+        :return: bool : False if the training needs to stop.
         """
         running = self.idx_step < self.nb_samples if self.nb_samples > 0 else True
         self.idx_step += 1
@@ -135,7 +135,7 @@ class BaseRunner(BasePipeline):
     def __str__(self):
         """
 
-        :return: String Contains running informations about the running process
+        :return: str Contains running informations about the running process
         """
         description = ""
         description += f"Running statistics :\n"

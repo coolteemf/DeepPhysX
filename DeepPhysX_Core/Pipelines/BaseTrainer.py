@@ -20,9 +20,9 @@ class BaseTrainer(BasePipeline):
         :param BaseNetworkConfig network_config: Specialisation containing the parameters of the network manager
         :param BaseDatasetConfig dataset_config: Specialisation containing the parameters of the dataset manager
         :param BaseEnvironmentConfig environment_config: Specialisation containing the parameters of the environment manager
-        :param String session_name: Name of the newly created directory if session_dir is not defined
-        :param String session_dir: Name of the directory in which to write all of the neccesary data
-        :param Bool new_session: Define the creation of new directories to store data
+        :param str session_name: Name of the newly created directory if session_dir is not defined
+        :param str session_dir: Name of the directory in which to write all of the neccesary data
+        :param bool new_session: Define the creation of new directories to store data
         :param int nb_epochs: Number of epochs
         :param int nb_batches: Number of batches
         :param int batch_size: Size of a batch
@@ -146,7 +146,7 @@ class BaseTrainer(BasePipeline):
         """
         Condition that characterize the end of the training process
         
-        :return: Boolean : False if the training needs to stop.
+        :return: bool : False if the training needs to stop.
         """
         return self.id_epoch < self.nb_epochs
 
@@ -184,7 +184,7 @@ class BaseTrainer(BasePipeline):
         """
         Condition that characterize the end of the epoch
         
-        :return: Boolean : False if the epoch needs to stop.
+        :return: bool : False if the epoch needs to stop.
         """
         return self.id_batch < self.nb_batches
 
@@ -199,7 +199,7 @@ class BaseTrainer(BasePipeline):
     def __str__(self):
         """
         
-        :return: String Contains training informations about the training process
+        :return: str Contains training informations about the training process
         """
         description = ""
         description += f"Training statistics :\n"
