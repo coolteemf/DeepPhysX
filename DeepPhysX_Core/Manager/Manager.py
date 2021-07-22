@@ -119,6 +119,9 @@ class Manager:
             self.stats_manager.close()
 
     def __str__(self):
+        """
+        :return: A string containing valuable information about the Managers
+        """
         manager_description = ""
         if self.data_manager is not None:
             manager_description += str(self.data_manager)
