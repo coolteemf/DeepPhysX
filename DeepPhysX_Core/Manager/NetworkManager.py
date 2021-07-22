@@ -8,7 +8,18 @@ class NetworkManager:
 
     def __init__(self, network_config: BaseNetworkConfig, session_name='default', session_dir=None, new_session=True,
                  train=True):
+        """
+        Deals with all the interactions with the neural network. Predictions, saves, initialisation, loading,
+        back-propagation, etc...
 
+        :param BaseNetworkConfig network_config: Specialisation containing the parameters of the network manager
+        :param BaseDatasetConfig dataset_config: Specialisation containing the parameters of the dataset manager
+        :param BaseEnvironmentConfig environment_config: Specialisation containing the parameters of the environment manager
+        :param str session_name: Name of the newly created directory if session_dir is not defined
+        :param str session_dir: Name of the directory in which to write all of the neccesary data
+        :param bool new_session: Define the creation of new directories to store data
+        :param bool train: If True prediction will cause tensors gradient creation
+        """
         # Checking arguments
         if not isinstance(network_config, BaseNetworkConfig):
             raise TypeError("[NETWORKMANAGER] The network config must be a BaseNetworkConfig object.")
@@ -45,6 +56,11 @@ class NetworkManager:
         self.description = ""
 
     def setNetwork(self):
+        """
+        Set the network to the corresponding weight from a given file
+
+        :return:
+        """
         self.network = self.network_config.createNetwork()
         self.network.setDevice()
         self.data_transformation = self.network_config.createDataTransformation()
@@ -96,6 +112,15 @@ class NetworkManager:
                 self.network.loadParameters(networks_list[which_network])
 
     def computePrediction(self, data, optimize):
+        """
+        Make a prediction with the data passe as argument, optimize or not the network
+
+        :param dict data:  Format {'in': numpy.ndarray, 'out': numpy.ndarray} Contains the input value and ground truth
+        to compare against
+        :param bool optimize: If true run a back propagation
+
+        :return:
+        """
         # Getting data from the data manager
         data_in, data_gt = self.network.transformFromNumpy(data['in']), self.network.transformFromNumpy(data['out'])
         # Compute prediction
@@ -113,6 +138,13 @@ class NetworkManager:
         return prediction, loss
 
     def saveNetwork(self, last_save=False):
+        """
+        Save the network with the corresponding suffix so they do not erase the last save.
+
+        :param bool last_save: Do not add suffix if it's the last save
+
+        :return:
+        """
         if last_save:
             path = self.network_dir + "network"
             print("Saving network at {}.".format(path))
@@ -124,12 +156,19 @@ class NetworkManager:
             self.network.saveParameters(path)
 
     def close(self):
+        """
+        Closing procedure.
+        :return:
+        """
         if self.training:
             self.saveNetwork(last_save=True)
         del self.network
         del self.network_config
 
-    def getDescription(self, minimal=False):
+    def __str__(self):
+        """
+        :return: A string containing valuable information about the NetworkManager
+        """
         if len(self.description) == 0:
             self.description += "\nNETWORK MANAGER:\n"
             nb_param = self.network.nbParameters()
@@ -138,7 +177,7 @@ class NetworkManager:
             # Cast nb_param to weight in bit(float = 32) to weight in Go(1bit = 1.25e-10Go)
             self.description += "   Weight in Go : {}\n".format(nb_param * 32 * 1.25e-10)
             self.description += "   Configuration : {}\n".format(self.network_config)
-            self.description += "   Network : {}\n".format(self.network.type if minimal else self.network)
+            self.description += "   Network : {}\n".format(self.network)
             self.description += "   Optimizer : {}, Learning rate : {}\n".format(self.optimization.optimizer,
                                                                                  self.optimization.lr)
             # self.description += "   Loss function : {}\n".format(str(self.loss).split(" ")[1])
