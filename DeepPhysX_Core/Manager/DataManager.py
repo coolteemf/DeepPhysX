@@ -100,3 +100,15 @@ class DataManager:
             self.environment_manager.close()
         if self.dataset_manager is not None:
             self.dataset_manager.close()
+
+    def __str__(self):
+        """
+        :return: A string containing valuable information about the DataManager
+        """
+        data_manager_str = "DataManager handles : \n"
+        if self.environment_manager:
+            data_manager_str += str(self.environment_manager)
+        if self.dataset_manager:
+            data_manager_str += str(self.dataset_manager)
+        return data_manager_str
+
