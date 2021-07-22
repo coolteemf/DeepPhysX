@@ -9,6 +9,7 @@ class EnvironmentManager:
 
     def __init__(self, environment_config: BaseEnvironmentConfig, session_dir=None):
         """
+        Deals with the online generation of data for both training and running of the neural networks
 
         :param BaseEnvironmentConfig environment_config:
         :param str session_dir: Name of the directory in which to write all of the neccesary data
@@ -171,3 +172,10 @@ class EnvironmentManager:
         else:
             for _ in range(environment.simulations_per_step):
                 environment.step()
+
+    def __str__(self):
+        """
+        :return: A string containing valuable information about the EnvironmentManager
+        """
+        environment_manager_str = "Environment Manager :\n"
+        return environment_manager_str + "    Environment description \n" +f"{str(self.environment)}"
