@@ -4,11 +4,24 @@ from DeepPhysX_Core.Manager.EnvironmentManager import EnvironmentManager
 from DeepPhysX_Core.Dataset.BaseDatasetConfig import BaseDatasetConfig
 from DeepPhysX_Core.Environment.BaseEnvironmentConfig import BaseEnvironmentConfig
 
+
 class DataManager:
 
     def __init__(self, dataset_config: BaseDatasetConfig, environment_config: BaseEnvironmentConfig,
                  session_name='default', session_dir=None, new_session=True,
                  training=True, record_data=None):
+        """
+        DataManager deals with the generation of input / output tensors. His job is to call getData on either the
+        DatasetManager or the EnvironmentManager according to the context.
+
+        :param BaseDatasetConfig dataset_config: Specialisation containing the parameters of the dataset manager
+        :param BaseEnvironmentConfig environment_config: Specialisation containing the parameters of the environment manager
+        :param str session_name: Name of the newly created directory if session_dir is not defined
+        :param str session_dir: Name of the directory in which to write all of the neccesary data
+        :param bool new_session: Define the creation of new directories to store data
+        :param bool training: True if this session is a network training
+        :param dict record_data: Format {\'in\': bool, \'out\': bool} save the tensor when bool is True
+        """
 
         self.is_training = training
         self.dataset_manager = None
@@ -41,6 +54,15 @@ class DataManager:
                                                           session_dir=session_dir)
 
     def getData(self, epoch=0, batch_size=1, animate=True):
+        """
+        Fetch data from EnvironmentManager or DatasetManager according to the context
+
+        :param int epoch: Current epoch ID
+        :param int batch_size: Size of the desired batch
+        :param int animate: Allow EnvironmentManager to generate a new sample
+
+        :return:
+        """
         # Training
         if self.is_training:
             data = None
@@ -69,6 +91,11 @@ class DataManager:
         self.data = data
 
     def close(self):
+        """
+        Launch the closing procedure on its managers
+
+        :return:
+        """
         if self.environment_manager is not None:
             self.environment_manager.close()
         if self.dataset_manager is not None:
