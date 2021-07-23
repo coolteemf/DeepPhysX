@@ -80,7 +80,7 @@ class DataManager:
                 self.dataset_manager.addData(data)
             # Force data from the dataset
             else:
-                data = self.dataset_manager.getData(batch_size=batch_size, get_inputs=True, get_outputs=True, force_dataset_reload=True)
+                data = self.dataset_manager.getData(batch_size=batch_size, get_inputs=True, get_outputs=True, force_partition_reload=True)
         # Prediction
         else:
             # Get data from environment
