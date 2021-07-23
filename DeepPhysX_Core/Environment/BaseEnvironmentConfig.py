@@ -20,13 +20,15 @@ class BaseEnvironmentConfig:
         BaseEnvironmentConfig is a configuration class to parameterize and create a BaseEnvironment for the
         EnvironmentManager.
 
-        :param BaseEnvironment environment_class: Class from which an instance will be created
+        :param environment_class: Class from which an instance will be created
+        :type environment_class: type[BaseEnvironment]
         :param int simulations_per_step: Number of iterations to compute in the Environment at each time step
         :param int max_wrong_samples_per_step: Maximum number of wrong samples to produce in a step
         :param bool always_create_data: If True, data will always be created from environment. If False, data will be
                                         created from the environment during the first epoch and then re-used from the
                                         Dataset.
-        :param VedoVisualizer visualizer_class: Visualization class from which an instance ill be created
+        :param visualizer_class: Visualization class from which an instance ill be created
+        :type visualizer_class: type[VedoVisualizer]
         :param int number_of_thread: Number of thread to run
         :param multiprocess_method: Values at \'process\' or \'pool\'
         """

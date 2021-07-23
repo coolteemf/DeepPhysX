@@ -14,7 +14,8 @@ class BaseDatasetConfig:
         """
         BaseDatasetConfig is a configuration class to parameterize and create a BaseDataset for the DatasetManager.
 
-        :param BaseDataset dataset_class: BaseDataset class from which an instance will be created
+        :param dataset_class: BaseDataset class from which an instance will be created
+        :type dataset_class: type[BaseDataset]
         :param str dataset_dir: Name of an existing dataset repository
         :param float partition_size: Maximum size in Gb of a single dataset partition
         :param bool shuffle_dataset: Specify if existing dataset should be shuffled
