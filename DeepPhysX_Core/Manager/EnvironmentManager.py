@@ -25,17 +25,16 @@ class EnvironmentManager:
     def getData(self, batch_size, get_inputs, get_outputs, animate):
         # Getting data from single environment
         if self.number_of_thread == 1:
-            inputs, outputs = self.computeSingleThreadInputOutputFromEnvironment(batch_size, get_inputs, get_outputs,
-                                                                                 animate)
+            data = self.computeSingleThreadInputOutputFromEnvironment(batch_size, get_inputs, get_outputs, animate)
         # Getting data from multiple environments
-        else:
+        """else:
             inputs = np.empty((batch_size, *self.environment.input_size))
             outputs = np.empty((batch_size, *self.environment.output_size))
-            """if self.multiprocessMethod == 'process':
+            if self.multiprocessMethod == 'process':
                 inputs, outputs = self.computeMultipleProcess(batch_size, get_inputs, get_outputs)
             else:
                 inputs, outputs = self.computeMultiplePool(batch_size, get_inputs, get_outputs)"""
-        return {'in': inputs, 'out': outputs}
+        return data
 
     def computeSingleThreadInputOutputFromEnvironment(self, batch_size, get_inputs, get_outputs, animate):
         """
