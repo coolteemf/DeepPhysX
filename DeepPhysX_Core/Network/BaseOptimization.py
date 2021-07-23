@@ -1,6 +1,12 @@
 class BaseOptimization:
 
     def __init__(self, config):
+        """
+        BaseOptimization is dedicated to network optimization: compute loss between prediction and target, update
+        network parameters.
+
+        :param config: BaseNetworkConfig.BaseOptimizationProperties class containing BaseOptimization parameters
+        """
         self.name = self.__class__.__name__
         # Loss
         self.loss_class = config.loss
@@ -10,8 +16,6 @@ class BaseOptimization:
         self.optimizer_class = config.optimizer
         self.optimizer = None
         self.lr = config.lr
-        # Description
-        self.description = ""
 
     def setLoss(self):
         raise NotImplementedError
@@ -25,11 +29,13 @@ class BaseOptimization:
     def optimize(self):
         raise NotImplementedError
 
-    def getDescription(self):
-        if len(self.description) == 0:
-            self.description += "\n{}\n".format(self.name)
-            self.description += "   Loss class, loss: {}, {}\n".format(self.loss_class.__name__, self.loss)
-            self.description += "   Learning rate: {}\n".format(self.lr)
-            self.description += "   Optimizer class, optimizer: {}, {}\n".format(self.optimizer_class.__name__,
-                                                                                 self.optimizer)
-        return self.description
+    def __str__(self):
+        """
+        :return: String containing information about the BaseOptimization object
+        """
+        description = "\n"
+        description += f"{self.name}\n"
+        description += f"    Loss class: {self.loss_class.__name__}\n"
+        description += f"    Optimizer class: {self.optimizer_class.__name__}\n"
+        description += f"    Learning rate: {self.lr}\n"
+        return description
