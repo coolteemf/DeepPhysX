@@ -39,7 +39,7 @@ class DataManager:
             # Always create an environment for prediction
             create_environment = True
             # Create a dataset if data will be stored from environment during prediction
-            create_dataset = record_data is not None and (record_data[0] or record_data[1])
+            create_dataset = record_data is not None and (record_data['in'] or record_data['out'])
 
         # Create dataset if required
         if create_dataset:

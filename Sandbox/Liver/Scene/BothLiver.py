@@ -1,37 +1,37 @@
 """
-TrainingLiver.py
+BothLiver.py
 FEM simulated liver with random forces applied on the visible surface.
 NN simulated liver which predicts the deformations of the FEM deformed liver.
 """
 
 import copy
 import numpy as np
+import Sofa.Simulation
 
 from DeepPhysX_Sofa.Environment.SofaEnvironment import SofaEnvironment
 from Caribou.Topology import Grid3D
-from Sandbox.Liver.LiverConfig.utils import extract_visible_nodes, from_sparse_to_regular_grid
+from Sandbox.Liver.Config.utils import extract_visible_nodes, from_sparse_to_regular_grid
 
 
 # Inherit from SofaEnvironment which allow to implement and create a Sofa scene in the DeepPhysX_Core pipeline
-class TrainingLiver(SofaEnvironment):
+class BothLiver(SofaEnvironment):
 
-    def __init__(self, root_node, config, idx_instance=1, visualizer_class=None):
-        super(TrainingLiver, self).__init__(root_node, config, idx_instance, visualizer_class)
-        # Scene configuration
-        self.config = config
+    def __init__(self, root_node, config, idx_instance=1):
+        super(BothLiver, self).__init__(root_node, config, idx_instance)
         # Keep a track of the actual step number and how many samples diverged during the animation
         self.nb_steps = 0
         self.nb_converged = 0.
         self.converged = False
+        self.is_created = {'fem': False, 'nn': False}
 
-    def create(self, config):
+    def create(self):
         """
         Create the Sofa scene graph. Automatically called by SofaEnvironmentConfig.
-        :param config: Dataclass of SofaEnvironmentConfig objects, contains the custom parameters of the environment
+
         :return: None
         """
         # Get the parameters (liver, grid, force)
-        p_liver, p_grid = config.p_liver, config.p_grid
+        p_liver, p_grid = self.config.p_liver, self.config.p_grid
 
         # UMesh regular grid
         self.regular_grid = Grid3D(anchor_position=p_grid['bbox_anchor'], n=p_grid['nb_cells'],
@@ -46,12 +46,17 @@ class TrainingLiver(SofaEnvironment):
                                                    positions=self.surface_mesh.position.value,
                                                    dot_thresh=0.0, rand_thresh=0.0, distance_from_camera_thresh=1e6)
         # Root children
+        self.addModels(p_liver, p_grid)
+
+    def addModels(self, p_liver, p_grid):
         self.createFEM(p_liver, p_grid)
         self.createNN(p_liver, p_grid)
+        self.is_created['fem'], self.is_created['nn'] = True, True
 
     def createFEM(self, p_liver, p_grid):
         """
         FEM node of the liver scene
+
         :param p_liver:
         :param p_grid:
         :return:
@@ -97,11 +102,14 @@ class TrainingLiver(SofaEnvironment):
     def createNN(self, p_liver, p_grid):
         """
         Neural Network part of the liver
+
         :param p_liver:
         :param p_grid:
         :return:
         """
         network = self.root.addChild('network')
+        # Fake solver
+        # network.addObject('LegacyStaticODESolver', name='StaticSolver', newton_iterations=0, printLog=False)
         # Topology
         self.nn_sparse_grid = network.addObject('SparseGridTopology', name='sparse_grid', src='@../surface_mesh',
                                                 n=p_grid['grid_resolution'])
@@ -128,16 +136,17 @@ class TrainingLiver(SofaEnvironment):
     def onSimulationInitDoneEvent(self, event):
         """
         Called within the Sofa pipeline at the end of the scene graph initialisation.
+
         :param event: Sofa Event
         :return: None
         """
         # Correspondences between sparse grid and regular grid
         grid_shape = self.config.p_grid['grid_resolution']
+        mo = self.fem_mo if self.is_created['fem'] else self.nn_mo
         self.nb_nodes_regular_grid = grid_shape[0] * grid_shape[1] * grid_shape[2]
         self.idx_sparse_to_regular, self.idx_regular_to_sparse, \
-        self.regular_grid_rest_shape = from_sparse_to_regular_grid(self.nb_nodes_regular_grid, self.fem_sparse_grid,
-                                                                   self.fem_mo)
-        self.nb_nodes_sparse_grid = len(self.fem_mo.rest_position.value)
+        self.regular_grid_rest_shape = from_sparse_to_regular_grid(self.nb_nodes_regular_grid, self.fem_sparse_grid, mo)
+        self.nb_nodes_sparse_grid = len(mo.rest_position.value)
         # Get the data sizes
         self.input_size = (self.nb_nodes_regular_grid, 3)
         self.output_size = (self.nb_nodes_regular_grid, 3)
@@ -147,55 +156,74 @@ class TrainingLiver(SofaEnvironment):
     def initVisualizer(self):
         # Visualizer
         if self.visualizer is not None:
-            self.visualizer.addMesh(positions=self.fem_visu.position.value, cells=self.fem_visu.triangles.value, at=0)
-            self.visualizer.addMesh(positions=self.nn_visu.position.value, cells=self.nn_visu.triangles.value, at=1)
+            id_window = 0
+            if self.is_created['fem']:
+                self.visualizer.addMesh(positions=self.fem_visu.position.value, cells=self.fem_visu.triangles.value,
+                                        at=id_window)
+                id_window += 1
+            if self.is_created['nn']:
+                self.visualizer.addMesh(positions=self.nn_visu.position.value, cells=self.nn_visu.triangles.value,
+                                        at=id_window)
             self.renderVisualizer()
 
     def onAnimateBeginEvent(self, event):
         """
         Called within the Sofa pipeline at the beginning of the time step.
+
         :param event: Sofa Event
         :return: None
         """
         # Reset position
-        self.fem_mo.position.value = self.fem_mo.rest_position.value
+        if self.is_created['fem']:
+            self.fem_mo.position.value = self.fem_mo.rest_position.value
         # Generate next forces
         f = np.random.uniform(low=-1, high=1, size=(3,))
         f = (f / np.linalg.norm(f)) * self.config.p_force['amplitude_scale'] * np.random.random(1)
         # Pick up a random visible surface point
         current_point = self.visible_nodes[np.random.randint(len(self.visible_nodes))]
+        # Fem or nn
+        sphere = self.fem_sphere if self.is_created['fem'] else self.nn_sphere
+        force_field = self.fem_force_field if self.is_created['fem'] else self.nn_force_field
         # Set the centers of the ROI sphere to current point
-        self.fem_sphere.centers.value = [current_point]
+        sphere.centers.value = [current_point]
         # Build forces vector
         forces_vector = []
-        for i in range(len(self.fem_sphere.indices.array())):
+        for i in range(len(sphere.indices.array())):
             forces_vector.append(f)
         # Set forces and indices
-        self.fem_force_field.indices.value = self.fem_sphere.indices.array()
-        self.fem_force_field.forces.value = forces_vector
+        force_field.indices.value = sphere.indices.array()
+        force_field.forces.value = forces_vector
 
     def onAnimateEndEvent(self, event):
         """
         Called within the Sofa pipeline at the end of the time step.
+
         :param event: Sofa Event
         :return: None
         """
         # Count the steps
         self.nb_steps += 1
         # Check whether if the solver diverged or not
-        self.converged = self.solver.converged.value
-        self.nb_converged += int(self.converged)
+        if self.is_created['fem']:
+            self.converged = self.solver.converged.value
+            if not self.converged:
+                Sofa.Simulation.reset(self.root)
+            self.nb_converged += int(self.converged)
         # Render
         self.renderVisualizer()
 
     def computeInput(self):
         """
         Compute the input to be given to the network. Automatically called by EnvironmentManager.
+
         :return: None
         """
-        f = copy.copy(self.fem_force_field.forces.value)
-        ind = copy.copy(self.fem_force_field.indices.value)
-        positions = self.fem_surface_mo.position.array()[ind]
+        force_field = self.fem_force_field if self.is_created['fem'] else self.nn_force_field
+        surface_mo = self.fem_surface_mo if self.is_created['fem'] else self.nn_surface_mo
+
+        f = copy.copy(force_field.forces.value)
+        ind = copy.copy(force_field.indices.value)
+        positions = surface_mo.position.array()[ind]
         F = np.zeros((self.nb_nodes_regular_grid, 3))
         for i in range(len(f)):
             for node in self.regular_grid.node_indices_of(self.regular_grid.cell_index_containing(positions[i])):
@@ -207,6 +235,7 @@ class TrainingLiver(SofaEnvironment):
     def computeOutput(self):
         """
         Compute the output to be given to the network. Automatically called by EnvironmentManager.
+
         :return: None
         """
         actual_positions_on_regular_grid = np.zeros((self.nb_nodes_regular_grid, 3), dtype=np.double)
@@ -220,10 +249,10 @@ class TrainingLiver(SofaEnvironment):
     def applyPrediction(self, prediction):
         """
         Apply the prediction of the network in the Sofa environment. Automatically called by EnvironmentManager.
+
         :return: None
         """
         # Needed for prediction only
-        # U_sparse = self.output[self.idx_sparse_to_regular]
         U = prediction[-1]
         U = np.reshape(U, (self.nb_nodes_regular_grid, 3))
         U_sparse = U[self.idx_sparse_to_regular]

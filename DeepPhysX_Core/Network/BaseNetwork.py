@@ -1,18 +1,17 @@
 class BaseNetwork:
 
     def __init__(self, config):
+        """
+        BaseNetwork is a network class to compute predictions from input data according to actual state.
+
+        :param config: BaseNetworkConfig.BaseNetwork.Properties class containing BaseNetwork parameters
+        """
+
         self.name = self.__class__.__name__
+
         # Config
-        self.config = config
         self.device = None
-        # Data
-        self.input = None
-        self.ground_truth = None
-        self.prediction = None
-        # Description
-        self.type = config.network_type
-        self.name = config.network_name
-        self.description = ""
+        self.config = config
 
     def predict(self, x):
         return self.forward(x)
@@ -47,9 +46,12 @@ class BaseNetwork:
     def transformToNumpy(self, x):
         raise NotImplementedError
 
-    def getDescription(self):
-        if len(self.description) == 0:
-            self.description += "\n{}\n".format(self.name)
-            self.description += "   Name: {}\n".format(self.name)
-            self.description += "   Type: {}\n".format(self.type)
-        return self.description
+    def __str__(self):
+        """
+        :return: String containing information about the BaseNetwork object
+        """
+        description = "\n"
+        description += f"{self.name}\n"
+        description += f"    Name: {self.config.name}\n"
+        description += f"    Type: {self.config.type}\n"
+        return description

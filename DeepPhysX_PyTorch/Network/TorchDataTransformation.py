@@ -9,9 +9,13 @@ class TorchDataTransformation(DataTransformation):
         self.data_type = torch.Tensor
 
     @DataTransformation.check_type
-    def transformBeforePrediction(self, data_in, data_gt):
-        return data_in, data_gt
+    def transformBeforePrediction(self, data_in):
+        return data_in
 
     @DataTransformation.check_type
-    def transformAfterPrediction(self, data_out, data_gt):
+    def transformBeforeLoss(self, data_out, data_gt):
         return data_out, data_gt
+
+    @DataTransformation.check_type
+    def transformBeforeApply(self, data_out):
+        return data_out
