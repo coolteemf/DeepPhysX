@@ -34,8 +34,11 @@ class BaseNetworkConfig:
         DataTransformation for the NetworkManager.
 
         :param network_class: BaseNetwork class from which an instance will be created
+        :type network_class: type[BaseNetwork]
         :param optimization_class: BaseOptimization class from which an instance will be created
+        :type optimization_class: type[BaseOptimization]
         :param data_transformation_class: DataTransformation class from which an instance will be created
+        :type data_transformation_class: type[DataTransformation]
         :param str network_dir: Name of an existing network repository
         :param str network_name: Name of the network
         :param str network_type: Type of the network
