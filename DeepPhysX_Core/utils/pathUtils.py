@@ -36,7 +36,9 @@ def copyDir(src_dir, dest_parent_dir, dest_dir):
 
 
 def getFirstCaller():
-    frm = inspect.stack()[-1]
-    mod = inspect.getmodule(frm[0])
-    caller_path = os.path.dirname(os.path.abspath(mod.__file__))
-    return caller_path
+    # Get the stack of called scripts
+    scripts_list = inspect.stack()[-1]
+    # Get the first one (the one launched by the user)
+    module = inspect.getmodule(scripts_list[0])
+    # Return the path of this script
+    return os.path.dirname(os.path.abspath(module.__file__))
