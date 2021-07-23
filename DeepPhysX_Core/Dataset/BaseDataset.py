@@ -98,6 +98,10 @@ class BaseDataset:
         for sample in data:
             data_tensor = np.concatenate((data_tensor, sample.flatten()[None, :]))
             np.save(partition_file, sample.flatten())
+        if side == "in":
+            self.data_in = data_tensor
+        else:
+            self.data_out = data_tensor
 
         self.current_sample = max(len(self.data_in), len(self.data_out))
 
