@@ -4,6 +4,15 @@ import shutil
 
 
 def createDir(dirname, check_existing):
+    # TODO Rename variable and update doc
+    """
+    Create a directory of the given name. If it already exist and specified, add a unique identifier at the end.
+
+    :param str dirname: Name of the directory to create
+    :param str check_existing: If True check for existence of a similar directory
+
+    :return: Name of the created directory as string
+    """
     if os.path.isdir(dirname):
         print("Directory conflict: you are going to overwrite {}.".format(dirname))
         parent = os.path.abspath(os.path.join(dirname, os.pardir))
@@ -19,6 +28,15 @@ def createDir(dirname, check_existing):
 
 
 def copyDir(src_dir, dest_parent_dir, dest_dir):
+    """
+    Copy source directory to destination directory at the end of destination parent directory
+
+    :param str src_dir: Source directory to copy
+    :param str dest_parent_dir: Parent of the destination directory to copy
+    :param str dest_dir: Destination directory to copy to
+
+    :return: destination directory that source has been copied to
+    """
     dest_dir = os.path.join(dest_parent_dir, dest_dir)
     if os.path.isdir(dest_dir):
         print("Directory conflict: you are going to overwrite by copying in {}.".format(dest_dir))
@@ -36,6 +54,10 @@ def copyDir(src_dir, dest_parent_dir, dest_dir):
 
 
 def getFirstCaller():
+    """
+    WTF ?
+    :return:
+    """
     frm = inspect.stack()[-1]
     mod = inspect.getmodule(frm[0])
     caller_path = os.path.dirname(os.path.abspath(mod.__file__))

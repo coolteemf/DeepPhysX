@@ -267,7 +267,7 @@ class StatsManager:
     def close(self):
         """
         Closing procedure
-        
+
         :return:
         """
         self.writer.close()
