@@ -51,25 +51,17 @@ class EnvironmentManager:
 
         if get_inputs:
             inputs = np.empty((0, *self.environment.input_size))
-
-            def input_condition(input_tensor):
-                return input_tensor.shape[0] <= batch_size
+            input_condition = lambda input_tensor: input_tensor.shape[0] <= batch_size
         else:
             inputs = np.array([])
-
-            def input_condition(input_tensor):
-                return True
+            input_condition = lambda input_tensor: True
 
         if get_outputs:
             outputs = np.empty((0, *self.environment.output_size))
-
-            def output_condition(output_tensor):
-                return output_tensor.shape[0] <= batch_size
+            output_condition = lambda outputs_tensor: outputs_tensor.shape[0] <= batch_size
         else:
             outputs = np.array([])
-
-            def output_condition(output_tensor):
-                return True
+            output_condition = lambda outputs_tensor: True
 
         while input_condition(inputs) and output_condition(outputs):
             if animate:
@@ -79,14 +71,14 @@ class EnvironmentManager:
             if get_inputs:
                 self.environment.computeInput()
                 if self.environment.checkSample(check_input=get_inputs, check_output=False):
-                    inputs = np.concatenate((inputs, self.environment.getInput()))
+                    inputs = np.concatenate((inputs, self.environment.getInput()[None, :]))
                 else:
                     self.environment.save_wrong_sample(self.session_dir)
 
             if get_outputs:
                 self.environment.computeOutput()
                 if self.environment.checkSample(check_input=False, check_output=get_outputs):
-                    outputs = np.concatenate((outputs, self.environment.getOutput()))
+                    outputs = np.concatenate((outputs, self.environment.getOutput()[None, :]))
                 else:
                     self.environment.save_wrong_sample(self.session_dir)
         return {'in': inputs, 'out': outputs}
