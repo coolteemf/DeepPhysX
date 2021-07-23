@@ -1,18 +1,17 @@
 """
 FEMLiver.py
 FEM simulated liver with random forces applied on the visible surface.
-Can be launched as a Sofa scene using the 'runSofa.py' script in this repository.
+Can be launched as a Sofa scene using the 'liverSofa.py' script in this repository.
 Also used to train neural network in DeepPhysX_Core pipeline with the '../liverTrainingUNet.py' script.
 """
 
 import copy
 import random
 import numpy as np
-from time import time_ns as timer
 
 from DeepPhysX_Sofa.Environment.SofaEnvironment import SofaEnvironment
 from Caribou.Topology import Grid3D
-from Sandbox.Liver.LiverConfig.utils import extract_visible_nodes, from_sparse_to_regular_grid
+from Sandbox.Liver.Config.utils import extract_visible_nodes, from_sparse_to_regular_grid
 
 
 # Inherit from SofaEnvironment which allow to implement and create a Sofa scene in the DeepPhysX_Core pipeline

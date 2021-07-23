@@ -1,79 +1,63 @@
 """
 liverUnet.py
-Python script for both training and prediction on liver deformation with UNet
-Run for training : python3 liverUnet.py -t
-Run for prediction : python3 liverUnet.py -p
+Python script for both DeepPhysX training and prediction pipelines on liver deformation with UNet.
+The default environment 'BothLiver' contains a FEM model and a NN model. Other scene can be added in the 'scene_map'
+dictionary.
+Run with:
+    'python3 liverUnet.py -t' for training
+    'python3 liverUnet.py x' for prediction with x being either a scene name either it's corresponding number in the
+                             'scene_map' dictionary.
 """
 
-# Required python library packages
-import os
+# Import python library packages
 import sys
 import torch
-import numpy as np
 import Sofa.Gui
 
-# Required stuff to build the simulation
-from Sandbox.Liver.LiverConfig.LiverConfig import LiverConfig
-from Sandbox.Liver.TrainingLiver import TrainingLiver as Liver
-from DeepPhysX_PyTorch.UNet.UnetDataTransformation import UnetDataTransformation
-from Sandbox.Liver.LiverConfig.utils import compute_grid_resolution
+# Import stuff to build the simulation
+from Sandbox.Liver.Config.LiverConfig import LiverConfig
+from Sandbox.Liver.Scene.BothLiver import BothLiver as Liver
+from Sandbox.Liver.Config.parameters import *
 
-# Required DeepPhysX packages
+# Import DeepPhysX packages
 from DeepPhysX_PyTorch.UNet.UNetConfig import UNetConfig
 from DeepPhysX_Core.Dataset.BaseDatasetConfig import BaseDatasetConfig
 from DeepPhysX_Core.Pipelines.BaseTrainer import BaseTrainer
 from DeepPhysX_Sofa.Runner.SofaRunner import SofaRunner
 from DeepPhysX_Core.Visualizer.MeshVisualizer import MeshVisualizer
 
-# Check whether if the script is used for training (-t) or prediction (-p, default)
+
+# Configure script
 training = False
 if len(sys.argv) > 1:
-    training = (sys.argv[1] == '-t')
-
-# Liver parameters
-filename = os.path.dirname(os.path.abspath(__file__)) + '/LiverConfig/liver.obj'
-translation = [-0.0134716, 0.021525, -0.427]
-fixed_point = np.array([-0.00338, -0.0256, 0.52]) + np.array(translation)
-fixed_width = np.array([0.07, 0.05, 0.04])
-fixed_box = (fixed_point - fixed_width / 2.).tolist() + (fixed_point + fixed_width / 2.).tolist()
-camera_position = np.array([-0.177458, 0.232606, 0.780813])
-p_liver = {'mesh_file': filename, 'translation': translation, 'camera_position': camera_position,
-           'fixed_box': fixed_box, 'fixed_point': fixed_point}
-
-# Grid parameters
-margins = np.array([0.02, 0.02, 0.02])
-min_bbox = np.array([-0.130815, -0.107192, 0.00732511]) - margins
-max_bbox = np.array([0.0544588, 0.0967464, 0.15144]) + margins
-bbox_size = max_bbox - min_bbox
-b_box = min_bbox.tolist() + max_bbox.tolist()
-cell_size = 0.07
-grid_resolution = compute_grid_resolution(max_bbox, min_bbox, cell_size)
-print("Grid resolution is {}".format(grid_resolution))
-nb_cells_x = grid_resolution[0] - 1
-nb_cells_y = grid_resolution[1] - 1
-nb_cells_z = grid_resolution[2] - 1
-p_grid = {'b_box': b_box, 'bbox_anchor': min_bbox.tolist(), 'bbox_size': bbox_size,
-          'nb_cells': [nb_cells_x, nb_cells_y, nb_cells_z], 'grid_resolution': grid_resolution}
-
-# Forces parameters
-nb_simultaneous_forces = 20
-amplitude_scale = 0.1
-inter_distance_thresh = 0.06
-p_force = {'nb_simultaneous_forces': nb_simultaneous_forces, 'amplitude_scale': amplitude_scale,
-           'inter_distance_thresh': inter_distance_thresh}
+    # Check whether if the script is used for training (-t) or prediction (default)
+    if sys.argv[1] == '-t':
+        training = True
+    # Training scene is default; if prediction, specify the chosen one
+    else:
+        scene_map = {'0': 'TrainingLiver'}
+        if (sys.argv[1] in scene_map.keys()) or (sys.argv[1] in scene_map.values()):
+            scene = scene_map[sys.argv[1]] if sys.argv[1] in scene_map.keys() else sys.argv[1]
+            module = 'Sandbox.Liver.Scene.' + scene
+            exec(f'from {module} import {scene} as Liver')
 
 
 def createScene(root_node=None):
+    """
+    Automatically called when launching a Sofa scene or called from main to create the scene graph.
+
+    :param root_node: Sofa.Core.Node() object.
+    :return: root_node
+    """
     # Environment config
     env_config = LiverConfig(environment_class=Liver, root_node=root_node, always_create_data=True,
                              visualizer_class=MeshVisualizer, p_liver=p_liver, p_grid=p_grid, p_force=p_force)
     # Network config
     net_config = UNetConfig(network_name="liver_UNet", save_each_epoch=False,
                             loss=torch.nn.MSELoss, lr=1e-6, optimizer=torch.optim.Adam,
-                            data_transformation_class=UnetDataTransformation,
                             steps=3, first_layer_channels=128, nb_classes=3,
                             nb_input_channels=3, nb_dims=3, border_mode='same', two_sublayers=True,
-                            grid_shape=grid_resolution)
+                            grid_shape=grid_resolution, data_scale=1000.)
     # Dataset config
     dataset_config = BaseDatasetConfig(partition_size=1, shuffle_dataset=True)
 
@@ -85,7 +69,7 @@ def createScene(root_node=None):
         trainer.execute()
     # Prediction case
     else:
-        man_dir = os.path.dirname(os.path.abspath(__file__)) + '/trainings/liver_23'
+        man_dir = os.path.dirname(os.path.abspath(__file__)) + '/trainings/liver'
         runner = SofaRunner(session_name="session", dataset_config=dataset_config,
                             environment_config=env_config, network_config=net_config, session_dir=man_dir, nb_steps=0,
                             record_inputs=False, record_outputs=False)
