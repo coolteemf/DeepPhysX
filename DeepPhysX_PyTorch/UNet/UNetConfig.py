@@ -18,12 +18,13 @@ class UNetConfig(TorchNetworkConfig):
         nb_classes: int
         skip_merge: bool
         grid_shape: list
+        data_scale: float
 
     def __init__(self, network_name="UNetName", data_transformation_class=UnetDataTransformation,
                  loss=None, lr=None, optimizer=None,
                  network_dir=None, save_each_epoch=None, which_network=0,
                  steps=4, first_layer_channels=64, nb_classes=2, nb_input_channels=1, two_sublayers=True,
-                 nb_dims=2, border_mode='valid', skip_merge=False, grid_shape=None):
+                 nb_dims=2, border_mode='valid', skip_merge=False, grid_shape=None, data_scale=1.):
 
         TorchNetworkConfig.__init__(self, network_class=UNet, network_name=network_name,
                                     network_type='UNet', data_transformation_class=data_transformation_class,
@@ -41,7 +42,7 @@ class UNetConfig(TorchNetworkConfig):
                                                   first_layer_channels=first_layer_channels, border_mode=border_mode,
                                                   two_sublayers=two_sublayers, nb_input_channels=nb_input_channels,
                                                   steps=steps, nb_classes=nb_classes, skip_merge=skip_merge,
-                                                  grid_shape=grid_shape)
+                                                  grid_shape=grid_shape, data_scale=data_scale)
         border = 4 if two_sublayers else 2
         if border_mode == 'same':
             border = 0
@@ -67,16 +68,14 @@ class UNetConfig(TorchNetworkConfig):
             shape = np.asarray(in_shape)
             yield (self.network_config.nb_input_channels,) + tuple(shape)
             shape = self.first_step(shape)
-            first_layer_channels = self.network_config.first_layer_channels
-            yield (first_layer_channels,) + tuple(shape)
-            steps = self.network_config.steps
-            for i in range(steps):
+            yield (self.network_config.first_layer_channels,) + tuple(shape)
+            for i in range(self.network_config.steps):
                 shape = self.down_step(shape)
-                channels = first_layer_channels * 2 ** (i + 1)
-                yield(channels,) + tuple(shape)
-            for i in range(steps):
+                channels = self.network_config.first_layer_channels * 2 ** (i + 1)
+                yield (channels,) + tuple(shape)
+            for i in range(self.network_config.steps):
                 shape = self.up_step(shape)
-                channels = first_layer_channels * 2 ** (steps - i - 1)
+                channels = self.network_config.first_layer_channels * 2 ** (self.network_config.steps - i - 1)
                 yield (channels,) + tuple(shape)
             yield (self.network_config.nb_classes,) + tuple(shape)
 
@@ -89,7 +88,7 @@ class UNetConfig(TorchNetworkConfig):
 
     def in_out_shape(self, out_shape_lower_bound, given_upper_bound=False):
         """
-        Compute the best combinaison of input/output shapes given the desired lower bound for the shape of the output
+        Compute the best combination of input/output shapes given the desired lower bound for the shape of the output
         :param out_shape_lower_bound:
         :param given_upper_bound:
         :return:
@@ -113,8 +112,8 @@ class UNetConfig(TorchNetworkConfig):
 
     def in_out_pad_widths(self, out_shape_lower_bound):
         in_shape, out_shape = self.in_out_shape(out_shape_lower_bound)
-        in_pad_width = [((sh_o - sh_i) // 2, (sh_o - sh_i - 1) // 2 + 1)
-                        for sh_i, sh_o in zip(out_shape_lower_bound, in_shape)]
-        out_pad_width = [((sh_o - sh_i) // 2, (sh_o - sh_i - 1) // 2 + 1)
-                         for sh_i, sh_o in zip(out_shape_lower_bound, out_shape)]
-        return in_pad_width, out_pad_width
+        in_pad_widths = [((sh_o - sh_i) // 2, (sh_o - sh_i - 1) // 2 + 1)
+                         for sh_i, sh_o in zip(out_shape_lower_bound, in_shape)]
+        out_pad_widths = [((sh_o - sh_i) // 2, (sh_o - sh_i - 1) // 2 + 1)
+                          for sh_i, sh_o in zip(out_shape_lower_bound, out_shape)]
+        return in_pad_widths, out_pad_widths
