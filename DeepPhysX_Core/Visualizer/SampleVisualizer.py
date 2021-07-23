@@ -7,6 +7,11 @@ from DeepPhysX_Core.Visualizer.VedoVisualizer import VedoVisualizer
 class SampleVisualizer(VedoVisualizer):
 
     def __init__(self, folder):
+        """
+        Display all data in a given directory. Use button next and previous to change the displayed object.
+
+        :param str folder: Name of the folder to open
+        """
         super(SampleVisualizer, self).__init__()
         # Load samples in the folder
         files = sorted([f for f in os.listdir(folder) if os.path.isfile(os.path.join(folder, f))
@@ -22,6 +27,11 @@ class SampleVisualizer(VedoVisualizer):
         self.loadSample()
 
     def showPreviousSample(self):
+        """
+        Called by button click. Select the previous mesh to display.
+
+        :return:
+        """
         if self.id_sample > 0:
             self.id_sample -= 1
         else:
@@ -29,6 +39,11 @@ class SampleVisualizer(VedoVisualizer):
         self.loadSample()
 
     def showNextSample(self):
+        """
+        Called by button click. Select the next mesh to display.
+
+        :return:
+        """
         if self.id_sample < len(self.samples) - 1:
             self.id_sample += 1
         else:
@@ -36,6 +51,11 @@ class SampleVisualizer(VedoVisualizer):
         self.loadSample()
 
     def loadSample(self):
+        """
+        Load a sample to vedo plotter
+
+        :return:
+        """
         # Clear previous sample in view
         if self.current_sample is not None:
             self.view.clear(self.current_sample)
