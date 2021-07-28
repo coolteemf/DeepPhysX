@@ -1,6 +1,7 @@
 import vedo
 import copy
 import os
+from sys import maxsize as MAX_INT
 
 from DeepPhysX_Core.Visualizer.VedoVisualizer import VedoVisualizer
 
@@ -30,38 +31,32 @@ class MeshVisualizer(VedoVisualizer):
         self.folder = None
         self.nb_saved = 0
 
-    def addPoints(self, positions, scalar=None, at=0):
+    def addObject(self, positions, cells=None, at=MAX_INT, field_dict={'scalar_field': None}):
         """
-        Add a point could to vedo visualizer
-
-        :param numpy.ndarray positions: Array of shape [n,3] describing the positions of the point cloud
-        :param numpy.ndarray scalar: Array of shape [n] valuing each point.
-        :param int at: Target renderer in which to render the object
-
-        :return:
-        """
-        points = vedo.Points(positions)
-        if scalar is not None:
-            points.cmap(self.colormap, scalar)
-        at = self.addView(at)
-        self.data[points] = {'positions': positions, 'scalar': scalar, 'at': at}
-
-    def addMesh(self, positions, cells, scalar=None, at=0):
-        """
-       Add a point could to vedo visualizer
+       Add an object to vedo visualizer. If cells is None then it's a point cloud, otherwise it correspond
+       to the object surface topology.
 
        :param numpy.ndarray positions: Array of shape [n,3] describing the positions of the point cloud
        :param numpy.ndarray cells: Array which contains the topology of the object.
-       :param numpy.ndarray scalar: Array of shape [n] valuing each point.
        :param int at: Target renderer in which to render the object
+       :param dict field_dict: Dictionary of format {'data_name':data} that is attached to the Mesh object
 
        :return:
        """
+        # Create a mesh witht he given data. vedo generate a points cloud if cells is None
         mesh = vedo.Mesh([positions, cells])
-        if scalar is not None:
-            mesh.cmap(self.colormap, scalar)
-        at = self.addView(at)
-        self.data[mesh] = {'positions': positions, 'scalar': scalar, 'at': at}
+
+        # Efficient way to look for key existence in a dict
+        if 'color_map' in field_dict and 'scalar_field' in field_dict \
+                and field_dict['color_map'] is not None and field_dict['scalar_field'] is not None:
+            mesh.cmap(field_dict['color_map'], field_dict['scalar_field'])
+        elif 'scalar_field' in field_dict and field_dict['scalar_field'] is not None:
+            mesh.cmap(self.colormap, field_dict['scalar_field'])
+
+        # Attach each know fields to the Mesh object
+        self.data[mesh] = {'positions': positions, 'at': self.addView(at)}
+        for data_field in field_dict.keys():
+            self.data[mesh][data_field] = field_dict[data_field]
 
     def addView(self, at):
         """
@@ -69,22 +64,13 @@ class MeshVisualizer(VedoVisualizer):
 
         :param int at: Index of the view to add.
 
-        :return:
+        :return: The new view index
         """
-        if at >= self.nb_view + 1:
+        # First addView returns 0
+        if at >= self.nb_view:
+            at = self.nb_view
             self.nb_view += 1
-        return self.nb_view
-
-    def update(self):
-        """
-        Update the various field of a mesh for the vedo plotter
-
-        :return:
-        """
-        for model in self.data.keys():
-            model.points(copy.copy(self.data[model]['positions']))
-            if self.data[model]['scalar'] is not None:
-                model.cmap(self.colormap, self.data[model]['scalar'])
+        return at
 
     def render(self):
         """
@@ -92,13 +78,12 @@ class MeshVisualizer(VedoVisualizer):
 
         :return:
         """
-        # TODO Add update queue for each modified field of a mesh
         if self.viewer is None:
-            self.viewer = vedo.Plotter(title=self.params['title'], axes=self.params['axes'], N=self.nb_view + 1,
+            self.viewer = vedo.Plotter(title=self.params['title'], axes=self.params['axes'], N=self.nb_view,
                                        interactive=self.params['interactive'])
             for model in self.data.keys():
                 self.viewer.add(model, at=self.data[model]['at'])
-        self.update()
+
         self.viewer.render()
         self.viewer.allowInteraction()
 
@@ -116,7 +101,6 @@ class MeshVisualizer(VedoVisualizer):
             from DeepPhysX_Core.utils import wrong_samples
             import shutil
             shutil.copy(wrong_samples.__file__, self.folder)
-        self.update()
         filename = os.path.join(self.folder, f'wrong_sample_{self.nb_saved}.npz')
         self.nb_saved += 1
         self.viewer.export(filename=filename)
