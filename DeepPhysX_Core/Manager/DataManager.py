@@ -22,7 +22,6 @@ class DataManager:
         :param bool training: True if this session is a network training
         :param dict record_data: Format {\'in\': bool, \'out\': bool} save the tensor when bool is True
         """
-
         self.is_training = training
         self.dataset_manager = None
         self.network_manager = None

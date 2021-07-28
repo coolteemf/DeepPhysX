@@ -27,7 +27,6 @@ class BaseTrainer(BasePipeline):
         :param int nb_batches: Number of batches
         :param int batch_size: Size of a batch
         """
-
         BasePipeline.__init__(self, pipeline='training')
 
         if environment_config is None and dataset_config.dataset_dir is None:
