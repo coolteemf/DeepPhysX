@@ -92,14 +92,8 @@ class BaseEnvironmentConfig:
                 raise TypeError(f"[{self.name}] Wrong environment_class type: BaseEnvironment required, get "
                                 f"{self.environment_class}")
             environment.create()
-            # Create visualizer
-            if self.visualizer_class is not None:
-                if not isinstance(environment.visualizer, VedoVisualizer):
-                    raise TypeError(f"[{self.name}] The visualizer must be of VedoVisualizer type.")
-                else:
-                    environment.visualizer = self.visualizer_class()
-            return environment
 
+            return environment
         # Todo : Multiprocessing in Environment package level ?
         else:
             try:
@@ -110,6 +104,12 @@ class BaseEnvironmentConfig:
             if not isinstance(environments[0], BaseEnvironment):
                 raise TypeError("[{}] The environment class must be a BaseEnvironment class.".format(self.name))
             return environments
+
+    def addVisualizer(self, environment):
+        # Create visualizer
+        if self.visualizer_class is not None:
+            environment.visualizer = self.visualizer_class()
+        return environment
 
     def __str__(self):
         """

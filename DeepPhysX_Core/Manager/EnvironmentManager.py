@@ -19,6 +19,7 @@ class EnvironmentManager:
         self.multiprocessMethod = environment_config.multiprocess_method
         # Create single or multiple environments according to multiprocessing value
         self.environment = environment_config.createEnvironment()
+        self.environment = environment_config.addVisualizer(self.environment)
 
         self.always_create_data = environment_config.always_create_data
 
