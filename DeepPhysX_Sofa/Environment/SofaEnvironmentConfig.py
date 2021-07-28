@@ -31,7 +31,7 @@ class SofaEnvironmentConfig(BaseEnvironmentConfig):
         else:
             self.rootNode = [Sofa.Core.Node('rootNode' + str(i)) for i in range(self.number_of_thread)]
 
-    def initNodes(self):
+    def initSofaSimulation(self):
         if self.number_of_thread == 1:
             Sofa.Simulation.init(self.rootNode)
         else:
@@ -52,7 +52,6 @@ class SofaEnvironmentConfig(BaseEnvironmentConfig):
                                                                              config=self.environment_config,
                                                                              idx_instance=i + 1))
                            for i in range(len(self.rootNode))]
-        self.initNodes()
         return environment
 
     def addRequiredPlugins(self):
