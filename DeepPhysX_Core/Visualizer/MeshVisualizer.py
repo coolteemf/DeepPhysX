@@ -45,7 +45,7 @@ class MeshVisualizer(VedoVisualizer):
        """
         # Create a mesh witht he given data. vedo generate a points cloud if cells is None
         mesh = vedo.Mesh([positions, cells])
-
+        # mesh.property.SetPointSize(10)
         # Efficient way to look for key existence in a dict
         if 'color_map' in field_dict and 'scalar_field' in field_dict \
                 and field_dict['color_map'] is not None and field_dict['scalar_field'] is not None:
@@ -86,6 +86,11 @@ class MeshVisualizer(VedoVisualizer):
 
         self.viewer.render()
         self.viewer.allowInteraction()
+
+    def update(self):
+        # In case, to debug
+        for model in self.data.keys():
+            model.points(self.data[model]['positions'])
 
     def saveSample(self, session_dir):
         """

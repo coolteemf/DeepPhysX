@@ -11,11 +11,9 @@ Also used to train neural network in DeepPhysX_Core pipeline with the '../beamTr
 
 import torch
 
-
 from DeepPhysX_Core.Dataset.BaseDatasetConfig import BaseDatasetConfig
 from DeepPhysX_Core.Pipelines.BaseTrainer import BaseTrainer
 from DeepPhysX_Core.Visualizer.MeshVisualizer import MeshVisualizer
-
 
 from DeepPhysX_PyTorch.FC.FCConfig import FCConfig
 
@@ -47,8 +45,8 @@ batch_size = 32
 # Inherit from SofaEnvironment which allow to implement and create a Sofa scene in the DeepPhysX_Core pipeline
 class FEMBeam(SofaEnvironment):
 
-    def __init__(self, root_node, config, idx_instance=1, visualizer_class=None):
-        super(FEMBeam, self).__init__(root_node, config, idx_instance, visualizer_class)
+    def __init__(self, root_node, config, idx_instance=1):
+        super(FEMBeam, self).__init__(root_node, config, idx_instance)
         # Scene configuration
         self.config = config
         # Keep a track of the actual step number and how many samples diverged during the animation
@@ -57,9 +55,9 @@ class FEMBeam(SofaEnvironment):
         self.converged = False
         SofaRuntime.PluginRepository.addFirstPath(os.environ['CARIBOU_INSTALL'])
         required_plugins = ['SofaComponentAll', 'SofaLoader', 'SofaCaribou', 'SofaBaseTopology', 'SofaGeneralEngine',
-                        'SofaEngine', 'SofaOpenglVisual', 'SofaBoundaryCondition', 'SofaTopologyMapping',
-                        'SofaConstraint', 'SofaDeformable', 'SofaGeneralObjectInteraction', 'SofaBaseMechanics',
-                        'SofaMiscCollision']
+                            'SofaEngine', 'SofaOpenglVisual', 'SofaBoundaryCondition', 'SofaTopologyMapping',
+                            'SofaConstraint', 'SofaDeformable', 'SofaGeneralObjectInteraction', 'SofaBaseMechanics',
+                            'SofaMiscCollision']
         root_node.addObject('RequiredPlugin', pluginName=required_plugins)
 
     def create(self):
@@ -124,13 +122,16 @@ class FEMBeam(SofaEnvironment):
         self.output_size = self.MO.position.value.shape
         # Get the indices of node on the surface
         self.idx_surface = self.surface.quads.value.reshape(-1)
+        # self.pos = copy.copy(self.MO.position.array() * 0.01)
         self.initVisualizer()
 
     def initVisualizer(self):
         # Visualizer
         if self.visualizer is not None:
-            self.visualizer.addObject(positions=self.boj.position.value, at=0)
-            self.visualizer.addObject(positions=self.boj.position.value, cells=self.surface.quads.value, at=0)
+            # Warning : using same MO to initialize, only the first one is updated
+            self.visualizer.addObject(positions=self.MO.position.value, cells=self.surface.quads.value, at=0)
+            self.visualizer.addObject(positions=self.MO.position.value, at=1)
+            self.renderVisualizer()
 
     def onAnimateBeginEvent(self, event):
         """
@@ -140,7 +141,6 @@ class FEMBeam(SofaEnvironment):
         """
         # Reset position
         self.MO.position.value = self.MO.rest_position.value
-
         # Create a random constant force field for the nodes in the bbox
         F = np.random.random(3) - np.random.random(3)
         K = np.random.randint(1, 3)
@@ -195,7 +195,7 @@ class FEMBeam(SofaEnvironment):
 def createScene(root_node=None):
     # Environment config
     env_config = SofaEnvironmentConfig(environment_class=FEMBeam, root_node=root_node, always_create_data=False,
-                            visualizer_class=MeshVisualizer)
+                                       visualizer_class=MeshVisualizer)
 
     # # Network config
     # net_config = FCConfig(network_name="beam_FC", save_each_epoch=False,
@@ -211,9 +211,8 @@ def createScene(root_node=None):
 
     # Manually create and init the environment from the configuration object
     env = env_config.createEnvironment()
-    env_config.initSofaSimulation()
     env_config.addVisualizer(env)
-    env.initVisualizer()
+    env_config.initSofaSimulation()
     return env.root
 
 

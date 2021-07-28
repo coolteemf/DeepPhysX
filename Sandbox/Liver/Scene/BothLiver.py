@@ -21,7 +21,7 @@ class BothLiver(SofaEnvironment):
         # Keep a track of the actual step number and how many samples diverged during the animation
         self.nb_steps = 0
         self.nb_converged = 0.
-        self.converged = False
+        self.converged = True
         self.is_created = {'fem': False, 'nn': False}
 
     def create(self):
@@ -83,7 +83,7 @@ class BothLiver(SofaEnvironment):
         fem_surface = self.root.fem.addChild('fem_surface')
         self.fem_surface_mo = fem_surface.addObject('MechanicalObject', name='mo_embedded_surface',
                                                     src='@../../surface_mesh')
-        fem_surface.addObject('TriangleSetTopologyContainer', name='triangles', src='@../../surface_mesh')
+        self.fem_surface = fem_surface.addObject('TriangleSetTopologyContainer', name='triangles', src='@../../surface_mesh')
         self.fem_sphere = fem_surface.addObject('SphereROI', name='sphere', tags='ROI_SPHERE', radii=0.015,
                                                 centers=p_liver['fixed_point'].tolist(), drawSphere=True, drawSize=1)
         self.fem_force_field = fem_surface.addObject('ConstantForceField', name='cff', tags='CFF', indices='0',
@@ -143,9 +143,10 @@ class BothLiver(SofaEnvironment):
         # Correspondences between sparse grid and regular grid
         grid_shape = self.config.p_grid['grid_resolution']
         mo = self.fem_mo if self.is_created['fem'] else self.nn_mo
+        sparse_grid = self.fem_sparse_grid if self.is_created['fem'] else self.nn_sparse_grid
         self.nb_nodes_regular_grid = grid_shape[0] * grid_shape[1] * grid_shape[2]
         self.idx_sparse_to_regular, self.idx_regular_to_sparse, \
-        self.regular_grid_rest_shape = from_sparse_to_regular_grid(self.nb_nodes_regular_grid, self.fem_sparse_grid, mo)
+        self.regular_grid_rest_shape = from_sparse_to_regular_grid(self.nb_nodes_regular_grid, sparse_grid, mo)
         self.nb_nodes_sparse_grid = len(mo.rest_position.value)
         # Get the data sizes
         self.input_size = (self.nb_nodes_regular_grid, 3)
@@ -157,7 +158,8 @@ class BothLiver(SofaEnvironment):
         # Visualizer
         if self.visualizer is not None:
             if self.is_created['fem']:
-                self.visualizer.addObject(positions=self.fem_visu.position.value, cells=self.fem_visu.triangles.value)
+                self.visualizer.addObject(positions=self.fem_surface_mo.position.value, cells=self.fem_surface.triangles.value)
+                self.visualizer.addObject(positions=self.fem_surface_mo.position.value, at=1)
             if self.is_created['nn']:
                 self.visualizer.addObject(positions=self.nn_visu.position.value, cells=self.nn_visu.triangles.value)
             self.renderVisualizer()
@@ -253,3 +255,6 @@ class BothLiver(SofaEnvironment):
         U = np.reshape(U, (self.nb_nodes_regular_grid, 3))
         U_sparse = U[self.idx_sparse_to_regular]
         self.nn_mo.position.value = self.nn_mo.rest_position.array() + U_sparse
+
+    def close(self):
+        pass
