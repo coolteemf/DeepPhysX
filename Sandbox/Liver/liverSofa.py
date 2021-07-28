@@ -40,9 +40,10 @@ def createScene(root_node=None):
                              p_liver=p_liver, p_grid=p_grid, p_force=p_force, visualizer_class=MeshVisualizer)
     # Manually create and init the environment from the configuration object
     env = env_config.createEnvironment()
-    # Todo: remove once visualizer initialisation will be automatically added in SofaEnvironmentConfig
-    env.visualizer = env_config.visualizer_class()
+    env_config.initSofaSimulation()
+    env_config.addVisualizer(env)
     env.initVisualizer()
+
     return env.root
 
 

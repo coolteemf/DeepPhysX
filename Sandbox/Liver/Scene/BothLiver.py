@@ -96,7 +96,7 @@ class BothLiver(SofaEnvironment):
         rgbd.addObject('BarycentricMapping', input='@../../fem_mo', output='@./')
         # Visual
         visual_node = self.root.fem.addChild('visual')
-        self.fem_visu = visual_node.addObject('OglModel', src='@../../surface_mesh', color='green', useVBO=True)
+        self.fem_visu = visual_node.addObject('OglModel', src='@../../surface_mesh', color='green')
         visual_node.addObject('BarycentricMapping', input='@../fem_mo', output='@./')
 
     def createNN(self, p_liver, p_grid):
@@ -130,7 +130,7 @@ class BothLiver(SofaEnvironment):
         network_embedded_surface.addObject('BarycentricMapping', input='@../mo', output='@./')
         # Visual
         network_visual_node = self.root.network.addChild('visual')
-        self.nn_visu = network_visual_node.addObject('OglModel', src='@../../surface_mesh', color='orange', useVBO=True)
+        self.nn_visu = network_visual_node.addObject('OglModel', src='@../../surface_mesh', color='orange')
         network_visual_node.addObject('BarycentricMapping', input='@../mo', output='@./')
 
     def onSimulationInitDoneEvent(self, event):
@@ -156,14 +156,10 @@ class BothLiver(SofaEnvironment):
     def initVisualizer(self):
         # Visualizer
         if self.visualizer is not None:
-            id_window = 0
             if self.is_created['fem']:
-                self.visualizer.addMesh(positions=self.fem_visu.position.value, cells=self.fem_visu.triangles.value,
-                                        at=id_window)
-                id_window += 1
+                self.visualizer.addObject(positions=self.fem_visu.position.value, cells=self.fem_visu.triangles.value)
             if self.is_created['nn']:
-                self.visualizer.addMesh(positions=self.nn_visu.position.value, cells=self.nn_visu.triangles.value,
-                                        at=id_window)
+                self.visualizer.addObject(positions=self.nn_visu.position.value, cells=self.nn_visu.triangles.value)
             self.renderVisualizer()
 
     def onAnimateBeginEvent(self, event):
