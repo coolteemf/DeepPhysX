@@ -8,7 +8,7 @@ class EncoderDecoder:
 
         self.layers = [] if layers is None else layers
         self.nbEncodingLayers = nb_encoding_layers
-        self.nbDecodingLayers = nb_decoding_layers if nb_decoding_layers is not 0 else nb_encoding_layers
+        self.nbDecodingLayers = nb_decoding_layers if nb_decoding_layers > 0 else nb_encoding_layers
         self.encoder = []
         self.decoder = []
 
