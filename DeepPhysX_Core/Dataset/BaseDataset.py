@@ -120,14 +120,14 @@ class BaseDataset:
             if self.in_flat_shape is None:
                 self.init_data_size(side, data[0].shape)
             # Store sample
-            self.data_in = np.concatenate((self.data_in, data), axis=0)
+            self.data_in = np.concatenate((self.data_in, data[None, :]), axis=0)
         # Adding output data
         else:
             # Init sizes variables
             if self.out_flat_shape is None:
                 self.init_data_size(side, data[0].shape)
             # Store sample
-            self.data_out = np.concatenate((self.data_out, data), axis=0)
+            self.data_out = np.concatenate((self.data_out, data[None, :]), axis=0)
         self.current_sample = max(len(self.data_in), len(self.data_out))
 
     def shuffle(self):
