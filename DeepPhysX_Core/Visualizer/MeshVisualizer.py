@@ -47,16 +47,16 @@ class MeshVisualizer(VedoVisualizer):
         mesh = vedo.Mesh([positions, cells])
         # mesh.property.SetPointSize(10)
         # Efficient way to look for key existence in a dict
-        if 'color_map' in field_dict and 'scalar_field' in field_dict \
-                and field_dict['color_map'] is not None and field_dict['scalar_field'] is not None:
+        if 'scalar_field' in field_dict and field_dict['scalar_field'] is not None:
+            if 'color_map' not in field_dict or field_dict['color_map'] is None:
+                field_dict['color_map'] = self.colormap
             mesh.cmap(field_dict['color_map'], field_dict['scalar_field'])
-        elif 'scalar_field' in field_dict and field_dict['scalar_field'] is not None:
-            mesh.cmap(self.colormap, field_dict['scalar_field'])
 
         # Attach each know fields to the Mesh object
-        self.data[mesh] = {'positions': positions, 'at': self.addView(at)}
+        self.data[mesh] = {'positions': positions, 'cells': cells, 'at': self.addView(at)}
         for data_field in field_dict.keys():
             self.data[mesh][data_field] = field_dict[data_field]
+        return mesh
 
     def addView(self, at):
         """
@@ -78,19 +78,26 @@ class MeshVisualizer(VedoVisualizer):
 
         :return:
         """
-        if self.viewer is None:
-            self.viewer = vedo.Plotter(title=self.params['title'], axes=self.params['axes'], N=self.nb_view,
-                                       interactive=self.params['interactive'])
-            for model in self.data.keys():
-                self.viewer.add(model, at=self.data[model]['at'])
 
+        if self.viewer is None:
+            self.viewer = vedo.Plotter(N=self.nb_view,
+                                       title=self.params['title'],
+                                       axes=self.params['axes'],
+                                       sharecam=False,
+                                       interactive=self.params['interactive'])
+            for model in self.data:
+                self.viewer.add(model, at=self.data[model]['at'])
+        self.update()
         self.viewer.render()
         self.viewer.allowInteraction()
 
-    def update(self):
+    def update(self, position=True, scalar_field=True, cells=False):
         # In case, to debug
-        for model in self.data.keys():
-            model.points(self.data[model]['positions'])
+        for model in self.data:
+            if position and self.data[model]['positions'] is not None:
+                model.points(self.data[model]['positions'])
+            if scalar_field and 'scalar_field' in self.data[model] and self.data[model]['scalar_field'] is not None:
+                model.cmap(self.data[model]['color_map'], self.data[model]['scalar_field'])
 
     def saveSample(self, session_dir):
         """
