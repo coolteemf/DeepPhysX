@@ -111,12 +111,12 @@ class Manager:
 
         :return:
         """
-        if self.data_manager is not None:
-            self.data_manager.close()
         if self.network_manager is not None:
             self.network_manager.close()
         if self.stats_manager is not None:
             self.stats_manager.close()
+        if self.data_manager is not None:
+            self.data_manager.close()
 
     def __str__(self):
         """

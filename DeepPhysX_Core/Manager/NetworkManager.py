@@ -147,12 +147,12 @@ class NetworkManager:
         """
         if last_save:
             path = self.network_dir + "network"
-            print("Saving network at {}.".format(path))
+            print(f"Saving network at {path}.pth")
             self.network.saveParameters(path)
         elif self.save_each_epoch:
             path = self.network_dir + self.network_template_name.format(self.saved_counter)
             self.saved_counter += 1
-            print("Saving network at {}.".format(path))
+            print(f"Saving network at {path}.pth")
             self.network.saveParameters(path)
 
     def close(self):
