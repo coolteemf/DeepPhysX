@@ -167,6 +167,7 @@ class BaseTrainer(BasePipeline):
         
         :return:
         """
+        print(f'Epoch n°{self.id_epoch + 1}/{self.nb_epochs} - Batch n°{self.id_batch + 1}/{self.nb_batches}')
         pass
 
     def batchEnd(self):
