@@ -2,7 +2,6 @@ from DeepPhysX_Core.Pipelines.BasePipeline import BasePipeline
 from DeepPhysX_Core.Network.BaseNetworkConfig import BaseNetworkConfig
 from DeepPhysX_Core.Dataset.BaseDatasetConfig import BaseDatasetConfig
 from DeepPhysX_Core.Environment.BaseEnvironmentConfig import BaseEnvironmentConfig
-from DeepPhysX_Core.Manager.Manager import Manager
 
 from vedo import ProgressBar
 import sys
@@ -11,7 +10,7 @@ import sys
 class BaseTrainer(BasePipeline):
 
     def __init__(self, network_config: BaseNetworkConfig, dataset_config: BaseDatasetConfig,
-                 environment_config: BaseEnvironmentConfig, session_name='default', session_dir=None,
+                 environment_config: BaseEnvironmentConfig, visualizer_class=None, session_name='default', session_dir=None,
                  new_session=True, nb_epochs=0, nb_batches=0, batch_size=0):
         """
         BaseTrainer is a pipeline defining the training process of an artificial neural network.
@@ -20,6 +19,8 @@ class BaseTrainer(BasePipeline):
         :param BaseNetworkConfig network_config: Specialisation containing the parameters of the network manager
         :param BaseDatasetConfig dataset_config: Specialisation containing the parameters of the dataset manager
         :param BaseEnvironmentConfig environment_config: Specialisation containing the parameters of the environment manager
+        :param visualizer_class: Visualization class from which an instance will be created
+        :type visualizer_class: type[BaseVisualizer]
         :param str session_name: Name of the newly created directory if session_dir is not defined
         :param str session_dir: Name of the directory in which to write all of the neccesary data
         :param bool new_session: Define the creation of new directories to store data
@@ -27,15 +28,15 @@ class BaseTrainer(BasePipeline):
         :param int nb_batches: Number of batches
         :param int batch_size: Size of a batch
         """
-        BasePipeline.__init__(self, pipeline='training')
 
         if environment_config is None and dataset_config.dataset_dir is None:
             print("BaseTrainer: You have to give me a dataset source (existing dataset directory or simulation to "
                   "create data on the fly")
             quit(0)
 
-        # Storage variables
-
+        BasePipeline.__init__(self, network_config=network_config, dataset_config=dataset_config, environment_config=environment_config,
+                              visualizer_class=visualizer_class, session_name=session_name, session_dir=session_dir,
+                              new_session=new_session, pipeline='training')
         # Training variables
         self.nb_epochs = nb_epochs
         self.id_epoch = 0
@@ -49,21 +50,6 @@ class BaseTrainer(BasePipeline):
         self.record_data = {"in": True, "out": True}
 
         self.training_progress_bar = ProgressBar(start=0, stop=self.nb_samples, c='orange', title="Training")
-
-        # Testing variables
-
-        # Dataset variables
-        self.dataset_config = dataset_config
-
-        # Network variables
-        self.network_config = network_config
-
-        # Simulation variables
-        self.environment_config = environment_config
-
-        self.manager = Manager(pipeline=self, network_config=self.network_config, dataset_config=dataset_config,
-                               environment_config=self.environment_config, session_name=session_name,
-                               session_dir=session_dir, new_session=new_session)
 
     def execute(self):
         """
