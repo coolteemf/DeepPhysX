@@ -8,6 +8,7 @@ import SofaRuntime
 
 # DeepPhysX's Core imports
 from DeepPhysX_Core.Visualizer.MeshVisualizer import MeshVisualizer
+from DeepPhysX_Core.Manager.EnvironmentManager import EnvironmentManager
 
 # DeepPhysX's Sofa imports
 from DeepPhysX_Sofa.Environment.SofaEnvironment import SofaEnvironment
@@ -20,6 +21,8 @@ grid_params = {'grid_resolution': [25, 5, 5],  # Number of slices along each axi
                'fixed_box': [0., 0., 0., 0., 15, 15]}  # Points withing this box will be fixed by Sofa
 
 grid_node_count = functools.reduce(lambda a, b: a * b, grid_params['grid_resolution'])
+
+vedo_visualizer = MeshVisualizer()
 
 
 # Inherit from SofaEnvironment which allow to implement and create a Sofa scene in the DeepPhysX_Core pipeline
@@ -82,7 +85,7 @@ class FEMBeam(SofaEnvironment):
 
         # Fixed section of the beam
         self.root.beamFEM.addObject('BoxROI', box=grid_params['fixed_box'], name='Fixed_Box')
-        self.root.beamFEM.addObject('FixedConstraint', indices='@Fixed_Box.indices')
+        self.root.beamFEM.addObject('FixedConstraint', indices='@Fixed_Box.indices', src='@MO')
 
         # Forcefield through which the external forces are applied
         self.CFF = self.root.beamFEM.addObject('ConstantForceField', name='CFF', showArrowSize='0.1',
@@ -95,8 +98,7 @@ class FEMBeam(SofaEnvironment):
         :param event: Sofa Event
         :return: None
         """
-        if self.visualizer is not None:
-            self.visualizer.addObject(positions=self.MO.position.value, cells=self.surface.quads.value)
+        vedo_visualizer.addObject(positions=self.MO.position.value, cells=self.surface.quads.value)
 
     def onAnimateBeginEvent(self, event):
         """
@@ -119,27 +121,21 @@ class FEMBeam(SofaEnvironment):
         :param event: Sofa Event
         :return: None
         """
-        self.renderVisualizer()
+        vedo_visualizer.render()
 
 
 def createScene(root_node=None):
     # Environment config
     sofa_config = SofaEnvironmentConfig(environment_class=FEMBeam,
                                         root_node=root_node,
-                                        always_create_data=False,
-                                        visualizer_class=MeshVisualizer)
+                                        always_create_data=False)
 
-    # Manually create and init the environment from the configuration object
-    sofa_env = sofa_config.createEnvironment(training=False)
-    sofa_config.addVisualizer(sofa_env)
-    sofa_config.initSofaSimulation()
+    env_manager = EnvironmentManager(environment_config=sofa_config)
 
-    return sofa_env
+    return env_manager.environment
 
 
 if __name__ == '__main__':
-    sofa_env = createScene()
-
-    # Each sofa_env.step() run 1 step of simulation.
+    env = createScene()
     while True:
-        sofa_env.step()
+        env.step()

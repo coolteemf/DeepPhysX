@@ -114,8 +114,9 @@ class FEMBeam(SofaEnvironment):
         # Get the data sizes
         self.input_size = self.MO.position.value.shape
         self.output_size = self.MO.position.value.shape
-        if self.visualizer is not None:
-            self.visualizer.addObject(positions=self.MO.position.value, cells=self.surface.quads.value)
+        visu = self.getDataManager().visualizer_manager.visualizer
+        if self.environment_manager is not None:
+            visu.addObject(positions=self.MO.position.value, cells=self.surface.quads.value)
 
     def onAnimateBeginEvent(self, event):
         """
@@ -139,7 +140,7 @@ class FEMBeam(SofaEnvironment):
         :return: None
         """
         # Render
-        self.renderVisualizer()
+        self.getDataManager().visualizer_manager.visualizer.render()
 
     def computeInput(self):
         """
@@ -174,23 +175,32 @@ class FEMBeam(SofaEnvironment):
 
 def createScene(root_node=None):
     # Environment config
-    env_config = SofaEnvironmentConfig(environment_class=FEMBeam, root_node=root_node, always_create_data=False,
-                                       visualizer_class=MeshVisualizer)
+    env_config = SofaEnvironmentConfig(environment_class=FEMBeam,
+                                       root_node=root_node,
+                                       always_create_data=False)
 
     # Network config
-    net_config = FCConfig(network_name="beam_FC", save_each_epoch=False,
-                          loss=torch.nn.MSELoss, lr=1e-5, optimizer=torch.optim.Adam,
-                          dim_output=3, dim_layers=layers_dim)
+    net_config = FCConfig(network_name="beam_FC",
+                          save_each_epoch=False,
+                          loss=torch.nn.MSELoss,
+                          lr=1e-5,
+                          optimizer=torch.optim.Adam,
+                          dim_output=3,
+                          dim_layers=layers_dim)
 
     # Dataset config
-    dataset_config = BaseDatasetConfig(partition_size=1, shuffle_dataset=True)
+    dataset_config = BaseDatasetConfig(partition_size=1,
+                                       shuffle_dataset=True)
 
-    trainer = BaseTrainer(session_name="trainings/Example_training", dataset_config=dataset_config,
-                          environment_config=env_config, network_config=net_config,
-                          nb_epochs=nb_epoch, nb_batches=nb_batch, batch_size=batch_size)
+    trainer = BaseTrainer(session_name="trainings/Example_training",
+                          visualizer_class=MeshVisualizer,
+                          dataset_config=dataset_config,
+                          environment_config=env_config,
+                          network_config=net_config,
+                          nb_epochs=nb_epoch,
+                          nb_batches=nb_batch,
+                          batch_size=batch_size)
 
-    # Manually create and init the environment from the configuration object
-    env_config.initSofaSimulation()
     trainer.execute()
 
 
