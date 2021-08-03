@@ -16,7 +16,7 @@ import DeepPhysX_Core.utils.pathUtils as pathUtils
 class Manager:
 
     def __init__(self, pipeline: BasePipeline, network_config: BaseNetworkConfig, dataset_config: BaseDatasetConfig,
-                 environment_config: BaseEnvironmentConfig, session_name='default', session_dir=None, new_session=True):
+                 environment_config: BaseEnvironmentConfig, visualizer_class=None, session_name='default', session_dir=None, new_session=True):
         """
         Collection of all the specialized managers. Allows for some basic functions call. More specific behaviour have to
         be directly call from the corresponding manager
@@ -25,10 +25,13 @@ class Manager:
         :param BaseNetworkConfig network_config: Specialisation containing the parameters of the network manager
         :param BaseDatasetConfig dataset_config: Specialisation containing the parameters of the dataset manager
         :param BaseEnvironmentConfig environment_config: Specialisation containing the parameters of the environment manager
+        :param visualizer_class: Visualization class from which an instance will be created
+        :type visualizer_class: type[BaseVisualizer]
         :param str session_name: Name of the newly created directory if session_dir is not defined
         :param str session_dir: Name of the directory in which to write all of the neccesary data
         :param bool new_session: Define the creation of new directories to store data
         """
+        self.pipeline = pipeline
         # Trainer: must create a new session to avoid overwriting
         if pipeline.type == 'training':
             train = True
@@ -56,16 +59,23 @@ class Manager:
 
         self.session_name = (session_name if session_name is not None else os.path.basename(session_dir)).split("/")[-1]
         # Always create the network manager (man it's DEEP physics here...)
-        self.network_manager = NetworkManager(network_config=network_config, session_name=self.session_name,
+        self.network_manager = NetworkManager(manager=self, network_config=network_config, session_name=self.session_name,
                                               session_dir=self.session_dir, new_session=new_session, train=train)
 
         # Always create the data manager for same reason
-        self.data_manager = DataManager(dataset_config=dataset_config, environment_config=environment_config,
+        self.data_manager = DataManager(manager=self, dataset_config=dataset_config, environment_config=environment_config, visualizer_class=visualizer_class,
                                         session_name=self.session_name, session_dir=self.session_dir, new_session=new_session,
                                         training=train, record_data=pipeline.record_data)
 
         # Create the stats manager for training
-        self.stats_manager = StatsManager(log_dir=os.path.join(self.session_dir, 'stats/')) if train else None
+        self.stats_manager = StatsManager(manager=self, log_dir=os.path.join(self.session_dir, 'stats/')) if train else None
+
+    def getPipeline(self):
+        """
+
+        :return: Pipeline that uses the manager
+        """
+        return self.pipeline
 
     def getData(self, epoch=0, batch_size=1, animate=True):
         """

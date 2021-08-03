@@ -7,13 +7,14 @@ import DeepPhysX_Core.utils.pathUtils as pathUtils
 
 class DatasetManager:
 
-    def __init__(self, dataset_config: BaseDatasetConfig, session_name='default', session_dir=None, new_session=True,
+    def __init__(self, dataset_config: BaseDatasetConfig, data_manager=None, session_name='default', session_dir=None, new_session=True,
                  train=True, record_data=None):
 
         """
         DatasetManager handle all operations with input / output files. Allows to save and read tensors from files.
 
         :param BaseDatasetConfig dataset_config: Specialisation containing the parameters of the dataset manager
+        :param DataManager data_manager: DataManager that handles the DatasetManager
         :param str session_name: Name of the newly created directory if session_dir is not defined
         :param str session_dir: Name of the directory in which to write all of the neccesary data
         :param bool new_session: Define the creation of new directories to store data
@@ -21,7 +22,7 @@ class DatasetManager:
         :param dict record_data: Format {\'in\': bool, \'out\': bool} save the tensor when bool is True
         """
         self.name = self.__class__.__name__
-
+        self.data_manager = data_manager
         # Checking arguments
         if dataset_config is not None and not isinstance(dataset_config, BaseDatasetConfig):
             raise TypeError("[DATASETMANAGER] The dataset config must be a BaseDatasetConfig object.")
@@ -94,6 +95,13 @@ class DatasetManager:
 
         # Description
         self.description = ""
+
+    def getDataManager(self):
+        """
+
+        :return: DataManager that handle The DatasetManager
+        """
+        return self.data_manager
 
     def createNewPartitions(self):
         """

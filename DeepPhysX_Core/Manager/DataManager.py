@@ -3,12 +3,13 @@ from DeepPhysX_Core.Manager.EnvironmentManager import EnvironmentManager
 
 from DeepPhysX_Core.Dataset.BaseDatasetConfig import BaseDatasetConfig
 from DeepPhysX_Core.Environment.BaseEnvironmentConfig import BaseEnvironmentConfig
+from DeepPhysX_Core.Manager.VisualizerManager import VisualizerManager
 
 
 class DataManager:
 
-    def __init__(self, dataset_config: BaseDatasetConfig, environment_config: BaseEnvironmentConfig,
-                 session_name='default', session_dir=None, new_session=True,
+    def __init__(self, dataset_config: BaseDatasetConfig, environment_config: BaseEnvironmentConfig, manager=None,
+                 visualizer_class=None, session_name='default', session_dir=None, new_session=True,
                  training=True, record_data=None):
         """
         DataManager deals with the generation of input / output tensors. His job is to call getData on either the
@@ -16,17 +17,22 @@ class DataManager:
 
         :param BaseDatasetConfig dataset_config: Specialisation containing the parameters of the dataset manager
         :param BaseEnvironmentConfig environment_config: Specialisation containing the parameters of the environment manager
+        :param Manager manager: Manager that handle The DataManager
+        :param visualizer_class: Visualization class from which an instance will be created
+        :type visualizer_class: type[BaseVisualizer]
         :param str session_name: Name of the newly created directory if session_dir is not defined
         :param str session_dir: Name of the directory in which to write all of the neccesary data
         :param bool new_session: Define the creation of new directories to store data
         :param bool training: True if this session is a network training
         :param dict record_data: Format {\'in\': bool, \'out\': bool} save the tensor when bool is True
         """
+        self.manager = manager
         self.is_training = training
         self.dataset_manager = None
         self.network_manager = None
         self.allow_dataset_fetch = True
         self.data = None
+        self.visualizer_manager = None if visualizer_class is None else VisualizerManager(data_manager=self, visualizer_class=visualizer_class)
         # Training
         if self.is_training:
             # Always create a dataset_manager for training
@@ -42,15 +48,22 @@ class DataManager:
 
         # Create dataset if required
         if create_dataset:
-            self.dataset_manager = DatasetManager(dataset_config=dataset_config, session_name=session_name,
+            self.dataset_manager = DatasetManager(data_manager=self, dataset_config=dataset_config, session_name=session_name,
                                                   session_dir=session_dir, new_session=new_session,
                                                   train=self.is_training, record_data=record_data)
         # Create environment if required
         if create_environment is None:  # If None then the dataset_manager exists
             create_environment = self.dataset_manager.requireEnvironment()
         if create_environment:
-            self.environment_manager = EnvironmentManager(environment_config=environment_config,
+            self.environment_manager = EnvironmentManager(data_manager=self, environment_config=environment_config,
                                                           session_dir=session_dir)
+
+    def getManager(self):
+        """
+
+        :return: Manager that handle The DataManager
+        """
+        return self.manager
 
     def getData(self, epoch=0, batch_size=1, animate=True):
         """

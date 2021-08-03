@@ -14,14 +14,16 @@ def generateDefaultMaterial():
 
 
 class StatsManager:
-    def __init__(self, log_dir, keep_losses=False):
+    def __init__(self, log_dir, manager=None, keep_losses=False):
         """
         Record all given values using the tensorboard framework. Open an tab in the navigator to inspect these values
         during the training
 
         :param str log_dir: Path of the created directory
+        :param Manager manager: Manager that handles the StatsManager
         :param keep_losses: If True Allow to save loss to .csv file
         """
+        self.manager = manager
         self.log_dir = log_dir
         self.writer = tb.SummaryWriter(log_dir)
         import os
@@ -33,6 +35,13 @@ class StatsManager:
         self.train_loss = np.array([])
         self.keep_losses = keep_losses
         self.tag_dict = {}
+
+    def getManager(self):
+        """
+
+        :return: Manager that handles the StatsManager
+        """
+        return self.manager
 
     def add_trainBatchLoss(self, value, count):
         """

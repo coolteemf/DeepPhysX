@@ -7,21 +7,29 @@ from DeepPhysX_Core.Environment.BaseEnvironmentConfig import BaseEnvironmentConf
 
 class EnvironmentManager:
 
-    def __init__(self, environment_config: BaseEnvironmentConfig, session_dir=None):
+    def __init__(self, environment_config: BaseEnvironmentConfig, data_manager=None, session_dir=None):
         """
         Deals with the online generation of data for both training and running of the neural networks
 
         :param BaseEnvironmentConfig environment_config:
+        :param DataManager datamanager: DataManager that handles the EnvironmentManager
         :param str session_dir: Name of the directory in which to write all of the neccesary data
         """
+        self.data_manager = data_manager
         self.session_dir = session_dir
         self.number_of_thread = environment_config.number_of_thread
         self.multiprocessMethod = environment_config.multiprocess_method
         # Create single or multiple environments according to multiprocessing value
-        self.environment = environment_config.createEnvironment()
-        self.environment = environment_config.addVisualizer(self.environment)
+        self.environment = environment_config.createEnvironment(environment_manager=self)
 
         self.always_create_data = environment_config.always_create_data
+
+    def getDataManager(self):
+        """
+
+        :return: DataManager that handle The EnvironmentManager
+        """
+        return self.data_manager
 
     def getData(self, batch_size, get_inputs, get_outputs, animate):
         # Getting data from single environment

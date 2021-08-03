@@ -6,7 +6,7 @@ import DeepPhysX_Core.utils.pathUtils as pathUtils
 
 class NetworkManager:
 
-    def __init__(self, network_config: BaseNetworkConfig, session_name='default', session_dir=None, new_session=True,
+    def __init__(self, network_config: BaseNetworkConfig, manager=None, session_name='default', session_dir=None, new_session=True,
                  train=True):
         """
         Deals with all the interactions with the neural network. Predictions, saves, initialisation, loading,
@@ -15,6 +15,7 @@ class NetworkManager:
         :param BaseNetworkConfig network_config: Specialisation containing the parameters of the network manager
         :param BaseDatasetConfig dataset_config: Specialisation containing the parameters of the dataset manager
         :param BaseEnvironmentConfig environment_config: Specialisation containing the parameters of the environment manager
+        :param Manager manager : Manager that handle the network manager
         :param str session_name: Name of the newly created directory if session_dir is not defined
         :param str session_dir: Name of the directory in which to write all of the neccesary data
         :param bool new_session: Define the creation of new directories to store data
@@ -29,6 +30,8 @@ class NetworkManager:
             raise TypeError("[NETWORKMANAGER] The session directory must be a str.")
         if type(train) != bool:
             raise TypeError("[NETWORKMANAGER] The 'train' argument' must be a boolean.")
+
+        self.manager = manager
 
         self.network_config = network_config
 
@@ -54,6 +57,13 @@ class NetworkManager:
         self.data_gt = None
 
         self.description = ""
+
+    def getManager(self):
+        """
+
+        :return: Manager that handles the NetworkManager
+        """
+        return self.manager
 
     def setNetwork(self):
         """
