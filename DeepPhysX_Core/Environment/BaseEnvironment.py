@@ -17,14 +17,27 @@ class BaseEnvironment:
         self.simulations_per_step = config.simulations_per_step
         self.max_wrong_samples_per_step = config.max_wrong_samples_per_step
 
-        # Visualizer is created just after the environment in BaseEnvironmentConfig
-        self.visualizer = None
-
         # Environment data
         self.input, self.output = np.array([]), np.array([])
         self.input_size, self.output_size = None, None
 
         self.config = config
+
+        self.environment_manager = None
+
+    def getDataManager(self):
+        """
+
+        :return: DataManager that handles the EnvironmentManager
+        """
+        return self.environment_manager.data_manager
+
+    def getEnvironmentManager(self):
+        """
+
+        :return: EnvironmentManager that handles the Environment
+        """
+        return self.environment_manager
 
     def create(self):
         """
@@ -88,32 +101,6 @@ class BaseEnvironment:
         """
         return self.output
 
-    def initVisualizer(self):
-        """
-        Set the actors to be rendered with the visualizer during simulation.
-
-        :return:
-        """
-        pass
-
-    def renderVisualizer(self):
-        """
-        Trigger the rendering method of the Visualizer.
-
-        :return:
-        """
-        if self.visualizer is not None:
-            self.visualizer.render()
-
-    def save_wrong_sample(self, session_dir):
-        """
-        Save the current sample as an array. Can be reloaded with SampleVisualizer.
-
-        :param str session_dir: Working directory
-        :return:
-        """
-        if self.visualizer is not None:
-            self.visualizer.saveSample(session_dir)
 
     def __str__(self):
         """

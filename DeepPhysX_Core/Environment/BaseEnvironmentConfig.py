@@ -14,7 +14,7 @@ class BaseEnvironmentConfig:
         max_wrong_samples_per_step: int
 
     def __init__(self, environment_class=BaseEnvironment, simulations_per_step=1, max_wrong_samples_per_step=10,
-                 always_create_data=False, visualizer_class=None,
+                 always_create_data=False,
                  number_of_thread=1, multiprocess_method=None):
         """
         BaseEnvironmentConfig is a configuration class to parameterize and create a BaseEnvironment for the
@@ -27,8 +27,6 @@ class BaseEnvironmentConfig:
         :param bool always_create_data: If True, data will always be created from environment. If False, data will be
                                         created from the environment during the first epoch and then re-used from the
                                         Dataset.
-        :param visualizer_class: Visualization class from which an instance ill be created
-        :type visualizer_class: type[VedoVisualizer]
         :param int number_of_thread: Number of thread to run
         :param multiprocess_method: Values at \'process\' or \'pool\'
         """
@@ -60,7 +58,6 @@ class BaseEnvironmentConfig:
 
         # BaseEnvironment parameterization
         self.environment_class = environment_class
-        self.visualizer_class = visualizer_class
         self.environment_config = self.BaseEnvironmentProperties(simulations_per_step=simulations_per_step,
                                                                  max_wrong_samples_per_step=max_wrong_samples_per_step)
 
@@ -78,7 +75,7 @@ class BaseEnvironmentConfig:
         else:
             self.multiprocess_method = multiprocess_method
 
-    def createEnvironment(self):
+    def createEnvironment(self, environment_manager=None):
         """
         :return: BaseEnvironment object from environment_class and its parameters
         """
@@ -86,6 +83,7 @@ class BaseEnvironmentConfig:
             # Create environment
             try:
                 environment = self.environment_class(config=self.environment_config)
+                environment.environment_manager = environment_manager
             except:
                 raise ValueError(f"[{self.name}] Given environment_class got an unexpected keyword argument 'config'")
             if not isinstance(environment, BaseEnvironment):
@@ -98,18 +96,14 @@ class BaseEnvironmentConfig:
         else:
             try:
                 environments = [self.environment_class(config=self.environment_config,
-                                                       idx_instance=i+1) for i in range(self.number_of_thread)]
+                                                       idx_instance=i + 1) for i in range(self.number_of_thread)]
+                for env in environments:
+                    env.environment_manager = environment_manager
             except:
                 raise TypeError("[{}] The given environment class is not a BaseEnvironment class.".format(self.name))
             if not isinstance(environments[0], BaseEnvironment):
                 raise TypeError("[{}] The environment class must be a BaseEnvironment class.".format(self.name))
             return environments
-
-    def addVisualizer(self, environment):
-        # Create visualizer
-        if self.visualizer_class is not None:
-            environment.visualizer = self.visualizer_class()
-        return environment
 
     def __str__(self):
         """
