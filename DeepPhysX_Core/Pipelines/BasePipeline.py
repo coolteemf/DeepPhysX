@@ -1,14 +1,14 @@
 from DeepPhysX_Core.Network.BaseNetworkConfig import BaseNetworkConfig
 from DeepPhysX_Core.Dataset.BaseDatasetConfig import BaseDatasetConfig
 from DeepPhysX_Core.Environment.BaseEnvironmentConfig import BaseEnvironmentConfig
-from DeepPhysX_Core.Manager.Manager import Manager
+
 
 
 class BasePipeline:
 
     def __init__(self, network_config: BaseNetworkConfig, dataset_config: BaseDatasetConfig,
-                 environment_config: BaseEnvironmentConfig, visualizer_class=None, session_name='default', session_dir='',
-                 new_session=True, pipeline=None):
+                 environment_config: BaseEnvironmentConfig, session_name='default', session_dir=None,
+                 pipeline=None):
         """
         Base class defining Pipelines common variables
 
@@ -47,6 +47,43 @@ class BasePipeline:
         # Simulation variables
         self.environment_config = environment_config
 
-        self.manager = Manager(pipeline=self, network_config=self.network_config, dataset_config=dataset_config,
-                               environment_config=self.environment_config, visualizer_class=visualizer_class, session_name=session_name,
-                               session_dir=session_dir, new_session=new_session)
+        self.manager = None
+
+    def getNetworkManager(self):
+        """
+        :return: The NetworkManager associated with the pipeline
+        """
+        return self.manager.network_manager
+
+    def getDataManager(self):
+        """
+        :return: The DataManager associated with the pipeline
+        """
+        return self.manager.data_manager
+
+    def getStatsManager(self):
+        """
+        :return: The StatsManager associated with the pipeline
+        """
+        return self.manager.stats_manager
+
+    def getDatasetManager(self):
+        """
+        :return: The DatasetManager associated with the pipeline
+        """
+        return self.manager.data_manager.dataset_manager
+
+    def getEnvironmentManager(self):
+        """
+        :return: The EnvironmentManager associated with the pipeline
+        """
+        return self.manager.data_manager.environment_manager
+
+    def getVisualizerManager(self):
+        """
+        :return: The VisualizerManager associated with the pipeline
+        """
+        return self.manager.data_manager.visualizer_manager
+
+
+

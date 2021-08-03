@@ -2,6 +2,7 @@ from DeepPhysX_Core.Pipelines.BasePipeline import BasePipeline
 from DeepPhysX_Core.Network.BaseNetworkConfig import BaseNetworkConfig
 from DeepPhysX_Core.Dataset.BaseDatasetConfig import BaseDatasetConfig
 from DeepPhysX_Core.Environment.BaseEnvironmentConfig import BaseEnvironmentConfig
+from DeepPhysX_Core.Manager.Manager import Manager
 
 from vedo import ProgressBar
 import sys
@@ -35,8 +36,11 @@ class BaseTrainer(BasePipeline):
             quit(0)
 
         BasePipeline.__init__(self, network_config=network_config, dataset_config=dataset_config, environment_config=environment_config,
-                              visualizer_class=visualizer_class, session_name=session_name, session_dir=session_dir,
-                              new_session=new_session, pipeline='training')
+                              session_name=session_name, session_dir=session_dir, pipeline='training')
+
+        self.manager = Manager(pipeline=self, network_config=self.network_config, dataset_config=dataset_config,
+                               environment_config=self.environment_config, visualizer_class=visualizer_class, session_name=session_name,
+                               session_dir=session_dir, new_session=new_session)
         # Training variables
         self.nb_epochs = nb_epochs
         self.id_epoch = 0

@@ -27,6 +27,10 @@ class BaseRunner(BasePipeline):
         BasePipeline.__init__(self, network_config=network_config, dataset_config=dataset_config, environment_config=environment_config,
                               visualizer_class=visualizer_class, session_name=session_name, session_dir=session_dir, pipeline='prediction')
 
+        self.manager = Manager(pipeline=self, network_config=self.network_config, dataset_config=dataset_config,
+                               environment_config=self.environment_config, visualizer_class=visualizer_class, session_name=session_name,
+                               session_dir=session_dir, new_session=True)
+
         self.name = self.__class__.__name__
 
         if type(nb_steps) != int or nb_steps < 0:
@@ -37,6 +41,7 @@ class BaseRunner(BasePipeline):
 
         # Tell if data is recording while predicting (output is recorded only if input too)
         self.record_data = {"in": record_inputs, "out": record_outputs and record_inputs}
+
 
     def execute(self):
         """
