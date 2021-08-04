@@ -81,14 +81,14 @@ class EnvironmentManager:
                 if self.environment.checkSample(check_input=get_inputs, check_output=False):
                     inputs = np.concatenate((inputs, self.environment.getInput()[None, :]))
                 else:
-                    self.environment.save_wrong_sample(self.session_dir)
+                    self.getDataManager().visualizer_manager.saveSample(self.session_dir)
 
             if get_outputs:
                 self.environment.computeOutput()
                 if self.environment.checkSample(check_input=False, check_output=get_outputs):
                     outputs = np.concatenate((outputs, self.environment.getOutput()[None, :]))
                 else:
-                    self.environment.save_wrong_sample(self.session_dir)
+                    self.getDataManager().visualizer_manager.saveSample(self.session_dir)
         return {'in': inputs, 'out': outputs}
 
     """def computeMultipleProcess(self, batch_size, get_inputs, get_outputs):

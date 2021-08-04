@@ -25,7 +25,7 @@ class BaseRunner(BasePipeline):
         """
 
         BasePipeline.__init__(self, network_config=network_config, dataset_config=dataset_config, environment_config=environment_config,
-                              visualizer_class=visualizer_class, session_name=session_name, session_dir=session_dir, pipeline='prediction')
+                              session_name=session_name, session_dir=session_dir, pipeline='prediction')
 
         self.manager = Manager(pipeline=self, network_config=self.network_config, dataset_config=dataset_config,
                                environment_config=self.environment_config, visualizer_class=visualizer_class, session_name=session_name,

@@ -9,11 +9,12 @@ from DeepPhysX_Core.Dataset.BaseDatasetConfig import BaseDatasetConfig
 class SofaRunner(Sofa.Core.Controller, BaseRunner):
 
     def __init__(self, network_config: BaseNetworkConfig, dataset_config: BaseDatasetConfig,
-                 environment_config: BaseEnvironmentConfig, session_name='default', session_dir=None,
+                 environment_config: BaseEnvironmentConfig, visualizer_class=None, session_name='default', session_dir=None,
                  nb_steps=0, record_inputs=False, record_outputs=False, *args, **kwargs):
         Sofa.Core.Controller.__init__(self, *args, **kwargs)
         BaseRunner.__init__(self, network_config=network_config, dataset_config=dataset_config,
-                            environment_config=environment_config, session_name=session_name, session_dir=session_dir,
+                            environment_config=environment_config, visualizer_class=visualizer_class,
+                            session_name=session_name, session_dir=session_dir,
                             nb_steps=nb_steps, record_inputs=record_inputs, record_outputs=record_outputs)
         self.runBegin()
         self.root = self.manager.data_manager.environment_manager.environment.root
