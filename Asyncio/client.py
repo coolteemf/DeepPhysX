@@ -17,6 +17,7 @@ class TcpIpClient:
         self.bytes_field_to_send = None
         self.bytes_field_received = None
         self.close_server = False
+        self.data_size = 0
 
         root = Sofa.Core.Node('root')
         self.environment = root.addObject(Environment(root=root, idx=idx))
@@ -38,6 +39,10 @@ class TcpIpClient:
 
     def run(self):
         try:
+            #Send data size for communications
+            self.data_size = self.generate_data().nbytes
+            self.server.sendall(self.data_size.to_bytes(4, byteorder='big'))
+
             while not self.close_server:
                 self.discuss()
             # print("")
@@ -63,8 +68,8 @@ class TcpIpClient:
             # Todo: add flag to check if data size in bytes has been initialized (instead of putting 255)
             self.bytes_field_to_send = self.data_to_bytes(data)
             self.server.send(self.bytes_field_to_send)
-            self.bytes_field_received = self.server.recv(255)
-            if not self.bytes_field_received == self.bytes_field_to_send:
+            self.bytes_field_received = self.server.recv(self.data_size)
+            if self.bytes_field_received != self.bytes_field_to_send:
                 raise ValueError(f"Received data mismatches sent data in {self.environment.idx}:"
                                  f"{data} != {self.bytes_to_data(self.bytes_field_received)}.")
 
