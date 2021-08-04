@@ -14,7 +14,7 @@ class BaseEnvironmentConfig:
         max_wrong_samples_per_step: int
 
     def __init__(self, environment_class=BaseEnvironment, simulations_per_step=1, max_wrong_samples_per_step=10,
-                 always_create_data=False,
+                 always_create_data=False, record_wrong_samples=False,
                  number_of_thread=1, multiprocess_method=None):
         """
         BaseEnvironmentConfig is a configuration class to parameterize and create a BaseEnvironment for the
@@ -27,6 +27,7 @@ class BaseEnvironmentConfig:
         :param bool always_create_data: If True, data will always be created from environment. If False, data will be
                                         created from the environment during the first epoch and then re-used from the
                                         Dataset.
+        :param bool record_wrong_samples: If True, wrong samples are recorded through Visualizer
         :param int number_of_thread: Number of thread to run
         :param multiprocess_method: Values at \'process\' or \'pool\'
         """
@@ -63,6 +64,7 @@ class BaseEnvironmentConfig:
 
         # EnvironmentManager parameterization
         self.always_create_data = always_create_data
+        self.record_wrong_samples = record_wrong_samples
 
         # Todo : Multiprocessing in Environment package level ?
         self.number_of_thread = min(max(number_of_thread, 1), os.cpu_count())  # Assert nb is between 1 and cpu_count

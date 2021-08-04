@@ -23,6 +23,7 @@ class EnvironmentManager:
         self.environment = environment_config.createEnvironment(environment_manager=self)
 
         self.always_create_data = environment_config.always_create_data
+        self.record_wrong_samples = environment_config.record_wrong_samples
 
     def getDataManager(self):
         """
@@ -80,17 +81,17 @@ class EnvironmentManager:
                 self.environment.computeInput()
                 if self.environment.checkSample(check_input=get_inputs, check_output=False):
                     inputs = np.concatenate((inputs, self.environment.getInput()[None, :]))
-                else:
-                    if self.getDataManager().visualizer_manager is not None:
-                        self.getDataManager().visualizer_manager.saveSample(self.session_dir)
+                elif self.record_wrong_samples:
+                    if self.data_manager is not None and self.data_manager.visualizer_manager is not None:
+                        self.data_manager.visualizer_manager.saveSample(self.session_dir)
 
             if get_outputs:
                 self.environment.computeOutput()
                 if self.environment.checkSample(check_input=False, check_output=get_outputs):
                     outputs = np.concatenate((outputs, self.environment.getOutput()[None, :]))
-                else:
-                    if self.getDataManager().visualizer_manager is not None:
-                        self.getDataManager().visualizer_manager.saveSample(self.session_dir)
+                elif self.record_wrong_samples:
+                    if self.data_manager is not None and self.data_manager.visualizer_manager is not None:
+                        self.data_manager.visualizer_manager.saveSample(self.session_dir)
         return {'in': inputs, 'out': outputs}
 
     """def computeMultipleProcess(self, batch_size, get_inputs, get_outputs):
