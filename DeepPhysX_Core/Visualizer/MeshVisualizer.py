@@ -56,6 +56,15 @@ class MeshVisualizer(VedoVisualizer):
         self.data[mesh] = {'positions': positions, 'cells': cells, 'at': self.addView(at)}
         for data_field in field_dict.keys():
             self.data[mesh][data_field] = field_dict[data_field]
+
+        if self.viewer is None:
+            self.viewer = vedo.Plotter(N=self.nb_view,
+                                       title=self.params['title'],
+                                       axes=self.params['axes'],
+                                       sharecam=False,
+                                       interactive=self.params['interactive'])
+
+        self.viewer.add(mesh, at=self.data[mesh]['at'])
         return mesh
 
     def addView(self, at):
@@ -78,15 +87,6 @@ class MeshVisualizer(VedoVisualizer):
 
         :return:
         """
-
-        if self.viewer is None:
-            self.viewer = vedo.Plotter(N=self.nb_view,
-                                       title=self.params['title'],
-                                       axes=self.params['axes'],
-                                       sharecam=False,
-                                       interactive=self.params['interactive'])
-            for model in self.data:
-                self.viewer.add(model, at=self.data[model]['at'])
         self.update()
         self.viewer.render()
         self.viewer.allowInteraction()
