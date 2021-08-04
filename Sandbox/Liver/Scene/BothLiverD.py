@@ -4,20 +4,25 @@ FEM simulated liver with random forces applied on the visible surface.
 NN simulated liver which predicts the deformations of the FEM deformed liver.
 """
 
+import os
 import copy
 import numpy as np
+import random
 import Sofa.Simulation
+import SofaRuntime
 
 from DeepPhysX_Sofa.Environment.SofaEnvironment import SofaEnvironment
+from DeepPhysX_Core.Visualizer.MeshVisualizer import MeshVisualizer
 from Caribou.Topology import Grid3D
 from Sandbox.Liver.Config.utils import extract_visible_nodes, from_sparse_to_regular_grid
+from Sandbox.Liver.Config.parameters import p_liver, p_grid, p_force
 
 
 # Inherit from SofaEnvironment which allow to implement and create a Sofa scene in the DeepPhysX_Core pipeline
-class BothLiver(SofaEnvironment):
+class BothLiverD(SofaEnvironment):
 
     def __init__(self, root_node, config, idx_instance=1):
-        super(BothLiver, self).__init__(root_node, config, idx_instance)
+        super(BothLiverD, self).__init__(root_node, config, idx_instance)
         # Keep a track of the actual step number and how many samples diverged during the animation
         self.nb_steps = 0
         self.nb_converged = 0.
@@ -30,13 +35,17 @@ class BothLiver(SofaEnvironment):
 
         :return: None
         """
-        # Get the parameters (liver, grid, force)
-        p_liver, p_grid = self.config.p_liver, self.config.p_grid
 
         # UMesh regular grid
         self.regular_grid = Grid3D(anchor_position=p_grid['bbox_anchor'], n=p_grid['nb_cells'],
                                    size=p_grid['bbox_size'])
         print(f"3D grid: {self.regular_grid.number_of_nodes()} nodes, {self.regular_grid.number_of_cells()} cells.")
+
+        # Required plugins
+        SofaRuntime.PluginRepository.addFirstPath(os.environ['CARIBOU_INSTALL'])
+        required_plugins = ['SofaComponentAll', 'SofaLoader', 'SofaCaribou', 'SofaBaseTopology', 'SofaGeneralEngine',
+                            'SofaEngine', 'SofaOpenglVisual', 'SofaBoundaryCondition']
+        self.root.addObject('RequiredPlugin', pluginName=required_plugins)
 
         # Root
         self.surface_mesh = self.root.addObject('MeshObjLoader', name='surface_mesh', filename=p_liver['mesh_file'],
@@ -83,7 +92,8 @@ class BothLiver(SofaEnvironment):
         fem_surface = self.root.fem.addChild('fem_surface')
         self.fem_surface_mo = fem_surface.addObject('MechanicalObject', name='mo_embedded_surface',
                                                     src='@../../surface_mesh')
-        self.fem_surface = fem_surface.addObject('TriangleSetTopologyContainer', name='triangles', src='@../../surface_mesh')
+        self.fem_surface = fem_surface.addObject('TriangleSetTopologyContainer', name='triangles',
+                                                 src='@../../surface_mesh')
         self.fem_sphere = fem_surface.addObject('SphereROI', name='sphere', tags='ROI_SPHERE', radii=0.015,
                                                 centers=p_liver['fixed_point'].tolist(), drawSphere=True, drawSize=1)
         self.fem_force_field = fem_surface.addObject('ConstantForceField', name='cff', tags='CFF', indices='0',
@@ -91,8 +101,9 @@ class BothLiver(SofaEnvironment):
         fem_surface.addObject('BarycentricMapping', input='@../fem_mo', output='@./')
         # Visible points
         rgbd = self.root.fem.fem_surface.addChild('rgbd')
-        rgbd.addObject('MechanicalObject', name='mo_rgbd_pcd', position=self.visible_nodes,
-                       showObject=True, showObjectScale=5, showColor=[1, 0, 0, 1])
+        self.points_cloud = rgbd.addObject('MechanicalObject', name='mo_rgbd_pcd', position=self.visible_nodes,
+                                           showObject=True, showObjectScale=5, showColor=[1, 0, 0, 1])
+        print("Points cloud has ", len(self.points_cloud.position.array()))
         rgbd.addObject('BarycentricMapping', input='@../../fem_mo', output='@./')
         # Visual
         visual_node = self.root.fem.addChild('visual')
@@ -140,8 +151,9 @@ class BothLiver(SofaEnvironment):
         :param event: Sofa Event
         :return: None
         """
+        print("I am stupid and I do an init each time I'm told to do so")
         # Correspondences between sparse grid and regular grid
-        grid_shape = self.config.p_grid['grid_resolution']
+        grid_shape = p_grid['grid_resolution']
         mo = self.fem_mo if self.is_created['fem'] else self.nn_mo
         sparse_grid = self.fem_sparse_grid if self.is_created['fem'] else self.nn_sparse_grid
         self.nb_nodes_regular_grid = grid_shape[0] * grid_shape[1] * grid_shape[2]
@@ -149,20 +161,25 @@ class BothLiver(SofaEnvironment):
         self.regular_grid_rest_shape = from_sparse_to_regular_grid(self.nb_nodes_regular_grid, sparse_grid, mo)
         self.nb_nodes_sparse_grid = len(mo.rest_position.value)
         # Get the data sizes
-        self.input_size = (self.nb_nodes_regular_grid, 3)
+        self.input_size = (self.nb_nodes_regular_grid, 1)
         self.output_size = (self.nb_nodes_regular_grid, 3)
         # Rendering
         self.initVisualizer()
 
     def initVisualizer(self):
         # Visualizer
-        if self.visualizer is not None:
-            if self.is_created['fem']:
-                self.visualizer.addObject(positions=self.fem_surface_mo.position.value, cells=self.fem_surface.triangles.value)
-                self.visualizer.addObject(positions=self.fem_surface_mo.position.value, at=1)
-            if self.is_created['nn']:
-                self.visualizer.addObject(positions=self.nn_visu.position.value, cells=self.nn_visu.triangles.value)
-            self.renderVisualizer()
+        if self.getDataManager() is not None:
+            self.visualizer = self.getDataManager().visualizer_manager.visualizer
+        else:
+            self.visualizer = MeshVisualizer()
+        if self.is_created['fem']:
+            self.visualizer.addObject(positions=self.fem_surface_mo.position.value,
+                                      cells=self.fem_surface.triangles.value)
+            # self.visualizer.addObject(positions=self.fem_surface_mo.position.value, at=1)
+        if self.is_created['nn']:
+            self.visualizer.addObject(positions=self.nn_visu.position.value, cells=self.nn_visu.triangles.value)
+        if self.getDataManager() is None:
+            self.visualizer.render()
 
     def onAnimateBeginEvent(self, event):
         """
@@ -176,7 +193,7 @@ class BothLiver(SofaEnvironment):
             self.fem_mo.position.value = self.fem_mo.rest_position.value
         # Generate next forces
         f = np.random.uniform(low=-1, high=1, size=(3,))
-        f = (f / np.linalg.norm(f)) * self.config.p_force['amplitude_scale'] * np.random.random(1)
+        f = (f / np.linalg.norm(f)) * p_force['amplitude_scale'] * np.random.random(1)
         # Pick up a random visible surface point
         current_point = self.visible_nodes[np.random.randint(len(self.visible_nodes))]
         # Fem or nn
@@ -208,7 +225,7 @@ class BothLiver(SofaEnvironment):
                 Sofa.Simulation.reset(self.root)
             self.nb_converged += int(self.converged)
         # Render
-        self.renderVisualizer()
+        self.visualizer.render()
 
     def computeInput(self):
         """
@@ -216,19 +233,23 @@ class BothLiver(SofaEnvironment):
 
         :return: None
         """
-        force_field = self.fem_force_field if self.is_created['fem'] else self.nn_force_field
-        surface_mo = self.fem_surface_mo if self.is_created['fem'] else self.nn_surface_mo
-
-        f = copy.copy(force_field.forces.value)
-        ind = copy.copy(force_field.indices.value)
-        positions = surface_mo.position.array()[ind]
-        F = np.zeros((self.nb_nodes_regular_grid, 3))
-        for i in range(len(f)):
-            for node in self.regular_grid.node_indices_of(self.regular_grid.cell_index_containing(positions[i])):
-                if node < self.nb_nodes_regular_grid:
-                    if np.linalg.norm(F[node]) == 0:
-                        F[node] = f[i]
-        self.input = F
+        # SELECTION
+        # Select a random amount of points on the point cloud
+        indices = [random.randint(0, len(self.points_cloud.position.array())-1)
+                   for _ in range(random.randint(50, 800))]
+        indices = np.unique(np.array(indices))
+        actual_positions_of_point_cloud = self.points_cloud.position.array()[indices]
+        # ENCODING
+        # Init distance field to zero
+        DF_grid = np.zeros((self.nb_nodes_regular_grid, 1))
+        # Get the list of nodes composing a cell containing a point from the RGBD point cloud
+        # For each node of the cell, compute the distance to the considered point
+        for p in actual_positions_of_point_cloud:
+            cell = self.regular_grid.cell_index_containing(p)
+            for node in self.regular_grid.node_indices_of(cell):
+                if node < self.nb_nodes_regular_grid and DF_grid[node][0] == 0:
+                    DF_grid[node] = np.linalg.norm(self.regular_grid.node(node) - p)
+        self.input = DF_grid
 
     def computeOutput(self):
         """

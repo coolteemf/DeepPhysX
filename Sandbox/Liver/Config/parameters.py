@@ -35,3 +35,9 @@ amplitude_scale = 0.1
 inter_distance_thresh = 0.06
 p_force = {'nb_simultaneous_forces': nb_simultaneous_forces, 'amplitude_scale': amplitude_scale,
            'inter_distance_thresh': inter_distance_thresh}
+
+# Training parameters
+nb_epochs = 100
+nb_batch = 30
+batch_size = 10
+lr = 1e-6

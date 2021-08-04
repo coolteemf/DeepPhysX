@@ -6,17 +6,16 @@ Run with:
     'python3 liverUnet.py 1' or 'python3 liverUnet.py NNLiver'
 """
 
-import copy
 import numpy as np
 
-from Sandbox.Liver.Scene.BothLiver import BothLiver
+from Sandbox.Liver.Scene.BothLiverF import BothLiverF
 
 
 # Inherit from SofaEnvironment which allow to implement and create a Sofa scene in the DeepPhysX_Core pipeline
-class NNLiver(BothLiver):
+class NNLiverF(BothLiverF):
 
     def __init__(self, root_node, config, idx_instance=1,):
-        super(NNLiver, self).__init__(root_node, config, idx_instance)
+        super(NNLiverF, self).__init__(root_node, config, idx_instance)
 
     def addModels(self, p_liver, p_grid):
         self.createNN(p_liver, p_grid)

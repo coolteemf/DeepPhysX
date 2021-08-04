@@ -12,11 +12,11 @@ import sys
 sys.path.append(os.getcwd())
 import Sofa.Gui
 
-from Sandbox.Liver.Config.LiverConfig import LiverConfig
-from Sandbox.Liver.Scene.BothLiver import BothLiver as Liver
-from Sandbox.Liver.Config.parameters import *
-
 from DeepPhysX_Core.Visualizer.MeshVisualizer import MeshVisualizer
+from DeepPhysX_Sofa.Environment.SofaEnvironmentConfig import SofaEnvironmentConfig
+from DeepPhysX_Core.Manager.EnvironmentManager import EnvironmentManager
+# from Sandbox.Liver.Scene.BothLiverF import BothLiverF as Liver
+from Sandbox.Liver.Scene.BothLiverD import BothLiverD as Liver
 
 
 # Configure script
@@ -36,15 +36,14 @@ def createScene(root_node=None):
     :return: root_node
     """
     # Environment config
-    env_config = LiverConfig(environment_class=Liver, root_node=root_node, always_create_data=True,
-                             p_liver=p_liver, p_grid=p_grid, p_force=p_force, visualizer_class=MeshVisualizer)
+    env_config = SofaEnvironmentConfig(environment_class=Liver, root_node=root_node, always_create_data=True)
     # Manually create and init the environment from the configuration object
-    env = env_config.createEnvironment()
-    env_config.initSofaSimulation()
-    env_config.addVisualizer(env)
-    env.initVisualizer()
-
-    return env.root
+    # env = env_config.createEnvironment()
+    # env_config.initSofaSimulation()
+    # env.initVisualizer()
+    # return env.root
+    env_manager = EnvironmentManager(environment_config=env_config)
+    return env_manager.environment.root
 
 
 # Executed through python interpreter
