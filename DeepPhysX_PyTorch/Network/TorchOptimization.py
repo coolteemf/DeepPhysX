@@ -22,3 +22,7 @@ class TorchOptimization(BaseOptimization):
         self.optimizer.zero_grad()
         self.loss_value.backward()
         self.optimizer.step()
+
+    def __str__(self):
+        description = BaseOptimization.__str__(self)
+        return description

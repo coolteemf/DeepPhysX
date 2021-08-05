@@ -7,7 +7,6 @@ from .utils import crop_and_merge
 
 
 class UNet(TorchNetwork):
-
     class UNetLayer(nn.Module):
 
         def __init__(self, nb_input_channels, nb_output_channels, config):
@@ -61,3 +60,16 @@ class UNet(TorchNetwork):
             same_level_down_output = torch.zeros_like(down_output) if self.skip_merge else down_output
             x = unet_layer(crop_and_merge(same_level_down_output, up_conv_layer(x)))
         return self.architecture.decoder[-1](x)
+
+    def __str__(self):
+        description = TorchNetwork.__str__(self)
+        description += f"    Number of dimensions: {self.config.nb_dims}\n"
+        description += f"    Number of input channels: {self.config.nb_input_channels}\n"
+        description += f"    Number of first layer channels: {self.config.first_layer_channels}\n"
+        description += f"    Number of output channels: {self.config.nb_classes}\n"
+        description += f"    Input size: {self.config.grid_shape}\n"
+        description += f"    Border mode: {self.config.border_mode}\n"
+        description += f"    Encoding / Decoding steps: {self.config.steps}\n"
+        description += f"    Two sublayers in steps: {self.config.two_sublayers}\n"
+        description += f"    Merge on same level: {not self.config.skip_merge}\n"
+        return description

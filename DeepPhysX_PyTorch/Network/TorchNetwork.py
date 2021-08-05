@@ -51,3 +51,8 @@ class TorchNetwork(torch.nn.Module, BaseNetwork):
 
     def transformToNumpy(self, x):
         return x.cpu().detach().numpy()
+
+    def __str__(self):
+        description = BaseNetwork.__str__(self)
+        description += f"    Device: {self.device}\n"
+        return description

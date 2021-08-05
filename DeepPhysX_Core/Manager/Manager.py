@@ -128,15 +128,34 @@ class Manager:
         if self.data_manager is not None:
             self.data_manager.close()
 
+    def saveInfoFile(self):
+        """
+        Called by the Trainer to save a .txt file which provides a quick description template to the user and lists
+        the description of all the components.
+
+        :return:
+        """
+        filename = os.path.join(self.session_dir, 'infos.txt')
+        if not os.path.isfile(filename):
+            f = open(filename, "w+")
+            # Session description template for user
+            f.write("## DeepPhysX Training Session ##\n\n")
+            f.write("Purpose of the training session:\nNetwork Input:\nNetwork Output:\nComments:\n\n")
+            # Listing every component descriptions
+            f.write("## List of Components Parameters ##\n")
+            f.write(str(self.pipeline))
+            f.write(str(self))
+            f.close()
+
     def __str__(self):
         """
         :return: A string containing valuable information about the Managers
         """
         manager_description = ""
-        if self.data_manager is not None:
-            manager_description += str(self.data_manager)
         if self.network_manager is not None:
             manager_description += str(self.network_manager)
-        if self.stats_manager is not None:
-            manager_description += str(self.stats_manager)
+        # if self.data_manager is not None:
+        #     manager_description += str(self.data_manager)
+        # if self.stats_manager is not None:
+        #     manager_description += str(self.stats_manager)
         return manager_description

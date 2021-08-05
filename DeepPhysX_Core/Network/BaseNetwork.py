@@ -51,7 +51,9 @@ class BaseNetwork:
         :return: String containing information about the BaseNetwork object
         """
         description = "\n"
-        description += f"{self.name}\n"
-        description += f"    Name: {self.config.name}\n"
-        description += f"    Type: {self.config.type}\n"
+        description += f"  {self.name}\n"
+        description += f"    Name: {self.config.network_name}\n"
+        description += f"    Type: {self.config.network_type}\n"
+        description += f"    Number of parameters: {self.nbParameters()}\n"
+        description += f"    Estimated size: {self.nbParameters() * 32 * 1.25e-10} Go\n"
         return description

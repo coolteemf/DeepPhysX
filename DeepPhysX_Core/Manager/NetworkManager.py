@@ -191,20 +191,16 @@ class NetworkManager:
 
     def __str__(self):
         """
-        :return: A string containing valuable information about the NetworkManager
+        :return: String containing information about the BaseNetwork object
         """
-        if len(self.description) == 0:
-            self.description += "\nNETWORK MANAGER:\n"
-            nb_param = self.network.nbParameters()
-            # Todo : move network description to network
-            self.description += "   Number of parameters : {}\n".format(nb_param)
-            # Cast nb_param to weight in bit(float = 32) to weight in Go(1bit = 1.25e-10Go)
-            self.description += "   Weight in Go : {}\n".format(nb_param * 32 * 1.25e-10)
-            self.description += "   Configuration : {}\n".format(self.network_config)
-            self.description += "   Network : {}\n".format(self.network)
-            self.description += "   Optimizer : {}, Learning rate : {}\n".format(self.optimization.optimizer,
-                                                                                 self.optimization.lr)
-            # self.description += "   Loss function : {}\n".format(str(self.loss).split(" ")[1])
-            self.description += "   Loss function : {}\n".format(self.optimization.loss_value)
-            self.description += "   Save each epoch : {}\n".format(self.save_each_epoch)
-        return self.description
+        description = "\n"
+        description += f"# {self.name}\n"
+        description += f"    Network Directory: {self.network_dir}\n"
+        description += f"    Save each Epoch: {self.save_each_epoch}\n"
+        description += f"    Managed objects: Network: {self.network.name}\n"
+        description += f"                     Optimization: {self.optimization.name}\n"
+        description += f"                     Data Transformation: {self.data_transformation.name}\n"
+        description += str(self.network)
+        description += str(self.optimization)
+        description += str(self.data_transformation)
+        return description
