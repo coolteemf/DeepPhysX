@@ -446,8 +446,10 @@ class DatasetManager:
         """
         :return: A string containing valuable information about the DatasetManager
         """
-        if len(self.description) == 0:
-            self.description += "\nDATASET MANAGER:\n"
-            self.description += "   Partition size: {}Go\n".format(self.max_size * 1e-9)
-            self.description += "   Dataset path: {}\n".format(self.dataset_dir)
-        return self.description
+        description = "\n"
+        description += f"# {self.name}\n"
+        description += f"    Dataset Repository: {self.dataset_dir}\n"
+        description += f"    Partitions size: {self.max_size * 1e-9} Go\n"
+        description += f"    Managed objects: Dataset: {self.dataset.name}\n"
+        description += str(self.dataset)
+        return description

@@ -15,6 +15,9 @@ class EnvironmentManager:
         :param DataManager datamanager: DataManager that handles the EnvironmentManager
         :param str session_dir: Name of the directory in which to write all of the neccesary data
         """
+
+        self.name = self.__class__.__name__
+
         self.data_manager = data_manager
         self.session_dir = session_dir
         self.number_of_thread = environment_config.number_of_thread
@@ -180,5 +183,12 @@ class EnvironmentManager:
         """
         :return: A string containing valuable information about the EnvironmentManager
         """
-        environment_manager_str = "Environment Manager :\n"
-        return environment_manager_str + "    Environment description \n" +f"{str(self.environment)}"
+        description = "\n"
+        description += f"# {self.name}\n"
+        description += f"    Always create data: {self.always_create_data}\n"
+        description += f"    Record wrong samples: {self.record_wrong_samples}\n"
+        description += f"    Number of threads: {self.number_of_thread}\n"
+        description += f"    Managed objects: Environment: {self.environment.env_name}\n"
+        # Todo: manage the print log of each Environment since they can have different parameters
+        description += str(self.environment)
+        return description

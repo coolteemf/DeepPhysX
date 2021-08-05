@@ -11,7 +11,8 @@ class BaseEnvironment:
         :param int instance_id: ID of the instance
         """
 
-        self.name = self.__class__.__name__ + f"n°{instance_id}"
+        self.env_name = self.__class__.__name__
+        self.idx = instance_id
 
         # Step variables
         self.simulations_per_step = config.simulations_per_step
@@ -107,8 +108,9 @@ class BaseEnvironment:
         :return: String containing information about the BaseEnvironmentConfig object
         """
         description = "\n"
-        description += f"{self.name}\n"
-        description += f"    Name: {self.name}\n"
+        description += f"  {self.env_name}\n"
+        description += f"    Name: {self.env_name} n°{self.idx}\n"
+        description += f"    Comments:\n"
         description += f"    Simulations per step: {self.simulations_per_step}\n"
         description += f"    Max wrong samples per step: {self.max_wrong_samples_per_step}\n"
         description += f"    Input size: {self.input_size}\n"

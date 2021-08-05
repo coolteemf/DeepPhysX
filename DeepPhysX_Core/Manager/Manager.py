@@ -154,8 +154,8 @@ class Manager:
         manager_description = ""
         if self.network_manager is not None:
             manager_description += str(self.network_manager)
-        # if self.data_manager is not None:
-        #     manager_description += str(self.data_manager)
-        # if self.stats_manager is not None:
-        #     manager_description += str(self.stats_manager)
+        if self.data_manager is not None:
+            manager_description += str(self.data_manager)
+        if self.stats_manager is not None:
+            manager_description += str(self.stats_manager)
         return manager_description

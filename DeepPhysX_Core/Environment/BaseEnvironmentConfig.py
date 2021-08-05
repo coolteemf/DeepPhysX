@@ -111,6 +111,7 @@ class BaseEnvironmentConfig:
         """
         :return: String containing information about the BaseEnvironmentConfig object
         """
+        # Todo: fields in Configs are the set in Managers or objects, the remove __str__ method
         description = "\n"
         description += f"{self.name}\n"
         description += f"    Environment class: {self.environment_class.__name__}\n"

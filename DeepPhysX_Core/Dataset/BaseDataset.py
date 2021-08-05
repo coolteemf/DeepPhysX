@@ -154,8 +154,7 @@ class BaseDataset:
         :return: String containing information about the BaseDatasetConfig object
         """
         description = "\n"
-        description += f"{self.name}\n"
-        description += f"    Max size: {self.max_size}\n"
+        description += f"  {self.name}\n"
         description += f"    Input shape, input flat shape: {self.in_shape}, {self.in_flat_shape}\n"
         description += f"    Output shape, output flat shape: {self.out_shape}, {self.out_flat_shape}\n"
         return description

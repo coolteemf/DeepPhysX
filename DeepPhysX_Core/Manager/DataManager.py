@@ -26,6 +26,9 @@ class DataManager:
         :param bool training: True if this session is a network training
         :param dict record_data: Format {\'in\': bool, \'out\': bool} save the tensor when bool is True
         """
+
+        self.name = self.__class__.__name__
+
         self.manager = manager
         self.is_training = training
         self.dataset_manager = None
@@ -117,10 +120,9 @@ class DataManager:
         """
         :return: A string containing valuable information about the DataManager
         """
-        data_manager_str = "DataManager handles : \n"
+        data_manager_str = ""
         if self.environment_manager:
             data_manager_str += str(self.environment_manager)
         if self.dataset_manager:
             data_manager_str += str(self.dataset_manager)
         return data_manager_str
-

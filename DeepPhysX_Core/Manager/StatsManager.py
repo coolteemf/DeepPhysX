@@ -23,6 +23,9 @@ class StatsManager:
         :param Manager manager: Manager that handles the StatsManager
         :param keep_losses: If True Allow to save loss to .csv file
         """
+
+        self.name = self.__class__.__name__
+
         self.manager = manager
         self.log_dir = log_dir
         self.writer = tb.SummaryWriter(log_dir)
@@ -286,9 +289,10 @@ class StatsManager:
         """
         :return: A string containing valuable information about the StatsManager
         """
-        description_string = "\n\nData Manager : \n"
-        description_string += "Store losses as csv : {} \n".format(self.keep_losses)
+        description = "\n"
+        description += f"# {self.name}\n"
+        description += f"    Stats repository: {self.log_dir}\n"
+        description += f"    Store losses as CSV: {self.keep_losses}\n"
         if self.keep_losses:
-            description_string += "CSV file path : {}\n".format(self.log_dir + "/Losses.csv")
-        description_string += "Training data location : {}\n".format(self.log_dir)
-        return description_string
+            description += f"    CSV file path: {self.log_dir}\n"
+        return description
