@@ -131,6 +131,7 @@ class BaseNetworkConfig:
         """
         :return: String containing information about the BaseDatasetConfig object
         """
+        # Todo: fields in Configs are the set in Managers or objects, the remove __str__ method
         description = "\n"
         description += f"{self.name}\n"
         description += f"    Network class: {self.network_class.__name__}\n"

@@ -32,3 +32,9 @@ class FC(TorchNetwork):
         # print("\nin\n", x)
         res = self.linear(x.view(x.shape[0], -1)).view(x.shape[0], -1, self.config.dim_output)
         return res
+
+    def __str__(self):
+        description = TorchNetwork.__str__(self)
+        description += f"    Layers dimensions: {self.config.dim_layers}\n"
+        description += f"    Output dimension: {self.config.dim_output}\n"
+        return description

@@ -30,6 +30,8 @@ class BaseTrainer(BasePipeline):
         :param int batch_size: Size of a batch
         """
 
+        self.name = self.__class__.__name__
+
         if environment_config is None and dataset_config.dataset_dir is None:
             print("BaseTrainer: You have to give me a dataset source (existing dataset directory or simulation to "
                   "create data on the fly")
@@ -54,6 +56,8 @@ class BaseTrainer(BasePipeline):
         self.record_data = {"in": True, "out": True}
 
         self.training_progress_bar = ProgressBar(start=0, stop=self.nb_samples, c='orange', title="Training")
+
+        self.manager.saveInfoFile()
 
     def execute(self):
         """
@@ -194,15 +198,15 @@ class BaseTrainer(BasePipeline):
         
         :return: str Contains training informations about the training process
         """
-        description = ""
-        description += f"Training statistics :\n"
-        description += f"Number of epochs : {self.nb_epochs}\n"
-        description += f"Number of batches per epoch : {self.nb_batches}\n"
-        description += f"Number of samples per epoch : {self.nb_samples}\n"
-        description += f"Number of samples per batch : {self.batch_size}\n"
-        description += f"TOTAL : \n"
-        description += f"Number of batches : {self.nb_batches*self.nb_epochs}\n"
-        description += f"Number of samples : {self.nb_epochs * self.nb_samples}\n"
+        description = "\n"
+        description += f"# {self.name}\n"
+        description += f"    Session directory: {self.manager.session_dir}\n"
+        description += f"    Number of epochs: {self.nb_epochs}\n"
+        description += f"    Number of batches per epoch: {self.nb_batches}\n"
+        description += f"    Number of samples per epoch: {self.nb_samples}\n"
+        description += f"    Number of samples per batch: {self.batch_size}\n"
+        description += f"    Total: Number of batches : {self.nb_batches * self.nb_epochs}\n"
+        description += f"           Number of samples : {self.nb_epochs * self.nb_samples}\n"
         return description
 
 

@@ -34,7 +34,7 @@ class BaseOptimization:
         :return: String containing information about the BaseOptimization object
         """
         description = "\n"
-        description += f"{self.name}\n"
+        description += f"  {self.name}\n"
         description += f"    Loss class: {self.loss_class.__name__}\n"
         description += f"    Optimizer class: {self.optimizer_class.__name__}\n"
         description += f"    Learning rate: {self.lr}\n"
