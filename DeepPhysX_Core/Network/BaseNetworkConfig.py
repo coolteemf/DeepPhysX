@@ -85,7 +85,6 @@ class BaseNetworkConfig:
         # NetworkManager parameterization
         self.data_transformation_class = data_transformation_class
         self.network_dir = network_dir
-        self.existing_network = False if network_dir is None else True
         self.which_network = which_network
         self.save_each_epoch = save_each_epoch and self.training_stuff
 
@@ -138,7 +137,6 @@ class BaseNetworkConfig:
         description += f"    Optimization class: {self.optimization_class.__name__}\n"
         description += f"    Training materials: {self.training_stuff}\n"
         description += f"    Network directory: {self.network_dir}\n"
-        description += f"    Existing network: {self.existing_network}\n"
         description += f"    Which network: {self.which_network}\n"
         description += f"    Save each epoch: {self.save_each_epoch}\n"
         return description
