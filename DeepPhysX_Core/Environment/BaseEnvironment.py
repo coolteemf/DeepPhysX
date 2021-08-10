@@ -3,25 +3,18 @@ import numpy as np
 
 class BaseEnvironment:
 
-    def __init__(self, config, instance_id=1):
+    def __init__(self, instance_id=1):
         """
         BaseEnvironment is an environment class to compute simulated data for the network and its optimization process.
 
-        :param BaseEnvironmentConfig.BaseEnvironmentProperties config: Class containing BaseEnvironment parameters
         :param int instance_id: ID of the instance
         """
 
         self.name = self.__class__.__name__ + f"n°{instance_id}"
 
-        # Step variables
-        self.simulations_per_step = config.simulations_per_step
-        self.max_wrong_samples_per_step = config.max_wrong_samples_per_step
-
         # Environment data
         self.input, self.output = np.array([]), np.array([])
         self.input_size, self.output_size = None, None
-
-        self.config = config
 
         self.environment_manager = None
 
@@ -109,8 +102,6 @@ class BaseEnvironment:
         description = "\n"
         description += f"{self.name}\n"
         description += f"    Name: {self.name}\n"
-        description += f"    Simulations per step: {self.simulations_per_step}\n"
-        description += f"    Max wrong samples per step: {self.max_wrong_samples_per_step}\n"
         description += f"    Input size: {self.input_size}\n"
         description += f"    Output size: {self.output_size}\n"
         return description

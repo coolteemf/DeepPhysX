@@ -7,17 +7,9 @@ import sys
 from DeepPhysX_Core.Environment.BaseEnvironment import BaseEnvironment
 from DeepPhysX_Core.AsyncSocket.TcpIpServer import TcpIpServer, BytesBaseConverter
 from DeepPhysX_Core.Visualizer.VedoVisualizer import VedoVisualizer
-from dataclasses import dataclass
 
 
 class BaseEnvironmentConfig:
-    @dataclass
-    class BaseEnvironmentProperties:
-        """
-        Class containing data to create Environment object.
-        """
-        simulations_per_step: int
-        max_wrong_samples_per_step: int
 
     def __init__(self, environment_class=BaseEnvironment, simulations_per_step=1, max_wrong_samples_per_step=10,
                  always_create_data=False, number_of_thread=1, socket_data_converter=BytesBaseConverter,
@@ -63,11 +55,11 @@ class BaseEnvironmentConfig:
 
         # BaseEnvironment parameterization
         self.environment_class = environment_class
-        self.environment_config = self.BaseEnvironmentProperties(simulations_per_step=simulations_per_step,
-                                                                 max_wrong_samples_per_step=max_wrong_samples_per_step)
 
         # EnvironmentManager parameterization
         self.always_create_data = always_create_data
+        self.simulations_per_step = simulations_per_step
+        self.max_wrong_samples_per_step = max_wrong_samples_per_step
 
         self.number_of_thread = min(max(number_of_thread, 1), os.cpu_count())  # Assert nb is between 1 and cpu_count
 
@@ -77,7 +69,7 @@ class BaseEnvironmentConfig:
         """
         # Create environment
         try:
-            environment = self.environment_class(config=self.environment_config)
+            environment = self.environment_class()
             environment.environment_manager = environment_manager
         except:
             raise ValueError(f"[{self.name}] Given environment_class got an unexpected keyword argument 'config'")
@@ -120,7 +112,7 @@ class BaseEnvironmentConfig:
         description = "\n"
         description += f"{self.name}\n"
         description += f"    Environment class: {self.environment_class.__name__}\n"
-        description += f"    Simulations per step: {self.environment_config.simulations_per_step}\n"
-        description += f"    Max wrong samples per step: {self.environment_config.max_wrong_samples_per_step}\n"
+        description += f"    Simulations per step: {self.simulations_per_step}\n"
+        description += f"    Max wrong samples per step: {self.max_wrong_samples_per_step}\n"
         description += f"    Always create data: {self.always_create_data}\n"
         return description

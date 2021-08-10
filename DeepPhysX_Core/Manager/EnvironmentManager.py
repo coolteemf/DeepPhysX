@@ -27,6 +27,8 @@ class EnvironmentManager:
             self.environment = environment_config.createServer(environment_manager=self, batch_size=batch_size)
 
         self.always_create_data = environment_config.always_create_data
+        self.simulations_per_step = environment_config.simulations_per_step
+        self.max_wrong_samples_per_step = environment_config.max_wrong_samples_per_step
 
     def getDataManager(self):
         """
