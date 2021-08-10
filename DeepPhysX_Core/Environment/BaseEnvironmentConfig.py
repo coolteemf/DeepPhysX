@@ -1,5 +1,11 @@
 import os
+import time
+import threading
+import subprocess
+import sys
+
 from DeepPhysX_Core.Environment.BaseEnvironment import BaseEnvironment
+from DeepPhysX_Core.AsyncSocket.TcpIpServer import TcpIpServer, BytesBaseConverter
 from DeepPhysX_Core.Visualizer.VedoVisualizer import VedoVisualizer
 from dataclasses import dataclass
 
@@ -14,8 +20,8 @@ class BaseEnvironmentConfig:
         max_wrong_samples_per_step: int
 
     def __init__(self, environment_class=BaseEnvironment, simulations_per_step=1, max_wrong_samples_per_step=10,
-                 always_create_data=False,
-                 number_of_thread=1, multiprocess_method=None):
+                 always_create_data=False, number_of_thread=1, socket_data_converter=BytesBaseConverter,
+                 max_client_connection=1000, environment_file=''):
         """
         BaseEnvironmentConfig is a configuration class to parameterize and create a BaseEnvironment for the
         EnvironmentManager.
@@ -28,7 +34,6 @@ class BaseEnvironmentConfig:
                                         created from the environment during the first epoch and then re-used from the
                                         Dataset.
         :param int number_of_thread: Number of thread to run
-        :param multiprocess_method: Values at \'process\' or \'pool\'
         """
 
         self.name = self.__class__.__name__
@@ -50,11 +55,11 @@ class BaseEnvironmentConfig:
             raise TypeError(f"[{self.name}] Wrong always_create_data type: bool required, get "
                             f"{type(always_create_data)}")
 
-        # Todo : Multiprocessing in Environment package level ?
         if type(number_of_thread) != int and number_of_thread < 0:
             raise TypeError(f"[{self.name}] The number_of_thread number must be a positive int.")
-        if multiprocess_method is not None and multiprocess_method not in ['process', 'pool']:
-            raise ValueError(f"[{self.name}] The multiprocessing method must be either process or pool.")
+        self.socket_data_converter = socket_data_converter
+        self.max_client_connections = max_client_connection
+        self.environment_file = environment_file
 
         # BaseEnvironment parameterization
         self.environment_class = environment_class
@@ -64,46 +69,49 @@ class BaseEnvironmentConfig:
         # EnvironmentManager parameterization
         self.always_create_data = always_create_data
 
-        # Todo : Multiprocessing in Environment package level ?
         self.number_of_thread = min(max(number_of_thread, 1), os.cpu_count())  # Assert nb is between 1 and cpu_count
-        if self.number_of_thread > 1:
-            if multiprocess_method is not None:
-                self.multiprocess_method = multiprocess_method
-            else:
-                self.multiprocess_method = 'process'
-                print(f"[{self.name}]: The default multiprocessing method is set to 'process'.")
-        else:
-            self.multiprocess_method = multiprocess_method
 
     def createEnvironment(self, environment_manager=None):
         """
         :return: BaseEnvironment object from environment_class and its parameters
         """
-        if self.number_of_thread == 1:
-            # Create environment
-            try:
-                environment = self.environment_class(config=self.environment_config)
-                environment.environment_manager = environment_manager
-            except:
-                raise ValueError(f"[{self.name}] Given environment_class got an unexpected keyword argument 'config'")
-            if not isinstance(environment, BaseEnvironment):
-                raise TypeError(f"[{self.name}] Wrong environment_class type: BaseEnvironment required, get "
-                                f"{self.environment_class}")
-            environment.create()
+        # Create environment
+        try:
+            environment = self.environment_class(config=self.environment_config)
+            environment.environment_manager = environment_manager
+        except:
+            raise ValueError(f"[{self.name}] Given environment_class got an unexpected keyword argument 'config'")
+        if not isinstance(environment, BaseEnvironment):
+            raise TypeError(f"[{self.name}] Wrong environment_class type: BaseEnvironment required, get "
+                            f"{self.environment_class}")
+        environment.create()
 
-            return environment
-        # Todo : Multiprocessing in Environment package level ?
-        else:
-            try:
-                environments = [self.environment_class(config=self.environment_config,
-                                                       idx_instance=i + 1) for i in range(self.number_of_thread)]
-                for env in environments:
-                    env.environment_manager = environment_manager
-            except:
-                raise TypeError("[{}] The given environment class is not a BaseEnvironment class.".format(self.name))
-            if not isinstance(environments[0], BaseEnvironment):
-                raise TypeError("[{}] The environment class must be a BaseEnvironment class.".format(self.name))
-            return environments
+        return environment
+
+    def createServer(self, environment_manager=None, batch_size=1):
+        # Create server
+        server = TcpIpServer(data_converter=self.socket_data_converter, max_client_count=self.max_client_connections,
+                             batch_size=batch_size, nb_client=self.number_of_thread)
+
+        server_thread = threading.Thread(target=self.start_server, args=(server,))
+        server_thread.start()
+
+        # Create clients
+        client_threads = []
+        for i in range(self.number_of_thread):
+            client_thread = threading.Thread(target=self.start_client, args=(i,))
+            client_threads.append(client_thread)
+        for client in client_threads:
+            client.start()
+        # Return server to manager
+        return server
+
+    def start_server(self, server):
+        server.start_server()
+
+    def start_client(self, idx):
+        subprocess.run(['python3', os.path.join(os.path.dirname(sys.modules[TcpIpServer.__module__].__file__), 'TcpIpClient.py'),
+                        self.environment_file, self.environment_class.__name__, str(idx)])
 
     def __str__(self):
         """

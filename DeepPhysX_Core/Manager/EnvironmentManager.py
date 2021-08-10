@@ -18,9 +18,13 @@ class EnvironmentManager:
         self.data_manager = data_manager
         self.session_dir = session_dir
         self.number_of_thread = environment_config.number_of_thread
-        self.multiprocessMethod = environment_config.multiprocess_method
         # Create single or multiple environments according to multiprocessing value
-        self.environment = environment_config.createEnvironment(environment_manager=self)
+        # Todo: if prediction, force nb_thread = 1 !!!
+        if environment_config.number_of_thread == 1:
+            self.environment = environment_config.createEnvironment(environment_manager=self)
+        else:
+            batch_size = self.data_manager.manager.pipeline.batch_size
+            self.environment = environment_config.createServer(environment_manager=self, batch_size=batch_size)
 
         self.always_create_data = environment_config.always_create_data
 
