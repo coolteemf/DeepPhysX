@@ -5,14 +5,14 @@ import subprocess
 import sys
 
 from DeepPhysX_Core.Environment.BaseEnvironment import BaseEnvironment
-from DeepPhysX_Core.AsyncSocket.TcpIpServer import TcpIpServer, BytesBaseConverter
+from DeepPhysX_Core.AsyncSocket.TcpIpServer import TcpIpServer, BytesNumpyConverter
 from DeepPhysX_Core.Visualizer.VedoVisualizer import VedoVisualizer
 
 
 class BaseEnvironmentConfig:
 
     def __init__(self, environment_class=BaseEnvironment, simulations_per_step=1, max_wrong_samples_per_step=10,
-                 always_create_data=False, number_of_thread=1, socket_data_converter=BytesBaseConverter,
+                 always_create_data=False, number_of_thread=1, socket_data_converter=BytesNumpyConverter,
                  max_client_connection=1000, environment_file=''):
         """
         BaseEnvironmentConfig is a configuration class to parameterize and create a BaseEnvironment for the
@@ -84,6 +84,7 @@ class BaseEnvironmentConfig:
         # Create server
         server = TcpIpServer(data_converter=self.socket_data_converter, max_client_count=self.max_client_connections,
                              batch_size=batch_size, nb_client=self.number_of_thread)
+        server.manager = environment_manager
 
         server_thread = threading.Thread(target=self.start_server, args=(server,))
         server_thread.start()
@@ -95,6 +96,7 @@ class BaseEnvironmentConfig:
             client_threads.append(client_thread)
         for client in client_threads:
             client.start()
+
         # Return server to manager
         return server
 

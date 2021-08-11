@@ -7,7 +7,8 @@ from DeepPhysX_Core.Environment.BaseEnvironmentConfig import BaseEnvironmentConf
 
 class EnvironmentManager:
 
-    def __init__(self, environment_config: BaseEnvironmentConfig, data_manager=None, session_dir=None):
+    # Todo: remove batch_size from inputs
+    def __init__(self, environment_config: BaseEnvironmentConfig, data_manager=None, session_dir=None, batch_size=1):
         """
         Deals with the online generation of data for both training and running of the neural networks
 
@@ -23,8 +24,8 @@ class EnvironmentManager:
         if environment_config.number_of_thread == 1:
             self.environment = environment_config.createEnvironment(environment_manager=self)
         else:
-            batch_size = self.data_manager.manager.pipeline.batch_size
-            self.environment = environment_config.createServer(environment_manager=self, batch_size=batch_size)
+            # batch_size = self.data_manager.manager.pipeline.batch_size
+            self.server = environment_config.createServer(environment_manager=self, batch_size=batch_size)
 
         self.always_create_data = environment_config.always_create_data
         self.simulations_per_step = environment_config.simulations_per_step
@@ -38,20 +39,15 @@ class EnvironmentManager:
         return self.data_manager
 
     def getData(self, batch_size, get_inputs, get_outputs, animate):
-        # Getting data from single environment
+        # Getting data from single environment: batch is built from samples
         if self.number_of_thread == 1:
-            data = self.computeSingleThreadInputOutputFromEnvironment(batch_size, get_inputs, get_outputs, animate)
-        # Getting data from multiple environments
-        """else:
-            inputs = np.empty((batch_size, *self.environment.input_size))
-            outputs = np.empty((batch_size, *self.environment.output_size))
-            if self.multiprocessMethod == 'process':
-                inputs, outputs = self.computeMultipleProcess(batch_size, get_inputs, get_outputs)
-            else:
-                inputs, outputs = self.computeMultiplePool(batch_size, get_inputs, get_outputs)"""
+            data = self.buildBatchFromEnvironment(batch_size, get_inputs, get_outputs, animate)
+        # Getting data from server: batch is built in lower level
+        else:
+            data = self.getBatchFromServer(get_inputs, get_outputs)
         return data
 
-    def computeSingleThreadInputOutputFromEnvironment(self, batch_size, get_inputs, get_outputs, animate):
+    def buildBatchFromEnvironment(self, batch_size, get_inputs, get_outputs, animate):
         """
         Compute a batch of data from the environment
 
@@ -63,23 +59,15 @@ class EnvironmentManager:
         :return: dict of format {'in': numpy.ndarray, 'out': numpy.ndarray}
         """
 
-        if get_inputs:
-            inputs = np.empty((0, *self.environment.input_size))
-            input_condition = lambda input_tensor: input_tensor.shape[0] <= batch_size
-        else:
-            inputs = np.array([])
-            input_condition = lambda input_tensor: True
+        inputs = np.empty((0, *self.environment.input_size)) if get_inputs else np.array([])
+        input_condition = lambda x: x.shape[0] <= batch_size if get_inputs else lambda x: True
 
-        if get_outputs:
-            outputs = np.empty((0, *self.environment.output_size))
-            output_condition = lambda outputs_tensor: outputs_tensor.shape[0] <= batch_size
-        else:
-            outputs = np.array([])
-            output_condition = lambda outputs_tensor: True
+        outputs = np.empty((0, *self.environment.output_size)) if get_outputs else np.array([])
+        output_condition = lambda x: x.shape[0] <= batch_size if get_outputs else lambda x: True
 
         while input_condition(inputs) and output_condition(outputs):
             if animate:
-                for _ in range(self.environment.simulations_per_step):
+                for _ in range(self.simulations_per_step):
                     self.environment.step()
 
             if get_inputs:
@@ -99,64 +87,11 @@ class EnvironmentManager:
                         self.getDataManager().visualizer_manager.saveSample(self.session_dir)
         return {'in': inputs, 'out': outputs}
 
-    """def computeMultipleProcess(self, batch_size, get_inputs, get_outputs):
-        inputs = np.empty((batch_size, self.environment[0].inputSize))
-        outputs = np.empty((batch_size, self.environment[0].outputSize))
-        produced_samples = 0
-        while produced_samples < batch_size:
-            process_list = []
-            parent_conn_list = []
-            nb_samples = min(self.number_of_thread, batch_size - produced_samples)
-            # Start processes
-            for i in range(nb_samples):
-                parent_conn, child_conn = mp.Pipe()
-                p = mp.Process(target=self.processStep, args=(self.environment[i], child_conn,))
-                p.start()
-                process_list.append(p)
-                parent_conn_list.append(parent_conn)
-            # Synchronize processes
-            for i in range(nb_samples):
-                process_list[i].join()
-            # Get data
-            for i in range(nb_samples):
-                self.environment[i] = parent_conn_list[i].recv()
-                if get_inputs:
-                    inputs[produced_samples + i] = self.environment[i].getInput()
-                if get_outputs:
-                    outputs[produced_samples + i] = self.environment[i].getOutput()
-            produced_samples += nb_samples
-        return inputs, outputs
-
-    def processStep(self, env, conn):
-        for _ in range(env.simulationsPerStep):
-            env.step()
-        conn.send(env)
-        conn.close()
-
-    def computeMultiplePool(self, batch_size, get_inputs, get_outputs):
-        inputs = np.empty((batch_size, self.environment[0].inputSize))
-        outputs = np.empty((batch_size, self.environment[0].outputSize))
-        produced_samples = 0
-        while produced_samples < batch_size:
-            nb_samples = min(self.number_of_thread, batch_size - produced_samples)
-            # Start pool
-            with mp.Pool(processes=nb_samples) as pool:
-                self.environment[:nb_samples] = pool.map(self.poolStep, self.environment[:nb_samples])
-                pool.close()
-                pool.join()
-            # Get data
-            for i in range(nb_samples):
-                if get_inputs:
-                    inputs[produced_samples + i] = self.environment[i].getInput()
-                if get_outputs:
-                    outputs[produced_samples + i] = self.environment[i].getOutput()
-            produced_samples += nb_samples
-        return inputs, outputs
-
-    def poolStep(self, env):
-        for _ in range(env.simulationsPerStep):
-            env.step()
-        return env"""
+    def getBatchFromServer(self, get_inputs, get_outputs):
+        batch = self.server.getBatch(get_inputs, get_outputs)
+        inputs = np.array(batch[0]) if get_inputs else np.array([])
+        outputs = np.array(batch[1]) if get_outputs else np.array([])
+        return {'in': inputs, 'out': outputs}
 
     def close(self):
         """
@@ -164,26 +99,14 @@ class EnvironmentManager:
 
         :return:
         """
-        self.environment.close()
-
-    def step(self, environment=None):
-        """
-        Run a step of environment
-
-        :param BaseEnvirnment environment: Environment with an implement step function
-
-        :return:
-        """
-        if environment is None:
-            for _ in range(self.environment.simulations_per_step):
-                self.environment.step()
+        if self.number_of_thread == 1:
+            self.environment.close()
         else:
-            for _ in range(environment.simulations_per_step):
-                environment.step()
+            self.server.close()
 
     def __str__(self):
         """
         :return: A string containing valuable information about the EnvironmentManager
         """
         environment_manager_str = "Environment Manager :\n"
-        return environment_manager_str + "    Environment description \n" +f"{str(self.environment)}"
+        return environment_manager_str + "    Environment description \n" + f"{str(self.environment)}"

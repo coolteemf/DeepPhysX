@@ -5,20 +5,26 @@ from DeepPhysX_Core.Environment.BaseEnvironment import BaseEnvironment
 
 class Environment(BaseEnvironment):
 
-    def __init__(self, config, idx=1):
-        super(Environment, self).__init__(config=config, instance_id=idx)
-        self.idx = idx
-        self.tensor = None
+    def __init__(self, instance_id=1):
+        super(Environment, self).__init__(instance_id=instance_id)
+        self.tensor = np.random.random((3,2))
 
     def create(self):
-        pass
+        print(f"Created Env n°{self.instance_id}")
+        self.input_size = self.tensor.shape
+        self.output_size = self.tensor.shape
 
     def step(self):
-        print("STep in", self.idx)
-        self.tensor = np.random.random((40000, 3))
+        self.tensor = np.random.random(self.input_size)
 
-    def getTensor(self):
-        return self.tensor
+    def computeInput(self):
+        self.input = np.copy(self.tensor)
+
+    def computeOutput(self):
+        self.output = np.copy(self.tensor)
+
+    def close(self):
+        print(f"Closing Env n°{self.instance_id}")
 
     def __str__(self):
-        return f"Environment n°{self.idx} with tensor {self.tensor}"
+        return f"Environment n°{self.instance_id} with tensor {self.tensor}"
