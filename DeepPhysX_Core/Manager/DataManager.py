@@ -71,7 +71,7 @@ class DataManager:
 
         :param int epoch: Current epoch ID
         :param int batch_size: Size of the desired batch
-        :param int animate: Allow EnvironmentManager to generate a new sample
+        :param bool animate: Allow EnvironmentManager to generate a new sample
 
         :return:
         """
@@ -85,7 +85,7 @@ class DataManager:
             # Get data from environment if used and if the data should be created at this epoch
             if data is None and self.environment_manager is not None and (epoch == 0 or self.environment_manager.always_create_data):
                 self.allow_dataset_fetch = False
-                data = self.environment_manager.getData(batch_size=batch_size, animate=animate, get_inputs=True, get_outputs=True)
+                data = self.environment_manager.getData(animate=animate, get_inputs=True, get_outputs=True)
                 # We create a partition to write down the data in the case it's not already existing.
                 if self.dataset_manager.current_in_partition is None:
                     self.dataset_manager.createNewPartitions()
@@ -96,7 +96,7 @@ class DataManager:
         # Prediction
         else:
             # Get data from environment
-            data = self.environment_manager.getData(batch_size=batch_size, animate=animate, get_inputs=True, get_outputs=True)
+            data = self.environment_manager.getData(animate=animate, get_inputs=True, get_outputs=True)
             # Record data
             if self.dataset_manager is not None:
                 self.dataset_manager.addData(data)

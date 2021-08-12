@@ -7,60 +7,55 @@ class TcpIpObject:
 
     def __init__(self, ip_address='localhost', port=10000, data_converter=BytesNumpyConverter):
         """
+        TcpIpObject defines communication protocols to send and receive data and commands.
 
-        :param ip_address:
-        :param port:
-        :param data_converter:
+        :param str ip_address: IP address of the TcpIpObject
+        :param int port: Port number of the TcpIpObject
+        :param data_converter: BytesBaseConverter class to convert data to bytes (NumPy by default)
         """
+        # Define socket
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        # Register IP and PORT
         self.ip_address = ip_address
         self.port = port
+        # Create data converter
         self.data_converter = data_converter()
-
-    async def communicate(self, client=None, server=None, idx=None):
-        """
-
-        :param client:
-        :param server:
-        :param idx:
-        :return:
-        """
-        pass
-
-    def bytes_size(self, data_as_bytes):
-        """
-
-        :param data_as_bytes:
-        :return:
-        """
-        return len(data_as_bytes)
+        # Available commands
+        self.available_commands = [b'exit', b'step', b'test', b'size', b'done', b'recv',
+                                   b'c_in', b'c_ou', b'g_in', b'g_ou']
+        self.command_dict = {'exit': b'exit', 'step': b'step', 'check': b'test', 'size': b'size', 'done': b'done',
+                             'recv': b'recv', 'compute_in': b'c_in', 'compute_out': b'c_ou', 'get_in': b'g_in',
+                             'get_out': b'g_ou'}
 
     async def send_data(self, data_to_send, loop, receiver, do_convert=True):
         """
+        Send data from a TcpIpObject to another.
 
-        :param data_to_send:
-        :param loop:
-        :param receiver:
-        :param do_convert:
+        :param data_to_send: Data that will be sent on socket
+        :param loop: asyncio.get_event_loop() return
+        :param receiver: TcpIpObject receiver
+        :param bool do_convert: Data will be converted in bytes by default. If the data is already in bytes, set to
+               False
         :return:
         """
         # Cast data to bytes field
         data_as_bytes = self.data_converter.data_to_bytes(data_to_send) if do_convert else data_to_send
         # Size of tha data to send
-        data_size = self.bytes_size(data_as_bytes)
+        data_size = len(data_as_bytes)
         # Send the size of the next receive
         await loop.sock_sendall(sock=receiver, data=data_size.to_bytes(4, byteorder='big'))
         # Send the actual data
         await loop.sock_sendall(sock=receiver, data=data_as_bytes)
 
-    async def receive_data(self, loop, sender, expect_command=False, raw_bytes=False):
+    async def receive_data(self, loop, sender, is_bytes_data=False):
         """
+        Receive data from another TcpIpObject.
 
-        :param loop:
-        :param sender:
-        :param expect_command:
-        :param raw_bytes:
+        :param loop: asyncio.get_event_loop() return
+        :param sender: TcpIpObject sender
+        :param is_bytes_data: Data will be converted from bytes by default. If the expected data is in bytes, set to
+               True
         :return:
         """
         # Maximum read sizes array
@@ -81,48 +76,82 @@ class TcpIpObject:
             # Todo: add security with <<await asyncio.wait_for(loop.sock_recv(sender, chunk_size_to_read), timeout=1.)>>
             # Accumulate the data
             data_as_bytes += data_received_as_bytes
-            data_size_to_read -= self.bytes_size(data_received_as_bytes)
+            data_size_to_read -= len(data_received_as_bytes)
         # Return the data in the expected format
-        return data_as_bytes if expect_command or raw_bytes else self.data_converter.bytes_to_data(data_as_bytes)
+        return data_as_bytes if is_bytes_data else self.data_converter.bytes_to_data(data_as_bytes)
+
+    async def send_labeled_data(self, data_to_send, label, loop, receiver, do_convert=True):
+        """
+        Send data with an associated label.
+
+        :param data_to_send: Data that will be sent on socket
+        :param str label: Associated label
+        :param loop: asyncio.get_event_loop() return
+        :param receiver: TcpIpObject receiver
+        :param bool do_convert: Data will be converted in bytes by default. If the data is already in bytes, set to
+               False
+        :return:
+        """
+        await self.send_data(data_to_send=label, loop=loop, receiver=receiver, do_convert=False)
+        await self.send_data(data_to_send=data_to_send, loop=loop, receiver=receiver, do_convert=do_convert)
+
+    async def receive_labeled_data(self, loop, sender, is_bytes_data=False):
+        """
+        Receive data and an associated label.
+
+        :param loop: asyncio.get_event_loop() return
+        :param sender: TcpIpObject sender
+        :param is_bytes_data: Data will be converted from bytes by default. If the expected data is in bytes, set to
+               True
+        :return:
+        """
+        label = await self.receive_data(loop=loop, sender=sender, is_bytes_data=True)
+        data = await self.receive_data(loop=loop, sender=sender, is_bytes_data=is_bytes_data)
+        return label, data
 
     async def send_command(self, loop, receiver, command=''):
         """
+        Send a bytes command among the available commands.
 
-        :param loop:
-        :param receiver:
-        :param command:
+        :param loop: asyncio.get_event_loop() return
+        :param receiver: TcpIpObject receiver
+        :param str command: Name of the command (see self.command_dict)
         :return:
         """
         # Check if the command exists
-        command_dict = {'exit': b'exit', 'step': b'step', 'check': b'test', 'size': b'size',
-                        'compute_in': b'c_in', 'compute_out': b'c_ou', 'get_in': b'g_in', 'get_out': b'g_ou'}
         try:
-            cmd = command_dict[command]
+            cmd = self.command_dict[command]
         except KeyError:
-            raise KeyError(f"\"{command}\" is not a valid command. Use {command_dict.keys()} instead.")
+            raise KeyError(f"\"{command}\" is not a valid command. Use {self.command_dict.keys()} instead.")
         # Send command as a byte data
         await self.send_data(data_to_send=cmd, loop=loop, receiver=receiver, do_convert=False)
 
-    async def send_exit_command(self, loop, receiver):
+    async def send_command_exit(self, loop, receiver):
         await self.send_command(loop=loop, receiver=receiver, command='exit')
 
-    async def send_step_command(self, loop, receiver):
+    async def send_command_step(self, loop, receiver):
         await self.send_command(loop=loop, receiver=receiver, command='step')
 
-    async def send_check_command(self, loop, receiver):
+    async def send_command_check(self, loop, receiver):
         await self.send_command(loop=loop, receiver=receiver, command='check')
 
-    async def send_size_command(self, loop, receiver):
+    async def send_command_size(self, loop, receiver):
         await self.send_command(loop=loop, receiver=receiver, command='size')
 
-    async def send_compute_input_command(self, loop, receiver):
+    async def send_command_done(self, loop, receiver):
+        await self.send_command(loop=loop, receiver=receiver, command='done')
+
+    async def send_command_receive(self, loop, receiver):
+        await self.send_command(loop=loop, receiver=receiver, command='recv')
+
+    async def send_command_compute_input(self, loop, receiver):
         await self.send_command(loop=loop, receiver=receiver, command='compute_in')
 
-    async def send_compute_output_command(self, loop, receiver):
+    async def send_command_compute_output(self, loop, receiver):
         await self.send_command(loop=loop, receiver=receiver, command='compute_out')
 
-    async def send_get_input_command(self, loop, receiver):
+    async def send_command_get_input(self, loop, receiver):
         await self.send_command(loop=loop, receiver=receiver, command='get_in')
 
-    async def send_get_output_command(self, loop, receiver):
+    async def send_command_get_output(self, loop, receiver):
         await self.send_command(loop=loop, receiver=receiver, command='get_out')

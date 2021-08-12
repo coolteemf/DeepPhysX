@@ -13,7 +13,7 @@ class BaseEnvironmentConfig:
 
     def __init__(self, environment_class=BaseEnvironment, simulations_per_step=1, max_wrong_samples_per_step=10,
                  always_create_data=False, number_of_thread=1, socket_data_converter=BytesNumpyConverter,
-                 max_client_connection=1000, environment_file=''):
+                 max_client_connection=1000, environment_file='', param_dict={}):
         """
         BaseEnvironmentConfig is a configuration class to parameterize and create a BaseEnvironment for the
         EnvironmentManager.
@@ -53,34 +53,28 @@ class BaseEnvironmentConfig:
         self.max_client_connections = max_client_connection
         self.environment_file = environment_file
 
-        # BaseEnvironment parameterization
+        # TcpIpClients parameterization
         self.environment_class = environment_class
+        self.param_dict = param_dict
 
         # EnvironmentManager parameterization
+        self.received_parameters = {}
         self.always_create_data = always_create_data
         self.simulations_per_step = simulations_per_step
         self.max_wrong_samples_per_step = max_wrong_samples_per_step
 
+        # TcpIpServer parameterization
+        self.server_is_ready = False
         self.number_of_thread = min(max(number_of_thread, 1), os.cpu_count())  # Assert nb is between 1 and cpu_count
 
-    def createEnvironment(self, environment_manager=None):
-        """
-        :return: BaseEnvironment object from environment_class and its parameters
-        """
-        # Create environment
-        try:
-            environment = self.environment_class()
-            environment.environment_manager = environment_manager
-        except:
-            raise ValueError(f"[{self.name}] Given environment_class got an unexpected keyword argument 'config'")
-        if not isinstance(environment, BaseEnvironment):
-            raise TypeError(f"[{self.name}] Wrong environment_class type: BaseEnvironment required, get "
-                            f"{self.environment_class}")
-        environment.create()
-
-        return environment
-
     def createServer(self, environment_manager=None, batch_size=1):
+        """
+        Create a TcpIpServer and launch TcpIpClients in subprocesses.
+
+        :param environment_manager: EnvironmentManager
+        :param int batch_size: Number of sample in a batch
+        :return: TcpIpServer
+        """
         # Create server
         server = TcpIpServer(data_converter=self.socket_data_converter, max_client_count=self.max_client_connections,
                              batch_size=batch_size, nb_client=self.number_of_thread)
@@ -97,14 +91,33 @@ class BaseEnvironmentConfig:
         for client in client_threads:
             client.start()
 
-        # Return server to manager
+        # Return server to manager when ready
+        while not self.server_is_ready:
+            pass
         return server
 
     def start_server(self, server):
-        server.start_server()
+        """
+        Start TcpIpServer.
+        :param server: TcpIpServer
+        :return:
+        """
+        # Allow clients connections
+        server.connect()
+        # Send and receive parameters with clients
+        self.received_parameters = server.initialize(self.param_dict)
+        # Server is ready
+        self.server_is_ready = True
 
-    def start_client(self, idx):
-        subprocess.run(['python3', os.path.join(os.path.dirname(sys.modules[TcpIpServer.__module__].__file__), 'TcpIpClient.py'),
+    def start_client(self, idx=1):
+        """
+        Run a subprocess to start a TcpIpClient.
+
+        :param int idx: Index of client
+        :return:
+        """
+        subprocess.run(['python3', os.path.join(os.path.dirname(sys.modules[BaseEnvironment.__module__].__file__),
+                                                'launcherBaseEnvironment.py'),
                         self.environment_file, self.environment_class.__name__, str(idx)])
 
     def __str__(self):

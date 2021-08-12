@@ -1,7 +1,9 @@
 import numpy as np
 
+from DeepPhysX_Core.AsyncSocket.TcpIpClient import TcpIpClient
 
-class BaseEnvironment:
+
+class BaseEnvironment(TcpIpClient):
 
     def __init__(self, instance_id=1):
         """
@@ -10,40 +12,16 @@ class BaseEnvironment:
         :param int instance_id: ID of the instance
         """
 
-        self.name = self.__class__.__name__ + f"n°{instance_id}"
-        self.instance_id = instance_id
+        super().__init__(instance_id=instance_id)
+        print("Init base environment")
 
         # Environment data
         self.input, self.output = np.array([]), np.array([])
         self.input_size, self.output_size = None, None
 
-        self.environment_manager = None
-
-    def getDataManager(self):
-        """
-
-        :return: DataManager that handles the EnvironmentManager
-        """
-        return self.environment_manager.data_manager
-
-    def getEnvironmentManager(self):
-        """
-
-        :return: EnvironmentManager that handles the Environment
-        """
-        return self.environment_manager
-
     def create(self):
         """
         Create the environment given the configuration. Must be implemented by user.
-
-        :return:
-        """
-        raise NotImplementedError
-
-    def close(self):
-        """
-        Close the environment
 
         :return:
         """
@@ -95,6 +73,30 @@ class BaseEnvironment:
         """
         return self.output
 
+    def close(self):
+        """
+        Close the environment.
+
+        :return:
+        """
+        pass
+
+    def recv_parameters(self, param_dict):
+        """
+        Exploit received parameters before scene creation.
+
+        :param dict param_dict: Dictionary of parameters
+        :return:
+        """
+        pass
+
+    def send_parameters(self):
+        """
+        Create a dictionary of parameters to send to the manager.
+
+        :return: Dictionary of parameters
+        """
+        return {}
 
     def __str__(self):
         """
