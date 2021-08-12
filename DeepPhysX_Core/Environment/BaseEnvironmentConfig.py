@@ -1,12 +1,10 @@
 import os
-import time
 import threading
 import subprocess
 import sys
 
 from DeepPhysX_Core.Environment.BaseEnvironment import BaseEnvironment
 from DeepPhysX_Core.AsyncSocket.TcpIpServer import TcpIpServer, BytesNumpyConverter
-from DeepPhysX_Core.Visualizer.VedoVisualizer import VedoVisualizer
 
 
 class BaseEnvironmentConfig:
