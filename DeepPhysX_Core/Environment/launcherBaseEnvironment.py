@@ -1,17 +1,27 @@
 import sys
 
 from DeepPhysX_Core.Environment.BaseEnvironment import BaseEnvironment as Environment
+from DeepPhysX_Core.AsyncSocket.BytesBaseConverter import BytesBaseConverter as Converter
 
 
 if __name__ == '__main__':
-    if len(sys.argv) != 4:
-        print(f"Usage: python3 launcherBaseEnvironment.py <file_path> <environment_class> <idx>")
+
+    # Check script call
+    if len(sys.argv) != 7:
+        print(f"Usage: python3 {sys.argv[0]} <file_path> <environment_class> <ip_address> <port> "
+              f"<converter_class> <idx>")
         sys.exit(1)
 
+    # Import environment_class
     sys.path.append(sys.argv[1])
     exec("from " + sys.argv[2] + " import " + sys.argv[2] + " as Environment")
+    # Import converter_class
+    exec(f"from DeepPhysX_Core.AsyncSocket.{sys.argv[5]} import {sys.argv[5]} as Converter")
 
-    client = Environment(instance_id=int(sys.argv[3]))
+    # Create, init and run Tcp-Ip environment
+    client = Environment(ip_address=sys.argv[3], port=int(sys.argv[4]), data_converter=Converter,
+                         instance_id=int(sys.argv[6]))
     client.initialize()
     client.run()
-    print("Shutting down client", sys.argv[3])
+
+    print(f"[launcherBaseEnvironment] Shutting down client {sys.argv[3]}")

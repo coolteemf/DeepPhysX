@@ -12,8 +12,8 @@ from DeepPhysX_Core.Visualizer.VedoVisualizer import VedoVisualizer
 class BaseEnvironmentConfig:
 
     def __init__(self, environment_class=BaseEnvironment, simulations_per_step=1, max_wrong_samples_per_step=10,
-                 always_create_data=False, number_of_thread=1, socket_data_converter=BytesNumpyConverter,
-                 max_client_connection=1000, environment_file='', param_dict={}):
+                 always_create_data=False, number_of_thread=1, max_client_connection=1000, environment_file='',
+                 param_dict={}, ip_address='localhost', port=10000, socket_data_converter=BytesNumpyConverter):
         """
         BaseEnvironmentConfig is a configuration class to parameterize and create a BaseEnvironment for the
         EnvironmentManager.
@@ -64,6 +64,8 @@ class BaseEnvironmentConfig:
         self.max_wrong_samples_per_step = max_wrong_samples_per_step
 
         # TcpIpServer parameterization
+        self.ip_address = ip_address
+        self.port = port
         self.server_is_ready = False
         self.number_of_thread = min(max(number_of_thread, 1), os.cpu_count())  # Assert nb is between 1 and cpu_count
 
@@ -116,9 +118,11 @@ class BaseEnvironmentConfig:
         :param int idx: Index of client
         :return:
         """
-        subprocess.run(['python3', os.path.join(os.path.dirname(sys.modules[BaseEnvironment.__module__].__file__),
-                                                'launcherBaseEnvironment.py'),
-                        self.environment_file, self.environment_class.__name__, str(idx)])
+        script = os.path.join(os.path.dirname(sys.modules[BaseEnvironment.__module__].__file__),
+                              'launcherBaseEnvironment.py')
+        # Usage: python3 script.py <file_path> <environment_class> <ip_address> <port> <converter_class> <idx>"
+        subprocess.run(['python3', script, self.environment_file, self.environment_class.__name__,
+                        self.ip_address, str(self.port), self.socket_data_converter.__name__, str(idx)])
 
     def __str__(self):
         """

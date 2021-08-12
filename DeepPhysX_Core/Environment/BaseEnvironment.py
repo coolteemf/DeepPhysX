@@ -1,19 +1,19 @@
 import numpy as np
 
-from DeepPhysX_Core.AsyncSocket.TcpIpClient import TcpIpClient
+from DeepPhysX_Core.AsyncSocket.TcpIpClient import TcpIpClient, BytesNumpyConverter
 
 
 class BaseEnvironment(TcpIpClient):
 
-    def __init__(self, instance_id=1):
+    def __init__(self, ip_address='localhost', port=10000, data_converter=BytesNumpyConverter, instance_id=1):
         """
         BaseEnvironment is an environment class to compute simulated data for the network and its optimization process.
 
         :param int instance_id: ID of the instance
         """
 
-        super().__init__(instance_id=instance_id)
-        print("Init base environment")
+        super(BaseEnvironment, self).__init__(ip_address=ip_address, port=port, data_converter=data_converter,
+                                              instance_id=instance_id)
 
         # Environment data
         self.input, self.output = np.array([]), np.array([])

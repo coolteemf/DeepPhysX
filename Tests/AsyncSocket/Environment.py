@@ -1,12 +1,13 @@
 import numpy as np
 
-from DeepPhysX_Core.Environment.BaseEnvironment import BaseEnvironment
+from DeepPhysX_Core.Environment.BaseEnvironment import BaseEnvironment, BytesNumpyConverter
 
 
 class Environment(BaseEnvironment):
 
-    def __init__(self, instance_id=1):
-        super(Environment, self).__init__(instance_id=instance_id)
+    def __init__(self, ip_address='localhost', port=10000, data_converter=BytesNumpyConverter, instance_id=1):
+        super(Environment, self).__init__(ip_address=ip_address, port=port, data_converter=data_converter,
+                                          instance_id=instance_id)
         self.tensor = np.random.random((3,2))
 
     def create(self):
