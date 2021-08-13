@@ -3,6 +3,7 @@ import Sofa.Simulation
 
 from DeepPhysX_Sofa.Environment.SofaEnvironment import SofaEnvironment as Environment
 from DeepPhysX_Core.AsyncSocket.BytesBaseConverter import BytesBaseConverter as Converter
+import os
 
 if __name__ == '__main__':
 
@@ -13,11 +14,10 @@ if __name__ == '__main__':
         sys.exit(1)
 
     # Import environment_class
-    sys.path.append(sys.argv[1])
-    exec("from " + sys.argv[2] + " import " + sys.argv[2] + " as Environment")
+    sys.path.append(os.path.dirname(sys.argv[1]))
+    module_name = sys.argv[1].split(os.sep)[-1][:-3]
     # Import converter_class
-    exec(f"from DeepPhysX_Core.AsyncSocket.{sys.argv[5]} import {sys.argv[5]} as Converter")
-
+    exec(f"from {module_name} import {sys.argv[2]} as Env")
     # Create root node
     root_node = Sofa.Core.Node('rootNode')
 
