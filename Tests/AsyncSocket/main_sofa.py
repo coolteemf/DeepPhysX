@@ -1,7 +1,10 @@
 import sys
+import torch
 
 from DeepPhysX_Sofa.Environment.SofaEnvironmentConfig import SofaEnvironmentConfig, BytesNumpyConverter
-from DeepPhysX_Core.Manager.EnvironmentManager import EnvironmentManager
+from DeepPhysX_PyTorch.FC.FCConfig import FCConfig
+from DeepPhysX_Core.Dataset.BaseDatasetConfig import BaseDatasetConfig
+from DeepPhysX_Core.Pipelines.BaseTrainer import BaseTrainer
 from Tests.AsyncSocket.EnvironmentSofa import EnvironmentSofa
 
 if len(sys.argv) != 2:
@@ -11,11 +14,14 @@ if len(sys.argv) != 2:
 env_config = SofaEnvironmentConfig(environment_class=EnvironmentSofa,
                                    environment_file=sys.modules[EnvironmentSofa.__module__].__file__,
                                    number_of_thread=int(sys.argv[1]),
-                                   socket_data_converter=BytesNumpyConverter)
-env_manager = EnvironmentManager(environment_config=env_config, batch_size=2)
-for i in range(3):
-    data = env_manager.getData(get_inputs=True, get_outputs=True, animate=True)
-    print()
-    print(f"Batch n°{i}", data)
-    print()
-env_manager.close()
+                                   socket_data_converter=BytesNumpyConverter,
+                                   always_create_data=True)
+
+network_config = FCConfig(loss=torch.nn.MSELoss, lr=1e-3, optimizer=torch.optim.Adam,
+                          dim_layers=[3, 3, 3], dim_output=3)
+
+dataset_config = BaseDatasetConfig(partition_size=1, shuffle_dataset=True)
+
+trainer = BaseTrainer(session_name='testing/test', dataset_config=dataset_config, environment_config=env_config,
+                      network_config=network_config, nb_epochs=5, nb_batches=10, batch_size=5)
+trainer.execute()

@@ -98,6 +98,15 @@ class BaseEnvironment(TcpIpClient):
         """
         return {}
 
+    def applyPrediction(self, prediction):
+        """
+        Apply network prediction in environment.
+
+        :param prediction: Prediction data
+        :return:
+        """
+        pass
+
     def __str__(self):
         """
         :return: String containing information about the BaseEnvironmentConfig object

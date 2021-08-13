@@ -150,6 +150,11 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
             data_out = self.getOutput()
             await self.send_data(data_to_send=data_out, loop=loop, receiver=server)
 
+        # 'pred': receive prediction and apply it
+        elif command == b'pred':
+            prediction = await self.receive_data(loop=loop, sender=server)
+            self.applyPrediction(prediction.reshape(self.output_size))
+
     async def __close(self):
         """
         Close the environment and shutdown the client.

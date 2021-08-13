@@ -9,7 +9,7 @@ class EnvironmentSofa(SofaEnvironment):
                  instance_id=1):
         super(EnvironmentSofa, self).__init__(ip_address=ip_address, port=port, data_converter=data_converter,
                                               instance_id=instance_id, root_node=root_node)
-        self.tensor = np.random.random((3, 2))
+        self.tensor = np.random.random((3,1))
 
     def create(self):
         print(f"Created Env n°{self.instance_id}")
@@ -30,6 +30,9 @@ class EnvironmentSofa(SofaEnvironment):
 
     def computeOutput(self):
         self.output = np.copy(self.tensor)
+
+    def applyPrediction(self, prediction):
+        pass
 
     def close(self):
         print(f"Closing Env n°{self.instance_id}")

@@ -41,3 +41,6 @@ class AbstractEnvironment:
 
     def send_parameters(self):
         raise NotImplementedError
+
+    def applyPrediction(self, prediction):
+        raise NotImplementedError

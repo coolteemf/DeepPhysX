@@ -22,11 +22,11 @@ class TcpIpObject:
         # Create data converter
         self.data_converter = data_converter()
         # Available commands
-        self.available_commands = [b'exit', b'step', b'test', b'size', b'done', b'recv',
+        self.available_commands = [b'exit', b'step', b'test', b'size', b'done', b'recv', b'pred',
                                    b'c_in', b'c_ou', b'g_in', b'g_ou']
         self.command_dict = {'exit': b'exit', 'step': b'step', 'check': b'test', 'size': b'size', 'done': b'done',
-                             'recv': b'recv', 'compute_in': b'c_in', 'compute_out': b'c_ou', 'get_in': b'g_in',
-                             'get_out': b'g_ou'}
+                             'recv': b'recv', 'prediction': b'pred', 'compute_in': b'c_in', 'compute_out': b'c_ou',
+                             'get_in': b'g_in', 'get_out': b'g_ou'}
 
     async def send_data(self, data_to_send, loop, receiver, do_convert=True):
         """
@@ -143,6 +143,9 @@ class TcpIpObject:
 
     async def send_command_receive(self, loop, receiver):
         await self.send_command(loop=loop, receiver=receiver, command='recv')
+
+    async def send_command_prediction(self, loop, receiver):
+        await self.send_command(loop=loop, receiver=receiver, command='prediction')
 
     async def send_command_compute_input(self, loop, receiver):
         await self.send_command(loop=loop, receiver=receiver, command='compute_in')

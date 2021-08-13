@@ -1,4 +1,5 @@
 import asyncio
+import numpy as np
 
 from DeepPhysX_Core.AsyncSocket.TcpIpObject import TcpIpObject, BytesNumpyConverter
 
@@ -30,7 +31,9 @@ class TcpIpServer(TcpIpObject):
         # Init data to communicate with EnvironmentManager and Clients
         self.batch_size = batch_size
         self.current_batch = [[], []]
+        self.current_batch_id = []  # Required to associate a sample (and then the predictions) to its client
         self.next_batch = [[], []]
+        self.next_batch_id = []
         self.in_size = None
         self.out_size = None
         self.data_dict = {}
@@ -219,14 +222,14 @@ class TcpIpServer(TcpIpObject):
 
             # 6) Add data to batch
             if not(get_inputs and data_in is None) and not(get_outputs and data_out is None):
-                self.manageBatch(data_in, data_out)
+                self.manageBatch(data_in, data_out, idx)
 
         # If the sample is wrong
         else:
             # 7) record wrong sample
             pass
 
-    def manageBatch(self, data_in, data_out):
+    def manageBatch(self, data_in, data_out, client_id):
         """
         Add IO data to the current batch.
 
@@ -243,10 +246,45 @@ class TcpIpServer(TcpIpObject):
         if len(self.current_batch[0]) < self.batch_size:
             self.current_batch[0].append(data_in)
             self.current_batch[1].append(data_out)
+            self.current_batch_id.append(client_id)
         # If the current batch is already filled, add data to the next one
         else:
             self.next_batch[0].append(data_in)
             self.next_batch[1].append(data_out)
+            self.next_batch_id.append(client_id)
+
+    def applyPrediction(self, prediction):
+        """
+        Run __applyPrediction method with asyncio
+
+        :param list prediction: Batch of prediction data
+        :return:
+        """
+        asyncio.run(self.__applyPrediction(prediction))
+
+    async def __applyPrediction(self, prediction):
+        """
+        Share out the prediction tensors between the corresponding clients.
+
+        :param list prediction: Batch of prediction data
+        :return:
+        """
+        loop = asyncio.get_event_loop()
+        # Check the prediction batch size
+        if len(prediction) != self.batch_size:
+            raise ValueError(f"[TcpIpServer] The length of the prediction batch mismatch the expected batch size.")
+        # Send each prediction data to the corresponding client
+        for i in range(self.batch_size):
+            data = prediction[i]
+            id_client = self.current_batch_id[i]
+            # Tell the client to receive and apply prediction
+            await self.send_command_prediction(loop=loop, receiver=self.clients[id_client])
+            # Send prediction data to the client
+            await self.send_data(data_to_send=np.array(data, dtype=float), loop=loop, receiver=self.clients[id_client])
+
+        # Rest id track
+        self.current_batch_id = self.next_batch_id[:self.batch_size]
+        self.next_batch_id = self.next_batch_id[self.batch_size:]
 
     def close(self):
         """

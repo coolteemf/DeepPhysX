@@ -45,6 +45,9 @@ class EnvironmentManager:
         data_dict['out'] = np.array(batch[1]) if get_outputs else np.array([])
         return data_dict
 
+    def applyPrediction(self, prediction):
+        self.server.applyPrediction(prediction)
+
     def close(self):
         """
         Close the environment
