@@ -10,7 +10,7 @@ class DataManager:
 
     def __init__(self, dataset_config: BaseDatasetConfig, environment_config: BaseEnvironmentConfig, manager=None,
                  visualizer_class=None, session_name='default', session_dir=None, new_session=True,
-                 training=True, record_data=None):
+                 training=True, record_data=None, batch_size=1):
         """
         DataManager deals with the generation of input / output tensors. His job is to call getData on either the
         DatasetManager or the EnvironmentManager according to the context.
@@ -56,7 +56,7 @@ class DataManager:
             create_environment = self.dataset_manager.requireEnvironment()
         if create_environment:
             self.environment_manager = EnvironmentManager(data_manager=self, environment_config=environment_config,
-                                                          session_dir=session_dir)
+                                                          session_dir=session_dir, batch_size=batch_size)
 
     def getManager(self):
         """

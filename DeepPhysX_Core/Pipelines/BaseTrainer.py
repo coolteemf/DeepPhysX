@@ -40,7 +40,7 @@ class BaseTrainer(BasePipeline):
 
         self.manager = Manager(pipeline=self, network_config=self.network_config, dataset_config=dataset_config,
                                environment_config=self.environment_config, visualizer_class=visualizer_class, session_name=session_name,
-                               session_dir=session_dir, new_session=new_session)
+                               session_dir=session_dir, new_session=new_session, batch_size=batch_size)
         # Training variables
         self.nb_epochs = nb_epochs
         self.id_epoch = 0
@@ -84,7 +84,7 @@ class BaseTrainer(BasePipeline):
         """
         self.manager.getData(self.id_epoch, self.batch_size)
         prediction, self.loss_value = self.manager.optimizeNetwork()
-        self.manager.data_manager.environment_manager.environment.applyPrediction(prediction)
+        # self.manager.data_manager.environment_manager.environment.applyPrediction(prediction)
 
     def saveNetwork(self):
         """
