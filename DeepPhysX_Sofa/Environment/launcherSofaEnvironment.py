@@ -25,7 +25,6 @@ if __name__ == '__main__':
     client = root_node.addObject(Environment(ip_address=sys.argv[3], port=int(sys.argv[4]), data_converter=Converter,
                                              instance_id=int(sys.argv[6]), root_node=root_node))
     client.initialize()
-    # Sofa.Simulation.init(root_node)
     client.run()
 
     print(f"[launcherBaseEnvironment] Shutting down client {sys.argv[3]}")

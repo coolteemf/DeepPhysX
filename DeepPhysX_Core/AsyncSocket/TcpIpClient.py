@@ -67,6 +67,7 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
 
         # Create the environment
         self.create()
+        self.init()
 
         # Receive and check last init server command
         cmd = await self.receive_data(loop, self.sock, is_bytes_data=True)

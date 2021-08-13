@@ -15,6 +15,9 @@ class AbstractEnvironment:
     def create(self):
         raise NotImplementedError
 
+    def init(self):
+        raise NotImplementedError
+
     def close(self):
         raise NotImplementedError
 

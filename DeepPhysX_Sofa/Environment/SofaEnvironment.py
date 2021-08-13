@@ -17,6 +17,9 @@ class SofaEnvironment(Sofa.Core.Controller, BaseEnvironment):
     def create(self):
         raise NotImplementedError
 
+    def init(self):
+        Sofa.Simulation.init(self.root)
+
     def step(self):
         Sofa.Simulation.animate(self.root, self.root.dt.value)
         self.onStep()

@@ -27,6 +27,14 @@ class BaseEnvironment(TcpIpClient):
         """
         raise NotImplementedError
 
+    def init(self):
+        """
+        Initialize environment.
+
+        :return:
+        """
+        pass
+
     def step(self):
         """
         Compute the number of steps specified by simulations_per_step

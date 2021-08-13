@@ -13,16 +13,12 @@ class EnvironmentSofa(SofaEnvironment):
 
     def create(self):
         print(f"Created Env n°{self.instance_id}")
-        self.input_size = self.tensor.shape
-        self.output_size = self.tensor.shape
 
     def onSimulationInitDoneEvent(self, event):
-        # Todo: Warning, the init is called in launcher.py after b'size' request in Client. Should be called just after
-        # Todo: the create() method (use decorator in SofaEnvironment ?)
         self.input_size = self.tensor.shape
         self.output_size = self.tensor.shape
 
-    def step(self):
+    def onStep(self):
         self.tensor = np.random.random(self.input_size)
 
     def computeInput(self):
