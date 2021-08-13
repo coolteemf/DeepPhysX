@@ -1,8 +1,9 @@
+import os
 import sys
 import Sofa.Simulation
 
+from DeepPhysX_Sofa.Environment.SofaEnvironment import SofaEnvironment as Environment
 from DeepPhysX_Core.AsyncSocket.BytesBaseConverter import BytesBaseConverter as Converter
-import os
 
 if __name__ == '__main__':
 
@@ -13,15 +14,19 @@ if __name__ == '__main__':
         sys.exit(1)
 
     # Import environment_class
+    sys.path.clear()
     sys.path.append(os.path.dirname(sys.argv[1]))
     module_name = sys.argv[1].split(os.sep)[-1][:-3]
+    exec(f"from {module_name} import {sys.argv[2]} as Environment")
+
     # Import converter_class
-    exec(f"from {module_name} import {sys.argv[2]} as Env")
+    exec(f"from DeepPhysX_Core.AsyncSocket.{sys.argv[5]} import {sys.argv[5]} as Converter")
+
     # Create root node
     root_node = Sofa.Core.Node('rootNode')
 
     # Create, init and run Tcp-Ip environment
-    client = root_node.addObject(Env(ip_address=sys.argv[3], port=int(sys.argv[4]), data_converter=Converter,
+    client = root_node.addObject(Environment(ip_address=sys.argv[3], port=int(sys.argv[4]), data_converter=Converter,
                                              instance_id=int(sys.argv[6]), root_node=root_node))
     client.initialize()
     client.run()
