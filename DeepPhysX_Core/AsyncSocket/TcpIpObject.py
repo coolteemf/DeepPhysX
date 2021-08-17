@@ -1,4 +1,5 @@
 import socket
+import asyncio
 
 from DeepPhysX_Core.AsyncSocket.BytesNumpyConverter import BytesNumpyConverter
 
@@ -22,13 +23,10 @@ class TcpIpObject:
         # Create data converter
         self.data_converter = data_converter()
         # Available commands
-        self.available_commands = [b'exit', b'step', b'test', b'size', b'done', b'recv', b'pred',
-                                   b'c_in', b'c_ou', b'g_in', b'g_ou']
         self.command_dict = {'exit': b'exit', 'step': b'step', 'check': b'test', 'size': b'size', 'done': b'done',
-                             'recv': b'recv', 'prediction': b'pred', 'compute_in': b'c_in', 'compute_out': b'c_ou',
-                             'get_in': b'g_in', 'get_out': b'g_ou'}
+                             'recv': b'recv', 'prediction': b'pred', 'compute': b'cmpt'}
 
-    async def send_data(self, data_to_send, loop, receiver, do_convert=True):
+    async def send_data(self, data_to_send, loop=None, receiver=None, do_convert=True):
         """
         Send data from a TcpIpObject to another.
 
@@ -39,6 +37,8 @@ class TcpIpObject:
                False
         :return:
         """
+        loop = asyncio.get_event_loop() if loop is None else loop
+        receiver = self.sock if receiver is None else receiver
         # Cast data to bytes field
         data_as_bytes = self.data_converter.data_to_bytes(data_to_send) if do_convert else data_to_send
         # Size of tha data to send
@@ -92,7 +92,7 @@ class TcpIpObject:
                False
         :return:
         """
-        await self.send_data(data_to_send=label, loop=loop, receiver=receiver, do_convert=False)
+        await self.send_data(data_to_send=bytes(label, "utf-8"), loop=loop, receiver=receiver, do_convert=False)
         await self.send_data(data_to_send=data_to_send, loop=loop, receiver=receiver, do_convert=do_convert)
 
     async def receive_labeled_data(self, loop, sender, is_bytes_data=False):
@@ -105,7 +105,9 @@ class TcpIpObject:
                True
         :return:
         """
-        label = await self.receive_data(loop=loop, sender=sender, is_bytes_data=True)
+        label = (await self.receive_data(loop=loop, sender=sender, is_bytes_data=True)).decode("utf-8")
+        if label == "check":
+            is_bytes_data = True
         data = await self.receive_data(loop=loop, sender=sender, is_bytes_data=is_bytes_data)
         return label, data
 
@@ -126,35 +128,34 @@ class TcpIpObject:
         # Send command as a byte data
         await self.send_data(data_to_send=cmd, loop=loop, receiver=receiver, do_convert=False)
 
-    async def send_command_exit(self, loop, receiver):
+    async def listen_while_not_done(self, loop, sender, data_dict):
+        while await self.receive_data(loop=loop, sender=sender, is_bytes_data=True) != b'done':
+            label, param = await self.receive_labeled_data(loop=loop, sender=sender)
+            data_dict[label] = param
+
+    async def send_command_exit(self, loop=None, receiver=None):
         await self.send_command(loop=loop, receiver=receiver, command='exit')
 
-    async def send_command_step(self, loop, receiver):
+    async def send_command_step(self, loop=None, receiver=None):
         await self.send_command(loop=loop, receiver=receiver, command='step')
 
-    async def send_command_check(self, loop, receiver):
+    async def send_command_check(self, loop=None, receiver=None):
         await self.send_command(loop=loop, receiver=receiver, command='check')
 
-    async def send_command_size(self, loop, receiver):
+    async def send_command_size(self, loop=None, receiver=None):
         await self.send_command(loop=loop, receiver=receiver, command='size')
 
-    async def send_command_done(self, loop, receiver):
+    async def send_command_done(self, loop=None, receiver=None):
         await self.send_command(loop=loop, receiver=receiver, command='done')
 
-    async def send_command_receive(self, loop, receiver):
+    async def send_command_received(self, loop=None, receiver=None):
         await self.send_command(loop=loop, receiver=receiver, command='recv')
 
-    async def send_command_prediction(self, loop, receiver):
+    async def send_command_prediction(self, loop=None, receiver=None):
         await self.send_command(loop=loop, receiver=receiver, command='prediction')
 
-    async def send_command_compute_input(self, loop, receiver):
-        await self.send_command(loop=loop, receiver=receiver, command='compute_in')
+    async def send_command_get_learning_data(self, loop=None, receiver=None):
+        await self.send_command(loop=loop, receiver=receiver, command='compute')
 
-    async def send_command_compute_output(self, loop, receiver):
-        await self.send_command(loop=loop, receiver=receiver, command='compute_out')
-
-    async def send_command_get_input(self, loop, receiver):
-        await self.send_command(loop=loop, receiver=receiver, command='get_in')
-
-    async def send_command_get_output(self, loop, receiver):
-        await self.send_command(loop=loop, receiver=receiver, command='get_out')
+    async def send_command_dummy(self, loop=None, receiver=None):
+        await self.send_data(b'0', loop, receiver, do_convert=False)

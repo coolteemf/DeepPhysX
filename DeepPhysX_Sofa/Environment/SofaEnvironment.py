@@ -20,18 +20,12 @@ class SofaEnvironment(Sofa.Core.Controller, BaseEnvironment):
     def init(self):
         Sofa.Simulation.init(self.root)
 
-    def step(self):
+    async def step(self):
         Sofa.Simulation.animate(self.root, self.root.dt.value)
-        self.onStep()
+        await self.onStep()
 
-    def onStep(self):
+    async def onStep(self):
         pass
-
-    def computeInput(self):
-        raise NotImplementedError
-
-    def computeOutput(self):
-        raise NotImplementedError
 
     def checkSample(self, check_input=True, check_output=True):
         return True

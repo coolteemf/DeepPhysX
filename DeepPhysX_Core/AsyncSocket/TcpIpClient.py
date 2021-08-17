@@ -39,30 +39,20 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
         """
         loop = asyncio.get_event_loop()
 
-        # Receive parameters
-        cmd = b''
         recv_param_dict = {}
-        # Receive data while the server did not say to stop
-        while cmd != b'done':
-            # Receive and check server command
-            cmd = await self.receive_data(loop, self.sock, is_bytes_data=True)
-            if cmd not in [b'done', b'recv']:
-                raise ValueError(f"Unknown command {cmd}, must be in {[b'done', b'recv']}")
-            # Receive data if the server did not say to stop
-            if cmd != b'done':
-                label, param = await self.receive_labeled_data(loop, self.sock)
-                recv_param_dict[label] = param
+        # Receive parameters
+        await self.listen_while_not_done(loop=loop, sender=self.sock, data_dict=recv_param_dict)
+
         # Use received parameters
         self.recv_parameters(recv_param_dict)
 
         # Send parameters
         param_dict = self.send_parameters()
         for key in param_dict:
-            # Prepare the server to receive data
-            await self.send_command_receive(loop=loop, receiver=self.sock)
+            await self.send_command_dummy(loop=loop, receiver=self.sock)
             # Send the parameter (label + data)
             await self.send_labeled_data(data_to_send=param_dict[key], label=key, loop=loop, receiver=self.sock)
-        # Tell the client to stop receiving data
+            # Tell the client to stop receiving data
         await self.send_command_done(loop=loop, receiver=self.sock)
 
         # Create the environment
@@ -95,7 +85,6 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
 
         :return:
         """
-        loop = asyncio.get_event_loop()
         try:
             # Run the communication protocol with server while client is not asked to shutdown
             while not self.close_client:
@@ -117,40 +106,24 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
 
         # Receive and check command
         command = await self.receive_data(loop, server, is_bytes_data=True)
-        if command not in self.available_commands:
+        if command not in self.command_dict.values():
             raise ValueError(f"Unknown command {command}")
 
         # 'exit': close the environment and the client
         if command == b'exit':
             self.close_client = True
-
         # 'step': trigger a step in the environment
         elif command == b'step':
-            self.step()
-
+            self.generate_training_data = False
+            await self.step()
+        # 'cmpt': trigger a step in the environment and call for the sending of the training data
+        elif command == b'cmpt':
+            self.generate_training_data = True
+            await self.step()
         # 'test': check if the sample is exploitable
         elif command == b'test':
             check = b'1' if self.checkSample() else b'0'
             await self.send_data(data_to_send=check, loop=loop, receiver=server, do_convert=False)
-
-        # 'c_in': compute the environment input
-        elif command == b'c_in':
-            self.computeInput()
-
-        # 'c_ou': compute the environment output
-        elif command == b'c_ou':
-            self.computeOutput()
-
-        # 'g_in': send the environment input
-        elif command == b'g_in':
-            data_in = self.getInput()
-            await self.send_data(data_to_send=data_in, loop=loop, receiver=server)
-
-        # 'g_ou': send the environment output
-        elif command == b'g_ou':
-            data_out = self.getOutput()
-            await self.send_data(data_to_send=data_out, loop=loop, receiver=server)
-
         # 'pred': receive prediction and apply it
         elif command == b'pred':
             prediction = await self.receive_data(loop=loop, sender=server)
@@ -171,3 +144,25 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
         await self.send_command_exit(loop=loop, receiver=self.sock)
         # Close socket
         self.sock.close()
+
+    async def send_training_data(self, network_input=None, network_output=None, loop=None, receiver=None):
+        """
+
+        :param loop: asyncio.get_event_loop() return
+        :param receiver: TcpIpObject receiver
+        :param network_input: data to send under the label \"input\"
+        :param network_output: data to send under the label \"output\"
+        :return:
+        """
+        loop = asyncio.get_event_loop() if loop is None else loop
+        receiver = self.sock if receiver is None else receiver
+        check = self.checkSample()
+        await self.send_command_dummy()
+        await self.send_labeled_data(data_to_send=b'1' if check else b'0', label="check", loop=loop, receiver=receiver, do_convert=False)
+        if check:
+            if network_input is not None:
+                await self.send_command_dummy()
+                await self.send_labeled_data(data_to_send=network_input, label="input", loop=loop, receiver=receiver)
+            if network_output is not None:
+                await self.send_command_dummy()
+                await self.send_labeled_data(data_to_send=network_output, label="output", loop=loop, receiver=receiver)

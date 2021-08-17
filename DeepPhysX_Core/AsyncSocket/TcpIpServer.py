@@ -1,6 +1,6 @@
 import asyncio
 import numpy as np
-
+from queue import SimpleQueue
 from DeepPhysX_Core.AsyncSocket.TcpIpObject import TcpIpObject, BytesNumpyConverter
 
 
@@ -30,13 +30,10 @@ class TcpIpServer(TcpIpObject):
         self.nb_client = min(nb_client, max_client_count)
         # Init data to communicate with EnvironmentManager and Clients
         self.batch_size = batch_size
-        self.current_batch = [[], []]
-        self.current_batch_id = []  # Required to associate a sample (and then the predictions) to its client
-        self.next_batch = [[], []]
-        self.next_batch_id = []
+        self.data_fifo = SimpleQueue()
         self.in_size = None
         self.out_size = None
-        self.data_dict = {}
+        self.data_dict = []
         # Reference to EnvironmentManager
         self.manager = None
 
@@ -81,32 +78,23 @@ class TcpIpServer(TcpIpObject):
         loop = asyncio.get_event_loop()
 
         # Empty dictionaries for received parameters from clients
-        env_param_dicts = [{} for _ in range(len(self.clients))]
+        self.data_dict = {client_ID: {} for client_ID in range(len(self.clients))}
 
         # Initialisation process for each client
         for client_id, client in enumerate(self.clients):
 
             # Send parameters
             for key in param_dict:
-                # Prepare the client to receive data
-                await self.send_command_receive(loop=loop, receiver=client)
+                await self.send_command_dummy(loop=loop, receiver=client)
                 # Send the parameter (label + data)
                 await self.send_labeled_data(data_to_send=param_dict[key], label=key, loop=loop, receiver=client)
             # Tell the client to stop receiving data
             await self.send_command_done(loop=loop, receiver=client)
 
             # Receive parameters
-            cmd = b''
-            # Receive data while the client did not say to stop
-            while cmd != b'done':
-                # Receive and check client command
-                cmd = await self.receive_data(loop=loop, sender=client, is_bytes_data=True)
-                if cmd not in [b'done', b'recv']:
-                    raise ValueError(f"Unknown command {cmd}, must be in {[b'done', b'recv']}")
-                # Receive data if the client did not say to stop
-                if cmd != b'done':
-                    label, param = await self.receive_labeled_data(loop=loop, sender=client)
-                    env_param_dicts[client_id][label] = param
+            while await self.receive_data(loop=loop, sender=client, is_bytes_data=True) != b'done':
+                label, param = await self.receive_labeled_data(loop=loop, sender=client)
+                self.data_dict[client_id][label] = param
 
             # Get data sizes from the first client (these sizes are equals in all environments)
             if client_id == 0:
@@ -122,8 +110,6 @@ class TcpIpServer(TcpIpObject):
                 # Tell the other clients not to send data sizes
                 await self.send_command_done(loop=loop, receiver=client)
 
-        return env_param_dicts
-
     def getBatch(self, get_inputs=True, get_outputs=True, animate=True):
         """
         Build a batch from clients samples.
@@ -135,12 +121,21 @@ class TcpIpServer(TcpIpObject):
         """
         # Trigger communication protocol
         asyncio.run(self.__run(get_inputs=get_inputs, get_outputs=get_outputs, animate=animate))
-        # Get current batch, re-initialize next batch
-        batch = self.current_batch.copy()
-        self.current_batch = [self.next_batch[0][:self.batch_size], self.next_batch[1][:self.batch_size]]
-        self.next_batch = [self.next_batch[0][self.batch_size:], self.next_batch[1][self.batch_size:]]
-        # Return batch to environment manager
-        return batch, self.data_dict
+        inputs = []
+        outputs = []
+        while not self.data_fifo.empty():
+            data = self.data_fifo.get()
+            if len(data) == 2:
+                inputs.append(data[0])
+                outputs.append(data[1])
+            elif len(data) == 1:
+                if get_inputs:
+                    inputs.append(data[0])
+                else:
+                    outputs.append(data[0])
+            else:
+                raise ValueError("Empty data given to fifo, cannot generate batch")
+        return [inputs, outputs], self.data_dict
 
     async def __run(self, get_inputs=True, get_outputs=True, animate=True):
         """
@@ -153,21 +148,21 @@ class TcpIpServer(TcpIpObject):
         :return:
         """
         # Launch the communication protocol when a batch needs to be filled
-        while len(self.current_batch[0]) < self.batch_size:
+        while self.data_fifo.qsize() < self.batch_size:
             # Run a communicate protocol for each client and wait for the last one to finish
             await asyncio.gather(
-                *[self.__communicate(client=client, idx=client_id, get_inputs=get_inputs, get_outputs=get_outputs,
+                *[self.__communicate(client=client, client_id=client_id, get_inputs=get_inputs, get_outputs=get_outputs,
                                      animate=animate)
                   for client_id, client in enumerate(self.clients)])
 
-    async def __communicate(self, client=None, idx=None, get_inputs=True, get_outputs=True, animate=True):
+    async def __communicate(self, client=None, client_id=None, get_inputs=True, get_outputs=True, animate=True):
         """
         Communication protocol with a client. It goes trough different steps: 1) Running steps 2) Receiving additional
         data 3) Compute IO data 4) Check the IO sample 5) Receive the IO data 6) Add sample to batch 7) If sample is
         not exploitable save the wrong sample
 
         :param client: TcpIpObject client to communicate with
-        :param int idx: Index of the client
+        :param int client_id: Index of the client
         :param bool get_inputs: If True, compute and return input
         :param bool get_outputs: If True, compute and return output
         :param bool animate: If True, triggers an environment step
@@ -177,81 +172,33 @@ class TcpIpServer(TcpIpObject):
 
         # 1) Tell client to compute steps in the environment
         if animate:
-            for _ in range(self.manager.simulations_per_step):
-                await self.send_command_step(loop=loop, receiver=client)
-
-        # 2) Receive whatever data from the client's environment
-        # Todo: add this loop when a b'done' is send at the end of the time step
-        # cmd = b''
-        # while cmd != b'done':
-        #     cmd = await self.receive_data(loop=loop, sender=client, is_bytes_data=True)
-        #     if cmd not in [b'done', b'recv']:
-        #         raise ValueError(f"Unknown command {cmd}, must be in {[b'done', b'recv']}")
-        #     name, data = await self.receive_named_data(loop=loop, sender=client)
-        #     self.data_dict[name].append(data)
-
-        # 3) Tell client to compute data in the environment
-        if get_inputs:
-            await self.send_command_compute_input(loop=loop, receiver=client)
-        if get_outputs:
-            await self.send_command_compute_output(loop=loop, receiver=client)
-
-        # 4) Tell the client to check data sample
-        await self.send_command_check(loop=loop, receiver=client)
-        check = bool(await self.receive_data(loop=loop, sender=client, is_bytes_data=True))
+            # Execute n steps, the last one send data computation signal
+            for current_step in range(self.manager.simulations_per_step):
+                if current_step == self.manager.simulations_per_step - 1:
+                    await self.send_command_get_learning_data(loop=loop, receiver=client)
+                else:
+                    await self.send_command_step(loop=loop, receiver=client)
+                # Receive parameters
+                await self.listen_while_not_done(loop=loop, sender=client, data_dict=self.data_dict[client_id])
 
         # If the sample is exploitable
-        if check:
-            data_in, data_out = None, None
+        if self.data_dict[client_id]['check']:
 
-            # 5.1) Tell the client to send the input data
-            if get_inputs:
-                await self.send_command_get_input(loop=loop, receiver=client)
-                data_in = await self.receive_data(loop=loop, sender=client)
-                # Checkin input data size
-                if not data_in.size == self.in_size.prod():
-                    data_in = None
+            data = []
+            # Checkin input data size
+            if get_inputs and self.data_dict[client_id]['input'].size == self.in_size.prod():
+                data.append(self.data_dict[client_id]['input'].reshape(self.in_size))
 
-            # 5.2) Tell the client to send the output data
-            if get_outputs:
-                await self.send_command_get_output(loop=loop, receiver=client)
-                data_out = await self.receive_data(loop=loop, sender=client)
-                # Checkin output data size
-                if not data_out.size == self.out_size.prod():
-                    data_out = None
+            # Checkin output data size
+            if get_outputs and self.data_dict[client_id]['output'].size == self.out_size.prod():
+                data.append(self.data_dict[client_id]['output'].reshape(self.out_size))
 
-            # 6) Add data to batch
-            if not(get_inputs and data_in is None) and not(get_outputs and data_out is None):
-                self.manageBatch(data_in, data_out, idx)
-
+            if len(data) > 0:
+                self.data_fifo.put(data)
         # If the sample is wrong
         else:
             # 7) record wrong sample
             pass
-
-    def manageBatch(self, data_in, data_out, client_id):
-        """
-        Add IO data to the current batch.
-
-        :param data_in: Input data
-        :param data_out: Output data
-        :return:
-        """
-        # Reshape data which was flatten when sent on socket
-        if data_in is not None:
-            data_in = data_in.reshape(self.in_size)
-        if data_out is not None:
-            data_out = data_out.reshape(self.out_size)
-        # If the current batch in not filled, add data to current batch
-        if len(self.current_batch[0]) < self.batch_size:
-            self.current_batch[0].append(data_in)
-            self.current_batch[1].append(data_out)
-            self.current_batch_id.append(client_id)
-        # If the current batch is already filled, add data to the next one
-        else:
-            self.next_batch[0].append(data_in)
-            self.next_batch[1].append(data_out)
-            self.next_batch_id.append(client_id)
 
     def applyPrediction(self, prediction):
         """
@@ -270,21 +217,16 @@ class TcpIpServer(TcpIpObject):
         :return:
         """
         loop = asyncio.get_event_loop()
-        # Check the prediction batch size
-        if len(prediction) != self.batch_size:
-            raise ValueError(f"[TcpIpServer] The length of the prediction batch mismatch the expected batch size.")
-        # Send each prediction data to the corresponding client
-        for i in range(self.batch_size):
-            data = prediction[i]
-            id_client = self.current_batch_id[i]
+        # # Check the prediction batch size
+        # if len(prediction) != self.batch_size:
+        #     raise ValueError(f"[TcpIpServer] The length of the prediction batch mismatch the expected batch size.")
+        # Send each prediction data to a client
+        for client_id, data in enumerate(prediction):
+            client_id = client_id % len(self.clients)
             # Tell the client to receive and apply prediction
-            await self.send_command_prediction(loop=loop, receiver=self.clients[id_client])
+            await self.send_command_prediction(loop=loop, receiver=self.clients[client_id])
             # Send prediction data to the client
-            await self.send_data(data_to_send=np.array(data, dtype=float), loop=loop, receiver=self.clients[id_client])
-
-        # Rest id track
-        self.current_batch_id = self.next_batch_id[:self.batch_size]
-        self.next_batch_id = self.next_batch_id[self.batch_size:]
+            await self.send_data(data_to_send=np.array(data, dtype=float), loop=loop, receiver=self.clients[client_id])
 
     def close(self):
         """

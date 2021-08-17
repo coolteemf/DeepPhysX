@@ -43,22 +43,6 @@ class BaseEnvironment(TcpIpClient):
         """
         raise NotImplementedError
 
-    def computeInput(self):
-        """
-        Compute the data to be given as an input to the network.
-
-        :return:
-        """
-        raise NotImplementedError
-
-    def computeOutput(self):
-        """
-        Compute the data to be given as a ground truth to the network.
-
-        :return:
-        """
-        raise NotImplementedError
-
     def checkSample(self, check_input=True, check_output=True):
         """
         Check if the current sample is an outlier.
@@ -68,18 +52,6 @@ class BaseEnvironment(TcpIpClient):
         :return: Current data can be used or not.
         """
         return True
-
-    def getInput(self):
-        """
-        :return: Input data
-        """
-        return self.input
-
-    def getOutput(self):
-        """
-        :return: Ground truth data
-        """
-        return self.output
 
     def close(self):
         """
