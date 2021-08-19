@@ -187,7 +187,7 @@ class TcpIpObject:
         await self.send_data(b'0', loop, receiver, do_convert=False)
 
     # Synchronous definition of the functions
-    #@launchInThread
+    @launchInThread
     def sync_send_data(self, data_to_send, receiver=None, do_convert=True):
         """
         Send data from a TcpIpObject to another.
@@ -212,7 +212,7 @@ class TcpIpObject:
         receiver.sendall(data_as_bytes)
         #self.send_lock.release()
 
-    #@launchInThread
+    @launchInThread
     def sync_receive_data(self, is_bytes_data=False):
         """
         Receive data from another TcpIpObject.
@@ -225,9 +225,9 @@ class TcpIpObject:
         read_sizes = [4096, 2048, 1024, 512, 256]
         read_size_idx = 0
         # Always expect to receive the size of the data to read first
-        #self.receive_lock.acquire()
+        self.receive_lock.acquire()
         data_size_to_read = int.from_bytes(self.sock.recv(4), 'big')
-        #self.receive_lock.release()
+        self.receive_lock.release()
         data_as_bytes = b''
         # Proceed to read chunk by chunk
         while data_size_to_read > 0:
@@ -246,6 +246,8 @@ class TcpIpObject:
         # Return the data in the expected format
         return data_as_bytes if is_bytes_data else self.data_converter.bytes_to_data(data_as_bytes)
 
+    # Functions below might not need the thread thingy
+    @launchInThread
     def sync_send_labeled_data(self, data_to_send, label, receiver, do_convert=True):
         """
         Send data with an associated label.
@@ -260,6 +262,7 @@ class TcpIpObject:
         self.sync_send_data(data_to_send=bytes(label, "utf-8"), receiver=receiver, do_convert=False)
         self.sync_send_data(data_to_send=data_to_send, receiver=receiver, do_convert=do_convert)
 
+    @launchInThread
     def sync_receive_labeled_data(self, is_bytes_data=False):
         """
         Receive data and an associated label.
@@ -275,6 +278,7 @@ class TcpIpObject:
         data = self.sync_receive_data(is_bytes_data=is_bytes_data)
         return label, data
 
+    @launchInThread
     def sync_send_command(self, receiver, command=''):
         """
         Send a bytes command among the available commands.
