@@ -175,7 +175,7 @@ class TcpIpServer(TcpIpObject):
             # Execute n steps, the last one send data computation signal
             for current_step in range(self.manager.simulations_per_step):
                 if current_step == self.manager.simulations_per_step - 1:
-                    await self.send_command_get_learning_data(loop=loop, receiver=client)
+                    await self.send_command_compute(loop=loop, receiver=client)
                 else:
                     await self.send_command_step(loop=loop, receiver=client)
                 # Receive parameters
@@ -183,7 +183,6 @@ class TcpIpServer(TcpIpObject):
 
         # If the sample is exploitable
         if self.data_dict[client_id]['check']:
-
             data = []
             # Checkin input data size
             if get_inputs and self.data_dict[client_id]['input'].size == self.in_size.prod():
@@ -192,7 +191,6 @@ class TcpIpServer(TcpIpObject):
             # Checkin output data size
             if get_outputs and self.data_dict[client_id]['output'].size == self.out_size.prod():
                 data.append(self.data_dict[client_id]['output'].reshape(self.out_size))
-
             if len(data) > 0:
                 self.data_fifo.put(data)
         # If the sample is wrong

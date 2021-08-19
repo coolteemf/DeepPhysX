@@ -114,11 +114,11 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
             self.close_client = True
         # 'step': trigger a step in the environment
         elif command == b'step':
-            self.generate_training_data = False
+            self.compute_essential_data = False
             await self.step()
         # 'cmpt': trigger a step in the environment and call for the sending of the training data
         elif command == b'cmpt':
-            self.generate_training_data = True
+            self.compute_essential_data = True
             await self.step()
         # 'test': check if the sample is exploitable
         elif command == b'test':
@@ -166,3 +166,24 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
             if network_output is not None:
                 await self.send_command_dummy()
                 await self.send_labeled_data(data_to_send=network_output, label="output", loop=loop, receiver=receiver)
+
+    def sync_send_training_data(self, network_input=None, network_output=None, receiver=None):
+        """
+
+        :param loop: asyncio.get_event_loop() return
+        :param receiver: TcpIpObject receiver
+        :param network_input: data to send under the label \"input\"
+        :param network_output: data to send under the label \"output\"
+        :return:
+        """
+        receiver = self.sock if receiver is None else receiver
+        check = self.checkSample()
+        self.sync_send_command_dummy()
+        self.sync_send_labeled_data(data_to_send=b'1' if check else b'0', label="check", receiver=receiver, do_convert=False)
+        if check:
+            if network_input is not None:
+                self.sync_send_command_dummy()
+                self.sync_send_labeled_data(data_to_send=network_input, label="input", receiver=receiver)
+            if network_output is not None:
+                self.sync_send_command_dummy()
+                self.sync_send_labeled_data(data_to_send=network_output, label="output", receiver=receiver)

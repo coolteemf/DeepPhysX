@@ -14,10 +14,7 @@ class BaseEnvironment(TcpIpClient):
 
         super(BaseEnvironment, self).__init__(ip_address=ip_address, port=port, data_converter=data_converter,
                                               instance_id=instance_id)
-
-        # Environment data
         self.input, self.output = np.array([]), np.array([])
-        self.input_size, self.output_size = None, None
 
     def create(self):
         """

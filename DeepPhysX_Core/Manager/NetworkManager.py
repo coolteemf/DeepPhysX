@@ -138,7 +138,7 @@ class NetworkManager:
         data_out = self.network.predict(data_in)
         # Compute loss
         data_out, data_gt = self.data_transformation.transformBeforeLoss(data_out, data_gt)
-        loss = self.optimization.computeLoss(data_out, data_gt)
+        loss = self.optimization.computeLoss(data_out.reshape(data_gt.shape), data_gt)
         # Optimizing network if training
         if optimize:
             self.optimization.optimize()

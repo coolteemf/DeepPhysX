@@ -20,8 +20,11 @@ class SofaEnvironment(Sofa.Core.Controller, BaseEnvironment):
     def init(self):
         Sofa.Simulation.init(self.root)
 
-    async def step(self):
+    async def animate(self):
         Sofa.Simulation.animate(self.root, self.root.dt.value)
+
+    async def step(self):
+        await self.animate()
         await self.onStep()
 
     async def onStep(self):
