@@ -14,7 +14,6 @@ if __name__ == '__main__':
         sys.exit(1)
 
     # Import environment_class
-    sys.path.clear()
     sys.path.append(os.path.dirname(sys.argv[1]))
     module_name = sys.argv[1].split(os.sep)[-1][:-3]
     exec(f"from {module_name} import {sys.argv[2]} as Environment")
@@ -28,6 +27,7 @@ if __name__ == '__main__':
     # Create, init and run Tcp-Ip environment
     client = root_node.addObject(Environment(ip_address=sys.argv[3], port=int(sys.argv[4]), data_converter=Converter,
                                              instance_id=int(sys.argv[6]), root_node=root_node))
+
     client.initialize()
     client.run()
 

@@ -26,5 +26,10 @@ class SofaEnvironmentConfig(BaseEnvironmentConfig):
         script = os.path.join(os.path.dirname(sys.modules[SofaEnvironment.__module__].__file__),
                               'launcherSofaEnvironment.py')
         # Usage: python3 script.py <file_path> <environment_class> <ip_address> <port> <converter_class> <idx>"
-        subprocess.run(['python3', script, self.environment_file, self.environment_class.__name__,
-                        self.ip_address, str(self.port), self.socket_data_converter.__name__, str(idx)])
+        subprocess.run(['python3', script,
+                        self.environment_file,
+                        self.environment_class.__name__,
+                        self.ip_address,
+                        str(self.port),
+                        self.socket_data_converter.__name__,
+                        str(idx)])
