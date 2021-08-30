@@ -34,6 +34,7 @@ class TcpIpServer(TcpIpObject):
         self.in_size = None
         self.out_size = None
         self.data_dict = []
+        self.sample_to_client_id = []
         # Reference to EnvironmentManager
         self.environmentManager = None
 
@@ -132,16 +133,19 @@ class TcpIpServer(TcpIpObject):
         asyncio.run(self.__run(get_inputs=get_inputs, get_outputs=get_outputs, animate=animate))
         inputs = []
         outputs = []
-        while not self.data_fifo.empty():
+        self.sample_to_client_id = []
+        while max(len(inputs), len(outputs)) < self.batch_size and not self.data_fifo.empty():
             data = self.data_fifo.get()
-            if len(data) == 2:
+            if len(data) == 3:
                 inputs.append(data[0])
                 outputs.append(data[1])
-            elif len(data) == 1:
+                self.sample_to_client_id.append(data[2])
+            elif len(data) == 2:
                 if get_inputs:
                     inputs.append(data[0])
                 else:
                     outputs.append(data[0])
+                self.sample_to_client_id.append(data[1])
             else:
                 raise ValueError("Empty data given to fifo, cannot generate batch")
         return [inputs, outputs], self.data_dict
@@ -201,6 +205,7 @@ class TcpIpServer(TcpIpObject):
             if get_outputs and self.data_dict[client_id]['output'].size == self.out_size.prod():
                 data.append(self.data_dict[client_id]['output'].reshape(self.out_size))
             if len(data) > 0:
+                data.append(client_id)
                 self.data_fifo.put(data)
         # If the sample is wrong
         else:
@@ -229,11 +234,10 @@ class TcpIpServer(TcpIpObject):
         #     raise ValueError(f"[TcpIpServer] The length of the prediction batch mismatch the expected batch size.")
         # Send each prediction data to a client
         for client_id, data in enumerate(prediction):
-            client_id = client_id % len(self.clients)
             # Tell the client to receive and apply prediction
-            await self.send_command_prediction(loop=loop, receiver=self.clients[client_id])
+            await self.send_command_prediction(loop=loop, receiver=self.clients[self.sample_to_client_id[client_id]])
             # Send prediction data to the client
-            await self.send_data(data_to_send=np.array(data, dtype=float), loop=loop, receiver=self.clients[client_id])
+            await self.send_data(data_to_send=np.array(data, dtype=float), loop=loop, receiver=self.clients[self.sample_to_client_id[client_id]])
 
     def close(self):
         """
