@@ -17,7 +17,7 @@ env_config = SofaEnvironmentConfig(environment_class=EnvironmentSofa,
                                    socket_data_converter=BytesNumpyConverter,
                                    always_create_data=True)
 
-neurones_per_layer = 50*50*3  # Small RGB image of size 50x50
+neurones_per_layer = 1*2*3  # Small RGB image of size 50x50
 network_config = FCConfig(loss=torch.nn.MSELoss, lr=1e-3, optimizer=torch.optim.Adam,
                           dim_layers=[neurones_per_layer, neurones_per_layer, neurones_per_layer], dim_output=3)
 

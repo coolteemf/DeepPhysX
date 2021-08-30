@@ -2,6 +2,7 @@ import numpy as np
 
 from DeepPhysX_Sofa.Environment.SofaEnvironment import SofaEnvironment, BytesNumpyConverter
 
+import SofaRuntime
 
 class EnvironmentSofa(SofaEnvironment):
 
@@ -14,23 +15,24 @@ class EnvironmentSofa(SofaEnvironment):
         print(f"Created Env n°{self.instance_id}")
 
     def onSimulationInitDoneEvent(self, value):
-        self.input_size = (50, 50, 3)
-        self.output_size = (50, 50, 3)
+        self.input_size = (1, 2, 3)
+        self.output_size = (1, 2, 3)
 
     def onAnimateBeginEvent(self, value):
         self.input = np.random.random(self.input_size)
         self.output = 0.1 * np.random.random(self.output_size)
 
     def onAnimateEndEvent(self, value):
-        # if self.compute_essential_data:
-        #     self.sync_send_training_data(network_input=self.input, network_output=self.output)
-        # self.sync_send_command_done()
+        if self.compute_essential_data:
+            self.sync_send_training_data(network_input=self.input, network_output=self.output)
+        self.sync_send_labeled_data(label="position", data_to_send=self.output)
+        self.sync_send_command_done()
         return
 
-    async def onStep(self):
-        if self.compute_essential_data:
-            await self.send_training_data(network_input=self.input, network_output=self.output)
-        await self.send_command_done()
+    # async def onStep(self):
+    #     if self.compute_essential_data:
+    #         await self.send_training_data(network_input=self.input, network_output=self.output)
+    #     await self.send_command_done()
 
     def applyPrediction(self, prediction):
         pass

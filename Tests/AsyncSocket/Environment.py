@@ -15,7 +15,7 @@ class Environment2(BaseEnvironment):
         self.input_size = self.tensor.shape
         self.output_size = self.tensor.shape
 
-    def step(self):
+    def onStep(self):
         self.tensor = np.random.random(self.input_size)
         self.send_training_data(network_input=self.tensor, network_output=2.0 * self.tensor)
 
