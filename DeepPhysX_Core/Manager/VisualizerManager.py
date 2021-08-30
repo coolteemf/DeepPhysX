@@ -57,6 +57,22 @@ class VisualizerManager:
        """
         return self.visualizer.addObject(positions=positions, cells=cells, at=at, field_dict=field_dict)
 
+    def updateFromBatch(self, batch):
+        """
+        Update vedo using batch informations
+
+        :param batch: dict templated as
+                        {0: {client_parameters},
+                         1: {client_parameters},
+                         ...
+                         N-1: {client_parameters},
+                         'in': input_learning data,
+                         'out': output_learning data}
+
+                      client_parameter contain all data sent by the environment to the environment manager (position, velocity, strain, etc...)
+        """
+        self.visualizer.updateFromBatch(batch=batch)
+
     def render(self):
         self.visualizer.render()
 

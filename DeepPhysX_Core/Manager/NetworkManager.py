@@ -133,6 +133,7 @@ class NetworkManager:
         """
         # Getting data from the data manager
         data_in, data_gt = self.network.transformFromNumpy(data['in']), self.network.transformFromNumpy(data['out'])
+
         # Compute prediction
         data_in = self.data_transformation.transformBeforePrediction(data_in)
         data_out = self.network.predict(data_in)
