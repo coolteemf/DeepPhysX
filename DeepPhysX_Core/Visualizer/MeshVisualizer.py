@@ -92,12 +92,43 @@ class MeshVisualizer(VedoVisualizer):
         self.viewer.allowInteraction()
 
     def update(self, position=True, scalar_field=True, cells=False):
+        """
+
+        :param position:
+        :param scalar_field:
+        :param cells:
+        :return:
+        """
         # In case, to debug
         for model in self.data:
             if position and self.data[model]['positions'] is not None:
                 model.points(self.data[model]['positions'])
             if scalar_field and 'scalar_field' in self.data[model] and self.data[model]['scalar_field'] is not None:
                 model.cmap(self.data[model]['color_map'], self.data[model]['scalar_field'])
+
+    def updateFromBatch(self, batch):
+        """
+        update vedo environment using batch information
+
+        :param batch: dict templated as
+                        {0: {client_parameters},
+                         1: {client_parameters},
+                         ...
+                         N-1: {client_parameters},
+                         'in': input_learning data,
+                         'out': output_learning data}
+
+                      client_parameter contain all data sent by the environment to the environment manager (position, velocity, strain, etc...)
+        :return:
+        """
+        # assume client order == vedo mesh order
+        for idx, mesh in enumerate(self.data):
+            if idx in batch:
+                for key in self.data[mesh]:
+                    if key in batch[idx]:
+                        print(f"Field {key} updated")
+                        self.data[mesh][key] = batch[idx][key]
+        self.render()
 
     def saveSample(self, session_dir):
         """

@@ -84,6 +84,7 @@ class BaseTrainer(BasePipeline):
         """
         self.manager.getData(self.id_epoch, self.batch_size)
         prediction, self.loss_value = self.manager.optimizeNetwork()
+        print(f"Current loss : {self.loss_value}")
         self.manager.data_manager.environment_manager.applyPrediction(prediction)
 
     def saveNetwork(self):
