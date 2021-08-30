@@ -97,14 +97,14 @@ class TcpIpServer(TcpIpObject):
             # if 'addvedo' in self.data_dict[client_id] and self.data_dict[client_id]['addvedo']:
             #
             #     # Position typo check
-            #     pos = self.data_dict[client_id]['positions'] if 'positions' in self.data_dict[client_id] else np.array([])
-            #     pos = self.data_dict[client_id]['position'] if 'position' in self.data_dict[client_id] else pos
+            #     positions = self.data_dict[client_id]['positions'] if 'positions' in self.data_dict[client_id] else np.array([])
+            #     positions = self.data_dict[client_id]['position'] if 'position' in self.data_dict[client_id] else pos
             #
             #     # cell existence/typo check
             #     cells = self.data_dict[client_id]['cells'] if 'cells' in self.data_dict[client_id] else None
             #     cells = self.data_dict[client_id]['cell'] if 'cell' in self.data_dict[client_id] else pos
             #
-            #     self.environmentManager.visualizer.addObject(positions=pos, cells=cells)
+            #     self.environmentManager.visualizer.addObject(positions=positions, cells=cells)
             # Get data sizes from the first client (these sizes are equals in all environments)
             if client_id == 0:
                 # Ask the client to send data sizes

@@ -36,12 +36,7 @@ class EnvironmentManager:
         Compute a batch of data from Environments.
         :return:
         """
-        batch, data_dict = self.server.getBatch(get_inputs=False, get_outputs=False, animate=True)
-        if self.data_manager is not None and self.data_manager.visualizer_manager is not None:
-            self.visualizer = self.data_manager.visualizer_manager
-
-        if self.visualizer is not None:
-            self.visualizer.updateFromBatch(data_dict)
+        self.getData(get_inputs=False, get_outputs=False, animate=True)
 
     def getData(self, get_inputs=True, get_outputs=True, animate=True):
         """
