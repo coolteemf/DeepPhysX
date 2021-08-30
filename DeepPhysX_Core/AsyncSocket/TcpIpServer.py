@@ -35,7 +35,7 @@ class TcpIpServer(TcpIpObject):
         self.out_size = None
         self.data_dict = []
         # Reference to EnvironmentManager
-        self.manager = None
+        self.environmentManager = None
 
     def connect(self):
         """
@@ -85,17 +85,26 @@ class TcpIpServer(TcpIpObject):
 
             # Send parameters
             for key in param_dict:
-                await self.send_command_dummy(loop=loop, receiver=client)
+                await self.send_command_read(loop=loop, receiver=client)
                 # Send the parameter (label + data)
                 await self.send_labeled_data(data_to_send=param_dict[key], label=key, loop=loop, receiver=client)
             # Tell the client to stop receiving data
             await self.send_command_done(loop=loop, receiver=client)
 
             # Receive parameters
-            while await self.receive_data(loop=loop, sender=client, is_bytes_data=True) != b'done':
-                label, param = await self.receive_labeled_data(loop=loop, sender=client)
-                self.data_dict[client_id][label] = param
+            await self.listen_while_not_done(loop=loop, sender=client, data_dict=self.data_dict[client_id])
 
+            # if 'addvedo' in self.data_dict[client_id] and self.data_dict[client_id]['addvedo']:
+            #
+            #     # Position typo check
+            #     pos = self.data_dict[client_id]['positions'] if 'positions' in self.data_dict[client_id] else np.array([])
+            #     pos = self.data_dict[client_id]['position'] if 'position' in self.data_dict[client_id] else pos
+            #
+            #     # cell existence/typo check
+            #     cells = self.data_dict[client_id]['cells'] if 'cells' in self.data_dict[client_id] else None
+            #     cells = self.data_dict[client_id]['cell'] if 'cell' in self.data_dict[client_id] else pos
+            #
+            #     self.environmentManager.visualizer.addObject(positions=pos, cells=cells)
             # Get data sizes from the first client (these sizes are equals in all environments)
             if client_id == 0:
                 # Ask the client to send data sizes
@@ -173,8 +182,8 @@ class TcpIpServer(TcpIpObject):
         # 1) Tell client to compute steps in the environment
         if animate:
             # Execute n steps, the last one send data computation signal
-            for current_step in range(self.manager.simulations_per_step):
-                if current_step == self.manager.simulations_per_step - 1:
+            for current_step in range(self.environmentManager.simulations_per_step):
+                if current_step == self.environmentManager.simulations_per_step - 1:
                     await self.send_command_compute(loop=loop, receiver=client)
                 else:
                     await self.send_command_step(loop=loop, receiver=client)
@@ -182,7 +191,7 @@ class TcpIpServer(TcpIpObject):
                 await self.listen_while_not_done(loop=loop, sender=client, data_dict=self.data_dict[client_id])
 
         # If the sample is exploitable
-        if self.data_dict[client_id]['check']:
+        if 'check' in self.data_dict[client_id] and self.data_dict[client_id]['check']:
             data = []
             # Checkin input data size
             if get_inputs and self.data_dict[client_id]['input'].size == self.in_size.prod():

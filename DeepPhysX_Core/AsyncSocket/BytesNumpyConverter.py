@@ -10,3 +10,6 @@ class BytesNumpyConverter(BytesBaseConverter):
 
     def data_to_bytes(self, data):
         return data.tobytes()
+
+    def data_type(self):
+        return type(np.array([]))

@@ -34,7 +34,7 @@ class TcpIpObject:
         self.data_converter = data_converter()
         # Available commands
         self.command_dict = {'exit': b'exit', 'step': b'step', 'check': b'test', 'size': b'size', 'done': b'done',
-                             'recv': b'recv', 'prediction': b'pred', 'compute': b'cmpt'}
+                             'received': b'recv', 'prediction': b'pred', 'compute': b'cmpt', 'read': b'read'}
         # Synchronous variables
         self.send_lock = threading.Lock()
         self.receive_lock = threading.Lock()
@@ -54,7 +54,7 @@ class TcpIpObject:
         loop = asyncio.get_event_loop() if loop is None else loop
         receiver = self.sock if receiver is None else receiver
         # Cast data to bytes field
-        data_as_bytes = self.data_converter.data_to_bytes(data_to_send) if do_convert else data_to_send
+        data_as_bytes = self.data_converter.data_to_bytes(data_to_send) if type(data_to_send) == self.data_converter.data_type() else data_to_send
         # Size of tha data to send
         data_size = len(data_as_bytes)
         # Send the size of the next receive
@@ -106,7 +106,7 @@ class TcpIpObject:
                False
         :return:
         """
-        await self.send_data(data_to_send=bytes(label, "utf-8"), loop=loop, receiver=receiver, do_convert=False)
+        await self.send_data(data_to_send=bytes(label.lower(), "utf-8"), loop=loop, receiver=receiver, do_convert=False)
         await self.send_data(data_to_send=data_to_send, loop=loop, receiver=receiver, do_convert=do_convert)
 
     async def receive_labeled_data(self, loop, sender, is_bytes_data=False):
@@ -119,8 +119,12 @@ class TcpIpObject:
                True
         :return:
         """
-        label = (await self.receive_data(loop=loop, sender=sender, is_bytes_data=True)).decode("utf-8")
-        if label == "check":
+        data = await self.receive_data(loop=loop, sender=sender, is_bytes_data=True)
+        if data in self.command_dict.values():
+            label = (await self.receive_data(loop=loop, sender=sender, is_bytes_data=True)).decode("utf-8")
+        else:
+            label = data.decode("utf-8")
+        if label in ["check", "addvedo"]:
             is_bytes_data = True
         data = await self.receive_data(loop=loop, sender=sender, is_bytes_data=is_bytes_data)
         return label, data
@@ -147,7 +151,7 @@ class TcpIpObject:
             label, param = await self.receive_labeled_data(loop=loop, sender=sender)
             data_dict[label] = param
 
-        ############ This is debug mode of above. DO NOT ERASE
+        # ############ This is debug mode of above. DO NOT ERASE
         # import time
         # while True:
         #     cmd = await self.receive_data(loop=loop, sender=sender, is_bytes_data=True)
@@ -157,6 +161,7 @@ class TcpIpObject:
         #         break
         #     label, param = await self.receive_labeled_data(loop=loop, sender=sender)
         #     print(f"received {label=}")
+        #     #print(f"value = {param}")
         #     data_dict[label] = param
 
     async def send_command_exit(self, loop=None, receiver=None):
@@ -175,7 +180,7 @@ class TcpIpObject:
         await self.send_command(loop=loop, receiver=receiver, command='done')
 
     async def send_command_received(self, loop=None, receiver=None):
-        await self.send_command(loop=loop, receiver=receiver, command='recv')
+        await self.send_command(loop=loop, receiver=receiver, command='received')
 
     async def send_command_prediction(self, loop=None, receiver=None):
         await self.send_command(loop=loop, receiver=receiver, command='prediction')
@@ -183,11 +188,11 @@ class TcpIpObject:
     async def send_command_compute(self, loop=None, receiver=None):
         await self.send_command(loop=loop, receiver=receiver, command='compute')
 
-    async def send_command_dummy(self, loop=None, receiver=None):
-        await self.send_data(b'0', loop, receiver, do_convert=False)
+    async def send_command_read(self, loop=None, receiver=None):
+        await self.send_command(loop=loop, receiver=receiver, command='read')
 
     # Synchronous definition of the functions
-    @launchInThread
+    #@launchInThread
     def sync_send_data(self, data_to_send, receiver=None, do_convert=True):
         """
         Send data from a TcpIpObject to another.
@@ -212,7 +217,7 @@ class TcpIpObject:
         receiver.sendall(data_as_bytes)
         #self.send_lock.release()
 
-    @launchInThread
+    #@launchInThread
     def sync_receive_data(self, is_bytes_data=False):
         """
         Receive data from another TcpIpObject.
@@ -247,8 +252,8 @@ class TcpIpObject:
         return data_as_bytes if is_bytes_data else self.data_converter.bytes_to_data(data_as_bytes)
 
     # Functions below might not need the thread thingy
-    @launchInThread
-    def sync_send_labeled_data(self, data_to_send, label, receiver, do_convert=True):
+    #@launchInThread
+    def sync_send_labeled_data(self, data_to_send, label, receiver=None, do_convert=True):
         """
         Send data with an associated label.
 
@@ -259,10 +264,11 @@ class TcpIpObject:
                False
         :return:
         """
-        self.sync_send_data(data_to_send=bytes(label, "utf-8"), receiver=receiver, do_convert=False)
+        self.sync_send_command_read()
+        self.sync_send_data(data_to_send=bytes(label.lower(), "utf-8"), receiver=receiver, do_convert=False)
         self.sync_send_data(data_to_send=data_to_send, receiver=receiver, do_convert=do_convert)
 
-    @launchInThread
+    #@launchInThread
     def sync_receive_labeled_data(self, is_bytes_data=False):
         """
         Receive data and an associated label.
@@ -272,13 +278,17 @@ class TcpIpObject:
                True
         :return:
         """
-        label = self.sync_receive_data(is_bytes_data=True).decode("utf-8")
+        data = self.sync_receive_data(is_bytes_data=True)
+        if data in self.command_dict.values():
+            label = self.sync_receive_data(is_bytes_data=True).decode("utf-8")
+        else:
+            label = data.decode("utf-8")
         if label == "check":
             is_bytes_data = True
         data = self.sync_receive_data(is_bytes_data=is_bytes_data)
         return label, data
 
-    @launchInThread
+    #@launchInThread
     def sync_send_command(self, receiver, command=''):
         """
         Send a bytes command among the available commands.
@@ -316,7 +326,7 @@ class TcpIpObject:
         self.sync_send_command(receiver=receiver, command='done')
 
     def sync_send_command_received(self, receiver=None):
-        self.sync_send_command(receiver=receiver, command='recv')
+        self.sync_send_command(receiver=receiver, command='received')
 
     def sync_send_command_prediction(self, receiver=None):
         self.sync_send_command(receiver=receiver, command='prediction')
@@ -324,5 +334,5 @@ class TcpIpObject:
     def sync_send_command_compute(self, receiver=None):
         self.sync_send_command(receiver=receiver, command='compute')
 
-    def sync_send_command_dummy(self, receiver=None):
-        self.sync_send_data(b'0', receiver, do_convert=False)
+    def sync_send_command_read(self, receiver=None):
+        self.sync_send_command(receiver=receiver, command='read')
