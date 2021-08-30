@@ -78,7 +78,7 @@ class BaseEnvironmentConfig:
         # Create server
         server = TcpIpServer(data_converter=self.socket_data_converter, max_client_count=self.max_client_connections,
                              batch_size=batch_size, nb_client=self.number_of_thread)
-        server.manager = environment_manager
+        server.environmentManager = environment_manager
 
         server_thread = threading.Thread(target=self.start_server, args=(server,))
         server_thread.start()
