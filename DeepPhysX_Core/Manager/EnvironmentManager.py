@@ -57,18 +57,14 @@ class EnvironmentManager:
         :return: dictionnary containing all labeled data sent by the clients in their own dictionnary + in and out key corresponding to the batch
         """
         batch, data_dict = self.server.getBatch(get_inputs, get_outputs, animate)
-        print("Batch")
-        print(batch)
-        print("Data dict")
-        print(data_dict)
 
         if self.visualizer_manager is not None:
             self.visualizer_manager.updateFromBatch(data_dict)
 
-        data_dict['in'] = np.array(batch[0]) if get_inputs else np.array([])
-        data_dict['out'] = np.array(batch[1]) if get_outputs else np.array([])
+        training_data = {'in': np.array(batch[0]) if get_inputs else np.array([]),
+                         'out': np.array(batch[1]) if get_outputs else np.array([])}
 
-        return data_dict
+        return training_data
 
     def applyPrediction(self, prediction):
         self.server.applyPrediction(prediction)
