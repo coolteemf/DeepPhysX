@@ -56,6 +56,7 @@ class DataManager:
             create_environment = self.dataset_manager.requireEnvironment()
         if create_environment:
             self.environment_manager = EnvironmentManager(data_manager=self, environment_config=environment_config,
+                                                          visualizer_manager=self.visualizer_manager,
                                                           session_dir=session_dir, batch_size=batch_size)
 
     def getManager(self):

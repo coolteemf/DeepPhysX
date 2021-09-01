@@ -6,7 +6,8 @@ from DeepPhysX_Core.Environment.BaseEnvironmentConfig import BaseEnvironmentConf
 
 class EnvironmentManager:
 
-    def __init__(self, environment_config: BaseEnvironmentConfig, data_manager=None, visualizer=None, session_dir=None, batch_size=1):
+    def __init__(self, environment_config: BaseEnvironmentConfig, data_manager=None, visualizer_manager=None,
+                 session_dir=None, batch_size=1):
         """
         Deals with the online generation of data for both training and running of the neural networks
 
@@ -20,10 +21,13 @@ class EnvironmentManager:
         # Create single or multiple environments according to multiprocessing value
         self.server = environment_config.createServer(environment_manager=self, batch_size=batch_size)
 
+        # Init visualizer
+        self.visualizer_manager = visualizer_manager
+        self.initVisualizer()
+
         self.always_create_data = environment_config.always_create_data
         self.simulations_per_step = environment_config.simulations_per_step
         self.max_wrong_samples_per_step = environment_config.max_wrong_samples_per_step
-        self.visualizer = visualizer
 
     def getDataManager(self):
         """
@@ -31,9 +35,14 @@ class EnvironmentManager:
         """
         return self.data_manager
 
+    def initVisualizer(self):
+        if self.visualizer_manager is not None:
+            data_dict = self.server.data_dict
+            self.visualizer_manager.initView(data_dict)
+
     def step(self):
         """
-        Compute a batch of data from Environments.
+        Trigger a step in Environments.
         :return:
         """
         self.getData(get_inputs=False, get_outputs=False, animate=True)
@@ -48,14 +57,17 @@ class EnvironmentManager:
         :return: dictionnary containing all labeled data sent by the clients in their own dictionnary + in and out key corresponding to the batch
         """
         batch, data_dict = self.server.getBatch(get_inputs, get_outputs, animate)
+        print("Batch")
+        print(batch)
+        print("Data dict")
+        print(data_dict)
+
+        if self.visualizer_manager is not None:
+            self.visualizer_manager.updateFromBatch(data_dict)
+
         data_dict['in'] = np.array(batch[0]) if get_inputs else np.array([])
         data_dict['out'] = np.array(batch[1]) if get_outputs else np.array([])
 
-        if self.data_manager is not None and self.data_manager.visualizer_manager is not None:
-            self.visualizer = self.data_manager.visualizer_manager
-
-        if self.visualizer is not None:
-            self.visualizer.updateFromBatch(data_dict)
         return data_dict
 
     def applyPrediction(self, prediction):

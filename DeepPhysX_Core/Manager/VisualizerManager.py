@@ -43,6 +43,9 @@ class VisualizerManager:
         """
         return self.visualizer_class
 
+    def initView(self, data_dict):
+        self.visualizer.initView(data_dict)
+
     def addObject(self, positions, cells=None, at=MAX_INT, field_dict={'scalar_field': None}):
         """
        Add an object tot he visualizer. If cells is None then it's a point cloud, otherwise it correspond

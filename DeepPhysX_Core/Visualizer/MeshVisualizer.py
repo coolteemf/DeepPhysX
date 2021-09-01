@@ -1,6 +1,6 @@
 import vedo
-import copy
 import os
+import numpy as np
 from sys import maxsize as MAX_INT
 
 from DeepPhysX_Core.Visualizer.VedoVisualizer import VedoVisualizer
@@ -31,6 +31,38 @@ class MeshVisualizer(VedoVisualizer):
         self.folder = None
         self.nb_saved = 0
 
+    def initView(self, data_dict):
+        """
+        Add all objects described in data_dict.
+
+        :param data_dict:
+        :return:
+        """
+        for idx in data_dict:
+            model = data_dict[idx]
+            if 'positions' in model:
+                # Position
+                positions = model['positions']
+                if 'position_shape' in model:
+                    position_shape = np.array(model['position_shape'], dtype=int)
+                    positions = positions.reshape(position_shape)
+                else:
+                    raise ValueError('[MeshVisualizer] You need to add a "position_shape" field')
+                # Cells
+                cells = model['cells'] if 'cells' in model else None
+                if cells is not None and 'cell_size' in model:
+                    cell_size = np.array(model['cell_size'], dtype=int)
+                    cells = cells.reshape(cell_size)
+                else:
+                    raise ValueError('[MeshVisualizer] You need to add a "cell_size" field')
+                # Other
+                at = model['at'] if 'at' in model else MAX_INT
+                field_dict = model['field_dict'] if 'field_dict' in model else {'scalar_field': None}
+
+                self.addObject(positions=positions, cells=cells, at=at, field_dict=field_dict)
+        if self.viewer is not None:
+            self.render()
+
     def addObject(self, positions, cells=None, at=MAX_INT, field_dict={'scalar_field': None}):
         """
        Add an object to vedo visualizer. If cells is None then it's a point cloud, otherwise it correspond
@@ -53,7 +85,8 @@ class MeshVisualizer(VedoVisualizer):
             mesh.cmap(field_dict['color_map'], field_dict['scalar_field'])
 
         # Attach each know fields to the Mesh object
-        self.data[mesh] = {'positions': positions, 'cells': cells, 'at': self.addView(at)}
+        self.data[mesh] = {'positions': positions, 'position_shape': np.array(positions.shape, dtype=int),
+                           'cells': cells, 'at': self.addView(at)}
         for data_field in field_dict.keys():
             self.data[mesh][data_field] = field_dict[data_field]
 
@@ -102,7 +135,8 @@ class MeshVisualizer(VedoVisualizer):
         # In case, to debug
         for model in self.data:
             if position and self.data[model]['positions'] is not None:
-                model.points(self.data[model]['positions'])
+                shape = np.array(self.data[model]['position_shape'], dtype=int)
+                model.points(self.data[model]['positions'].reshape(shape))
             if scalar_field and 'scalar_field' in self.data[model] and self.data[model]['scalar_field'] is not None:
                 model.cmap(self.data[model]['color_map'], self.data[model]['scalar_field'])
 

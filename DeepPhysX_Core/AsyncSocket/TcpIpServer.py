@@ -200,10 +200,13 @@ class TcpIpServer(TcpIpObject):
             # Checkin input data size
             if get_inputs and self.data_dict[client_id]['input'].size == self.in_size.prod():
                 data.append(self.data_dict[client_id]['input'].reshape(self.in_size))
+                del self.data_dict[client_id]['input']
 
             # Checkin output data size
             if get_outputs and self.data_dict[client_id]['output'].size == self.out_size.prod():
                 data.append(self.data_dict[client_id]['output'].reshape(self.out_size))
+                del self.data_dict[client_id]['output']
+
             if len(data) > 0:
                 data.append(client_id)
                 self.data_fifo.put(data)

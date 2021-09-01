@@ -4,6 +4,7 @@ import torch
 
 # DeepPhysX's Core imports
 from DeepPhysX_Core.Dataset.BaseDatasetConfig import BaseDatasetConfig
+from DeepPhysX_Core.Visualizer.MeshVisualizer import MeshVisualizer
 from DeepPhysX_Core.Pipelines.BaseTrainer import BaseTrainer
 from Example.Training_example.EnvironmentSofa import FEMBeam
 
@@ -34,6 +35,7 @@ def createScene(root_node=None):
                           dataset_config=dataset_config,
                           environment_config=env_config,
                           network_config=network_config,
+                          visualizer_class=MeshVisualizer,
                           nb_epochs=40, nb_batches=100, batch_size=5)
     trainer.execute()
 
