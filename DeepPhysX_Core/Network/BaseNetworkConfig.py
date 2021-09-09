@@ -96,7 +96,7 @@ class BaseNetworkConfig:
         try:
             network = self.network_class(config=self.network_config)
         except:
-            raise ValueError(f"[{self.name}] Given 'network_class' got an unexpected keyword argument 'config'")
+            raise ValueError(f"[{self.name}] Given 'network_class' cannot be created in {self.name}")
         if not isinstance(network, BaseNetwork):
             raise TypeError(f"[{self.name}] Wrong 'network_class' type: BaseNetwork required, get {self.network_class}")
         return network

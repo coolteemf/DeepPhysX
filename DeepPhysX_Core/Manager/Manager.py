@@ -96,8 +96,8 @@ class Manager:
 
         :return: tuple (numpy.ndarray, float)
         """
-        prediction, loss = self.network_manager.computePrediction(self.data_manager.data, optimize=True)
-        return prediction, loss
+        prediction, loss_dict = self.network_manager.computePredictionAndLoss(self.data_manager.data, optimize=True)
+        return prediction, loss_dict
 
     def getPrediction(self):
         """
@@ -105,8 +105,8 @@ class Manager:
 
         :return: tuple (numpy.ndarray, float)
         """
-        prediction, loss = self.network_manager.computePrediction(self.data_manager.data, optimize=False)
-        return prediction, loss
+        prediction, loss_dict = self.network_manager.computePredictionAndLoss(self.data_manager.data, optimize=False)
+        return prediction, loss_dict
 
     def saveNetwork(self):
         """

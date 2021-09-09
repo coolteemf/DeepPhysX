@@ -1,4 +1,5 @@
 import os
+import numpy as np
 
 from DeepPhysX_Core.Network.BaseNetworkConfig import BaseNetworkConfig
 import DeepPhysX_Core.utils.pathUtils as pathUtils
@@ -75,6 +76,7 @@ class NetworkManager:
         self.network.setDevice()
         self.data_transformation = self.network_config.createDataTransformation()
         self.optimization = self.network_config.createOptimization()
+        self.optimization.manager = self
         if self.optimization.loss_class is not None:
             self.optimization.setLoss()
         # If training mode
@@ -121,32 +123,56 @@ class NetworkManager:
                 print("NetworkManager: Loading network from {}.".format(networks_list[which_network]))
                 self.network.loadParameters(networks_list[which_network])
 
-    def computePrediction(self, data, optimize):
+    def computePredictionAndLoss(self, batch, optimize):
         """
         Make a prediction with the data passe as argument, optimize or not the network
 
-        :param dict data:  Format {'in': numpy.ndarray, 'out': numpy.ndarray} Contains the input value and ground truth
+        :param dict batch:  Format {'in': numpy.ndarray, 'out': numpy.ndarray} Contains the input value and ground truth
         to compare against
         :param bool optimize: If true run a back propagation
 
         :return:
         """
         # Getting data from the data manager
-        data_in, data_gt = self.network.transformFromNumpy(data['in']), self.network.transformFromNumpy(data['out'])
+        data_in, data_gt = self.network.transformFromNumpy(batch['in']), self.network.transformFromNumpy(batch['out'])
+        loss_data = self.network.transformFromNumpy(batch['loss']) if 'loss' in batch.keys() else None
 
         # Compute prediction
         data_in = self.data_transformation.transformBeforePrediction(data_in)
         data_out = self.network.predict(data_in)
+
         # Compute loss
         data_out, data_gt = self.data_transformation.transformBeforeLoss(data_out, data_gt)
-        loss = self.optimization.computeLoss(data_out.reshape(data_gt.shape), data_gt)
+        loss_dict = self.optimization.computeLoss(data_out.reshape(data_gt.shape), data_gt, loss_data)
         # Optimizing network if training
         if optimize:
             self.optimization.optimize()
         # Transform prediction to be compatible with environment
         data_out = self.data_transformation.transformBeforeApply(data_out)
         prediction = self.network.transformToNumpy(data_out)
-        return prediction, loss
+        return prediction, loss_dict
+
+    def computeOnlinePrediction(self, network_input, compute_gradient=False):
+        """
+        Make a prediction with the data passe as argument, optimize or not the network
+
+        :param bool compute_gradient: Compute gradient when predicting
+        :param numpy.ndarray network_input: Input of the network=
+
+        :return:
+        """
+        # Getting data from the data manager
+        data_in = self.network.transformFromNumpy(np.copy(network_input))
+
+        # Compute prediction
+        data_in = self.data_transformation.transformBeforePrediction(data_in)
+        data_in.requires_grad = compute_gradient
+        pred = self.network.predict(data_in)
+        pred, _ = self.data_transformation.transformBeforeLoss(pred, pred)
+        pred = self.data_transformation.transformBeforeApply(pred)
+        pred = self.network.transformToNumpy(pred)
+        pred = np.array(pred, dtype=float)
+        return pred.reshape(-1)
 
     def saveNetwork(self, last_save=False):
         """
@@ -192,6 +218,6 @@ class NetworkManager:
             self.description += "   Optimizer : {}, Learning rate : {}\n".format(self.optimization.optimizer,
                                                                                  self.optimization.lr)
             # self.description += "   Loss function : {}\n".format(str(self.loss).split(" ")[1])
-            self.description += "   Loss function : {}\n".format(self.optimization.loss_value)
+            self.description += "   Loss function : {}\n".format(self.optimization.loss_dict)
             self.description += "   Save each epoch : {}\n".format(self.save_each_epoch)
         return self.description

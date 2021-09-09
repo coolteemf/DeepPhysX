@@ -8,6 +8,7 @@ class BaseOptimization:
         :param config: BaseNetworkConfig.BaseOptimizationProperties class containing BaseOptimization parameters
         """
         self.name = self.__class__.__name__
+        self.manager = None
         # Loss
         self.loss_class = config.loss
         self.loss = None
@@ -20,7 +21,10 @@ class BaseOptimization:
     def setLoss(self):
         raise NotImplementedError
 
-    def computeLoss(self, prediction, ground_truth):
+    def computeLoss(self, prediction, ground_truth, data):
+        raise NotImplementedError
+
+    def transformLoss(self, data):
         raise NotImplementedError
 
     def setOptimizer(self, net):

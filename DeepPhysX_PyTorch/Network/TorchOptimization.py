@@ -10,9 +10,12 @@ class TorchOptimization(BaseOptimization):
         if self.loss_class is not None:
             self.loss = self.loss_class()
 
-    def computeLoss(self, prediction, ground_truth):
+    def computeLoss(self, prediction, ground_truth, data):
         self.loss_value = self.loss(prediction, ground_truth)
-        return self.loss_value.item()
+        return self.transformLoss(data)
+
+    def transformLoss(self, data):
+        return {'loss': self.loss_value.item()}
 
     def setOptimizer(self, net):
         if (self.optimizer_class is not None) and (self.lr is not None):
