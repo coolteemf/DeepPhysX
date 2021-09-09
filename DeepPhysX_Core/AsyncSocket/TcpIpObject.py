@@ -34,7 +34,8 @@ class TcpIpObject:
         self.data_converter = data_converter()
         # Available commands
         self.command_dict = {'exit': b'exit', 'step': b'step', 'check': b'test', 'size': b'size', 'done': b'done',
-                             'received': b'recv', 'prediction': b'pred', 'compute': b'cmpt', 'read': b'read'}
+                             'received': b'recv', 'prediction': b'pred', 'compute': b'cmpt', 'read': b'read',
+                             'sample': b'samp'}
         # Synchronous variables
         self.send_lock = threading.Lock()
         self.receive_lock = threading.Lock()
@@ -94,7 +95,7 @@ class TcpIpObject:
         # Return the data in the expected format
         return data_as_bytes if is_bytes_data else self.data_converter.bytes_to_data(data_as_bytes)
 
-    async def send_labeled_data(self, data_to_send, label, loop, receiver, do_convert=True):
+    async def send_labeled_data(self, data_to_send, label, receiver, loop=None, do_convert=True):
         """
         Send data with an associated label.
 
@@ -147,7 +148,7 @@ class TcpIpObject:
         await self.send_data(data_to_send=cmd, loop=loop, receiver=receiver, do_convert=False)
 
     async def listen_while_not_done(self, loop, sender, data_dict):
-        while await self.receive_data(loop=loop, sender=sender, is_bytes_data=True) != b'done':
+        while await self.receive_data(loop=loop, sender=sender, is_bytes_data=True) != self.command_dict['done']:
             label, param = await self.receive_labeled_data(loop=loop, sender=sender)
             data_dict[label] = param
 
@@ -191,6 +192,9 @@ class TcpIpObject:
     async def send_command_read(self, loop=None, receiver=None):
         await self.send_command(loop=loop, receiver=receiver, command='read')
 
+    async def send_command_sample(self, loop=None, receiver=None):
+        await self.send_command(loop=loop, receiver=receiver, command='sample')
+
     # Synchronous definition of the functions
     #@launchInThread
     def sync_send_data(self, data_to_send, receiver=None, do_convert=True):
@@ -229,10 +233,11 @@ class TcpIpObject:
         # Maximum read sizes array
         read_sizes = [4096, 2048, 1024, 512, 256]
         read_size_idx = 0
+        self.sock.setblocking(True)
         # Always expect to receive the size of the data to read first
-        self.receive_lock.acquire()
+        #self.receive_lock.acquire()
         data_size_to_read = int.from_bytes(self.sock.recv(4), 'big')
-        self.receive_lock.release()
+        #self.receive_lock.release()
         data_as_bytes = b''
         # Proceed to read chunk by chunk
         while data_size_to_read > 0:
@@ -306,7 +311,7 @@ class TcpIpObject:
         self.sync_send_data(data_to_send=cmd, receiver=receiver, do_convert=False)
 
     def sync_listen_while_not_done(self, data_dict):
-        while self.sync_receive_data(is_bytes_data=True) != b'done':
+        while self.sync_receive_data(is_bytes_data=True) != self.command_dict['done']:
             label, param = self.sync_receive_labeled_data()
             data_dict[label] = param
 

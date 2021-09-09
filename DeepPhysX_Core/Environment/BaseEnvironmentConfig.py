@@ -10,8 +10,9 @@ from DeepPhysX_Core.AsyncSocket.TcpIpServer import TcpIpServer, BytesNumpyConver
 class BaseEnvironmentConfig:
 
     def __init__(self, environment_class=BaseEnvironment, simulations_per_step=1, max_wrong_samples_per_step=10,
-                 always_create_data=False, number_of_thread=1, max_client_connection=1000, environment_file='',
-                 param_dict={}, ip_address='localhost', port=10000, socket_data_converter=BytesNumpyConverter):
+                 always_create_data=False, use_prediction_in_environment=False, param_dict={}, as_tcpip_client=True,
+                 number_of_thread=1, max_client_connection=1000, environment_file='', ip_address='localhost',
+                 port=10000, socket_data_converter=BytesNumpyConverter):
         """
         BaseEnvironmentConfig is a configuration class to parameterize and create a BaseEnvironment for the
         EnvironmentManager.
@@ -58,6 +59,7 @@ class BaseEnvironmentConfig:
         # EnvironmentManager parameterization
         self.received_parameters = {}
         self.always_create_data = always_create_data
+        self.use_prediction_in_environment = use_prediction_in_environment
         self.simulations_per_step = simulations_per_step
         self.max_wrong_samples_per_step = max_wrong_samples_per_step
 
@@ -77,8 +79,7 @@ class BaseEnvironmentConfig:
         """
         # Create server
         server = TcpIpServer(data_converter=self.socket_data_converter, max_client_count=self.max_client_connections,
-                             batch_size=batch_size, nb_client=self.number_of_thread)
-        server.environmentManager = environment_manager
+                             batch_size=batch_size, nb_client=self.number_of_thread, manager=environment_manager)
 
         server_thread = threading.Thread(target=self.start_server, args=(server,))
         server_thread.start()

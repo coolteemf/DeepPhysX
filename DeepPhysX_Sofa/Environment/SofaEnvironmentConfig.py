@@ -9,13 +9,15 @@ from .SofaEnvironment import SofaEnvironment
 class SofaEnvironmentConfig(BaseEnvironmentConfig):
 
     def __init__(self, environment_class=SofaEnvironment, simulations_per_step=1, max_wrong_samples_per_step=10,
-                 always_create_data=False, number_of_thread=1, max_client_connection=1000, environment_file='',
+                 always_create_data=False, use_prediction_in_environment=False,
+                 number_of_thread=1, max_client_connection=1000, environment_file='',
                  param_dict={}, ip_address='localhost', port=10000, socket_data_converter=BytesNumpyConverter):
 
         BaseEnvironmentConfig.__init__(self, environment_class=environment_class,
                                        simulations_per_step=simulations_per_step,
                                        max_wrong_samples_per_step=max_wrong_samples_per_step,
                                        always_create_data=always_create_data,
+                                       use_prediction_in_environment=use_prediction_in_environment,
                                        number_of_thread=number_of_thread,
                                        max_client_connection=max_client_connection,
                                        environment_file=environment_file,

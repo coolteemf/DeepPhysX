@@ -128,6 +128,10 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
         elif command == b'pred':
             prediction = await self.receive_data(loop=loop, sender=server)
             self.applyPrediction(prediction.reshape(self.output_size))
+        elif command == b'samp':
+            sample_in = await self.receive_data(loop=loop, sender=server)
+            sample_out = await self.receive_data(loop=loop, sender=server)
+            self.setDatasetSample(sample_in, sample_out)
 
     async def __close(self):
         """
@@ -170,7 +174,6 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
     def sync_send_training_data(self, network_input=None, network_output=None, receiver=None):
         """
 
-        :param loop: asyncio.get_event_loop() return
         :param receiver: TcpIpObject receiver
         :param network_input: data to send under the label \"input\"
         :param network_output: data to send under the label \"output\"
@@ -187,3 +190,17 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
             if network_output is not None:
                 self.sync_send_command_read()
                 self.sync_send_labeled_data(data_to_send=network_output, label="output", receiver=receiver)
+
+    def sync_send_prediction_request(self, network_input=None, receiver=None):
+        """
+
+        :param network_input: Data to send under the label 'input'
+        :param receiver: TcpIpObject receiver
+        :return:
+        """
+        receiver = self.sock if receiver is None else receiver
+        if network_input is not None:
+            self.sync_send_command_prediction()
+            self.sync_send_labeled_data(data_to_send=network_input, label='input', receiver=receiver)
+            label, pred = self.sync_receive_labeled_data()
+            return pred

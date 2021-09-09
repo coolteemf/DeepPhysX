@@ -47,3 +47,6 @@ class AbstractEnvironment:
 
     def applyPrediction(self, prediction):
         raise NotImplementedError
+
+    def setDatasetSample(self, sample_in, sample_out):
+        raise NotImplementedError

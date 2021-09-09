@@ -29,7 +29,7 @@ class DataManager:
         self.manager = manager
         self.is_training = training
         self.dataset_manager = None
-        self.network_manager = None
+        self.environment_manager = None
         self.allow_dataset_fetch = True
         self.data = None
         self.visualizer_manager = None if visualizer_class is None else VisualizerManager(data_manager=self, visualizer_class=visualizer_class)
@@ -37,8 +37,8 @@ class DataManager:
         if self.is_training:
             # Always create a dataset_manager for training
             create_dataset = True
-            # Create an environment if a) dataset in not existing b) dataset will be completed during the session
-            create_environment = None
+            # Create an environment if prediction must be applied else ask DatasetManager
+            create_environment = None if not environment_config.use_prediction_in_environment else True
         # Prediction
         else:
             # Always create an environment for prediction
@@ -80,8 +80,11 @@ class DataManager:
         if self.is_training:
             data = None
             # Try to fetch data from the dataset
-            if self.allow_dataset_fetch:
-                data = self.dataset_manager.getData(batch_size=batch_size, get_inputs=True, get_outputs=True)
+            # if self.allow_dataset_fetch:
+            #     data = self.dataset_manager.getData(batch_size=batch_size, get_inputs=True, get_outputs=True)
+            #
+            #     if data is not None and self.environment_manager is not None and self.environment_manager.use_prediction_in_environment:
+            #         data = self.environment_manager.dispatchBatch(batch=data, get_inputs=True, get_outputs=True)
             # If data could not be fetch, try to generate them from the environment
             # Get data from environment if used and if the data should be created at this epoch
             if data is None and self.environment_manager is not None and (epoch == 0 or self.environment_manager.always_create_data):
@@ -94,6 +97,8 @@ class DataManager:
             # Force data from the dataset
             else:
                 data = self.dataset_manager.getData(batch_size=batch_size, get_inputs=True, get_outputs=True, force_partition_reload=True)
+                if self.environment_manager is not None and self.environment_manager.use_prediction_in_environment:
+                    data = self.environment_manager.dispatchBatch(batch=data, get_inputs=True, get_outputs=True)
         # Prediction
         else:
             # Get data from environment
@@ -102,6 +107,10 @@ class DataManager:
             if self.dataset_manager is not None:
                 self.dataset_manager.addData(data)
         self.data = data
+
+    def applyPrediction(self, prediction):
+        if self.environment_manager is not None:
+            self.environment_manager.applyPrediction(prediction)
 
     def close(self):
         """

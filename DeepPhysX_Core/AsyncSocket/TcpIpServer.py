@@ -7,7 +7,7 @@ from DeepPhysX_Core.AsyncSocket.TcpIpObject import TcpIpObject, BytesNumpyConver
 class TcpIpServer(TcpIpObject):
 
     def __init__(self, ip_address='localhost', port=10000, data_converter=BytesNumpyConverter,
-                 max_client_count=10, batch_size=5, nb_client=5):
+                 max_client_count=10, batch_size=5, nb_client=5, manager=None):
         """
         TcpIpServer is used to communicate with clients associated with Environment to produce batches for the
         EnvironmentManager.
@@ -35,8 +35,10 @@ class TcpIpServer(TcpIpObject):
         self.out_size = None
         self.data_dict = []
         self.sample_to_client_id = []
+        self.batch_from_dataset = None
+        self.first_time = True
         # Reference to EnvironmentManager
-        self.environmentManager = None
+        self.environment_manager = manager
 
     def connect(self):
         """
@@ -105,7 +107,7 @@ class TcpIpServer(TcpIpObject):
             #     cells = self.data_dict[client_id]['cells'] if 'cells' in self.data_dict[client_id] else None
             #     cells = self.data_dict[client_id]['cell'] if 'cell' in self.data_dict[client_id] else pos
             #
-            #     self.environmentManager.visualizer.addObject(positions=positions, cells=cells)
+            #     self.environment_manager.visualizer.addObject(positions=positions, cells=cells)
             # Get data sizes from the first client (these sizes are equals in all environments)
             if client_id == 0:
                 # Ask the client to send data sizes
@@ -133,10 +135,16 @@ class TcpIpServer(TcpIpObject):
         asyncio.run(self.__run(get_inputs=get_inputs, get_outputs=get_outputs, animate=animate))
         inputs = []
         outputs = []
+        losses = []
         self.sample_to_client_id = []
         while max(len(inputs), len(outputs)) < self.batch_size and not self.data_fifo.empty():
             data = self.data_fifo.get()
-            if len(data) == 3:
+            if len(data) == 4:
+                inputs.append(data[0])
+                outputs.append(data[1])
+                losses.append(data[3])
+                self.sample_to_client_id.append(data[2])
+            elif len(data) == 3:
                 inputs.append(data[0])
                 outputs.append(data[1])
                 self.sample_to_client_id.append(data[2])
@@ -148,6 +156,8 @@ class TcpIpServer(TcpIpObject):
                 self.sample_to_client_id.append(data[1])
             else:
                 raise ValueError("Empty data given to fifo, cannot generate batch")
+            if len(losses) > 0:
+                self.data_dict['loss'] = losses
         return [inputs, outputs], self.data_dict
 
     async def __run(self, get_inputs=True, get_outputs=True, animate=True):
@@ -185,17 +195,29 @@ class TcpIpServer(TcpIpObject):
 
         # 1) Tell client to compute steps in the environment
         if animate:
+            if self.batch_from_dataset is not None:
+                sample_in = np.array([])
+                if 'in' in self.batch_from_dataset:
+                    sample_in = self.batch_from_dataset['in'][0]
+                    self.batch_from_dataset['in'] = self.batch_from_dataset['in'][1:]
+                sample_out = np.array([])
+                if 'out' in self.batch_from_dataset:
+                    sample_out = self.batch_from_dataset['out'][0]
+                    self.batch_from_dataset['out'] = self.batch_from_dataset['out'][1:]
+                await self.send_command_sample(loop=loop, receiver=client)
+                await self.send_data(data_to_send=sample_in, loop=loop, receiver=client)
+                await self.send_data(data_to_send=sample_out, loop=loop, receiver=client)
             # Execute n steps, the last one send data computation signal
-            for current_step in range(self.environmentManager.simulations_per_step):
-                if current_step == self.environmentManager.simulations_per_step - 1:
+            for current_step in range(self.environment_manager.simulations_per_step):
+                if current_step == self.environment_manager.simulations_per_step - 1:
                     await self.send_command_compute(loop=loop, receiver=client)
                 else:
                     await self.send_command_step(loop=loop, receiver=client)
-                # Receive parameters
+                # Receive data
                 await self.listen_while_not_done(loop=loop, sender=client, data_dict=self.data_dict[client_id])
 
         # If the sample is exploitable
-        if 'check' in self.data_dict[client_id] and self.data_dict[client_id]['check']:
+        if 'check' in self.data_dict[client_id] and self.data_dict[client_id]['check'] == b'1':
             data = []
             # Checkin input data size
             if get_inputs and self.data_dict[client_id]['input'].size == self.in_size.prod():
@@ -209,11 +231,23 @@ class TcpIpServer(TcpIpObject):
 
             if len(data) > 0:
                 data.append(client_id)
+                if 'loss' in self.data_dict[client_id].keys():
+                    data.append(self.data_dict[client_id]['loss'])
                 self.data_fifo.put(data)
         # If the sample is wrong
         else:
             # 7) record wrong sample
             pass
+
+    def setDatasetBatch(self, batch):
+        """
+        :param batch:
+        :return:
+        """
+        if len(batch['in']) != self.batch_size:
+            return ValueError(f"[TcpIpServer] The size of batch from Dataset is {len(batch['in'])} while the batch size"
+                              f"was set to {self.batch_size}.")
+        self.batch_from_dataset = batch
 
     def applyPrediction(self, prediction):
         """
@@ -277,3 +311,21 @@ class TcpIpServer(TcpIpObject):
         data = await self.receive_data(loop=loop, sender=client, is_bytes_data=True)
         if data != b'exit':
             raise ValueError(f"Client {idx} was supposed to exit.")
+
+    async def listen_while_not_done(self, loop, sender, data_dict):
+        while (cmd := await self.receive_data(loop=loop, sender=sender, is_bytes_data=True)) != self.command_dict['done']:
+            label, param = await self.receive_labeled_data(loop=loop, sender=sender)
+            data_dict[label] = param
+            if cmd == self.command_dict['prediction']:
+                await self.compute_and_send_prediction(network_input=data_dict[label], receiver=sender)
+
+    async def compute_and_send_prediction(self, network_input, receiver):
+        if self.environment_manager.data_manager is None:
+            raise ValueError("Cannot request prediction if DataManager does not exist")
+        elif self.environment_manager.data_manager.manager is None:
+            raise ValueError("Cannot request prediction if Manager does not exist")
+        elif self.environment_manager.data_manager.manager.network_manager is None:
+            raise ValueError("Cannot request prediction if NetworkManager does not exist")
+        else:
+            prediction = self.environment_manager.data_manager.manager.network_manager.computeOnlinePrediction(network_input=network_input[None, ])
+            await self.send_labeled_data(data_to_send=prediction, label="prediction", receiver=receiver)

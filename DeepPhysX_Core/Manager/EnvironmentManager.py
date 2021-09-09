@@ -26,6 +26,7 @@ class EnvironmentManager:
         self.initVisualizer()
 
         self.always_create_data = environment_config.always_create_data
+        self.use_prediction_in_environment = environment_config.use_prediction_in_environment
         self.simulations_per_step = environment_config.simulations_per_step
         self.max_wrong_samples_per_step = environment_config.max_wrong_samples_per_step
 
@@ -63,11 +64,17 @@ class EnvironmentManager:
 
         training_data = {'in': np.array(batch[0]) if get_inputs else np.array([]),
                          'out': np.array(batch[1]) if get_outputs else np.array([])}
+        if 'loss' in data_dict.keys():
+            training_data['loss'] = data_dict['loss']
 
         return training_data
 
     def applyPrediction(self, prediction):
         self.server.applyPrediction(prediction)
+
+    def dispatchBatch(self, batch, get_inputs=True, get_outputs=True, animate=True):
+        self.server.setDatasetBatch(batch)
+        return self.getData(get_inputs=get_inputs, get_outputs=get_outputs, animate=animate)
 
     def close(self):
         """

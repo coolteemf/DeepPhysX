@@ -84,6 +84,9 @@ class BaseEnvironment(TcpIpClient):
         """
         pass
 
+    def setDatasetSample(self, sample_in, sample_out):
+        pass
+
     def __str__(self):
         """
         :return: String containing information about the BaseEnvironmentConfig object
