@@ -38,6 +38,7 @@ class MeshVisualizer(VedoVisualizer):
         :param data_dict:
         :return:
         """
+        models = []
         for idx in data_dict:
             model = data_dict[idx]
             if 'positions' in model:
@@ -59,9 +60,15 @@ class MeshVisualizer(VedoVisualizer):
                 at = model['at'] if 'at' in model else MAX_INT
                 field_dict = model['field_dict'] if 'field_dict' in model else {'scalar_field': None}
 
-                self.addObject(positions=positions, cells=cells, at=at, field_dict=field_dict)
-        if self.viewer is not None:
-            self.render()
+                models.append(self.addObject(positions=positions, cells=cells, at=at, field_dict=field_dict))
+
+        self.viewer = vedo.Plotter(N=self.nb_view, title=self.params['title'], axes=self.params['axes'],
+                                   sharecam=True, interactive=self.params['interactive'])
+        for mesh in models:
+            self.viewer.add(mesh, at=self.data[mesh]['at'])
+        print(f"[MeshVisualizer] Set visualizer camera position then close visualizer window to start.")
+        self.viewer.show(interactive=True)
+        self.render()
 
     def addObject(self, positions, cells=None, at=MAX_INT, field_dict={'scalar_field': None}):
         """
@@ -90,14 +97,6 @@ class MeshVisualizer(VedoVisualizer):
         for data_field in field_dict.keys():
             self.data[mesh][data_field] = field_dict[data_field]
 
-        if self.viewer is None:
-            self.viewer = vedo.Plotter(N=self.nb_view,
-                                       title=self.params['title'],
-                                       axes=self.params['axes'],
-                                       sharecam=False,
-                                       interactive=self.params['interactive'])
-
-        self.viewer.add(mesh, at=self.data[mesh]['at'])
         return mesh
 
     def addView(self, at):
