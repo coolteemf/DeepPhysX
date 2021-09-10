@@ -59,8 +59,8 @@ class EnvironmentManager:
         """
         batch, data_dict = self.server.getBatch(get_inputs, get_outputs, animate)
 
-        if self.visualizer_manager is not None:
-            self.visualizer_manager.updateFromBatch(data_dict)
+        # if self.visualizer_manager is not None:
+        #     self.visualizer_manager.updateFromBatch(data_dict)
 
         training_data = {'in': np.array(batch[0]) if get_inputs else np.array([]),
                          'out': np.array(batch[1]) if get_outputs else np.array([])}
@@ -68,6 +68,9 @@ class EnvironmentManager:
             training_data['loss'] = data_dict['loss']
 
         return training_data
+
+    def updateVisualizer(self, visualization_data, id):
+        self.visualizer_manager.updateFromSample(visualization_data, id)
 
     def applyPrediction(self, prediction):
         self.server.applyPrediction(prediction)

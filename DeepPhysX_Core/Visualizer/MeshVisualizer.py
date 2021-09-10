@@ -163,6 +163,15 @@ class MeshVisualizer(VedoVisualizer):
                         self.data[mesh][key] = batch[idx][key]
         self.render()
 
+    def updateFromSample(self, sample, id):
+        mesh = list(self.data)[id]
+        for key in self.data[mesh]:
+            if key in sample:
+                print(f"Field {key} updated")
+                self.data[mesh][key] = sample[key]
+        self.render()
+
+
     def saveSample(self, session_dir):
         """
         Save the samples as a .npz file

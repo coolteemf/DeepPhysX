@@ -35,7 +35,7 @@ class TcpIpObject:
         # Available commands
         self.command_dict = {'exit': b'exit', 'step': b'step', 'check': b'test', 'size': b'size', 'done': b'done',
                              'received': b'recv', 'prediction': b'pred', 'compute': b'cmpt', 'read': b'read',
-                             'sample': b'samp'}
+                             'sample': b'samp', 'visualization': b'visu'}
         # Synchronous variables
         self.send_lock = threading.Lock()
         self.receive_lock = threading.Lock()
@@ -147,7 +147,7 @@ class TcpIpObject:
         # Send command as a byte data
         await self.send_data(data_to_send=cmd, loop=loop, receiver=receiver, do_convert=False)
 
-    async def listen_while_not_done(self, loop, sender, data_dict):
+    async def listen_while_not_done(self, loop, sender, data_dict, client_id=None):
         while await self.receive_data(loop=loop, sender=sender, is_bytes_data=True) != self.command_dict['done']:
             label, param = await self.receive_labeled_data(loop=loop, sender=sender)
             data_dict[label] = param
@@ -341,3 +341,6 @@ class TcpIpObject:
 
     def sync_send_command_read(self, receiver=None):
         self.sync_send_command(receiver=receiver, command='read')
+
+    def sync_send_command_visualization(self, receiver=None):
+        self.sync_send_command(receiver=receiver, command='visualization')

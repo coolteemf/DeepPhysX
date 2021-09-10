@@ -76,6 +76,9 @@ class VisualizerManager:
         """
         self.visualizer.updateFromBatch(batch=batch)
 
+    def updateFromSample(self, sample, id):
+        self.visualizer.updateFromSample(sample, id)
+
     def render(self):
         self.visualizer.render()
 

@@ -261,11 +261,15 @@ class FEMBeam(SofaEnvironment):
             self.CFF.forces.value = ampli * cff_forces
             self.CFF.indices.value = selected_indices
             self.CFF.showArrowSize.value = 1 / ampli
+            self.F_inv_normalization_coef = np.linalg.norm(net_forces)
+            self.F_normalization_coef = 1. / self.F_inv_normalization_coef
         else:
             # Set CFF force value to 0
             self.CFF.force.value = np.zeros(3)
             # Get the dataset force vector, fill in NN_CFF force vector with non zero elements
             net_forces = self.dataset_input_sample
+            self.F_inv_normalization_coef = np.linalg.norm(net_forces)
+            self.F_normalization_coef = 1. / self.F_inv_normalization_coef
             ampli = 1.
             cff_forces = []
             selected_indices = []
@@ -273,6 +277,7 @@ class FEMBeam(SofaEnvironment):
                 if np.linalg.norm(f_i) != 0:
                     cff_forces.append(f_i * self.F_inv_normalization_coef)
                     selected_indices.append(i)
+            cff_forces = np.array(cff_forces)
 
         # Set NN_CFF force values and indices
         self.NN_CFF.forces.value = ampli * cff_forces
@@ -291,7 +296,8 @@ class FEMBeam(SofaEnvironment):
         """
 
         # Compute residual loss
-        residual_loss = self.F_normalization_coef * np.sqrt(self.root.beamNN.ODESolver.squared_initial_residual)
+        residual_loss = (self.F_normalization_coef ** 2) * self.root.beamNN.ODESolver.squared_initial_residual
+        # residual_loss = np.array(1.0)
 
         # Send training data
         if self.compute_essential_data:
@@ -303,7 +309,8 @@ class FEMBeam(SofaEnvironment):
             # Update mesh in vedo (if fem beam is not computed it stays to rest shape)
             if self.compute_fem_solution:
                 positions = np.array(self.MO.position.value, dtype=float)
-                self.sync_send_labeled_data(positions, 'positions')
+                # self.sync_send_labeled_data(positions, 'positions')
+                self.sync_send_visualization_data({'positions': positions})
                 self.sync_send_labeled_data(residual_loss, 'loss')
         self.sync_send_command_done()  # Very important
 

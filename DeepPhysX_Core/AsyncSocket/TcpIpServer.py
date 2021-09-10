@@ -95,7 +95,8 @@ class TcpIpServer(TcpIpObject):
             await self.send_command_done(loop=loop, receiver=client)
 
             # Receive parameters
-            await self.listen_while_not_done(loop=loop, sender=client, data_dict=self.data_dict[client_id])
+            await self.listen_while_not_done(loop=loop, sender=client, data_dict=self.data_dict[client_id],
+                                             client_id=client_id)
 
             # if 'addvedo' in self.data_dict[client_id] and self.data_dict[client_id]['addvedo']:
             #
@@ -214,7 +215,8 @@ class TcpIpServer(TcpIpObject):
                 else:
                     await self.send_command_step(loop=loop, receiver=client)
                 # Receive data
-                await self.listen_while_not_done(loop=loop, sender=client, data_dict=self.data_dict[client_id])
+                await self.listen_while_not_done(loop=loop, sender=client, data_dict=self.data_dict[client_id],
+                                                 client_id=client_id)
 
         # If the sample is exploitable
         if 'check' in self.data_dict[client_id] and self.data_dict[client_id]['check'] == b'1':
@@ -312,12 +314,19 @@ class TcpIpServer(TcpIpObject):
         if data != b'exit':
             raise ValueError(f"Client {idx} was supposed to exit.")
 
-    async def listen_while_not_done(self, loop, sender, data_dict):
+    async def listen_while_not_done(self, loop, sender, data_dict, client_id=None):
         while (cmd := await self.receive_data(loop=loop, sender=sender, is_bytes_data=True)) != self.command_dict['done']:
-            label, param = await self.receive_labeled_data(loop=loop, sender=sender)
-            data_dict[label] = param
-            if cmd == self.command_dict['prediction']:
-                await self.compute_and_send_prediction(network_input=data_dict[label], receiver=sender)
+            if cmd == self.command_dict['visualization']:
+                visu_dict = {}
+                while await self.receive_data(loop=loop, sender=sender, is_bytes_data=True) != self.command_dict['done']:
+                    label, param = await self.receive_labeled_data(loop=loop, sender=sender)
+                    visu_dict[label] = param
+                await self.update_visualizer(visu_dict, client_id)
+            else:
+                label, param = await self.receive_labeled_data(loop=loop, sender=sender)
+                data_dict[label] = param
+                if cmd == self.command_dict['prediction']:
+                    await self.compute_and_send_prediction(network_input=data_dict[label], receiver=sender)
 
     async def compute_and_send_prediction(self, network_input, receiver):
         if self.environment_manager.data_manager is None:
@@ -329,3 +338,6 @@ class TcpIpServer(TcpIpObject):
         else:
             prediction = self.environment_manager.data_manager.manager.network_manager.computeOnlinePrediction(network_input=network_input[None, ])
             await self.send_labeled_data(data_to_send=prediction, label="prediction", receiver=receiver)
+
+    async def update_visualizer(self, visualization_data, client_id):
+        self.environment_manager.updateVisualizer(visualization_data, client_id)

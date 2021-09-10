@@ -55,7 +55,8 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
         for key in param_dict:
             await self.send_command_read(loop=loop, receiver=self.sock)
             # Send the parameter (label + data)
-            await self.send_labeled_data(data_to_send=param_dict[key], label=key, loop=loop, receiver=self.sock, do_convert=key != 'addvedo')
+            await self.send_labeled_data(data_to_send=param_dict[key], label=key, loop=loop, receiver=self.sock,
+                                         do_convert=key != 'addvedo')
             # Tell the client to stop receiving data
         await self.send_command_done(loop=loop, receiver=self.sock)
 
@@ -162,7 +163,8 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
         receiver = self.sock if receiver is None else receiver
         check = self.checkSample()
         await self.send_command_read()
-        await self.send_labeled_data(data_to_send=b'1' if check else b'0', label="check", loop=loop, receiver=receiver, do_convert=False)
+        await self.send_labeled_data(data_to_send=b'1' if check else b'0', label="check", loop=loop, receiver=receiver,
+                                     do_convert=False)
         if check:
             if network_input is not None:
                 await self.send_command_read()
@@ -182,7 +184,8 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
         receiver = self.sock if receiver is None else receiver
         check = self.checkSample()
         self.sync_send_command_read()
-        self.sync_send_labeled_data(data_to_send=b'1' if check else b'0', label="check", receiver=receiver, do_convert=False)
+        self.sync_send_labeled_data(data_to_send=b'1' if check else b'0', label="check", receiver=receiver,
+                                    do_convert=False)
         if check:
             if network_input is not None:
                 self.sync_send_command_read()
@@ -204,3 +207,18 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
             self.sync_send_labeled_data(data_to_send=network_input, label='input', receiver=receiver)
             label, pred = self.sync_receive_labeled_data()
             return pred
+
+    def sync_send_visualization_data(self, visualization_data=None, receiver=None):
+        """
+
+        :param visualization_data:
+        :param receiver:
+        :return:
+        """
+        receiver = self.sock if receiver is None else receiver
+        if visualization_data is not None:
+            self.sync_send_command_visualization()
+            for key in visualization_data:
+                self.sync_send_command_read()
+                self.sync_send_labeled_data(data_to_send=visualization_data[key], label=key, receiver=receiver)
+            self.sync_send_command_done(receiver=self.sock)
