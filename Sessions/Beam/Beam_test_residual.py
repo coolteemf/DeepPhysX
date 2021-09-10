@@ -20,6 +20,7 @@ grid_params = {'grid_resolution': [40, 10, 10],  # Number of slices along each a
                'grid_min': [0, 0, 0],  # Lowest point of the grid
                'grid_max': [100, 25, 25],  # Highest point of the grid
                'fixed_box': [0, 0, 0, 0, 25, 25]}  # Points withing this box will be fixed by Sofa
+translation = np.array([0, 0, -75])
 
 grid_node_count = functools.reduce(lambda a, b: a * b, grid_params['grid_resolution'])
 grid_dofs_count = grid_node_count * 3
@@ -40,6 +41,7 @@ class FEMBeam(Sofa.Core.Controller):
     def __init__(self, root_node, *args, **kwargs):
         Sofa.Core.Controller.__init__(self, *args, **kwargs)
         root_node.addObject('RequiredPlugin', pluginName=required_plugins)
+        root_node.addObject('VisualStyle', displayFlags="showForceFields")
         self.root = root_node
         self.nb_step = 0
         self.last_U = None
@@ -128,16 +130,18 @@ class FEMBeam(Sofa.Core.Controller):
         self.root.addChild('beamNN')
 
         # ODE solver + static solver
-        self.root.beamNN.addObject('LegacyStaticODESolver', name='ODESolver', newton_iterations=20,
+        self.root.beamNN.addObject('LegacyStaticODESolver', name='ODESolver', newton_iterations=0,
                                    correction_tolerance_threshold=1e-8, residual_tolerance_threshold=1e-8,
-                                   printLog=True)
+                                   printLog=False)
         self.root.beamNN.addObject('ConjugateGradientSolver', name='StaticSolver', preconditioning_method='Diagonal',
                                    maximum_number_of_iterations=1000, residual_tolerance_threshold=1e-9,
                                    printLog=False)
 
         # Grid topology of the beam
-        self.root.beamNN.addObject('RegularGridTopology', name='Grid', min=grid_params['grid_min'],
-                                   max=grid_params['grid_max'], nx=grid_params['grid_resolution'][0],
+        self.root.beamNN.addObject('RegularGridTopology', name='Grid',
+                                   min=list(np.array(grid_params['grid_min']) + translation),
+                                   max=list(np.array(grid_params['grid_max']) + translation),
+                                   nx=grid_params['grid_resolution'][0],
                                    ny=grid_params['grid_resolution'][1], nz=grid_params['grid_resolution'][2])
         self.NN_MO = self.root.beamNN.addObject('MechanicalObject', src='@Grid', name='MO', template='Vec3d',
                                                 showObject=False)
@@ -159,7 +163,10 @@ class FEMBeam(Sofa.Core.Controller):
                                    topology='@Hexa_Topology', printLog=True)
 
         # Fixed section of the beam
-        self.root.beamNN.addObject('BoxROI', box=grid_params['fixed_box'], name='Fixed_Box')
+        fixed_box = list(np.array(grid_params['fixed_box'][0:3]) + translation) + \
+                    list(np.array(grid_params['fixed_box'][3:]) + translation)
+        self.root.beamNN.addObject('BoxROI', box=fixed_box,
+                                   name='Fixed_Box')
         self.root.beamNN.addObject('FixedConstraint', indices='@Fixed_Box.indices')
 
         # Forcefield through which the external forces are applied
@@ -216,7 +223,7 @@ class FEMBeam(Sofa.Core.Controller):
 
         # Reset position
         self.MO.position.value = self.MO.rest_position.value
-        # self.NN_MO.position.value = self.NN_MO.rest_position.value
+        self.NN_MO.position.value = self.NN_MO.rest_position.value
 
         # Generate force
         q = np.zeros(grid_dofs_count)
@@ -250,6 +257,7 @@ class FEMBeam(Sofa.Core.Controller):
         if self.last_U is not None:
             self.NN_CFF.forces.value = self.last_F
             self.NN_CFF.indices.value = self.last_I
+            self.NN_CFF.showArrowSize.value = self.last_A
             if np.random.randint(0, 3) < 2:
                 print("Use prediction")
                 U = self.last_U + np.random.normal(0, 10e-6, self.last_U.shape)
@@ -275,9 +283,10 @@ class FEMBeam(Sofa.Core.Controller):
         # residual_loss = self.F_normalization_coef * np.sqrt(self.root.beamNN.ODESolver.squared_initial_residual)
 
         self.nb_step = (self.nb_step + 1) % len(modal_amplitude)
-        self.last_F = self.CFF.forces.value
-        self.last_I = self.CFF.indices.value
-        self.last_U = self.MO.position.value - self.MO.rest_position.value
+        self.last_F = self.CFF.forces.value.copy()
+        self.last_I = self.CFF.indices.value.copy()
+        self.last_A = self.CFF.showArrowSize.value
+        self.last_U = (self.MO.position.value - self.MO.rest_position.value).copy()
 
     def checkSample(self, check_input=True, check_output=True):
         """
