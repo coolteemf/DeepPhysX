@@ -47,3 +47,13 @@ class DataTransformation:
         :return: Transformed prediction data
         """
         return data_out
+
+    def __str__(self):
+        description = "\n"
+        description += f"  {self.name}\n"
+        description += f"    Data type: {self.data_type}\n"
+        description += f"    Transformation before prediction: Identity\n"
+        description += f"    Transformation before loss: Identity\n"
+        description += f"    Transformation before apply: Identity\n"
+        return description
+

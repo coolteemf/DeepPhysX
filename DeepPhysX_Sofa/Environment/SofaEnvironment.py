@@ -38,3 +38,10 @@ class SofaEnvironment(Sofa.Core.Controller, BaseEnvironment):
 
     def initVisualizer(self):
         pass
+
+    def __str__(self):
+        """
+        :return: String containing information about the BaseEnvironmentConfig object
+        """
+        description = BaseEnvironment.__str__(self)
+        return description

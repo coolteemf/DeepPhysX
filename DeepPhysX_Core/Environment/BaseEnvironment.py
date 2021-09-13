@@ -92,8 +92,9 @@ class BaseEnvironment(TcpIpClient):
         :return: String containing information about the BaseEnvironmentConfig object
         """
         description = "\n"
-        description += f"{self.name}\n"
-        description += f"    Name: {self.name}\n"
+        description += f"  {self.name}\n"
+        description += f"    Name: {self.name} n°{self.instance_id}\n"
+        description += f"    Comments:\n"
         description += f"    Input size: {self.input_size}\n"
         description += f"    Output size: {self.output_size}\n"
         return description

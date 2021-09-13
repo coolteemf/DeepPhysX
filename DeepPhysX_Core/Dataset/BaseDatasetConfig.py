@@ -62,6 +62,7 @@ class BaseDatasetConfig:
         """
         :return: String containing information about the BaseDatasetConfig object
         """
+        # Todo: fields in Configs are the set in Managers or objects, the remove __str__ method
         description = "\n"
         description += f"{self.name}\n"
         description += f"    Dataset class: {self.dataset_class.__name__}\n"

@@ -167,7 +167,6 @@ class MeshVisualizer(VedoVisualizer):
         mesh = list(self.data)[id]
         for key in self.data[mesh]:
             if key in sample:
-                print(f"Field {key} updated")
                 self.data[mesh][key] = sample[key]
         self.render()
 

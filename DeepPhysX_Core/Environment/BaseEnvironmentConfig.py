@@ -10,7 +10,8 @@ from DeepPhysX_Core.AsyncSocket.TcpIpServer import TcpIpServer, BytesNumpyConver
 class BaseEnvironmentConfig:
 
     def __init__(self, environment_class=BaseEnvironment, simulations_per_step=1, max_wrong_samples_per_step=10,
-                 always_create_data=False, use_prediction_in_environment=False, param_dict={}, as_tcpip_client=True,
+                 always_create_data=False, record_wrong_samples=False, use_prediction_in_environment=False,
+                 param_dict={}, as_tcpip_client=True,
                  number_of_thread=1, max_client_connection=1000, environment_file='', ip_address='localhost',
                  port=10000, socket_data_converter=BytesNumpyConverter):
         """
@@ -24,6 +25,7 @@ class BaseEnvironmentConfig:
         :param bool always_create_data: If True, data will always be created from environment. If False, data will be
                                         created from the environment during the first epoch and then re-used from the
                                         Dataset.
+        :param bool record_wrong_samples: If True, wrong samples are recorded through Visualizer
         :param int number_of_thread: Number of thread to run
         """
 
@@ -59,6 +61,7 @@ class BaseEnvironmentConfig:
         # EnvironmentManager parameterization
         self.received_parameters = {}
         self.always_create_data = always_create_data
+        self.record_wrong_samples = record_wrong_samples
         self.use_prediction_in_environment = use_prediction_in_environment
         self.simulations_per_step = simulations_per_step
         self.max_wrong_samples_per_step = max_wrong_samples_per_step
@@ -127,6 +130,7 @@ class BaseEnvironmentConfig:
         """
         :return: String containing information about the BaseEnvironmentConfig object
         """
+        # Todo: fields in Configs are the set in Managers or objects, remove __str__ method
         description = "\n"
         description += f"{self.name}\n"
         description += f"    Environment class: {self.environment_class.__name__}\n"

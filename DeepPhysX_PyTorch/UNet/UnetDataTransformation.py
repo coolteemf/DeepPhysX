@@ -65,3 +65,15 @@ class UnetDataTransformation(TorchDataTransformation):
             return slice(v[0], -v[1])
         slices = tuple(map(tuple_to_slice, pad_widths))
         return data[slices]
+
+    def __str__(self):
+        description = "\n"
+        description += f"  {self.name}\n"
+        description += f"    Data type: {self.data_type}\n"
+        description += f"    Data scale: {self.data_scale}\n"
+        description += f"    Transformation before prediction: Input -> Reshape + Permute + Padding\n"
+        description += f"    Transformation before loss: Ground Truth -> Reshape + Upscale / Prediction -> Inverse " \
+                       f"padding + Permute\n"
+        description += f"    Transformation before apply: Prediction -> Downscale\n"
+        return description
+
