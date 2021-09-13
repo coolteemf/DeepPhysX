@@ -20,6 +20,8 @@ grid_params = {'grid_resolution': [40, 10, 10],  # Number of slices along each a
                'grid_min': [0, 0, 0],  # Lowest point of the grid
                'grid_max': [100, 25, 25],  # Highest point of the grid
                'fixed_box': [0, 0, 0, 0, 25, 25]}  # Points withing this box will be fixed by Sofa
+translation = np.array([0, 0, -75])
+
 
 grid_node_count = functools.reduce(lambda a, b: a * b, grid_params['grid_resolution'])
 grid_dofs_count = grid_node_count * 3
@@ -131,16 +133,18 @@ class FEMBeam(SofaEnvironment):
         self.root.addChild('beamNN')
 
         # ODE solver + static solver
-        self.root.beamNN.addObject('LegacyStaticODESolver', name='ODESolver', newton_iterations=0,
-                                   correction_tolerance_threshold=1e-6, residual_tolerance_threshold=1e-6,
+        self.root.beamNN.addObject('LegacyStaticODESolver', name='ODESolver', newton_iterations=1,
+                                   correction_tolerance_threshold=1e-8, residual_tolerance_threshold=1e-8,
                                    printLog=False)
         self.root.beamNN.addObject('ConjugateGradientSolver', name='StaticSolver', preconditioning_method='Diagonal',
                                    maximum_number_of_iterations=0, residual_tolerance_threshold=1e-9,
                                    printLog=False)
 
         # Grid topology of the beam
-        self.root.beamNN.addObject('RegularGridTopology', name='Grid', min=grid_params['grid_min'],
-                                   max=grid_params['grid_max'], nx=grid_params['grid_resolution'][0],
+        self.root.beamNN.addObject('RegularGridTopology', name='Grid',
+                                   min=list(np.array(grid_params['grid_min']) + translation),
+                                   max=list(np.array(grid_params['grid_max']) + translation),
+                                   nx=grid_params['grid_resolution'][0],
                                    ny=grid_params['grid_resolution'][1], nz=grid_params['grid_resolution'][2])
         self.NN_MO = self.root.beamNN.addObject('MechanicalObject', src='@Grid', name='MO', template='Vec3d',
                                                 showObject=False)
@@ -162,7 +166,9 @@ class FEMBeam(SofaEnvironment):
                                    topology='@Hexa_Topology', printLog=True)
 
         # Fixed section of the beam
-        self.root.beamNN.addObject('BoxROI', box=grid_params['fixed_box'], name='Fixed_Box')
+        fixed_box = list(np.array(grid_params['fixed_box'][0:3]) + translation) + \
+                    list(np.array(grid_params['fixed_box'][3:]) + translation)
+        self.root.beamNN.addObject('BoxROI', box=fixed_box, name='Fixed_Box')
         self.root.beamNN.addObject('FixedConstraint', indices='@Fixed_Box.indices')
 
         # Forcefield through which the external forces are applied
@@ -261,15 +267,11 @@ class FEMBeam(SofaEnvironment):
             self.CFF.forces.value = ampli * cff_forces
             self.CFF.indices.value = selected_indices
             self.CFF.showArrowSize.value = 1 / ampli
-            self.F_inv_normalization_coef = np.linalg.norm(net_forces)
-            self.F_normalization_coef = 1. / self.F_inv_normalization_coef
         else:
             # Set CFF force value to 0
             self.CFF.force.value = np.zeros(3)
             # Get the dataset force vector, fill in NN_CFF force vector with non zero elements
             net_forces = self.dataset_input_sample
-            self.F_inv_normalization_coef = np.linalg.norm(net_forces)
-            self.F_normalization_coef = 1. / self.F_inv_normalization_coef
             ampli = 1.
             cff_forces = []
             selected_indices = []
@@ -296,7 +298,10 @@ class FEMBeam(SofaEnvironment):
         """
 
         # Compute residual loss
-        residual_loss = (self.F_normalization_coef ** 2) * self.root.beamNN.ODESolver.squared_initial_residual
+        # residual_loss = self.root.beamNN.ODESolver.squared_initial_residual / (np.linalg.norm(self.NN_CFF.forces.value.copy()) ** 2)
+        # residual_loss = self.F_normalization_coef * np.sqrt(self.root.beamNN.ODESolver.squared_initial_residual)
+        residual_loss = self.F_normalization_coef * np.sqrt(self.root.beamNN.ODESolver.squared_residuals[0])
+
         # residual_loss = np.array(1.0)
 
         # Send training data
@@ -306,12 +311,14 @@ class FEMBeam(SofaEnvironment):
             net_output = inv_L * (self.MO.position.value - self.MO.rest_position.value) if self.compute_fem_solution else self.dataset_output_sample
             self.sync_send_training_data(network_input=net_input,
                                          network_output=net_output)
+            self.sync_send_labeled_data(residual_loss, 'loss')
+
             # Update mesh in vedo (if fem beam is not computed it stays to rest shape)
             if self.compute_fem_solution:
                 positions = np.array(self.MO.position.value, dtype=float)
                 # self.sync_send_labeled_data(positions, 'positions')
                 self.sync_send_visualization_data({'positions': positions})
-                self.sync_send_labeled_data(residual_loss, 'loss')
+
         self.sync_send_command_done()  # Very important
 
         # Update step counter to use the next modal amplitude
@@ -324,10 +331,15 @@ class FEMBeam(SofaEnvironment):
         :param check_output:
         :return:
         """
-        # Check if solver converged
-        if not self.root.beamFEM.ODESolver.converged.value:
-            Sofa.Simulation.reset(self.root)
-        return self.root.beamFEM.ODESolver.converged.value or not self.compute_fem_solution
+        if not self.compute_fem_solution:
+            return True
+        else:
+            # Check if solver converged
+            converged = self.root.beamFEM.ODESolver.squared_residuals[-1] < 10e-9
+            # converged = self.root.beamFEM.ODESolver.converged.value
+            if not converged:
+                Sofa.Simulation.reset(self.root)
+            return converged
 
     def applyPrediction(self, prediction):
         """

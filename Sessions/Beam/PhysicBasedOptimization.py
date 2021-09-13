@@ -14,7 +14,10 @@ class PhysicBasedOptimization(TorchOptimization):
              data).any() else data.mean()
         self.loss_value.retain_grad()
         mse_loss = self.loss_value.item()
-        self.loss_value = self.loss_value * residual_loss
+        # self.loss_value = self.loss_value * residual_loss
         return {'loss': self.loss_value.item(),
                 'MSE_loss': mse_loss,
                 'residual_loss': residual_loss.item()}
+
+    # def transformLoss(self, data):
+    #     return {'loss': self.loss_value.item()}

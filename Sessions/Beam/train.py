@@ -28,7 +28,7 @@ def createScene(root_node=None):
 
     network_config = FCConfig(optimization_class=PhysicBasedOptimization,
                               loss=torch.nn.MSELoss,
-                              lr=1e-5,
+                              lr=1e-4,
                               optimizer=torch.optim.Adam,
                               dim_layers=[grid_dofs_count, grid_dofs_count, grid_dofs_count],
                               dim_output=3)
@@ -40,7 +40,7 @@ def createScene(root_node=None):
                           environment_config=env_config,
                           network_config=network_config,
                           visualizer_class=MeshVisualizer,
-                          nb_epochs=50, nb_batches=819, batch_size=5)
+                          nb_epochs=50, nb_batches=20, batch_size=5)
     trainer.execute()
 
 

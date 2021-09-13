@@ -1,6 +1,7 @@
 import os
 import numpy as np
 import functools
+import vedo
 
 import Sofa
 import Sofa.Gui
@@ -130,7 +131,7 @@ class FEMBeam(Sofa.Core.Controller):
         self.root.addChild('beamNN')
 
         # ODE solver + static solver
-        self.root.beamNN.addObject('LegacyStaticODESolver', name='ODESolver', newton_iterations=0,
+        self.root.beamNN.addObject('LegacyStaticODESolver', name='ODESolver', newton_iterations=1,
                                    correction_tolerance_threshold=1e-8, residual_tolerance_threshold=1e-8,
                                    printLog=False)
         self.root.beamNN.addObject('ConjugateGradientSolver', name='StaticSolver', preconditioning_method='Diagonal',
@@ -258,10 +259,8 @@ class FEMBeam(Sofa.Core.Controller):
             self.NN_CFF.forces.value = self.last_F
             self.NN_CFF.indices.value = self.last_I
             self.NN_CFF.showArrowSize.value = self.last_A
-            if np.random.randint(0, 3) < 2:
-                print("Use prediction")
-                U = self.last_U + np.random.normal(0, 10e-6, self.last_U.shape)
-                self.NN_MO.position.value = self.NN_MO.rest_position.value + U
+            U = self.last_U + np.random.normal(0, 10e-2, self.last_U.shape)
+            self.NN_MO.position.value = self.NN_MO.rest_position.value + U
 
     def onAnimateEndEvent(self, event):
         """
@@ -273,9 +272,9 @@ class FEMBeam(Sofa.Core.Controller):
         if self.last_U is not None:
             print("NN initial residual", self.root.beamNN.ODESolver.squared_initial_residual)
             print("NN residuals", self.root.beamNN.ODESolver.squared_residuals)
-            print("F2 norm", np.linalg.norm(self.last_U) ** 2)
-            # print("Residual loss", self.F_normalization_coef * np.sqrt(self.root.beamNN.ODESolver.squared_initial_residual))
-            print("Residual loss", self.root.beamNN.ODESolver.squared_initial_residual / (np.linalg.norm(self.last_U) ** 2))
+            print("F2 norm", np.linalg.norm(self.NN_CFF.forces.value) ** 2)
+            print("Residual loss", self.F_normalization_coef * np.sqrt(self.root.beamNN.ODESolver.squared_residuals[0]))
+            print("Residual loss", self.root.beamNN.ODESolver.squared_initial_residual / (np.linalg.norm(self.NN_CFF.forces.value) ** 2))
             print()
         print("FEM initial residual", self.root.beamFEM.ODESolver.squared_initial_residual)
         print("FEM residuals", self.root.beamFEM.ODESolver.squared_residuals)
@@ -283,22 +282,28 @@ class FEMBeam(Sofa.Core.Controller):
         # residual_loss = self.F_normalization_coef * np.sqrt(self.root.beamNN.ODESolver.squared_initial_residual)
 
         self.nb_step = (self.nb_step + 1) % len(modal_amplitude)
-        self.last_F = self.CFF.forces.value.copy()
-        self.last_I = self.CFF.indices.value.copy()
-        self.last_A = self.CFF.showArrowSize.value
-        self.last_U = (self.MO.position.value - self.MO.rest_position.value).copy()
 
-    def checkSample(self, check_input=True, check_output=True):
+        if self.checkSample():
+
+            self.last_F = self.CFF.forces.value.copy()
+            self.last_I = self.CFF.indices.value.copy()
+            self.last_A = self.CFF.showArrowSize.value
+            self.last_U = (self.MO.position.value - self.MO.rest_position.value).copy()
+
+        # vedo.show(vedo.Mesh([self.MO.position.value, self.surface.quads.value]), interactive=True)
+
+    def checkSample(self):
         """
         Check if the sample can be added to the batch in TcpIpServer
-        :param check_input:
-        :param check_output:
         :return:
         """
         # Check if solver converged
-        if not self.root.beamFEM.ODESolver.converged.value:
+        converged = self.root.beamFEM.ODESolver.squared_residuals[-1] < 10e-9
+        # converged = self.root.beamFEM.ODESolver.converged.value
+        print("ODE solver converged:", converged)
+        if not converged:
             Sofa.Simulation.reset(self.root)
-        return self.root.beamFEM.ODESolver.converged.value
+        return converged
 
     def applyPrediction(self, prediction):
         """
