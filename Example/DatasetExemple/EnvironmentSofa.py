@@ -3,16 +3,16 @@ import os
 import numpy as np
 import functools
 
+# DeepPhysX's Sofa imports
+from DeepPhysX_Sofa.Environment.SofaEnvironment import SofaEnvironment, BytesNumpyConverter
+
 # Sofa related imports
 import SofaRuntime
+# Add the listed plugin to Sofa environment so we can run the scene
+SofaRuntime.PluginRepository.addFirstPath(os.environ['CARIBOU_INSTALL'])
+required_plugins = ['SofaComponentAll', 'SofaCaribou', 'SofaBaseTopology',
+                    'SofaEngine', 'SofaBoundaryCondition', 'SofaTopologyMapping']
 
-# DeepPhysX's Core imports
-from DeepPhysX_Core.Visualizer.MeshVisualizer import MeshVisualizer
-from DeepPhysX_Core.Manager.EnvironmentManager import EnvironmentManager
-
-# DeepPhysX's Sofa imports
-from DeepPhysX_Sofa.Environment.SofaEnvironment import SofaEnvironment
-from DeepPhysX_Sofa.Environment.SofaEnvironmentConfig import SofaEnvironmentConfig
 
 # ENVIRONMENT PARAMETERS
 grid_params = {'grid_resolution': [25, 5, 5],  # Number of slices along each axis
@@ -21,22 +21,23 @@ grid_params = {'grid_resolution': [25, 5, 5],  # Number of slices along each axi
                'fixed_box': [0., 0., 0., 0., 15, 15]}  # Points withing this box will be fixed by Sofa
 
 grid_node_count = functools.reduce(lambda a, b: a * b, grid_params['grid_resolution'])
+grid_dofs_count = grid_node_count * 3
 
-vedo_visualizer = MeshVisualizer()
+# TRAINING PARAMETERS
+nb_hidden_layers = 2
+layers_dim = [grid_dofs_count] * (nb_hidden_layers + 2)  # nb_hidden_layer + input_layer + output_layer
+nb_epoch = 100
+nb_batch = 15
+batch_size = 32
 
 
 # Inherit from SofaEnvironment which allow to implement and create a Sofa scene in the DeepPhysX_Core pipeline
 class FEMBeam(SofaEnvironment):
 
-    def __init__(self, root_node, config, idx_instance=1):
-        super(FEMBeam, self).__init__(root_node, config, idx_instance)
-        # Scene configuration
-        self.config = config
-
-        # Add the listed plugin to Sofa environment so we can run the scene
-        SofaRuntime.PluginRepository.addFirstPath(os.environ['CARIBOU_INSTALL'])
-        required_plugins = ['SofaComponentAll', 'SofaCaribou', 'SofaBaseTopology',
-                            'SofaEngine', 'SofaBoundaryCondition', 'SofaTopologyMapping']
+    def __init__(self, root_node, ip_address='localhost', port=10000, data_converter=BytesNumpyConverter,
+                 instance_id=1):
+        super(FEMBeam, self).__init__(ip_address=ip_address, port=port, data_converter=data_converter,
+                                              instance_id=instance_id, root_node=root_node)
         root_node.addObject('RequiredPlugin', pluginName=required_plugins)
 
     def create(self):
@@ -44,6 +45,7 @@ class FEMBeam(SofaEnvironment):
         Create the Sofa scene graph. Automatically called by SofaEnvironmentConfig.
         :return: None
         """
+        print(f"Created Env n°{self.instance_id}")
         #
         # BEAM FEM NODE
         self.root.addChild('beamFEM')
@@ -85,7 +87,7 @@ class FEMBeam(SofaEnvironment):
 
         # Fixed section of the beam
         self.root.beamFEM.addObject('BoxROI', box=grid_params['fixed_box'], name='Fixed_Box')
-        self.root.beamFEM.addObject('FixedConstraint', indices='@Fixed_Box.indices', src='@MO')
+        self.root.beamFEM.addObject('FixedConstraint', indices='@Fixed_Box.indices')
 
         # Forcefield through which the external forces are applied
         self.CFF = self.root.beamFEM.addObject('ConstantForceField', name='CFF', showArrowSize='0.1',
@@ -98,7 +100,16 @@ class FEMBeam(SofaEnvironment):
         :param event: Sofa Event
         :return: None
         """
-        vedo_visualizer.addObject(positions=self.MO.position.value, cells=self.surface.quads.value)
+        # Get the data sizes
+        self.input_size = self.MO.position.value.shape
+        self.output_size = self.MO.position.value.shape
+
+    def send_parameters(self):
+        positions = np.array(self.MO.position.value, dtype=float)
+        position_shape = np.array(positions.shape, dtype=float)
+        cells = np.array(self.surface.quads.value, dtype=float)
+        cell_size = np.array(cells.shape, dtype=float)
+        return {'positions': positions, 'position_shape': position_shape, 'cells': cells, 'cell_size': cell_size}
 
     def onAnimateBeginEvent(self, event):
         """
@@ -121,21 +132,26 @@ class FEMBeam(SofaEnvironment):
         :param event: Sofa Event
         :return: None
         """
-        vedo_visualizer.render()
+        if self.compute_essential_data:
+            self.sync_send_training_data(network_input=self.CFF.forces.value,
+                                         network_output=self.MO.position.value - self.MO.rest_position.value)
+            positions = np.array(self.MO.position.value, dtype=float)
+            self.sync_send_labeled_data(positions, 'positions')
+        self.sync_send_command_done()
 
+    def checkSample(self, check_input=True, check_output=True):
+        return self.root.beamFEM.ODESolver.converged.value
 
-def createScene(root_node=None):
-    # Environment config
-    sofa_config = SofaEnvironmentConfig(environment_class=FEMBeam,
-                                        root_node=root_node,
-                                        always_create_data=False)
+    def applyPrediction(self, prediction):
+        """
+        Apply the prediction of the network in the Sofa environment. Automatically called by EnvironmentManager.
+        :return: None
+        """
+        # Needed for prediction only
+        pass
 
-    env_manager = EnvironmentManager(environment_config=sofa_config)
+    def close(self):
+        print(f"Closing Env n°{self.instance_id}")
 
-    return env_manager.environment
-
-
-if __name__ == '__main__':
-    env = createScene()
-    while True:
-        env.step()
+    def __str__(self):
+        return f"Environment n°{self.instance_id} with tensor {self.tensor}"

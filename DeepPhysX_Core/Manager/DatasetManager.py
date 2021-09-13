@@ -93,9 +93,6 @@ class DatasetManager:
             self.dataset_dir = os.path.join(self.session_dir, 'dataset/')
             self.createRunningPartitions()
 
-        # Description
-        self.description = ""
-
     def getDataManager(self):
         """
 
@@ -190,7 +187,7 @@ class DatasetManager:
                                     os.path.isfile(os.path.join(self.dataset_dir, f)) and
                                     f.endswith(mode[1:] + '_partitions.txt')]
             # If there is no such files then proceed to load any dataset found as in/out
-            if partitions_list_file:
+            if not partitions_list_file:
                 print("Loading directory: Partitions list not found for {} mode, will consider any .npy file as "
                       "input/output.".format(mode))
                 partitions_list = [f for f in os.listdir(self.dataset_dir) if
@@ -216,8 +213,8 @@ class DatasetManager:
 
         :return: True if need to compute a new sample
         """
-        return self.new_session or \
-               len(self.list_in_partitions[0]) > len(self.list_out_partitions[0]) or \
+        # self.new_session or
+        return self.new_session or len(self.list_in_partitions[0]) > len(self.list_out_partitions[0]) or \
                len(self.list_in_partitions[1]) > len(self.list_out_partitions[1]) or \
                len(self.list_in_partitions[2]) > len(self.list_out_partitions[2])
 
@@ -409,8 +406,8 @@ class DatasetManager:
         out_files = [open(filename, 'rb') for filename in out_filenames]
         in_sizes = [os.stat(in_file.fileno()).st_size for in_file in in_files]
         out_sizes = [os.stat(out_file.fileno()).st_size for out_file in out_files]
-        in_loaded = [0.] * in_sizes
-        out_loaded = [0.] * out_sizes
+        in_loaded = [0.] * len(in_sizes)
+        out_loaded = [0.] * len(out_sizes)
         end_partition = False
         idx_file = 0
         while self.dataset.memory_size() < self.max_size:

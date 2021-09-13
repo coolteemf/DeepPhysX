@@ -16,7 +16,8 @@ import DeepPhysX_Core.utils.pathUtils as pathUtils
 class Manager:
 
     def __init__(self, pipeline: BasePipeline, network_config: BaseNetworkConfig, dataset_config: BaseDatasetConfig,
-                 environment_config: BaseEnvironmentConfig, visualizer_class=None, session_name='default', session_dir=None, new_session=True):
+                 environment_config: BaseEnvironmentConfig, visualizer_class=None, session_name='default', session_dir=None, new_session=True,
+                 batch_size=1):
         """
         Collection of all the specialized managers. Allows for some basic functions call. More specific behaviour have to
         be directly call from the corresponding manager
@@ -65,7 +66,7 @@ class Manager:
         # Always create the data manager for same reason
         self.data_manager = DataManager(manager=self, dataset_config=dataset_config, environment_config=environment_config, visualizer_class=visualizer_class,
                                         session_name=self.session_name, session_dir=self.session_dir, new_session=new_session,
-                                        training=train, record_data=pipeline.record_data)
+                                        training=train, record_data=pipeline.record_data, batch_size=batch_size)
 
         # Create the stats manager for training
         self.stats_manager = StatsManager(manager=self, log_dir=os.path.join(self.session_dir, 'stats/')) if train else None
@@ -95,8 +96,8 @@ class Manager:
 
         :return: tuple (numpy.ndarray, float)
         """
-        prediction, loss = self.network_manager.computePrediction(self.data_manager.data, optimize=True)
-        return prediction, loss
+        prediction, loss_dict = self.network_manager.computePredictionAndLoss(self.data_manager.data, optimize=True)
+        return prediction, loss_dict
 
     def getPrediction(self):
         """
@@ -104,8 +105,8 @@ class Manager:
 
         :return: tuple (numpy.ndarray, float)
         """
-        prediction, loss = self.network_manager.computePrediction(self.data_manager.data, optimize=False)
-        return prediction, loss
+        prediction, loss_dict = self.network_manager.computePredictionAndLoss(self.data_manager.data, optimize=False)
+        return prediction, loss_dict
 
     def saveNetwork(self):
         """

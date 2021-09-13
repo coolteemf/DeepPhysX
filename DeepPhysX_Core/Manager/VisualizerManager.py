@@ -43,6 +43,9 @@ class VisualizerManager:
         """
         return self.visualizer_class
 
+    def initView(self, data_dict):
+        self.visualizer.initView(data_dict)
+
     def addObject(self, positions, cells=None, at=MAX_INT, field_dict={'scalar_field': None}):
         """
        Add an object tot he visualizer. If cells is None then it's a point cloud, otherwise it correspond
@@ -56,6 +59,25 @@ class VisualizerManager:
        :return:
        """
         return self.visualizer.addObject(positions=positions, cells=cells, at=at, field_dict=field_dict)
+
+    def updateFromBatch(self, batch):
+        """
+        Update vedo using batch informations
+
+        :param batch: dict templated as
+                        {0: {client_parameters},
+                         1: {client_parameters},
+                         ...
+                         N-1: {client_parameters},
+                         'in': input_learning data,
+                         'out': output_learning data}
+
+                      client_parameter contain all data sent by the environment to the environment manager (position, velocity, strain, etc...)
+        """
+        self.visualizer.updateFromBatch(batch=batch)
+
+    def updateFromSample(self, sample, id):
+        self.visualizer.updateFromSample(sample, id)
 
     def render(self):
         self.visualizer.render()

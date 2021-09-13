@@ -1,44 +1,20 @@
 import numpy as np
 
+from DeepPhysX_Core.AsyncSocket.TcpIpClient import TcpIpClient, BytesNumpyConverter
 
-class BaseEnvironment:
 
-    def __init__(self, config, instance_id=1):
+class BaseEnvironment(TcpIpClient):
+
+    def __init__(self, ip_address='localhost', port=10000, data_converter=BytesNumpyConverter, instance_id=1):
         """
         BaseEnvironment is an environment class to compute simulated data for the network and its optimization process.
 
-        :param BaseEnvironmentConfig.BaseEnvironmentProperties config: Class containing BaseEnvironment parameters
         :param int instance_id: ID of the instance
         """
 
-        self.env_name = self.__class__.__name__
-        self.idx = instance_id
-
-        # Step variables
-        self.simulations_per_step = config.simulations_per_step
-        self.max_wrong_samples_per_step = config.max_wrong_samples_per_step
-
-        # Environment data
+        super(BaseEnvironment, self).__init__(ip_address=ip_address, port=port, data_converter=data_converter,
+                                              instance_id=instance_id)
         self.input, self.output = np.array([]), np.array([])
-        self.input_size, self.output_size = None, None
-
-        self.config = config
-
-        self.environment_manager = None
-
-    def getDataManager(self):
-        """
-
-        :return: DataManager that handles the EnvironmentManager
-        """
-        return self.environment_manager.data_manager
-
-    def getEnvironmentManager(self):
-        """
-
-        :return: EnvironmentManager that handles the Environment
-        """
-        return self.environment_manager
 
     def create(self):
         """
@@ -48,33 +24,17 @@ class BaseEnvironment:
         """
         raise NotImplementedError
 
-    def close(self):
+    def init(self):
         """
-        Close the environment
+        Initialize environment.
 
         :return:
         """
-        raise NotImplementedError
+        pass
 
     def step(self):
         """
         Compute the number of steps specified by simulations_per_step
-
-        :return:
-        """
-        raise NotImplementedError
-
-    def computeInput(self):
-        """
-        Compute the data to be given as an input to the network.
-
-        :return:
-        """
-        raise NotImplementedError
-
-    def computeOutput(self):
-        """
-        Compute the data to be given as a ground truth to the network.
 
         :return:
         """
@@ -90,29 +50,51 @@ class BaseEnvironment:
         """
         return True
 
-    def getInput(self):
+    def close(self):
         """
-        :return: Input data
-        """
-        return self.input
+        Close the environment.
 
-    def getOutput(self):
+        :return:
         """
-        :return: Ground truth data
-        """
-        return self.output
+        pass
 
+    def recv_parameters(self, param_dict):
+        """
+        Exploit received parameters before scene creation.
+
+        :param dict param_dict: Dictionary of parameters
+        :return:
+        """
+        pass
+
+    def send_parameters(self):
+        """
+        Create a dictionary of parameters to send to the manager.
+
+        :return: Dictionary of parameters
+        """
+        return {}
+
+    def applyPrediction(self, prediction):
+        """
+        Apply network prediction in environment.
+
+        :param prediction: Prediction data
+        :return:
+        """
+        pass
+
+    def setDatasetSample(self, sample_in, sample_out):
+        pass
 
     def __str__(self):
         """
         :return: String containing information about the BaseEnvironmentConfig object
         """
         description = "\n"
-        description += f"  {self.env_name}\n"
-        description += f"    Name: {self.env_name} n°{self.idx}\n"
+        description += f"  {self.name}\n"
+        description += f"    Name: {self.name} n°{self.instance_id}\n"
         description += f"    Comments:\n"
-        description += f"    Simulations per step: {self.simulations_per_step}\n"
-        description += f"    Max wrong samples per step: {self.max_wrong_samples_per_step}\n"
         description += f"    Input size: {self.input_size}\n"
         description += f"    Output size: {self.output_size}\n"
         return description

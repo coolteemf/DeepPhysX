@@ -118,14 +118,14 @@ class BaseDataset:
         if side == 'in':
             # Init sizes variables
             if self.in_flat_shape is None:
-                self.init_data_size(side, data[0].shape)
+                self.init_data_size(side, data.shape)
             # Store sample
             self.data_in = np.concatenate((self.data_in, data[None, :]), axis=0)
         # Adding output data
         else:
             # Init sizes variables
             if self.out_flat_shape is None:
-                self.init_data_size(side, data[0].shape)
+                self.init_data_size(side, data.shape)
             # Store sample
             self.data_out = np.concatenate((self.data_out, data[None, :]), axis=0)
         self.current_sample = max(len(self.data_in), len(self.data_out))
@@ -155,6 +155,7 @@ class BaseDataset:
         """
         description = "\n"
         description += f"  {self.name}\n"
+        description += f"    Max size: {self.max_size}\n"
         description += f"    Input shape, input flat shape: {self.in_shape}, {self.in_flat_shape}\n"
         description += f"    Output shape, output flat shape: {self.out_shape}, {self.out_flat_shape}\n"
         return description

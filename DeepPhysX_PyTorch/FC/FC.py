@@ -29,7 +29,7 @@ class FC(TorchNetwork):
         self.linear = nn.Sequential(*(self.layers[:-1]))
 
     def forward(self, x):
-        # print("\nin\n", x)
+        # print(self.linear[-1].linear[0].weight)
         res = self.linear(x.view(x.shape[0], -1)).view(x.shape[0], -1, self.config.dim_output)
         return res
 

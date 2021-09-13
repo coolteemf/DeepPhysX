@@ -1,24 +1,17 @@
 # Basic python imports
-import copy
 import os
 import numpy as np
-import torch
 import functools
+
+# DeepPhysX's Sofa imports
+from DeepPhysX_Sofa.Environment.SofaEnvironment import SofaEnvironment, BytesNumpyConverter
 
 # Sofa related imports
 import SofaRuntime
-
-# DeepPhysX's Core imports
-from DeepPhysX_Core.Dataset.BaseDatasetConfig import BaseDatasetConfig
-from DeepPhysX_Core.Pipelines.BaseTrainer import BaseTrainer
-from DeepPhysX_Core.Visualizer.MeshVisualizer import MeshVisualizer
-
-# DeepPhysX's Sofa imports
-from DeepPhysX_Sofa.Environment.SofaEnvironment import SofaEnvironment
-from DeepPhysX_Sofa.Environment.SofaEnvironmentConfig import SofaEnvironmentConfig
-
-# DeepPhysX's Pytorch imports
-from DeepPhysX_PyTorch.FC.FCConfig import FCConfig
+# Add the listed plugin to Sofa environment so we can run the scene
+SofaRuntime.PluginRepository.addFirstPath(os.environ['CARIBOU_INSTALL'])
+required_plugins = ['SofaComponentAll', 'SofaCaribou', 'SofaBaseTopology',
+                    'SofaEngine', 'SofaBoundaryCondition', 'SofaTopologyMapping']
 
 
 # ENVIRONMENT PARAMETERS
@@ -28,28 +21,14 @@ grid_params = {'grid_resolution': [25, 5, 5],  # Number of slices along each axi
                'fixed_box': [0., 0., 0., 0., 15, 15]}  # Points withing this box will be fixed by Sofa
 
 grid_node_count = functools.reduce(lambda a, b: a * b, grid_params['grid_resolution'])
-grid_dofs_count = grid_node_count * 3
-
-# TRAINING PARAMETERS
-nb_hidden_layers = 2
-layers_dim = [grid_dofs_count] * (nb_hidden_layers + 2)  # nb_hidden_layer + input_layer + output_layer
-nb_epoch = 100
-nb_batch = 15
-batch_size = 32
 
 
-# Inherit from SofaEnvironment which allow to implement and create a Sofa scene in the DeepPhysX_Core pipeline
 class FEMBeam(SofaEnvironment):
 
-    def __init__(self, root_node, config, idx_instance=1):
-        super(FEMBeam, self).__init__(root_node, config, idx_instance)
-        # Scene configuration
-        self.config = config
-
-        # Add the listed plugin to Sofa environment so we can run the scene
-        SofaRuntime.PluginRepository.addFirstPath(os.environ['CARIBOU_INSTALL'])
-        required_plugins = ['SofaComponentAll', 'SofaCaribou', 'SofaBaseTopology',
-                            'SofaEngine', 'SofaBoundaryCondition', 'SofaTopologyMapping']
+    def __init__(self, root_node, ip_address='localhost', port=10000, data_converter=BytesNumpyConverter,
+                 instance_id=1):
+        super(FEMBeam, self).__init__(ip_address=ip_address, port=port, data_converter=data_converter,
+                                      instance_id=instance_id, root_node=root_node)
         root_node.addObject('RequiredPlugin', pluginName=required_plugins)
 
     def create(self):
@@ -57,6 +36,7 @@ class FEMBeam(SofaEnvironment):
         Create the Sofa scene graph. Automatically called by SofaEnvironmentConfig.
         :return: None
         """
+        print(f"Created Env n°{self.instance_id}")
         #
         # BEAM FEM NODE
         self.root.addChild('beamFEM')
@@ -114,9 +94,6 @@ class FEMBeam(SofaEnvironment):
         # Get the data sizes
         self.input_size = self.MO.position.value.shape
         self.output_size = self.MO.position.value.shape
-        visu = self.getDataManager().visualizer_manager.visualizer
-        if self.environment_manager is not None:
-            visu.addObject(positions=self.MO.position.value, cells=self.surface.quads.value)
 
     def onAnimateBeginEvent(self, event):
         """
@@ -139,24 +116,8 @@ class FEMBeam(SofaEnvironment):
         :param event: Sofa Event
         :return: None
         """
-        # Render
-        self.getDataManager().visualizer_manager.visualizer.render()
-
-    def computeInput(self):
-        """
-        Compute the input to be given to the network. Automatically called by EnvironmentManager.
-        :return: None
-        """
-        # Compute the input force to give to the network
-        self.input = copy.copy(self.CFF.forces.value)
-
-    def computeOutput(self):
-        """
-        Compute the output to be given to the network. Automatically called by EnvironmentManager.
-        :return: None
-        """
-        # Compute the output deformation to compare with the prediction of the network
-        self.output = copy.copy(self.MO.position.value - self.MO.rest_position.value)
+        self.sync_send_labeled_data(label="positions", data_to_send=self.MO.position.value)
+        self.sync_send_command_done()
 
     def checkSample(self, check_input=True, check_output=True):
         return self.root.beamFEM.ODESolver.converged.value
@@ -169,40 +130,11 @@ class FEMBeam(SofaEnvironment):
         # Needed for prediction only
         pass
 
+    def send_parameters(self):
+        return {"addVedo": b'1', "positions": self.MO.position.value, "cells": self.surface.quads.value}
+
     def close(self):
-        quit(0)
+        print(f"Closing Env n°{self.instance_id}")
 
-
-def createScene(root_node=None):
-    # Environment config
-    env_config = SofaEnvironmentConfig(environment_class=FEMBeam,
-                                       root_node=root_node,
-                                       always_create_data=False)
-
-    # Network config
-    net_config = FCConfig(network_name="beam_FC",
-                          save_each_epoch=False,
-                          loss=torch.nn.MSELoss,
-                          lr=1e-5,
-                          optimizer=torch.optim.Adam,
-                          dim_output=3,
-                          dim_layers=layers_dim)
-
-    # Dataset config
-    dataset_config = BaseDatasetConfig(partition_size=1,
-                                       shuffle_dataset=True)
-
-    trainer = BaseTrainer(session_name="trainings/Example_training",
-                          visualizer_class=MeshVisualizer,
-                          dataset_config=dataset_config,
-                          environment_config=env_config,
-                          network_config=net_config,
-                          nb_epochs=nb_epoch,
-                          nb_batches=nb_batch,
-                          batch_size=batch_size)
-
-    trainer.execute()
-
-
-if __name__ == '__main__':
-    createScene()
+    def __str__(self):
+        return f"Environment n°{self.instance_id} with tensor {self.tensor}"

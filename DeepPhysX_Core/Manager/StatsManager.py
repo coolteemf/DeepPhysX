@@ -29,11 +29,11 @@ class StatsManager:
         self.manager = manager
         self.log_dir = log_dir
         self.writer = tb.SummaryWriter(log_dir)
-        import os
-        os.popen(f'tensorboard --logdir={log_dir} &')
-        import webbrowser
-        # TODO Inspect previous command string to get the good ip adress
-        webbrowser.open('http://localhost:6006/')
+        # import os
+        # os.popen(f'tensorboard --logdir={log_dir} &')
+        # import webbrowser
+        # # TODO Inspect previous command string to get the good ip adress
+        # webbrowser.open('http://localhost:6006/')
         self.mean = np.full(4, np.inf)  # Contain in the first dimension the mean, and second the variance of the mean
         self.train_loss = np.array([])
         self.keep_losses = keep_losses

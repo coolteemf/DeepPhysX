@@ -11,7 +11,8 @@ import sys
 class BaseTrainer(BasePipeline):
 
     def __init__(self, network_config: BaseNetworkConfig, dataset_config: BaseDatasetConfig,
-                 environment_config: BaseEnvironmentConfig, visualizer_class=None, session_name='default', session_dir=None,
+                 environment_config: BaseEnvironmentConfig, visualizer_class=None, session_name='default',
+                 session_dir=None,
                  new_session=True, nb_epochs=0, nb_batches=0, batch_size=0):
         """
         BaseTrainer is a pipeline defining the training process of an artificial neural network.
@@ -37,12 +38,14 @@ class BaseTrainer(BasePipeline):
                   "create data on the fly")
             quit(0)
 
-        BasePipeline.__init__(self, network_config=network_config, dataset_config=dataset_config, environment_config=environment_config,
+        BasePipeline.__init__(self, network_config=network_config, dataset_config=dataset_config,
+                              environment_config=environment_config,
                               session_name=session_name, session_dir=session_dir, pipeline='training')
 
         self.manager = Manager(pipeline=self, network_config=self.network_config, dataset_config=dataset_config,
-                               environment_config=self.environment_config, visualizer_class=visualizer_class, session_name=session_name,
-                               session_dir=session_dir, new_session=new_session)
+                               environment_config=self.environment_config, visualizer_class=visualizer_class,
+                               session_name=session_name,
+                               session_dir=session_dir, new_session=new_session, batch_size=batch_size)
         # Training variables
         self.nb_epochs = nb_epochs
         self.id_epoch = 0
@@ -50,12 +53,13 @@ class BaseTrainer(BasePipeline):
         self.batch_size = batch_size
         self.id_batch = 0
         self.nb_samples = nb_batches * batch_size * nb_epochs
-        self.loss_value = None
+        self.loss_dict = None
 
         # Tell if data is recording while predicting (output is recorded only if input too)
         self.record_data = {"in": True, "out": True}
 
         self.training_progress_bar = ProgressBar(start=0, stop=self.nb_samples, c='orange', title="Training")
+        self.manager.saveInfoFile()
 
         self.manager.saveInfoFile()
 
@@ -87,8 +91,9 @@ class BaseTrainer(BasePipeline):
         :return:
         """
         self.manager.getData(self.id_epoch, self.batch_size)
-        prediction, self.loss_value = self.manager.optimizeNetwork()
-        self.manager.data_manager.environment_manager.environment.applyPrediction(prediction)
+        prediction, self.loss_dict = self.manager.optimizeNetwork()
+        print(f"Current loss : {self.loss_dict['loss']}")
+        self.manager.data_manager.applyPrediction(prediction)
 
     def saveNetwork(self):
         """
@@ -135,7 +140,7 @@ class BaseTrainer(BasePipeline):
         
         :return:
         """
-        self.manager.stats_manager.add_trainEpochLoss(self.loss_value, self.id_epoch)
+        self.manager.stats_manager.add_trainEpochLoss(self.loss_dict['loss'], self.id_epoch)
         pass
 
     def epochCondition(self):
@@ -175,7 +180,12 @@ class BaseTrainer(BasePipeline):
         self.training_progress_bar.print(txt=f'Epoch n°{self.id_epoch + 1}/{self.nb_epochs} - ' +
                                              f'Batch n°{self.id_batch + 1}/{self.nb_batches}',
                                          counts=self.nb_batches * self.id_epoch + self.id_batch)
-        self.manager.stats_manager.add_trainBatchLoss(self.loss_value, self.id_epoch * self.nb_batches + self.id_batch)
+        self.manager.stats_manager.add_trainBatchLoss(self.loss_dict['loss'],
+                                                      self.id_epoch * self.nb_batches + self.id_batch)
+        for key in self.loss_dict.keys():
+            if key != 'loss':
+                self.manager.stats_manager.add_customScalar(tag=key, value=self.loss_dict[key],
+                                                            count=self.id_epoch * self.nb_batches + self.id_batch)
 
     def batchCondition(self):
         """
@@ -209,9 +219,7 @@ class BaseTrainer(BasePipeline):
         description += f"           Number of samples : {self.nb_epochs * self.nb_samples}\n"
         return description
 
-
-
-    # def validate(self, size):
+# def validate(self, size):
     #     success_count = 0
     #     with no_grad():
     #         for i in range(size):

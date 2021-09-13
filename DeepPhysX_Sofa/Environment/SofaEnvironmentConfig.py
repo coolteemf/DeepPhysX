@@ -1,63 +1,37 @@
-from DeepPhysX_Core.Environment.BaseEnvironmentConfig import BaseEnvironmentConfig
-from .SofaEnvironment import SofaEnvironment
-from dataclasses import dataclass
+import os
+import sys
+import subprocess
 
-import Sofa.Core
+from DeepPhysX_Core.Environment.BaseEnvironmentConfig import BaseEnvironmentConfig, BytesNumpyConverter
+from .SofaEnvironment import SofaEnvironment
 
 
 class SofaEnvironmentConfig(BaseEnvironmentConfig):
-    @dataclass
-    class SofaEnvironmentProperties(BaseEnvironmentConfig.BaseEnvironmentProperties):
-        pass
 
     def __init__(self, environment_class=SofaEnvironment, simulations_per_step=1, max_wrong_samples_per_step=10,
-                 always_create_data=False, multiprocessing=1, multiprocess_method=None, root_node=None):
+                 always_create_data=False, use_prediction_in_environment=False,
+                 number_of_thread=1, max_client_connection=1000, environment_file='',
+                 param_dict={}, ip_address='localhost', port=10000, socket_data_converter=BytesNumpyConverter):
+
         BaseEnvironmentConfig.__init__(self, environment_class=environment_class,
                                        simulations_per_step=simulations_per_step,
                                        max_wrong_samples_per_step=max_wrong_samples_per_step,
                                        always_create_data=always_create_data,
-                                       number_of_thread=multiprocessing,
-                                       multiprocess_method=multiprocess_method)
-        self.rootNode = root_node
-        self.environment_config = self.SofaEnvironmentProperties(simulations_per_step=simulations_per_step,
-                                                                 max_wrong_samples_per_step=max_wrong_samples_per_step)
-        self.descriptionName = "SOFA EnvironmentConfig"
+                                       use_prediction_in_environment=use_prediction_in_environment,
+                                       number_of_thread=number_of_thread,
+                                       max_client_connection=max_client_connection,
+                                       environment_file=environment_file,
+                                       param_dict=param_dict, ip_address=ip_address, port=port,
+                                       socket_data_converter=socket_data_converter)
 
-
-
-    def setRootNodes(self):
-        if self.number_of_thread == 1:
-            self.rootNode = Sofa.Core.Node('rootNode')
-        else:
-            self.rootNode = [Sofa.Core.Node('rootNode' + str(i)) for i in range(self.number_of_thread)]
-
-    def initSofaSimulation(self):
-        if self.number_of_thread == 1:
-            Sofa.Simulation.init(self.rootNode)
-        else:
-            for node in self.rootNode:
-                Sofa.Simulation.init(node)
-
-    def createEnvironment(self, environment_manager=None, training=True):
-        if self.rootNode is None:
-            self.setRootNodes()
-        self.addRequiredPlugins()
-        if self.number_of_thread == 1:
-            environment = self.rootNode.addObject(self.environment_class(root_node=self.rootNode,
-                                                                         config=self.environment_config,
-                                                                         idx_instance=0))
-            environment.environment_manager = environment_manager
-            environment.create()
-        else:
-            environment = [self.rootNode[i].addObject(self.environment_class(root_node=self.rootNode[i],
-                                                                             config=self.environment_config,
-                                                                             idx_instance=i + 1))
-                           for i in range(len(self.rootNode))]
-            for env in environment:
-                env.environment_manager = environment_manager
-                env.create()
-        self.initSofaSimulation()
-        return environment
-
-    def addRequiredPlugins(self):
-        pass
+    def start_client(self, idx=1):
+        script = os.path.join(os.path.dirname(sys.modules[SofaEnvironment.__module__].__file__),
+                              'launcherSofaEnvironment.py')
+        # Usage: python3 script.py <file_path> <environment_class> <ip_address> <port> <converter_class> <idx>"
+        subprocess.run(['python3', script,
+                        self.environment_file,
+                        self.environment_class.__name__,
+                        self.ip_address,
+                        str(self.port),
+                        self.socket_data_converter.__name__,
+                        str(idx)])
