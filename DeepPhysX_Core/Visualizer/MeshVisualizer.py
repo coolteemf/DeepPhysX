@@ -23,6 +23,8 @@ class MeshVisualizer(VedoVisualizer):
         :param int range_color: Number of interpolations between min and max color
         """
         self.data = {}
+        self.models = []
+        self.models_shapes = {}
         self.viewer = None
         self.colormap = vedo.buildPalette(color1=min_color, color2=max_color, N=range_color, hsv=False)
         self.nb_view = 0
@@ -35,36 +37,64 @@ class MeshVisualizer(VedoVisualizer):
         """
         Add all objects described in data_dict.
 
-        :param data_dict:
+        :param data_dict: Dictionary containing the meshes data for each environment.
         :return:
         """
-        models = []
-        for idx in data_dict:
-            model = data_dict[idx]
-            if 'positions' in model:
-                # Position
-                positions = model['positions']
-                if 'position_shape' in model:
-                    position_shape = np.array(model['position_shape'], dtype=int)
-                    positions = positions.reshape(position_shape)
-                else:
-                    raise ValueError('[MeshVisualizer] You need to add a "position_shape" field')
-                # Cells
-                cells = model['cells'] if 'cells' in model else None
-                if cells is not None and 'cell_size' in model:
-                    cell_size = np.array(model['cell_size'], dtype=int)
-                    cells = cells.reshape(cell_size)
-                else:
-                    raise ValueError('[MeshVisualizer] You need to add a "cell_size" field')
-                # Other
-                at = model['at'] if 'at' in model else MAX_INT
-                field_dict = model['field_dict'] if 'field_dict' in model else {'scalar_field': None}
+        # List containing all the meshes created for each environment
+        meshes = []
 
-                models.append(self.addObject(positions=positions, cells=cells, at=at, field_dict=field_dict))
+        # Loop on the environments
+        for idx in data_dict:
+            # A model is the set of meshes in an environment
+            model = data_dict[idx]
+            self.models.append([])
+            self.models_shapes[idx] = {}
+
+            # Check if the field position is in model's data
+            if 'positions' not in model:
+                raise ValueError("[MeshVisualizer] Field 'positions' is missing to init the view.")
+            # Check if the field position_shape is in model's data
+            if 'position_shape' not in model:
+                raise ValueError("[MeshVisualizer] Field 'position_shape' is missing to init the view.")
+            # Reshape positions, store the position_shape for the model
+            positions_shape = np.array(model['position_shape'], dtype=int)
+            positions = model['positions'].reshape(positions_shape)
+            self.models_shapes[idx]['positions'] = positions_shape
+            # All the fields must have the same number of mesh
+
+            # Check if the field cells is in model's data
+            if 'cells' not in model:
+                cells = [[] for _ in range(len(positions))]
+                print("[MeshVisualizer] Warning: As field 'cells' is missing to init the view, the mesh will only be a "
+                      "pointcloud.")
+            else:
+                # Check if the field cell_shape is in model's data
+                if 'cell_shape' not in model:
+                    raise ValueError("[MeshVisualizer] Field 'cell_shape' is missing to init the view.")
+                cells = model['cells'].reshape(np.array(model['cell_shape'], dtype=int))
+                # Check that their is a cell array for each position array
+                if len(cells) != len(positions):
+                    raise ValueError("[MeshVisualizer] The number of cell array mismatch the number of position array.")
+
+            # Set the window in with the model will be rendered. If 'at' is not a field of model then set to another one
+            at = np.array(model['at'], dtype=int) if 'at' in model else [MAX_INT for _ in range(len(positions))]
+            # Check that their is a at value for each position array
+            if len(at) != len(positions):
+                raise ValueError("[MeshVisualizer] The number of 'at' value mismatch the number of position array.")
+
+            # Set the scalar field
+            # Todo: not tested yet
+            field_dict = model['field_dict'] if 'field_dict' in model else [{'scalar_field': None} for _ in range(len(positions))]
+
+            # Create a vedo mesh
+            for i in range(len(positions)):
+                vedo_mesh = self.addObject(positions=positions[i], cells=cells[i], at=at[i], field_dict=field_dict[i])
+                meshes.append(vedo_mesh)
+                self.models[-1].append(vedo_mesh)
 
         self.viewer = vedo.Plotter(N=self.nb_view, title=self.params['title'], axes=self.params['axes'],
                                    sharecam=True, interactive=self.params['interactive'])
-        for mesh in models:
+        for mesh in meshes:
             self.viewer.add(mesh, at=self.data[mesh]['at'])
         print(f"[MeshVisualizer] Set visualizer camera position then close visualizer window to start.")
         self.viewer.show(interactive=True)
@@ -76,7 +106,7 @@ class MeshVisualizer(VedoVisualizer):
        to the object surface topology.
 
        :param numpy.ndarray positions: Array of shape [n,3] describing the positions of the point cloud
-       :param numpy.ndarray cells: Array which contains the topology of the object.
+       :param cells: Array which contains the topology of the object.
        :param int at: Target renderer in which to render the object
        :param dict field_dict: Dictionary of format {'data_name':data} that is attached to the Mesh object
 
@@ -118,14 +148,14 @@ class MeshVisualizer(VedoVisualizer):
 
         :return:
         """
-        if self.viewer is None:
-            self.viewer = vedo.Plotter(N=self.nb_view,
-                                       title=self.params['title'],
-                                       axes=self.params['axes'],
-                                       sharecam=False,
-                                       interactive=self.params['interactive'])
-        for mesh in self.data:
-            self.viewer.add(mesh, at=self.data[mesh]['at'])
+        # if self.viewer is None:
+        #     self.viewer = vedo.Plotter(N=self.nb_view,
+        #                                title=self.params['title'],
+        #                                axes=self.params['axes'],
+        #                                sharecam=False,
+        #                                interactive=self.params['interactive'])
+        #     for mesh in self.data:
+        #         self.viewer.add(mesh, at=self.data[mesh]['at'])
         self.update()
         self.viewer.render()
         self.viewer.allowInteraction()
@@ -170,13 +200,32 @@ class MeshVisualizer(VedoVisualizer):
                         self.data[mesh][key] = batch[idx][key]
         self.render()
 
-    def updateFromSample(self, sample, id):
-        mesh = list(self.data)[id]
-        for key in self.data[mesh]:
-            if key in sample:
-                self.data[mesh][key] = sample[key]
-        self.render()
+    def updateFromSample(self, sample, idx):
+        """
+        Update vedo meshes using a sample from an environment.
 
+        :param sample: Dict templated as {'position': [position_mesh_1, ..., position_mesh_N]}
+        :param idx: Index of environment
+        :return:
+        """
+        # Get the list of meshes recorded in vedo for the environment n°idx
+        model = self.models[idx]
+        # Loop on sample.keys()
+        for key in sample:
+            # Check that the key is used to update a mesh
+            if key not in self.models_shapes[idx]:
+                raise ValueError(f"[MeshVisualizer] The field {key} is not part of a mesh data.")
+            # Reshape the array according to the number of meshes and the field's vector size
+            sample[key] = sample[key].reshape(self.models_shapes[idx][key])
+            # Check that the field contains an array for each mesh
+            if len(sample[key]) != len(model):
+                raise ValueError(f"[MeshVisualizer] The number of value in received data does not match the number of"
+                                 f"meshes for field {key}.")
+            # Update the field for each mesh
+            for i in range(len(model)):
+                self.data[model[i]][key] = sample[key][i]
+        # Update view
+        self.render()
 
     def saveSample(self, session_dir):
         """
@@ -195,3 +244,48 @@ class MeshVisualizer(VedoVisualizer):
         filename = os.path.join(self.folder, f'wrong_sample_{self.nb_saved}.npz')
         self.nb_saved += 1
         self.viewer.export(filename=filename)
+
+    def createObjectData(self, data_dict, positions, cells, at=None):
+        """
+        Used from the environment to template the data dict to send.
+
+        :param data_dict: Empty dictionary or return of a previous call to this method
+        :param positions: Array which contains the coordinates of the mesh
+        :param cells: Array which contains the topology of the mesh
+        :param at: Index of window in which render the object
+        :return:
+        """
+        # Convert positions to float and concatenate if the field exists
+        positions = np.array([positions], dtype=float)
+        data_dict['positions'] = positions if 'positions' not in data_dict \
+            else np.concatenate((data_dict['positions'], positions))
+        # Store the position shape as the array will be flatten when sent to TcpIpServer
+        data_dict['position_shape'] = np.array(data_dict['positions'].shape, dtype=float)
+
+        # Convert cells to float and concatenate if the field exists
+        cells = np.array([cells], dtype=float)
+        data_dict['cells'] = cells if 'cells' not in data_dict \
+            else np.concatenate((data_dict['cells'], cells))
+        # Store the cell shape as the array will be flatten when sent to TcpIpServer
+        data_dict['cell_shape'] = np.array(data_dict['cells'].shape, dtype=float)
+
+        # Convert 'at' to float and concatenate if the field exists
+        if at is not None:
+            at = np.array([at], dtype=float)
+            data_dict['at'] = at if 'at' not in data_dict else np.concatenate((data_dict['at'], at))
+
+        return data_dict
+
+    def updateObjectData(self, data_dict, positions):
+        """
+        Used from the environment to template the updated data dict to send.
+
+        :param data_dict: Empty dictionary or return of a previous call to this method
+        :param positions: Array which contains the updated coordinates of the mesh
+        :return:
+        """
+        # Convert positions to float and concatenate if the field exists
+        positions = np.array([positions], dtype=float)
+        data_dict['positions'] = positions if 'positions' not in data_dict \
+            else np.concatenate((data_dict['positions'], positions))
+        return data_dict

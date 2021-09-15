@@ -1,4 +1,5 @@
 from DeepPhysX_Core.Environment.BaseEnvironment import BaseEnvironment, BytesNumpyConverter
+from DeepPhysX_Core.Visualizer.MeshVisualizer import MeshVisualizer
 
 import Sofa
 import Sofa.Simulation
@@ -7,12 +8,12 @@ import Sofa.Simulation
 class SofaEnvironment(Sofa.Core.Controller, BaseEnvironment):
 
     def __init__(self, root_node, ip_address='localhost', port=10000, data_converter=BytesNumpyConverter, instance_id=1,
-                 *args, **kwargs):
+                 visualizer_class=MeshVisualizer, *args, **kwargs):
 
         Sofa.Core.Controller.__init__(self, *args, **kwargs)
         self.root = root_node
         BaseEnvironment.__init__(self, ip_address=ip_address, port=port, data_converter=data_converter,
-                                 instance_id=instance_id)
+                                 instance_id=instance_id, visualizer_class=visualizer_class)
 
     def create(self):
         raise NotImplementedError

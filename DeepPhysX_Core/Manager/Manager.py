@@ -16,7 +16,7 @@ import DeepPhysX_Core.utils.pathUtils as pathUtils
 class Manager:
 
     def __init__(self, pipeline: BasePipeline, network_config: BaseNetworkConfig, dataset_config: BaseDatasetConfig,
-                 environment_config: BaseEnvironmentConfig, visualizer_class=None, session_name='default', session_dir=None, new_session=True,
+                 environment_config: BaseEnvironmentConfig, session_name='default', session_dir=None, new_session=True,
                  batch_size=1):
         """
         Collection of all the specialized managers. Allows for some basic functions call. More specific behaviour have to
@@ -26,8 +26,6 @@ class Manager:
         :param BaseNetworkConfig network_config: Specialisation containing the parameters of the network manager
         :param BaseDatasetConfig dataset_config: Specialisation containing the parameters of the dataset manager
         :param BaseEnvironmentConfig environment_config: Specialisation containing the parameters of the environment manager
-        :param visualizer_class: Visualization class from which an instance will be created
-        :type visualizer_class: type[BaseVisualizer]
         :param str session_name: Name of the newly created directory if session_dir is not defined
         :param str session_dir: Name of the directory in which to write all of the neccesary data
         :param bool new_session: Define the creation of new directories to store data
@@ -64,7 +62,7 @@ class Manager:
                                               session_dir=self.session_dir, new_session=new_session, train=train)
 
         # Always create the data manager for same reason
-        self.data_manager = DataManager(manager=self, dataset_config=dataset_config, environment_config=environment_config, visualizer_class=visualizer_class,
+        self.data_manager = DataManager(manager=self, dataset_config=dataset_config, environment_config=environment_config,
                                         session_name=self.session_name, session_dir=self.session_dir, new_session=new_session,
                                         training=train, record_data=pipeline.record_data, batch_size=batch_size)
 

@@ -11,7 +11,7 @@ import sys
 class BaseTrainer(BasePipeline):
 
     def __init__(self, network_config: BaseNetworkConfig, dataset_config: BaseDatasetConfig,
-                 environment_config: BaseEnvironmentConfig, visualizer_class=None, session_name='default',
+                 environment_config: BaseEnvironmentConfig,session_name='default',
                  session_dir=None,
                  new_session=True, nb_epochs=0, nb_batches=0, batch_size=0):
         """
@@ -21,8 +21,6 @@ class BaseTrainer(BasePipeline):
         :param BaseNetworkConfig network_config: Specialisation containing the parameters of the network manager
         :param BaseDatasetConfig dataset_config: Specialisation containing the parameters of the dataset manager
         :param BaseEnvironmentConfig environment_config: Specialisation containing the parameters of the environment manager
-        :param visualizer_class: Visualization class from which an instance will be created
-        :type visualizer_class: type[BaseVisualizer]
         :param str session_name: Name of the newly created directory if session_dir is not defined
         :param str session_dir: Name of the directory in which to write all of the neccesary data
         :param bool new_session: Define the creation of new directories to store data
@@ -43,7 +41,7 @@ class BaseTrainer(BasePipeline):
                               session_name=session_name, session_dir=session_dir, pipeline='training')
 
         self.manager = Manager(pipeline=self, network_config=self.network_config, dataset_config=dataset_config,
-                               environment_config=self.environment_config, visualizer_class=visualizer_class,
+                               environment_config=self.environment_config,
                                session_name=session_name,
                                session_dir=session_dir, new_session=new_session, batch_size=batch_size)
         # Training variables

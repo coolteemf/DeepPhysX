@@ -8,11 +8,11 @@ from DeepPhysX_Sofa.Environment.SofaEnvironment import SofaEnvironment, BytesNum
 
 # Sofa related imports
 import SofaRuntime
+
 # Add the listed plugin to Sofa environment so we can run the scene
 SofaRuntime.PluginRepository.addFirstPath(os.environ['CARIBOU_INSTALL'])
 required_plugins = ['SofaComponentAll', 'SofaCaribou', 'SofaBaseTopology',
                     'SofaEngine', 'SofaBoundaryCondition', 'SofaTopologyMapping']
-
 
 # ENVIRONMENT PARAMETERS
 grid_params = {'grid_resolution': [25, 5, 5],  # Number of slices along each axis
@@ -37,7 +37,7 @@ class FEMBeam(SofaEnvironment):
     def __init__(self, root_node, ip_address='localhost', port=10000, data_converter=BytesNumpyConverter,
                  instance_id=1):
         super(FEMBeam, self).__init__(ip_address=ip_address, port=port, data_converter=data_converter,
-                                              instance_id=instance_id, root_node=root_node)
+                                      instance_id=instance_id, root_node=root_node)
         root_node.addObject('RequiredPlugin', pluginName=required_plugins)
 
     def create(self):
@@ -104,12 +104,13 @@ class FEMBeam(SofaEnvironment):
         self.input_size = self.MO.position.value.shape
         self.output_size = self.MO.position.value.shape
 
-    def send_parameters(self):
-        positions = np.array(self.MO.position.value, dtype=float)
-        position_shape = np.array(positions.shape, dtype=float)
-        cells = np.array(self.surface.quads.value, dtype=float)
-        cell_size = np.array(cells.shape, dtype=float)
-        return {'positions': positions, 'position_shape': position_shape, 'cells': cells, 'cell_size': cell_size}
+    def send_visualization(self):
+        return self.visualizer.createObjectData(data_dict={}, positions=self.MO.position.value,
+                                                cells=self.surface.quads.value, at=0)
+
+    def update_visualization(self):
+        visu_dict = self.visualizer.updateObjectData(data_dict={}, positions=self.MO.position.value)
+        self.sync_send_visualization_data(visu_dict)
 
     def onAnimateBeginEvent(self, event):
         """
@@ -135,8 +136,7 @@ class FEMBeam(SofaEnvironment):
         if self.compute_essential_data:
             self.sync_send_training_data(network_input=self.CFF.forces.value,
                                          network_output=self.MO.position.value - self.MO.rest_position.value)
-            positions = np.array(self.MO.position.value, dtype=float)
-            self.sync_send_labeled_data(positions, 'positions')
+            self.update_visualization()
         self.sync_send_command_done()
 
     def checkSample(self, check_input=True, check_output=True):

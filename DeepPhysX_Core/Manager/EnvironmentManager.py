@@ -2,11 +2,12 @@ import os
 import numpy as np
 
 from DeepPhysX_Core.Environment.BaseEnvironmentConfig import BaseEnvironmentConfig
+from DeepPhysX_Core.Manager.VisualizerManager import VisualizerManager
 
 
 class EnvironmentManager:
 
-    def __init__(self, environment_config: BaseEnvironmentConfig, data_manager=None, visualizer_manager=None,
+    def __init__(self, environment_config: BaseEnvironmentConfig, data_manager=None,
                  session_dir=None, batch_size=1):
         """
         Deals with the online generation of data for both training and running of the neural networks
@@ -25,7 +26,8 @@ class EnvironmentManager:
         self.server = environment_config.createServer(environment_manager=self, batch_size=batch_size)
 
         # Init visualizer
-        self.visualizer_manager = visualizer_manager
+        self.visualizer_manager = None if environment_config.visualizer_class is None \
+            else VisualizerManager(data_manager=data_manager, visualizer_class=environment_config.visualizer_class)
         self.initVisualizer()
 
         self.always_create_data = environment_config.always_create_data
@@ -41,7 +43,7 @@ class EnvironmentManager:
 
     def initVisualizer(self):
         if self.visualizer_manager is not None:
-            data_dict = self.server.data_dict
+            data_dict = self.server.visu_dict
             self.visualizer_manager.initView(data_dict)
 
     def step(self):

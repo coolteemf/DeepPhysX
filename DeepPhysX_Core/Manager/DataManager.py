@@ -9,7 +9,7 @@ from DeepPhysX_Core.Manager.VisualizerManager import VisualizerManager
 class DataManager:
 
     def __init__(self, dataset_config: BaseDatasetConfig, environment_config: BaseEnvironmentConfig, manager=None,
-                 visualizer_class=None, session_name='default', session_dir=None, new_session=True,
+                 session_name='default', session_dir=None, new_session=True,
                  training=True, record_data=None, batch_size=1):
         """
         DataManager deals with the generation of input / output tensors. His job is to call getData on either the
@@ -18,8 +18,6 @@ class DataManager:
         :param BaseDatasetConfig dataset_config: Specialisation containing the parameters of the dataset manager
         :param BaseEnvironmentConfig environment_config: Specialisation containing the parameters of the environment manager
         :param Manager manager: Manager that handle The DataManager
-        :param visualizer_class: Visualization class from which an instance will be created
-        :type visualizer_class: type[BaseVisualizer]
         :param str session_name: Name of the newly created directory if session_dir is not defined
         :param str session_dir: Name of the directory in which to write all of the neccesary data
         :param bool new_session: Define the creation of new directories to store data
@@ -35,7 +33,6 @@ class DataManager:
         self.environment_manager = None
         self.allow_dataset_fetch = True
         self.data = None
-        self.visualizer_manager = None if visualizer_class is None else VisualizerManager(data_manager=self, visualizer_class=visualizer_class)
         # Training
         if self.is_training:
             # Always create a dataset_manager for training
@@ -59,7 +56,6 @@ class DataManager:
             create_environment = self.dataset_manager.requireEnvironment()
         if create_environment:
             self.environment_manager = EnvironmentManager(data_manager=self, environment_config=environment_config,
-                                                          visualizer_manager=self.visualizer_manager,
                                                           session_dir=session_dir, batch_size=batch_size)
 
     def getManager(self):

@@ -50,6 +50,13 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
         self.create()
         self.init()
 
+        # Send visualization
+        visu_dict = self.send_visualization()
+        for key in visu_dict:
+            await self.send_command_read(loop=loop, receiver=self.sock)
+            await self.send_labeled_data(data_to_send=visu_dict[key], label=key, loop=loop, receiver=self.sock)
+        await self.send_command_done(loop=loop, receiver=self.sock)
+
         # Send parameters
         param_dict = self.send_parameters()
         for key in param_dict:

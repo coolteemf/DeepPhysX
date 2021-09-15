@@ -17,12 +17,13 @@ from DeepPhysX_PyTorch.FC.FCConfig import FCConfig
 
 def createScene(root_node=None):
     env_config = SofaEnvironmentConfig(environment_class=FEMBeam,
+                                       visualizer_class=MeshVisualizer,
                                        environment_file=sys.modules[FEMBeam.__module__].__file__,
                                        number_of_thread=int(sys.argv[1]),
                                        socket_data_converter=BytesNumpyConverter,
                                        always_create_data=False)
 
-    neurones_per_layer = 25*5*5*3  # Grid of size 25x5x5
+    neurones_per_layer = 25 * 5 * 5 * 3  # Grid of size 25x5x5
     network_config = FCConfig(loss=torch.nn.MSELoss,
                               lr=1e-5,
                               optimizer=torch.optim.Adam,
@@ -35,7 +36,6 @@ def createScene(root_node=None):
                           dataset_config=dataset_config,
                           environment_config=env_config,
                           network_config=network_config,
-                          visualizer_class=MeshVisualizer,
                           nb_epochs=40, nb_batches=100, batch_size=5)
     trainer.execute()
 

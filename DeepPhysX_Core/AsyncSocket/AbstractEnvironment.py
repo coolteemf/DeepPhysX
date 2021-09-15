@@ -42,6 +42,9 @@ class AbstractEnvironment:
     def recv_parameters(self, param_dict):
         raise NotImplementedError
 
+    def send_visualization(self):
+        raise NotImplementedError
+
     def send_parameters(self):
         raise NotImplementedError
 

@@ -33,7 +33,8 @@ class TcpIpServer(TcpIpObject):
         self.data_fifo = SimpleQueue()
         self.in_size = None
         self.out_size = None
-        self.data_dict = []
+        self.data_dict = {}
+        self.visu_dict = {}
         self.sample_to_client_id = []
         self.batch_from_dataset = None
         self.first_time = True
@@ -82,6 +83,7 @@ class TcpIpServer(TcpIpObject):
 
         # Empty dictionaries for received parameters from clients
         self.data_dict = {client_ID: {} for client_ID in range(len(self.clients))}
+        self.visu_dict = {client_ID: {} for client_ID in range(len(self.clients))}
 
         # Initialisation process for each client
         for client_id, client in enumerate(self.clients):
@@ -93,6 +95,10 @@ class TcpIpServer(TcpIpObject):
                 await self.send_labeled_data(data_to_send=param_dict[key], label=key, loop=loop, receiver=client)
             # Tell the client to stop receiving data
             await self.send_command_done(loop=loop, receiver=client)
+
+            # Receive visualization data
+            await self.listen_while_not_done(loop=loop, sender=client, data_dict=self.visu_dict[client_id],
+                                             client_id=client_id)
 
             # Receive parameters
             await self.listen_while_not_done(loop=loop, sender=client, data_dict=self.data_dict[client_id],
