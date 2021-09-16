@@ -8,7 +8,7 @@ from DeepPhysX_Core.Environment.BaseEnvironmentConfig import BaseEnvironmentConf
 class BaseRunner(BasePipeline):
 
     def __init__(self, network_config: BaseNetworkConfig, dataset_config: BaseDatasetConfig,
-                 environment_config: BaseEnvironmentConfig, visualizer_class=None, session_name='default', session_dir=None,
+                 environment_config: BaseEnvironmentConfig, session_name='default', session_dir=None,
                  nb_steps=0, record_inputs=False, record_outputs=False):
         """
         BaseRunner is a pipeline defining the running process of an artificial neural network.
@@ -28,7 +28,7 @@ class BaseRunner(BasePipeline):
                               session_name=session_name, session_dir=session_dir, pipeline='prediction')
 
         self.manager = Manager(pipeline=self, network_config=self.network_config, dataset_config=dataset_config,
-                               environment_config=self.environment_config, visualizer_class=visualizer_class, session_name=session_name,
+                               environment_config=self.environment_config, session_name=session_name,
                                session_dir=session_dir, new_session=True)
 
         self.name = self.__class__.__name__

@@ -2,6 +2,8 @@ import os
 import sys
 import subprocess
 
+import Sofa
+
 from DeepPhysX_Core.Environment.BaseEnvironmentConfig import BaseEnvironmentConfig, BytesNumpyConverter
 from .SofaEnvironment import SofaEnvironment
 from DeepPhysX_Core.Visualizer.MeshVisualizer import MeshVisualizer
@@ -11,7 +13,7 @@ class SofaEnvironmentConfig(BaseEnvironmentConfig):
 
     def __init__(self, environment_class=SofaEnvironment, visualizer_class=MeshVisualizer,
                  simulations_per_step=1, max_wrong_samples_per_step=10,
-                 always_create_data=False, use_prediction_in_environment=False,
+                 always_create_data=False, use_prediction_in_environment=False, as_tcpip_client=True,
                  number_of_thread=1, max_client_connection=1000, environment_file='',
                  param_dict={}, ip_address='localhost', port=10000, socket_data_converter=BytesNumpyConverter):
 
@@ -21,6 +23,7 @@ class SofaEnvironmentConfig(BaseEnvironmentConfig):
                                        max_wrong_samples_per_step=max_wrong_samples_per_step,
                                        always_create_data=always_create_data,
                                        use_prediction_in_environment=use_prediction_in_environment,
+                                       as_tcpip_client=as_tcpip_client,
                                        number_of_thread=number_of_thread,
                                        max_client_connection=max_client_connection,
                                        environment_file=environment_file,
@@ -38,3 +41,15 @@ class SofaEnvironmentConfig(BaseEnvironmentConfig):
                         str(self.port),
                         self.socket_data_converter.__name__,
                         str(idx)])
+
+    def createEnvironment(self, environment_manager):
+        """
+
+        :return:
+        """
+        root_node = Sofa.Core.Node()
+        environment = root_node.addObject(self.environment_class(environment_manager=environment_manager, root_node=root_node, as_tcpip_client=False,
+                                                                 visualizer_class=self.visualizer_class))
+        environment.create()
+        environment.init()
+        return environment

@@ -57,6 +57,7 @@ class BaseEnvironmentConfig:
         # TcpIpClients parameterization
         self.environment_class = environment_class
         self.param_dict = param_dict
+        self.as_tcpip_client = as_tcpip_client
 
         # EnvironmentManager parameterization
         self.received_parameters = {}
@@ -126,6 +127,17 @@ class BaseEnvironmentConfig:
         # Usage: python3 script.py <file_path> <environment_class> <ip_address> <port> <converter_class> <idx>"
         subprocess.run(['python3', script, self.environment_file, self.environment_class.__name__,
                         self.ip_address, str(self.port), self.socket_data_converter.__name__, str(idx)])
+
+    def createEnvironment(self, environment_manager):
+        """
+
+        :return:
+        """
+        environment = self.environment_class(environment_manager=environment_manager, as_tcpip_client=False,
+                                             visualizer_class=self.visualizer_class)
+        environment.create()
+        environment.init()
+        return environment
 
     def __str__(self):
         """

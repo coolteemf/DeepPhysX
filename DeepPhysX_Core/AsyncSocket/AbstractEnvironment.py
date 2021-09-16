@@ -1,6 +1,6 @@
 class AbstractEnvironment:
 
-    def __init__(self, instance_id=1):
+    def __init__(self, instance_id=1, as_tcpip_client=True):
         """
         AbstractEnvironment gathers the environment API for TcpIpClient.
 
@@ -9,8 +9,10 @@ class AbstractEnvironment:
 
         self.name = self.__class__.__name__ + f"n°{instance_id}"
         self.instance_id = instance_id
+        self.as_tcpip_client = as_tcpip_client
         self.input, self.output = None, None
         self.input_size, self.output_size = None, None
+        self.compute_essential_data = True
 
     def create(self):
         raise NotImplementedError

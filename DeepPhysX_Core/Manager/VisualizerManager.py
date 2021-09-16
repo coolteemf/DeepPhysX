@@ -1,9 +1,11 @@
 from sys import maxsize as MAX_INT
 
+from DeepPhysX_Core.Visualizer.MeshVisualizer import MeshVisualizer
+
 
 class VisualizerManager:
 
-    def __init__(self, data_manager=None, visualizer_class=None):
+    def __init__(self, data_manager=None, visualizer=MeshVisualizer()):
         """
         Handle the 3D representation of the data from a visualizer.
         Allows easy access to basic functionalities of the visualizer
@@ -12,9 +14,7 @@ class VisualizerManager:
         :param visualizer_class: The class of the desired visualizer
         """
         self.data_manager = data_manager
-        self.visualizer_class = visualizer_class
-        self.visualizer = visualizer_class()
-        pass
+        self.visualizer = visualizer
 
     def getDataManager(self):
         """
@@ -23,25 +23,25 @@ class VisualizerManager:
         """
         return self.data_manager
 
-    def initVisualizer(self):
-        """
-        Init the visualizer with it's default parameters
-
-        :return: The initialised visualizer
-        """
-        self.visualizer = self.visualizer_class()
-        return self.visualizer
-
-    def initVisualizerArgs(self):
-        """
-        Allows user to pass argument when initialising the visualizer
-
-        Example :
-            visu = visualizer_manager.initVisualizer()(name='Blue display')
-
-        :return: The visualizer class
-        """
-        return self.visualizer_class
+    # def initVisualizer(self):
+    #     """
+    #     Init the visualizer with it's default parameters
+    #
+    #     :return: The initialised visualizer
+    #     """
+    #     self.visualizer = self.visualizer_class()
+    #     return self.visualizer
+    #
+    # def initVisualizerArgs(self):
+    #     """
+    #     Allows user to pass argument when initialising the visualizer
+    #
+    #     Example :
+    #         visu = visualizer_manager.initVisualizer()(name='Blue display')
+    #
+    #     :return: The visualizer class
+    #     """
+    #     return self.visualizer_class
 
     def initView(self, data_dict):
         self.visualizer.initView(data_dict)

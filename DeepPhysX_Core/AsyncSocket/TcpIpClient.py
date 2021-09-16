@@ -7,7 +7,8 @@ from DeepPhysX_Core.AsyncSocket.AbstractEnvironment import AbstractEnvironment
 
 class TcpIpClient(TcpIpObject, AbstractEnvironment):
 
-    def __init__(self, ip_address='localhost', port=10000, data_converter=BytesNumpyConverter, instance_id=1):
+    def __init__(self, ip_address='localhost', port=10000, data_converter=BytesNumpyConverter, instance_id=1,
+                 as_tcpip_client=True):
         """
         TcpIpClient is a TcpIpObject which communicate with a TcpIpServer and an AbstractEnvironment to compute data.
 
@@ -17,9 +18,10 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
         :param int instance_id: ID of the instance
         """
         TcpIpObject.__init__(self, ip_address=ip_address, port=port, data_converter=data_converter)
-        AbstractEnvironment.__init__(self, instance_id=instance_id)
+        AbstractEnvironment.__init__(self, instance_id=instance_id, as_tcpip_client=as_tcpip_client)
         # Bind to client address
-        self.sock.connect((ip_address, port))
+        if self.as_tcpip_client:
+            self.sock.connect((ip_address, port))
         # Flag to trigger client's shutdown
         self.close_client = False
 
@@ -124,10 +126,12 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
         elif command == b'step':
             self.compute_essential_data = False
             await self.step()
+            self.sync_send_command_done()
         # 'cmpt': trigger a step in the environment and call for the sending of the training data
         elif command == b'cmpt':
             self.compute_essential_data = True
             await self.step()
+            self.sync_send_command_done()
         # 'test': check if the sample is exploitable
         elif command == b'test':
             check = b'1' if self.checkSample() else b'0'

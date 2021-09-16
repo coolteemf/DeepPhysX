@@ -8,12 +8,13 @@ import Sofa.Simulation
 class SofaEnvironment(Sofa.Core.Controller, BaseEnvironment):
 
     def __init__(self, root_node, ip_address='localhost', port=10000, data_converter=BytesNumpyConverter, instance_id=1,
-                 visualizer_class=MeshVisualizer, *args, **kwargs):
+                 as_tcpip_client=True, visualizer_class=MeshVisualizer, environment_manager=None, *args, **kwargs):
 
         Sofa.Core.Controller.__init__(self, *args, **kwargs)
         self.root = root_node
         BaseEnvironment.__init__(self, ip_address=ip_address, port=port, data_converter=data_converter,
-                                 instance_id=instance_id, visualizer_class=visualizer_class)
+                                 instance_id=instance_id, as_tcpip_client=as_tcpip_client,
+                                 visualizer_class=visualizer_class, environment_manager=environment_manager)
 
     def create(self):
         raise NotImplementedError

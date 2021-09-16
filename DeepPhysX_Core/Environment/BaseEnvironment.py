@@ -7,7 +7,7 @@ from DeepPhysX_Core.Visualizer.MeshVisualizer import MeshVisualizer
 class BaseEnvironment(TcpIpClient):
 
     def __init__(self, ip_address='localhost', port=10000, data_converter=BytesNumpyConverter, instance_id=1,
-                 visualizer_class=MeshVisualizer):
+                 as_tcpip_client=True, visualizer_class=MeshVisualizer, environment_manager=None):
         """
         BaseEnvironment is an environment class to compute simulated data for the network and its optimization process.
 
@@ -15,9 +15,10 @@ class BaseEnvironment(TcpIpClient):
         """
 
         super(BaseEnvironment, self).__init__(ip_address=ip_address, port=port, data_converter=data_converter,
-                                              instance_id=instance_id)
+                                              instance_id=instance_id, as_tcpip_client=as_tcpip_client)
         self.input, self.output = np.array([]), np.array([])
         self.visualizer = visualizer_class()
+        self.environment_manager = environment_manager
 
     def create(self):
         """
@@ -89,6 +90,31 @@ class BaseEnvironment(TcpIpClient):
 
     def setDatasetSample(self, sample_in, sample_out):
         pass
+
+    def setTrainingData(self, input_array, output_array):
+        if self.compute_essential_data:
+            if self.as_tcpip_client:
+                self.sync_send_training_data(network_input=input_array, network_output=output_array)
+            else:
+                self.input = input_array
+                self.output = output_array
+
+    def getPrediction(self, input_array):
+        if self.as_tcpip_client:
+            return self.sync_send_prediction_request(network_input=input_array)
+        if self.environment_manager.data_manager is None:
+            raise ValueError("Cannot request prediction if DataManager does not exist")
+        elif self.environment_manager.data_manager.manager is None:
+            raise ValueError("Cannot request prediction if Manager does not exist")
+        elif self.environment_manager.data_manager.manager.network_manager is None:
+            raise ValueError("Cannot request prediction if NetworkManager does not exist")
+        else:
+            return self.environment_manager.data_manager.manager.network_manager.computeOnlinePrediction(network_input=input_array[None, ])
+
+    def setVisualizationData(self, visu_dict):
+        if self.as_tcpip_client:
+            self.sync_send_visualization_data(visu_dict)
+        self.visualizer.updateFromSample(visu_dict, self.instance_id)
 
     def __str__(self):
         """

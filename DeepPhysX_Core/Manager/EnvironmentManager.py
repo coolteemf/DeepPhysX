@@ -8,7 +8,7 @@ from DeepPhysX_Core.Manager.VisualizerManager import VisualizerManager
 class EnvironmentManager:
 
     def __init__(self, environment_config: BaseEnvironmentConfig, data_manager=None,
-                 session_dir=None, batch_size=1):
+                 session_dir=None, batch_size=1, train=True):
         """
         Deals with the online generation of data for both training and running of the neural networks
 
@@ -23,12 +23,18 @@ class EnvironmentManager:
         self.session_dir = session_dir
         self.number_of_thread = environment_config.number_of_thread
         # Create single or multiple environments according to multiprocessing value
-        self.server = environment_config.createServer(environment_manager=self, batch_size=batch_size)
+        self.server = environment_config.createServer(environment_manager=self, batch_size=batch_size) if environment_config.as_tcpip_client else None
+        self.environment = environment_config.createEnvironment(environment_manager=self) if not environment_config.as_tcpip_client else None
+        self.batch_size = batch_size
+        self.train = train
 
         # Init visualizer
-        self.visualizer_manager = None if environment_config.visualizer_class is None \
-            else VisualizerManager(data_manager=data_manager, visualizer_class=environment_config.visualizer_class)
-        self.initVisualizer()
+        if environment_config.visualizer_class is None:
+            self.visualizer_manager = None
+        else:
+            visualizer = environment_config.visualizer_class() if self.environment is None else self.environment.visualizer
+            self.visualizer_manager = VisualizerManager(data_manager=data_manager, visualizer=visualizer)
+            self.initVisualizer()
 
         self.always_create_data = environment_config.always_create_data
         self.use_prediction_in_environment = environment_config.use_prediction_in_environment
@@ -43,8 +49,9 @@ class EnvironmentManager:
 
     def initVisualizer(self):
         if self.visualizer_manager is not None:
-            data_dict = self.server.visu_dict
-            self.visualizer_manager.initView(data_dict)
+            if self.server is not None:
+                data_dict = self.server.visu_dict
+                self.visualizer_manager.initView(data_dict)
 
     def step(self):
         """
@@ -62,6 +69,20 @@ class EnvironmentManager:
         :param bool animate: If True, triggers an environment step
         :return: dictionnary containing all labeled data sent by the clients in their own dictionnary + in and out key corresponding to the batch
         """
+        if self.server is not None:
+            return self.getDataFromServer(get_inputs, get_outputs, animate)
+        if self.environment is not None:
+            return self.getDataFromEnvironment(get_inputs, get_outputs, animate)
+        raise ValueError("[EnvironmentManager] There is no way to produce data.")
+
+    def getDataFromServer(self, get_inputs, get_outputs, animate):
+        """
+
+        :param get_inputs:
+        :param get_outputs:
+        :param animate:
+        :return:
+        """
         batch, data_dict = self.server.getBatch(get_inputs, get_outputs, animate)
         # if self.visualizer_manager is not None:
         #     self.visualizer_manager.updateFromBatch(data_dict)
@@ -71,6 +92,48 @@ class EnvironmentManager:
         if 'loss' in data_dict.keys():
             training_data['loss'] = data_dict['loss']
 
+        return training_data
+
+    def getDataFromEnvironment(self, get_inputs, get_outputs, animate):
+        """
+
+        :return:
+        """
+        inputs = np.empty((0, *self.environment.input_size)) if get_inputs else np.aray([])
+        input_condition = lambda input_array: input_array.shape[0] < self.batch_size if get_inputs else lambda _: True
+        outputs = np.empty((0, *self.environment.output_size)) if get_outputs else np.aray([])
+        output_condition = lambda output_array: output_array.shape[0] < self.batch_size if get_outputs else lambda _: True
+        data_dict = {}
+
+        while input_condition(inputs) and output_condition(outputs):
+            if animate:
+                for current_step in range(self.simulations_per_step):
+                    if current_step != self.simulations_per_step - 1:
+                        self.environment.compute_essential_data = False
+                        self.environment.step()
+                    else:
+                        self.environment.compute_essential_data = True
+                        self.environment.step()
+            if self.environment.checkSample() or not self.train:
+                if get_inputs:
+                    inputs = np.concatenate((inputs, self.environment.input[None, :]))
+                if get_outputs:
+                    outputs = np.concatenate((outputs, self.environment.output[None, :]))
+                # received_data_dict = self.environment.data_dict
+                # for key in received_data_dict:
+                #     data_dict[key] = np.concatenate((data_dict[key], received_data_dict[key][None, :])) \
+                #         if key in data_dict else np.array([received_data_dict[key]])
+            else:
+                print('Wrong sample')
+                # Record wrong sample
+                # if self.data_manager is not None and self.data_manager.visualizer_manager is not None:
+                #     self.data_manager.visualizer_manager.saveSample(self.session_dir)
+                pass
+        training_data = {'in': inputs,
+                         'out': outputs}
+        if 'loss' in data_dict.keys():
+            training_data['loss'] = data_dict['loss']
+        print(training_data)
         return training_data
 
     def updateVisualizer(self, visualization_data, id):
