@@ -1,7 +1,8 @@
 import math
+import vedo
 import random
 import numpy as np
-import Sofa.SofaBaseTopology    # Absolutely necessary to map sparse and regular grids
+import Sofa.SofaBaseTopology  # Absolutely necessary to map sparse and regular grids
 
 
 def compute_grid_resolution(max_bbox, min_bbox, cell_size, print_log=False):
@@ -55,8 +56,8 @@ def from_sparse_to_regular_grid(nb_nodes_regular_grid, sparse_grid, sparse_grid_
     for i in range(positions_sparse_grid.shape[0]):
         # In Sofa, a SparseGrid in computed from a RegularGrid, just use the dedicated method to retrieve their link
         idx = sparse_grid.getRegularGridNodeIndex(i)
-        indices_sparse_to_regular[i] = idx      # Node i in SparseGrid corresponds to node idx in RegularGrid
-        indices_regular_to_sparse[idx] = i      # Node idx in RegularGrid corresponds to node i in SparseGrid
+        indices_sparse_to_regular[i] = idx  # Node i in SparseGrid corresponds to node idx in RegularGrid
+        indices_regular_to_sparse[idx] = i  # Node idx in RegularGrid corresponds to node i in SparseGrid
 
     # Recover rest shape positions of sparse grid nodes in the regular grid
     regular_grid_rest_shape_positions = np.zeros((nb_nodes_regular_grid, 3), dtype=np.double)
@@ -66,7 +67,7 @@ def from_sparse_to_regular_grid(nb_nodes_regular_grid, sparse_grid, sparse_grid_
 
 
 def extract_visible_nodes(camera_position, object_position, normals, positions, dot_thresh=0.0, rand_thresh=0.0,
-                          distance_from_camera_thresh=500):
+                          distance_from_camera_thresh=500, inversed_normals=False):
     """
     Return the visible nodes of an object given the camera position and orientation.
 
@@ -82,9 +83,10 @@ def extract_visible_nodes(camera_position, object_position, normals, positions, 
     """
 
     # Scalar product to filter visible nodes
-    idx_filtered_nodes = [i for i in range(normals.shape[0]) if
-                         np.dot(normals[i], (camera_position - object_position)) > dot_thresh
-                         and random.random() > rand_thresh]
+    cam_vector = (camera_position - object_position) if not inversed_normals else (object_position-camera_position)
+    cam_vector = cam_vector / np.linalg.norm(cam_vector)
+    idx_filtered_nodes = [i for i in range(normals.shape[0]) if np.dot(normals[i], cam_vector) > dot_thresh
+                          and random.random() > rand_thresh]
 
     # Check the distance to the camera
     idx_visible_nodes = []
@@ -92,7 +94,8 @@ def extract_visible_nodes(camera_position, object_position, normals, positions, 
         if np.linalg.norm(positions[node] - camera_position) < distance_from_camera_thresh:
             idx_visible_nodes.append(node)
     idx_visible_nodes = np.unique(np.ravel(idx_visible_nodes))
-
+    if len(idx_visible_nodes) == 0:
+        raise ValueError("There is no visible points")
     return idx_visible_nodes.tolist(), positions[idx_visible_nodes].tolist()
 
 
@@ -101,3 +104,45 @@ def translate_visible_nodes(visible_nodes, translation):
         for i in range(3):
             node[i] += translation[i]
     return visible_nodes
+
+
+def find_boundaries(source_file, objects_files_list, translation):
+    """
+
+    :param source_file: Filename of the source object
+    :param objects_files_list: List of filenames of objects which intersect the source object
+    :return: List of boxes defined by xmin,ymin,zmin, xmax,ymax,zmax
+    """
+    # Source mesh object, list of points defining the boundary conditions
+    source_mesh = vedo.Mesh(source_file)
+    boundaries = []
+    # Find intersections for each object
+    for object_file in objects_files_list:
+        object_mesh = vedo.Mesh(object_file)
+        intersect = source_mesh.intersectWith(object_mesh)
+        boundaries += intersect.points().tolist()
+    # Apply translation
+    translations = np.tile(translation, (len(boundaries), 1))
+    boundaries += translations
+    # Find min and max corners of the bounding box
+    bbox_min = np.array(boundaries).min(0)
+    bbox_max = np.array(boundaries).max(0)
+    return bbox_min, bbox_max, bbox_min.tolist() + bbox_max.tolist()
+
+
+def define_bbox(source_file, margin_scale):
+    """
+
+    :param source_file: Filename of the source object
+    :param margin_scale: Margin in percents
+    :return: List of boxes defined by xmin,ymin,zmin, xmax,ymax,zmax
+    """
+    # Source object mesh
+    source_mesh = vedo.Mesh(source_file)
+    # Find min and max corners of the bounding box
+    bbox_min = source_mesh.points().min(0)
+    bbox_max = source_mesh.points().max(0)
+    # Apply a margin scale to the bounding box
+    bbox_min -= margin_scale * (bbox_max - bbox_min)
+    bbox_max += margin_scale * (bbox_max - bbox_min)
+    return bbox_min, bbox_max, bbox_min.tolist() + bbox_max.tolist()

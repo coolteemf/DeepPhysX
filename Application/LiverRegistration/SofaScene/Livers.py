@@ -65,20 +65,17 @@ class Livers(SofaEnvironment):
         print(f"3D grid: {self.regular_grid.number_of_nodes()} nodes, {self.regular_grid.number_of_cells()} cells.")
 
         # Liver model
-        self.surface_mesh = self.root.addObject('MeshObjLoader', name='surface_mesh', filename=p_liver['mesh_file'],
-                                                translation=p_liver['translation'])
+        if '.obj' in p_liver['mesh_file']:
+            self.surface_mesh = self.root.addObject('MeshObjLoader', name='surface_mesh', filename=p_liver['mesh_file'],
+                                                    translation=p_liver['translation'])
+        else:
+            self.surface_mesh = self.root.addObject('MeshVTKLoader', name='surface_mesh', filename=p_liver['mesh_file'],
+                                                    translation=p_liver[
+                                                        'translation'])  # , scale3d=[10e-4,10e-4,10e-4])
 
         # Camera position
         self.root.addObject('MechanicalObject', name='camera', position=p_camera['camera_position'].tolist(),
                             showObject=True, showObjectScale=10)
-
-        # Extract initial visible nodes
-        _, self.visible_nodes = extract_visible_nodes(camera_position=p_camera['camera_position'],
-                                                      object_position=p_liver['fixed_point'],
-                                                      normals=self.surface_mesh.normals.value,
-                                                      positions=self.surface_mesh.position.value,
-                                                      dot_thresh=p_camera['camera_thresholds'][0],
-                                                      distance_from_camera_thresh=p_camera['camera_thresholds'][1])
 
         # Root children
         self.createModels()
@@ -93,7 +90,7 @@ class Livers(SofaEnvironment):
         # Create the FEM simulated object
         self.createFEM()
         # Create the UNet simulated object
-        self.createNN()
+        # self.createNN()
 
     def createFEM(self):
         """
@@ -110,7 +107,7 @@ class Livers(SofaEnvironment):
         self.root.fem.addObject('BoxROI', box=p_grid['b_box'], drawBoxes=True, drawSize='1.0')
 
         # ODE solver + Static solver
-        self.solver = self.root.fem.addObject('LegacyStaticODESolver', name='ODESolver', newton_iterations=10,
+        self.solver = self.root.fem.addObject('StaticODESolver', name='ODESolver', newton_iterations=10,
                                               printLog=False, correction_tolerance_threshold=1e-8,
                                               residual_tolerance_threshold=1e-8)
         self.root.fem.addObject('ConjugateGradientSolver', name='StaticSolver', preconditioning_method='Diagonal',
@@ -140,15 +137,19 @@ class Livers(SofaEnvironment):
         self.root.fem.surface.addObject('BarycentricMapping', input='@../sparse_grid_mo', output='@./')
 
         # Forces
-        self.sphere = self.root.fem.surface.addObject('SphereROI', name='sphere', radii=0.015, drawSphere=True,
-                                                      drawSize=1, centers=p_liver['fixed_point'].tolist())
-        self.force_field = self.root.fem.surface.addObject('ConstantForceField', name='cff', indices='0',
-                                                           forces=[0., 0., 0.], showArrowSize='0.2',
-                                                           showColor=[0, 0, 1, 1])
+        self.sphere = []
+        self.force_field = []
+        for i in range(p_force['nb_simultaneous_forces']):
+            self.sphere.append(self.root.fem.surface.addObject('SphereROI', name=f'sphere_{i}', radii=15,
+                                                               drawSphere=True, drawSize=1,
+                                                               centers=p_liver['fixed_point'].tolist()))
+            self.force_field.append(self.root.fem.surface.addObject('ConstantForceField', name=f'cff_{i}', indices='0',
+                                                                    forces=[0., 0., 0.], showArrowSize='0.2',
+                                                                    showColor=[0, 0, 1, 1]))
 
         # Visible points
         cloud = self.root.fem.surface.addChild('points_cloud')
-        self.points_cloud = cloud.addObject('MechanicalObject', name='visible_mo', position=self.visible_nodes,
+        self.points_cloud = cloud.addObject('MechanicalObject', name='visible_mo', position=[],
                                             showObject=True, showObjectScale=5, showColor=[1, 0, 0, 1])
         cloud.addObject('BarycentricMapping', input='@../../sparse_grid_mo', output='@./')
 
@@ -173,7 +174,7 @@ class Livers(SofaEnvironment):
 
         # Grid topology of the liver
         self.nn_sparse_grid_topo = self.root.nn.addObject('SparseGridTopology', name='sparse_grid_topo',
-                                                          src='@../surface_mesh', n=p_grid['grid_resolution'])
+                                                          src='@../surface_mesh2', n=p_grid['grid_resolution'])
         self.nn_sparse_grid_mo = self.root.nn.addObject('MechanicalObject', name='sparse_grid_mo', showObject=False,
                                                         src='@sparse_grid_topo')
 
@@ -183,9 +184,9 @@ class Livers(SofaEnvironment):
         # Surface child node
         self.root.nn.addChild('surface')
         self.nn_surface_mo = self.root.nn.surface.addObject('MechanicalObject', name='nn_surface_mo',
-                                                            src='@../../surface_mesh')
+                                                            src='@../../surface_mesh2')
         self.nn_surface_topo = self.root.nn.surface.addObject('TriangleSetTopologyContainer', name='triangle_topo',
-                                                              src='@../../surface_mesh')
+                                                              src='@../../surface_mesh2')
         self.root.nn.surface.addObject('BarycentricMapping', input='@../sparse_grid_mo', output='@./')
 
         # Forces
@@ -205,7 +206,7 @@ class Livers(SofaEnvironment):
 
         # Visual
         self.root.nn.addChild('visual')
-        self.nn_visu = self.root.nn.visual.addObject('OglModel', src='@../../surface_mesh', color='orange')
+        self.nn_visu = self.root.nn.visual.addObject('OglModel', src='@../../surface_mesh2', color='orange')
         self.root.nn.visual.addObject('BarycentricMapping', input='@../sparse_grid_mo', output='@./')
 
     def onSimulationInitDoneEvent(self, event):
@@ -233,6 +234,20 @@ class Livers(SofaEnvironment):
             self.neighboors[e[0]].append(e[1])
             self.neighboors[e[1]].append(e[0])
 
+        idx_visible_nodes, _ = extract_visible_nodes(camera_position=p_camera['camera_position'],
+                                                     object_position=p_liver['fixed_point'],
+                                                     normals=self.fem_visu.normal.value,
+                                                     positions=self.fem_surface_mo.position.value,
+                                                     dot_thresh=p_camera['camera_thresholds'][0],
+                                                     distance_from_camera_thresh=p_camera['camera_thresholds'][1],
+                                                     inversed_normals=True)
+        position = self.fem_surface_mo.position.value[np.array(idx_visible_nodes)].tolist()
+        self.root.fem.surface.points_cloud.removeObject(self.points_cloud)
+        self.points_cloud = self.root.fem.surface.points_cloud.addObject('MechanicalObject', name='visible_mo',
+                                                                         position=position, showObject=True,
+                                                                         showObjectScale=5, showColor=[1, 0, 0, 1])
+        self.points_cloud.init()
+
         # Get the data sizes
         self.input_size = (self.nb_nodes_regular_grid, 1)
         self.output_size = (self.nb_nodes_regular_grid, 3)
@@ -245,7 +260,8 @@ class Livers(SofaEnvironment):
         visu_dict = {}
         visu_dict = self.visualizer.createObjectData(data_dict=visu_dict, positions=self.fem_visu.position.value,
                                                      cells=self.fem_visu.triangles.value, at=0)
-        translation = np.array(p_liver['nn_translation'] * self.nn_visu.position.shape[0]).reshape(self.nn_visu.position.shape)
+        translation = np.array(p_liver['nn_translation'] * self.nn_visu.position.shape[0]).reshape(
+            self.nn_visu.position.shape)
         visu_dict = self.visualizer.createObjectData(data_dict=visu_dict,
                                                      positions=self.nn_visu.position.value + translation,
                                                      cells=self.nn_visu.triangles.value, at=0)
@@ -262,18 +278,40 @@ class Livers(SofaEnvironment):
         if self.is_created['fem']:
             self.fem_sparse_grid_mo.position.value = self.fem_sparse_grid_mo.rest_position.value
 
-        # Generate next force value
-        f = np.random.uniform(low=-1, high=1, size=(3,))
-        f = (f / np.linalg.norm(f)) * p_force['amplitude_scale'] * np.random.random(1)
-
-        # Pick up a random visible surface point, select the points in a centered sphere
-        current_point = self.fem_surface_mo.position.value[np.random.randint(len(self.fem_surface_mo.position.value))]
-        self.sphere.centers.value = [current_point]
-
-        # Build and set forces vector
-        forces_vector = [f for _ in range(len(self.sphere.indices.value))]
-        self.force_field.indices.value = self.sphere.indices.array()
-        self.force_field.forces.value = forces_vector
+        # Build and set forces vectors
+        selected_centers = np.empty([0, 3])
+        for i in range(p_force['nb_simultaneous_forces']):
+            # Pick up a random visible surface point, select the points in a centered sphere
+            current_point = self.fem_surface_mo.position.value[np.random.randint(len(self.fem_surface_mo.position.value))]
+            # Check distance to other points
+            distance_check = True
+            for p in selected_centers:
+                distance = np.linalg.norm(current_point - p)
+                if distance < p_force['inter_distance_thresh']:
+                    distance_check = False
+                    break
+            empty_indices = False
+            if distance_check:
+                # Add center to the selection
+                selected_centers = np.concatenate((selected_centers, np.array([current_point])))
+                # Set sphere center
+                self.sphere[i].centers.value = [current_point]
+                # Build force vector
+                if len(self.sphere[i].indices.value) > 0:
+                    f = np.random.uniform(low=-1, high=1, size=(3,))
+                    f = (f / np.linalg.norm(f)) * p_force['amplitude_scale'] * np.random.random(1)
+                    forces_vector = [f for _ in range(len(self.sphere[i].indices.value))]
+                    self.force_field[i].indices.value = self.sphere[i].indices.array()
+                    self.force_field[i].forces.value = forces_vector
+                    self.force_field[i].showArrowSize.value = 10 / np.linalg.norm(f)
+                else:
+                    empty_indices = True
+            if not distance_check or empty_indices:
+                # Reset sphere position
+                self.sphere[i].centers.value = [p_liver['fixed_point'].tolist()]
+                # Reset force field
+                self.force_field[i].indices.value = [0]
+                self.force_field[i].forces.value = [[0.0, 0.0, 0.0]]
 
     def onAnimateEndEvent(self, event):
         """
@@ -291,7 +329,8 @@ class Livers(SofaEnvironment):
                                                      normals=self.fem_visu.normal.value,
                                                      positions=self.fem_surface_mo.position.value,
                                                      dot_thresh=p_camera['camera_thresholds'][0],
-                                                     distance_from_camera_thresh=p_camera['camera_thresholds'][1])
+                                                     distance_from_camera_thresh=p_camera['camera_thresholds'][1],
+                                                     inversed_normals=True)
 
         # Compute occlusions and noise
         idx_visible_nodes = self.computeOcclusions(idx_visible_nodes)
@@ -299,7 +338,12 @@ class Livers(SofaEnvironment):
         visible_nodes = self.computeNoise(visible_nodes)
 
         # Update visible points MO
-        self.points_cloud.position.value = visible_nodes
+        position = self.fem_surface_mo.position.value[np.array(idx_visible_nodes)].tolist()
+        self.root.fem.surface.points_cloud.removeObject(self.points_cloud)
+        self.points_cloud = self.root.fem.surface.points_cloud.addObject('MechanicalObject', name='visible_mo',
+                                                                         position=position, showObject=True,
+                                                                         showObjectScale=5, showColor=[1, 0, 0, 1])
+        self.points_cloud.init()
 
         # Send training data
         # if self.as_tcpip_client:
@@ -307,7 +351,7 @@ class Livers(SofaEnvironment):
         #                                  network_output=self.computeOutput())
         #     # self.update_visualization()
         #     self.sync_send_command_done()
-        self.setTrainingData(input_array=self.computeInput(), output_array=self.computeOutput())
+        # self.setTrainingData(input_array=self.computeInput(), output_array=self.computeOutput())
 
         self.nb_step += 1
 
@@ -429,7 +473,6 @@ class Livers(SofaEnvironment):
         visu_dict = self.visualizer.updateObjectData(data_dict=visu_dict,
                                                      positions=self.nn_visu.position.value + translation)
         self.setVisualizationData(visu_dict)
-
 
     def compute_error(self):
         """
