@@ -114,7 +114,8 @@ class BaseEnvironment(TcpIpClient):
     def setVisualizationData(self, visu_dict):
         if self.as_tcpip_client:
             self.sync_send_visualization_data(visu_dict)
-        self.visualizer.updateFromSample(visu_dict, self.instance_id)
+        else:
+            self.visualizer.updateFromSample(visu_dict, self.instance_id)
 
     def __str__(self):
         """
