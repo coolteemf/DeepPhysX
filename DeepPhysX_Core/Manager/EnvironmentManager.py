@@ -99,10 +99,10 @@ class EnvironmentManager:
 
         :return:
         """
-        inputs = np.empty((0, *self.environment.input_size)) if get_inputs else np.aray([])
-        input_condition = lambda input_array: input_array.shape[0] < self.batch_size if get_inputs else lambda _: True
-        outputs = np.empty((0, *self.environment.output_size)) if get_outputs else np.aray([])
-        output_condition = lambda output_array: output_array.shape[0] < self.batch_size if get_outputs else lambda _: True
+        inputs = np.empty((0, *self.environment.input_size)) if get_inputs else np.array([])
+        input_condition = lambda input_array: input_array.shape[0] < self.batch_size if get_inputs else lambda _: False
+        outputs = np.empty((0, *self.environment.output_size)) if get_outputs else np.array([])
+        output_condition = lambda output_array: output_array.shape[0] < self.batch_size if get_outputs else lambda _: False
         data_dict = {}
 
         while input_condition(inputs) and output_condition(outputs):
@@ -133,7 +133,6 @@ class EnvironmentManager:
                          'out': outputs}
         if 'loss' in data_dict.keys():
             training_data['loss'] = data_dict['loss']
-        print(training_data)
         return training_data
 
     def updateVisualizer(self, visualization_data, id):

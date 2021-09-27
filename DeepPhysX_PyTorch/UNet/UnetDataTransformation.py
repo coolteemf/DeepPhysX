@@ -35,11 +35,12 @@ class UnetDataTransformation(TorchDataTransformation):
         return data_in
 
     @TorchDataTransformation.check_type
-    def transformBeforeLoss(self, data_out, data_gt):
+    def transformBeforeLoss(self, data_out, data_gt=None):
         # Transform ground truth
-        data_gt = torch.reshape(data_gt,
-                                (-1, self.grid_shape[2], self.grid_shape[1], self.grid_shape[0], self.nb_classes))
-        data_gt = self.data_scale * data_gt
+        if data_gt is not None:
+            data_gt = torch.reshape(data_gt,
+                                    (-1, self.grid_shape[2], self.grid_shape[1], self.grid_shape[0], self.nb_classes))
+            data_gt = self.data_scale * data_gt
         # Transform prediction
         data_out = self.inverse_padding(data_out)
         data_out = data_out.permute(0, 2, 3, 4, 1)
