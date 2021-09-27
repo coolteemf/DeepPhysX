@@ -6,19 +6,19 @@ import Sofa
 
 from DeepPhysX_Core.Environment.BaseEnvironmentConfig import BaseEnvironmentConfig, BytesNumpyConverter
 from .SofaEnvironment import SofaEnvironment
-from DeepPhysX_Core.Visualizer.MeshVisualizer import MeshVisualizer
+from DeepPhysX_Core.Visualizer.VedoObject import VedoObject
 
 
 class SofaEnvironmentConfig(BaseEnvironmentConfig):
 
-    def __init__(self, environment_class=SofaEnvironment, visualizer_class=MeshVisualizer,
+    def __init__(self, environment_class=SofaEnvironment, visual_object=VedoObject,
                  simulations_per_step=1, max_wrong_samples_per_step=10,
                  always_create_data=False, use_prediction_in_environment=False, as_tcpip_client=True,
                  number_of_thread=1, max_client_connection=1000, environment_file='',
                  param_dict={}, ip_address='localhost', port=10000, socket_data_converter=BytesNumpyConverter):
 
         BaseEnvironmentConfig.__init__(self, environment_class=environment_class,
-                                       visualizer_class=visualizer_class,
+                                       visual_object=visual_object,
                                        simulations_per_step=simulations_per_step,
                                        max_wrong_samples_per_step=max_wrong_samples_per_step,
                                        always_create_data=always_create_data,
@@ -49,7 +49,7 @@ class SofaEnvironmentConfig(BaseEnvironmentConfig):
         """
         root_node = Sofa.Core.Node()
         environment = root_node.addObject(self.environment_class(environment_manager=environment_manager, root_node=root_node, as_tcpip_client=False,
-                                                                 visualizer_class=self.visualizer_class))
+                                                                 visual_object=self.visual_object))
         environment.create()
         environment.init()
         return environment

@@ -1,13 +1,13 @@
 import numpy as np
 
 from DeepPhysX_Core.AsyncSocket.TcpIpClient import TcpIpClient, BytesNumpyConverter
-from DeepPhysX_Core.Visualizer.MeshVisualizer import MeshVisualizer
+from DeepPhysX_Core.Visualizer.VedoObject import VedoObject
 
 
 class BaseEnvironment(TcpIpClient):
 
     def __init__(self, ip_address='localhost', port=10000, data_converter=BytesNumpyConverter, instance_id=1,
-                 as_tcpip_client=True, visualizer_class=MeshVisualizer, environment_manager=None):
+                 as_tcpip_client=True, visual_object=VedoObject, environment_manager=None):
         """
         BaseEnvironment is an environment class to compute simulated data for the network and its optimization process.
 
@@ -17,7 +17,7 @@ class BaseEnvironment(TcpIpClient):
         super(BaseEnvironment, self).__init__(ip_address=ip_address, port=port, data_converter=data_converter,
                                               instance_id=instance_id, as_tcpip_client=as_tcpip_client)
         self.input, self.output = np.array([]), np.array([])
-        self.visualizer = visualizer_class()
+        self.visual_object = visual_object(visualizer=None) if visual_object is not None else None
         self.environment_manager = environment_manager
 
     def create(self):
@@ -115,7 +115,7 @@ class BaseEnvironment(TcpIpClient):
         if self.as_tcpip_client:
             self.sync_send_visualization_data(visu_dict)
         else:
-            self.visualizer.updateFromSample(visu_dict, self.instance_id)
+            self.environment_manager.visualizer.updateFromSample(visu_dict, self.instance_id)
 
     def __str__(self):
         """

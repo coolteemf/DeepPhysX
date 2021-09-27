@@ -182,7 +182,7 @@ class NetworkManager:
 
         # Compute prediction
         data_in = self.data_transformation.transformBeforePrediction(data_in)
-        data_in.requires_grad = compute_gradient
+        # data_in.requires_grad = compute_gradient
         pred = self.network.predict(data_in)
         pred, _ = self.data_transformation.transformBeforeLoss(pred, None)
         pred = self.data_transformation.transformBeforeApply(pred)

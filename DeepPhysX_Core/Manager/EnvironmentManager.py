@@ -29,11 +29,10 @@ class EnvironmentManager:
         self.train = train
 
         # Init visualizer
-        if environment_config.visualizer_class is None:
+        if environment_config.visual_object is None:
             self.visualizer_manager = None
         else:
-            visualizer = environment_config.visualizer_class() if self.environment is None else self.environment.visualizer
-            self.visualizer_manager = VisualizerManager(data_manager=data_manager, visualizer=visualizer)
+            self.visualizer_manager = VisualizerManager(data_manager=data_manager, visual_object=environment_config.visual_object)
             self.initVisualizer()
 
         self.always_create_data = environment_config.always_create_data
