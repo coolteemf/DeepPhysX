@@ -1,19 +1,18 @@
 from DeepPhysX_Core.Pipelines.BasePipeline import BasePipeline
-from DeepPhysX_Core.Network.BaseNetworkConfig import BaseNetworkConfig
-from DeepPhysX_Core.Dataset.BaseDatasetConfig import BaseDatasetConfig
-from DeepPhysX_Core.Environment.BaseEnvironmentConfig import BaseEnvironmentConfig
 from DeepPhysX_Core.Manager.Manager import Manager
 
 from vedo import ProgressBar
-import sys
-
+from sys import stdout
 
 class BaseTrainer(BasePipeline):
 
-    def __init__(self, network_config: BaseNetworkConfig, dataset_config: BaseDatasetConfig,
-                 environment_config: BaseEnvironmentConfig,session_name='default',
+    def __init__(self, network_config,
+                 dataset_config,
+                 environment_config,
+                 session_name='default',
                  session_dir=None,
-                 new_session=True, nb_epochs=0, nb_batches=0, batch_size=0):
+                 new_session=True,
+                 nb_epochs=0, nb_batches=0, batch_size=0):
         """
         BaseTrainer is a pipeline defining the training process of an artificial neural network.
         It provide a highly tunable learning process that can be used with any machine learning library.
@@ -117,7 +116,7 @@ class BaseTrainer(BasePipeline):
         
         :return:
         """
-        sys.stdout.write("\033[K")
+        stdout.write("\033[K")
         self.training_progress_bar.print(counts=self.nb_samples)
         self.manager.close()
 
@@ -174,7 +173,7 @@ class BaseTrainer(BasePipeline):
         
         :return:
         """
-        sys.stdout.write("\033[K")
+        stdout.write("\033[K")
         self.training_progress_bar.print(txt=f'Epoch n°{self.id_epoch + 1}/{self.nb_epochs} - ' +
                                              f'Batch n°{self.id_batch + 1}/{self.nb_batches}',
                                          counts=self.nb_batches * self.id_epoch + self.id_batch)

@@ -1,19 +1,19 @@
-import os
-import threading
-import subprocess
-import sys
+from os import cpu_count
+from os.path import join, dirname
+from threading import Thread
+from subprocess import run as subprocessRun
+from sys import modules
 
-from DeepPhysX_Core.Environment.BaseEnvironment import BaseEnvironment
-from DeepPhysX_Core.AsyncSocket.TcpIpServer import TcpIpServer, BytesNumpyConverter
-from DeepPhysX_Core.Visualizer.MeshVisualizer import MeshVisualizer
+from DeepPhysX_Core.AsyncSocket.TcpIpServer import TcpIpServer
+
 
 class BaseEnvironmentConfig:
 
-    def __init__(self, environment_class=BaseEnvironment, visualizer_class=MeshVisualizer,
+    def __init__(self, environment_class=None, visualizer_class=None,
                  simulations_per_step=1, max_wrong_samples_per_step=10, always_create_data=False,
                  record_wrong_samples=False, use_prediction_in_environment=False, param_dict={}, as_tcpip_client=True,
                  number_of_thread=1, max_client_connection=1000, environment_file='', ip_address='localhost',
-                 port=10000, socket_data_converter=BytesNumpyConverter):
+                 port=10000, socket_data_converter=None):
         """
         BaseEnvironmentConfig is a configuration class to parameterize and create a BaseEnvironment for the
         EnvironmentManager.
@@ -49,7 +49,7 @@ class BaseEnvironmentConfig:
                             f"{type(always_create_data)}")
 
         if type(number_of_thread) != int and number_of_thread < 0:
-            raise TypeError(f"[{self.name}] The number_of_thread number must be a positive int.")
+            raise TypeError(f"[{self.name}] The number_of_thread number must be a positive integer.")
         self.socket_data_converter = socket_data_converter
         self.max_client_connections = max_client_connection
         self.environment_file = environment_file
@@ -71,9 +71,10 @@ class BaseEnvironmentConfig:
         self.ip_address = ip_address
         self.port = port
         self.server_is_ready = False
-        self.number_of_thread = min(max(number_of_thread, 1), os.cpu_count())  # Assert nb is between 1 and cpu_count
+        self.number_of_thread = min(max(number_of_thread, 1), cpu_count())  # Assert nb is between 1 and cpu_count
 
     def createServer(self, environment_manager=None, batch_size=1):
+
         """
         Create a TcpIpServer and launch TcpIpClients in subprocesses.
 
@@ -85,13 +86,13 @@ class BaseEnvironmentConfig:
         server = TcpIpServer(data_converter=self.socket_data_converter, max_client_count=self.max_client_connections,
                              batch_size=batch_size, nb_client=self.number_of_thread, manager=environment_manager)
 
-        server_thread = threading.Thread(target=self.start_server, args=(server,))
+        server_thread = Thread(target=self.start_server, args=(server,))
         server_thread.start()
 
         # Create clients
         client_threads = []
         for i in range(self.number_of_thread):
-            client_thread = threading.Thread(target=self.start_client, args=(i,))
+            client_thread = Thread(target=self.start_client, args=(i,))
             client_threads.append(client_thread)
         for client in client_threads:
             client.start()
@@ -121,11 +122,18 @@ class BaseEnvironmentConfig:
         :param int idx: Index of client
         :return:
         """
-        script = os.path.join(os.path.dirname(sys.modules[BaseEnvironment.__module__].__file__),
+        script = join(dirname(modules[BaseEnvironment.__module__].__file__),
                               'launcherBaseEnvironment.py')
         # Usage: python3 script.py <file_path> <environment_class> <ip_address> <port> <converter_class> <idx>"
-        subprocess.run(['python3', script, self.environment_file, self.environment_class.__name__,
-                        self.ip_address, str(self.port), self.socket_data_converter.__name__, str(idx)])
+        subprocessRun(['python3',
+                        script,
+                        self.environment_file,
+                        self.environment_class.__name__,
+                        self.ip_address,
+                        str(self.port),
+                        self.socket_data_converter.__name__,
+                        str(idx),
+                        str(self.number_of_thread)])
 
     def __str__(self):
         """

@@ -1,6 +1,5 @@
-import functools
-import operator
-
+from functools import reduce
+from operator import iconcat
 
 def flatten(a):
     """
@@ -8,4 +7,4 @@ def flatten(a):
 
     :return: Return a flattened version of a numpy array
     """
-    return functools.reduce(operator.iconcat, a, [])
+    return reduce(iconcat, a, [])

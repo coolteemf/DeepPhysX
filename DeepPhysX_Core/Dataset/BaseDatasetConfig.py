@@ -1,4 +1,4 @@
-import os
+from os.path import isdir
 from dataclasses import dataclass
 
 from DeepPhysX_Core.Dataset.BaseDataset import BaseDataset
@@ -27,7 +27,7 @@ class BaseDatasetConfig:
         if dataset_dir is not None:
             if type(dataset_dir) != str:
                 raise TypeError(f"[{self.name}] Wrong dataset_dir type: str required, get {type(dataset_dir)}")
-            if not os.path.isdir(dataset_dir):
+            if not isdir(dataset_dir):
                 raise ValueError(f"[{self.name}] Given dataset_dir doesn't exists: {dataset_dir}")
         # Check partition_size type and value
         if type(partition_size) != int and type(partition_size) != float:

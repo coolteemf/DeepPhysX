@@ -1,6 +1,8 @@
-import vedo
-import os
-import numpy as np
+from vedo import buildPalette, Plotter, Mesh
+from os.path import join as osPathJoin
+from os import makedirs
+from numpy import array, concatenate
+
 from sys import maxsize as MAX_INT
 
 from DeepPhysX_Core.Visualizer.VedoVisualizer import VedoVisualizer
@@ -26,7 +28,7 @@ class MeshVisualizer(VedoVisualizer):
         self.models = []
         self.models_shapes = {}
         self.viewer = None
-        self.colormap = vedo.buildPalette(color1=min_color, color2=max_color, N=range_color, hsv=False)
+        self.colormap = buildPalette(color1=min_color, color2=max_color, N=range_color, hsv=False)
         self.nb_view = 0
         self.params = {'title': title, 'interactive': interactive_window, 'axes': show_axes}
         # Wrong samples parameters
@@ -57,7 +59,7 @@ class MeshVisualizer(VedoVisualizer):
             if 'position_shape' not in model:
                 raise ValueError("[MeshVisualizer] Field 'position_shape' is missing to init the view.")
             # Reshape positions, store the position_shape for the model
-            positions_shape = np.array(model['position_shape'], dtype=int)
+            positions_shape = array(model['position_shape'], dtype=int)
             positions = model['positions'].reshape(positions_shape)
             self.models_shapes[idx]['positions'] = positions_shape
             # All the fields must have the same number of mesh
@@ -71,13 +73,13 @@ class MeshVisualizer(VedoVisualizer):
                 # Check if the field cell_shape is in model's data
                 if 'cell_shape' not in model:
                     raise ValueError("[MeshVisualizer] Field 'cell_shape' is missing to init the view.")
-                cells = model['cells'].reshape(np.array(model['cell_shape'], dtype=int))
+                cells = model['cells'].reshape(array(model['cell_shape'], dtype=int))
                 # Check that their is a cell array for each position array
                 if len(cells) != len(positions):
                     raise ValueError("[MeshVisualizer] The number of cell array mismatch the number of position array.")
 
             # Set the window in with the model will be rendered. If 'at' is not a field of model then set to another one
-            at = np.array(model['at'], dtype=int) if 'at' in model else [MAX_INT for _ in range(len(positions))]
+            at = array(model['at'], dtype=int) if 'at' in model else [MAX_INT for _ in range(len(positions))]
             # Check that their is a at value for each position array
             if len(at) != len(positions):
                 raise ValueError("[MeshVisualizer] The number of 'at' value mismatch the number of position array.")
@@ -92,7 +94,7 @@ class MeshVisualizer(VedoVisualizer):
                 meshes.append(vedo_mesh)
                 self.models[-1].append(vedo_mesh)
 
-        self.viewer = vedo.Plotter(N=self.nb_view, title=self.params['title'], axes=self.params['axes'],
+        self.viewer = Plotter(N=self.nb_view, title=self.params['title'], axes=self.params['axes'],
                                    sharecam=True, interactive=self.params['interactive'])
         for mesh in meshes:
             self.viewer.add(mesh, at=self.data[mesh]['at'])
@@ -113,7 +115,7 @@ class MeshVisualizer(VedoVisualizer):
        :return:
        """
         # Create a mesh witht he given data. vedo generate a points cloud if cells is None
-        mesh = vedo.Mesh([positions, cells])
+        mesh = Mesh([positions, cells])
         # mesh.property.SetPointSize(10)
         # Efficient way to look for key existence in a dict
         if 'scalar_field' in field_dict and field_dict['scalar_field'] is not None:
@@ -122,7 +124,7 @@ class MeshVisualizer(VedoVisualizer):
             mesh.cmap(field_dict['color_map'], field_dict['scalar_field'])
 
         # Attach each know fields to the Mesh object
-        self.data[mesh] = {'positions': positions, 'position_shape': np.array(positions.shape, dtype=int),
+        self.data[mesh] = {'positions': positions, 'position_shape': array(positions.shape, dtype=int),
                            'cells': cells, 'at': self.addView(at)}
         for data_field in field_dict.keys():
             self.data[mesh][data_field] = field_dict[data_field]
@@ -149,7 +151,7 @@ class MeshVisualizer(VedoVisualizer):
         :return:
         """
         # if self.viewer is None:
-        #     self.viewer = vedo.Plotter(N=self.nb_view,
+        #     self.viewer = Plotter(N=self.nb_view,
         #                                title=self.params['title'],
         #                                axes=self.params['axes'],
         #                                sharecam=False,
@@ -171,7 +173,7 @@ class MeshVisualizer(VedoVisualizer):
         # In case, to debug
         for model in self.data:
             if position and self.data[model]['positions'] is not None:
-                shape = np.array(self.data[model]['position_shape'], dtype=int)
+                shape = array(self.data[model]['position_shape'], dtype=int)
                 model.points(self.data[model]['positions'].reshape(shape))
             if scalar_field and 'scalar_field' in self.data[model] and self.data[model]['scalar_field'] is not None:
                 model.cmap(self.data[model]['color_map'], self.data[model]['scalar_field'])
@@ -236,12 +238,12 @@ class MeshVisualizer(VedoVisualizer):
         :return:
         """
         if self.folder is None:
-            self.folder = os.path.join(session_dir, 'stats/wrong_samples')
-            os.makedirs(self.folder)
+            self.folder = osPathJoin(session_dir, 'stats/wrong_samples')
+            makedirs(self.folder)
             from DeepPhysX_Core.utils import wrong_samples
             import shutil
             shutil.copy(wrong_samples.__file__, self.folder)
-        filename = os.path.join(self.folder, f'wrong_sample_{self.nb_saved}.npz')
+        filename = osPathJoin(self.folder, f'wrong_sample_{self.nb_saved}.npz')
         self.nb_saved += 1
         self.viewer.export(filename=filename)
 
@@ -256,23 +258,23 @@ class MeshVisualizer(VedoVisualizer):
         :return:
         """
         # Convert positions to float and concatenate if the field exists
-        positions = np.array([positions], dtype=float)
+        positions = array([positions], dtype=float)
         data_dict['positions'] = positions if 'positions' not in data_dict \
-            else np.concatenate((data_dict['positions'], positions))
+            else concatenate((data_dict['positions'], positions))
         # Store the position shape as the array will be flatten when sent to TcpIpServer
-        data_dict['position_shape'] = np.array(data_dict['positions'].shape, dtype=float)
+        data_dict['position_shape'] = array(data_dict['positions'].shape, dtype=float)
 
         # Convert cells to float and concatenate if the field exists
-        cells = np.array([cells], dtype=float)
+        cells = array([cells], dtype=float)
         data_dict['cells'] = cells if 'cells' not in data_dict \
-            else np.concatenate((data_dict['cells'], cells))
+            else concatenate((data_dict['cells'], cells))
         # Store the cell shape as the array will be flatten when sent to TcpIpServer
-        data_dict['cell_shape'] = np.array(data_dict['cells'].shape, dtype=float)
+        data_dict['cell_shape'] = array(data_dict['cells'].shape, dtype=float)
 
         # Convert 'at' to float and concatenate if the field exists
         if at is not None:
-            at = np.array([at], dtype=float)
-            data_dict['at'] = at if 'at' not in data_dict else np.concatenate((data_dict['at'], at))
+            at = array([at], dtype=float)
+            data_dict['at'] = at if 'at' not in data_dict else concatenate((data_dict['at'], at))
 
         return data_dict
 
@@ -285,7 +287,7 @@ class MeshVisualizer(VedoVisualizer):
         :return:
         """
         # Convert positions to float and concatenate if the field exists
-        positions = np.array([positions], dtype=float)
+        positions = array([positions], dtype=float)
         data_dict['positions'] = positions if 'positions' not in data_dict \
-            else np.concatenate((data_dict['positions'], positions))
+            else concatenate((data_dict['positions'], positions))
         return data_dict

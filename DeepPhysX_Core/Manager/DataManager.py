@@ -1,14 +1,10 @@
 from DeepPhysX_Core.Manager.DatasetManager import DatasetManager
 from DeepPhysX_Core.Manager.EnvironmentManager import EnvironmentManager
 
-from DeepPhysX_Core.Dataset.BaseDatasetConfig import BaseDatasetConfig
-from DeepPhysX_Core.Environment.BaseEnvironmentConfig import BaseEnvironmentConfig
-from DeepPhysX_Core.Manager.VisualizerManager import VisualizerManager
-
 
 class DataManager:
 
-    def __init__(self, dataset_config: BaseDatasetConfig, environment_config: BaseEnvironmentConfig, manager=None,
+    def __init__(self, dataset_config=None, environment_config=None, manager=None,
                  session_name='default', session_dir=None, new_session=True,
                  training=True, record_data=None, batch_size=1):
         """
@@ -97,7 +93,14 @@ class DataManager:
             else:
                 data = self.dataset_manager.getData(batch_size=batch_size, get_inputs=True, get_outputs=True, force_partition_reload=True)
                 if self.environment_manager is not None and self.environment_manager.use_prediction_in_environment:
-                    data = self.environment_manager.dispatchBatch(batch=data, get_inputs=True, get_outputs=True)
+                    new_data = self.environment_manager.dispatchBatch(batch=data)
+                    if len(new_data['in']) != 0:
+                        data['in'] = new_data['in']
+                    if len(new_data['out']) != 0:
+                        data['out'] = new_data['out']
+                    if 'loss' in new_data:
+                        data['loss'] = new_data['loss']
+
         # Prediction
         else:
             # Get data from environment
@@ -105,6 +108,7 @@ class DataManager:
             # Record data
             if self.dataset_manager is not None:
                 self.dataset_manager.addData(data)
+
         self.data = data
 
     def applyPrediction(self, prediction):

@@ -1,17 +1,17 @@
-import socket
-import asyncio
-
+from socket import socket, AF_INET, SOCK_STREAM, SOL_SOCKET, SO_REUSEADDR
+from asyncio import get_event_loop
+from threading import Lock
 from DeepPhysX_Core.AsyncSocket.BytesNumpyConverter import BytesNumpyConverter
 
-import threading
-
-
-def launchInThread(func):
-    def wrapper(*args, **kwargs):
-        thread = threading.Thread(target=func, args=args, kwargs=kwargs)
-        thread.start()
-        return thread
-    return wrapper
+# import threading
+#
+#
+# def launchInThread(func):
+#     def wrapper(*args, **kwargs):
+#         thread = threading.Thread(target=func, args=args, kwargs=kwargs)
+#         thread.start()
+#         return thread
+#     return wrapper
 
 
 class TcpIpObject:
@@ -25,8 +25,8 @@ class TcpIpObject:
         :param data_converter: BytesBaseConverter class to convert data to bytes (NumPy by default)
         """
         # Define socket
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self.sock = socket(AF_INET, SOCK_STREAM)
+        self.sock.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
         # Register IP and PORT
         self.ip_address = ip_address
         self.port = port
@@ -35,10 +35,10 @@ class TcpIpObject:
         # Available commands
         self.command_dict = {'exit': b'exit', 'step': b'step', 'check': b'test', 'size': b'size', 'done': b'done',
                              'received': b'recv', 'prediction': b'pred', 'compute': b'cmpt', 'read': b'read',
-                             'sample': b'samp', 'visualization': b'visu'}
+                             'sample': b'samp', 'visualization': b'visu', 'unsupervised': b'uspv'}
         # Synchronous variables
-        self.send_lock = threading.Lock()
-        self.receive_lock = threading.Lock()
+        # self.send_lock = Lock()
+        # self.receive_lock = Lock()
 
     # Asynchronous definition of the functions
     async def send_data(self, data_to_send, loop=None, receiver=None, do_convert=True):
@@ -52,7 +52,7 @@ class TcpIpObject:
                False
         :return:
         """
-        loop = asyncio.get_event_loop() if loop is None else loop
+        loop = get_event_loop() if loop is None else loop
         receiver = self.sock if receiver is None else receiver
         # Cast data to bytes field
         data_as_bytes = self.data_converter.data_to_bytes(data_to_send) if type(data_to_send) == self.data_converter.data_type() else data_to_send
@@ -95,7 +95,7 @@ class TcpIpObject:
         # Return the data in the expected format
         return data_as_bytes if is_bytes_data else self.data_converter.bytes_to_data(data_as_bytes)
 
-    async def send_labeled_data(self, data_to_send, label, receiver, loop=None, do_convert=True):
+    async def send_labeled_data(self, data_to_send, label, receiver=None, loop=None, do_convert=True, send_read_command=True):
         """
         Send data with an associated label.
 
@@ -107,6 +107,10 @@ class TcpIpObject:
                False
         :return:
         """
+        loop = get_event_loop() if loop is None else loop
+        receiver = self.sock if receiver is None else receiver
+        if send_read_command:
+            await self.send_command_read()
         await self.send_data(data_to_send=bytes(label.lower(), "utf-8"), loop=loop, receiver=receiver, do_convert=False)
         await self.send_data(data_to_send=data_to_send, loop=loop, receiver=receiver, do_convert=do_convert)
 
@@ -258,7 +262,7 @@ class TcpIpObject:
 
     # Functions below might not need the thread thingy
     #@launchInThread
-    def sync_send_labeled_data(self, data_to_send, label, receiver=None, do_convert=True):
+    def sync_send_labeled_data(self, data_to_send, label, receiver=None, do_convert=True, send_read_command=True):
         """
         Send data with an associated label.
 
@@ -269,7 +273,8 @@ class TcpIpObject:
                False
         :return:
         """
-        self.sync_send_command_read()
+        if send_read_command:
+            self.sync_send_command_read()
         self.sync_send_data(data_to_send=bytes(label.lower(), "utf-8"), receiver=receiver, do_convert=False)
         self.sync_send_data(data_to_send=data_to_send, receiver=receiver, do_convert=do_convert)
 

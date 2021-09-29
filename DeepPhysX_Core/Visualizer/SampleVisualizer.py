@@ -1,5 +1,7 @@
-import os
-import vedo
+from os.path import join as osPathJoin
+from os.path import isfile
+from os import listdir
+from vedo import Plotter, load
 
 from DeepPhysX_Core.Visualizer.VedoVisualizer import VedoVisualizer
 
@@ -14,12 +16,12 @@ class SampleVisualizer(VedoVisualizer):
         """
         super(SampleVisualizer, self).__init__()
         # Load samples in the folder
-        files = sorted([f for f in os.listdir(folder) if os.path.isfile(os.path.join(folder, f))
+        files = sorted([f for f in listdir(folder) if isfile(osPathJoin(folder, f))
                         and f.endswith('.npz')])
-        self.samples = [os.path.join(folder, f) for f in files]
+        self.samples = [osPathJoin(folder, f) for f in files]
         self.id_sample = 0
         # Create visualizer
-        self.view = vedo.Plotter(title='SampleVisualizer', N=1, axes=0, interactive=True, offscreen=False)
+        self.view = Plotter(title='SampleVisualizer', N=1, axes=0, interactive=True, offscreen=False)
         self.view.addButton(fnc=self.showPreviousSample, pos=(0.3, 0.005), states=["previous"])
         self.view.addButton(fnc=self.showNextSample, pos=(0.7, 0.005), states=["next"])
         # Load and show first sample
@@ -61,7 +63,7 @@ class SampleVisualizer(VedoVisualizer):
             self.view.clear(self.current_sample)
         # Load next sample from file
         filename = self.samples[self.id_sample]
-        view = vedo.load(filename)
+        view = load(filename)
         self.current_sample = view.actors
         # Show current sample
         self.view.show(self.current_sample)

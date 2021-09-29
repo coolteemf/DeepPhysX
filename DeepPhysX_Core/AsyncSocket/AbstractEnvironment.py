@@ -1,6 +1,6 @@
 class AbstractEnvironment:
 
-    def __init__(self, instance_id=1):
+    def __init__(self, instance_id=1, number_of_instances=1):
         """
         AbstractEnvironment gathers the environment API for TcpIpClient.
 
@@ -9,6 +9,10 @@ class AbstractEnvironment:
 
         self.name = self.__class__.__name__ + f"n°{instance_id}"
         self.instance_id = instance_id
+        if instance_id < number_of_instances:
+            self.number_of_instances = number_of_instances
+        else:
+            raise ValueError(f"Instance ID ({instance_id}) is bigger than max instances ({number_of_instances})")
         self.input, self.output = None, None
         self.input_size, self.output_size = None, None
 
@@ -24,19 +28,7 @@ class AbstractEnvironment:
     def step(self):
         raise NotImplementedError
 
-    def computeInput(self):
-        raise NotImplementedError
-
-    def computeOutput(self):
-        raise NotImplementedError
-
     def checkSample(self, check_input=True, check_output=True):
-        raise NotImplementedError
-
-    def getInput(self):
-        raise NotImplementedError
-
-    def getOutput(self):
         raise NotImplementedError
 
     def recv_parameters(self, param_dict):

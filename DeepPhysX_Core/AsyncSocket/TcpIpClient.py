@@ -1,5 +1,5 @@
-import asyncio
-import numpy as np
+from asyncio import run, get_event_loop
+from numpy import array
 
 from DeepPhysX_Core.AsyncSocket.TcpIpObject import TcpIpObject, BytesNumpyConverter
 from DeepPhysX_Core.AsyncSocket.AbstractEnvironment import AbstractEnvironment
@@ -7,7 +7,7 @@ from DeepPhysX_Core.AsyncSocket.AbstractEnvironment import AbstractEnvironment
 
 class TcpIpClient(TcpIpObject, AbstractEnvironment):
 
-    def __init__(self, ip_address='localhost', port=10000, data_converter=BytesNumpyConverter, instance_id=1):
+    def __init__(self, ip_address='localhost', port=10000, data_converter=BytesNumpyConverter, instance_id=1, number_of_instances=1):
         """
         TcpIpClient is a TcpIpObject which communicate with a TcpIpServer and an AbstractEnvironment to compute data.
 
@@ -17,7 +17,7 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
         :param int instance_id: ID of the instance
         """
         TcpIpObject.__init__(self, ip_address=ip_address, port=port, data_converter=data_converter)
-        AbstractEnvironment.__init__(self, instance_id=instance_id)
+        AbstractEnvironment.__init__(self, instance_id=instance_id, number_of_instances=number_of_instances)
         # Bind to client address
         self.sock.connect((ip_address, port))
         # Flag to trigger client's shutdown
@@ -29,7 +29,7 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
 
         :return:
         """
-        asyncio.run(self.__initialize())
+        run(self.__initialize())
 
     async def __initialize(self):
         """
@@ -37,7 +37,7 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
 
         :return:
         """
-        loop = asyncio.get_event_loop()
+        loop = get_event_loop()
 
         recv_param_dict = {}
         # Receive parameters
@@ -53,14 +53,12 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
         # Send visualization
         visu_dict = self.send_visualization()
         for key in visu_dict:
-            await self.send_command_read(loop=loop, receiver=self.sock)
             await self.send_labeled_data(data_to_send=visu_dict[key], label=key, loop=loop, receiver=self.sock)
         await self.send_command_done(loop=loop, receiver=self.sock)
 
         # Send parameters
         param_dict = self.send_parameters()
         for key in param_dict:
-            await self.send_command_read(loop=loop, receiver=self.sock)
             # Send the parameter (label + data)
             await self.send_labeled_data(data_to_send=param_dict[key], label=key, loop=loop, receiver=self.sock,
                                          do_convert=key != 'addvedo')
@@ -74,20 +72,20 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
         # If server asked to send IO sizes
         if cmd == b'size':
             # Send input and output sizes
-            await self.send_data(data_to_send=np.array(self.input_size, dtype=float), loop=loop,
+            await self.send_data(data_to_send=array(self.input_size, dtype=float), loop=loop,
                                  receiver=self.sock)
-            await self.send_data(data_to_send=np.array(self.output_size, dtype=float), loop=loop,
+            await self.send_data(data_to_send=array(self.output_size, dtype=float), loop=loop,
                                  receiver=self.sock)
 
-    def run(self):
+    def launch(self):
         """
-        Run __run method with asyncio.
+        Run __start method with asyncio.
 
         :return:
         """
-        asyncio.run(self.__run())
+        run(self.__launch())
 
-    async def __run(self):
+    async def __launch(self):
         """
         Trigger the main communication protocol with the server.
 
@@ -110,7 +108,7 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
         :param server: TcpIpServer to communicate with
         :return:
         """
-        loop = asyncio.get_event_loop()
+        loop = get_event_loop()
 
         # Receive and check command
         command = await self.receive_data(loop, server, is_bytes_data=True)
@@ -144,14 +142,13 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
     async def __close(self):
         """
         Close the environment and shutdown the client.
-
         :return:
         """
         # Close environment
         self.close()
 
         # Shutdown client
-        loop = asyncio.get_event_loop()
+        loop = get_event_loop()
         # Confirm exit command to the server
         await self.send_command_exit(loop=loop, receiver=self.sock)
         # Close socket
@@ -159,25 +156,21 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
 
     async def send_training_data(self, network_input=None, network_output=None, loop=None, receiver=None):
         """
-
-        :param loop: asyncio.get_event_loop() return
+        :param loop: get_event_loop() return
         :param receiver: TcpIpObject receiver
         :param network_input: data to send under the label \"input\"
         :param network_output: data to send under the label \"output\"
         :return:
         """
-        loop = asyncio.get_event_loop() if loop is None else loop
+        loop = get_event_loop() if loop is None else loop
         receiver = self.sock if receiver is None else receiver
         check = self.checkSample()
-        await self.send_command_read()
         await self.send_labeled_data(data_to_send=b'1' if check else b'0', label="check", loop=loop, receiver=receiver,
                                      do_convert=False)
         if check:
             if network_input is not None:
-                await self.send_command_read()
                 await self.send_labeled_data(data_to_send=network_input, label="input", loop=loop, receiver=receiver)
             if network_output is not None:
-                await self.send_command_read()
                 await self.send_labeled_data(data_to_send=network_output, label="output", loop=loop, receiver=receiver)
 
     def sync_send_training_data(self, network_input=None, network_output=None, receiver=None):

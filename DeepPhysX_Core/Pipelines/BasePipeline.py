@@ -3,11 +3,10 @@ from DeepPhysX_Core.Dataset.BaseDatasetConfig import BaseDatasetConfig
 from DeepPhysX_Core.Environment.BaseEnvironmentConfig import BaseEnvironmentConfig
 
 
-
 class BasePipeline:
 
-    def __init__(self, network_config: BaseNetworkConfig, dataset_config: BaseDatasetConfig,
-                 environment_config: BaseEnvironmentConfig, session_name='default', session_dir=None,
+    def __init__(self, network_config, dataset_config,
+                 environment_config, session_name='default', session_dir=None,
                  pipeline=None):
         """
         Base class defining Pipelines common variables

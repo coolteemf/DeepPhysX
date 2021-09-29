@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from typing import Any
-import os
+from os.path import isdir
 
 from DeepPhysX_Core.Network.BaseNetwork import BaseNetwork
 from DeepPhysX_Core.Network.BaseOptimization import BaseOptimization
@@ -56,7 +56,7 @@ class BaseNetworkConfig:
         if network_dir is not None:
             if type(network_dir) != str:
                 raise TypeError(f"[{self.name}] Wrong 'network_dir' type: str required, get{type(network_dir)}")
-            if not os.path.isdir(network_dir):
+            if not isdir(network_dir):
                 raise ValueError(f"[{self.name}] Given 'network_dir' does not exists: {network_dir}")
         # Check network_name type
         if type(network_name) != str:

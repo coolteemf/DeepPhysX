@@ -1,4 +1,4 @@
-import numpy as np
+from numpy import array
 
 from DeepPhysX_Core.AsyncSocket.TcpIpClient import TcpIpClient, BytesNumpyConverter
 from DeepPhysX_Core.Visualizer.MeshVisualizer import MeshVisualizer
@@ -6,7 +6,7 @@ from DeepPhysX_Core.Visualizer.MeshVisualizer import MeshVisualizer
 
 class BaseEnvironment(TcpIpClient):
 
-    def __init__(self, ip_address='localhost', port=10000, data_converter=BytesNumpyConverter, instance_id=1,
+    def __init__(self, ip_address='localhost', port=10000, data_converter=BytesNumpyConverter, instance_id=1, number_of_instances=1,
                  visualizer_class=MeshVisualizer):
         """
         BaseEnvironment is an environment class to compute simulated data for the network and its optimization process.
@@ -15,9 +15,10 @@ class BaseEnvironment(TcpIpClient):
         """
 
         super(BaseEnvironment, self).__init__(ip_address=ip_address, port=port, data_converter=data_converter,
-                                              instance_id=instance_id)
-        self.input, self.output = np.array([]), np.array([])
+                                              instance_id=instance_id, number_of_instances=number_of_instances)
+        self.input, self.output = array([]), array([])
         self.visualizer = visualizer_class()
+        self.sample_in, self.sample_out = None, None
 
     def create(self):
         """
@@ -88,7 +89,8 @@ class BaseEnvironment(TcpIpClient):
         pass
 
     def setDatasetSample(self, sample_in, sample_out):
-        pass
+        self.sample_in = sample_in
+        self.sample_out = sample_out
 
     def __str__(self):
         """

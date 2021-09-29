@@ -1,13 +1,10 @@
-import os
-import numpy as np
-
-from DeepPhysX_Core.Environment.BaseEnvironmentConfig import BaseEnvironmentConfig
+from numpy import array
 from DeepPhysX_Core.Manager.VisualizerManager import VisualizerManager
 
 
 class EnvironmentManager:
 
-    def __init__(self, environment_config: BaseEnvironmentConfig, data_manager=None,
+    def __init__(self, environment_config=None, data_manager=None,
                  session_dir=None, batch_size=1):
         """
         Deals with the online generation of data for both training and running of the neural networks
@@ -66,9 +63,10 @@ class EnvironmentManager:
         # if self.visualizer_manager is not None:
         #     self.visualizer_manager.updateFromBatch(data_dict)
 
-        training_data = {'in': np.array(batch[0]) if get_inputs else np.array([]),
-                         'out': np.array(batch[1]) if get_outputs else np.array([])}
-        if 'loss' in data_dict.keys():
+        training_data = {'in': array(batch[0]) if get_inputs else array([]),
+                         'out': array(batch[1]) if get_outputs else array([])}
+
+        if 'loss' in data_dict:
             training_data['loss'] = data_dict['loss']
 
         return training_data
@@ -79,9 +77,9 @@ class EnvironmentManager:
     def applyPrediction(self, prediction):
         self.server.applyPrediction(prediction)
 
-    def dispatchBatch(self, batch, get_inputs=True, get_outputs=True, animate=True):
+    def dispatchBatch(self, batch):
         self.server.setDatasetBatch(batch)
-        return self.getData(get_inputs=get_inputs, get_outputs=get_outputs, animate=animate)
+        return self.getData(get_inputs=False, get_outputs=False, animate=True)
 
     def close(self):
         """

@@ -1,5 +1,5 @@
-import tensorboardX as tb
-import numpy as np
+from tensorboardX import SummaryWriter
+from numpy import full, inf, array, append, concatenate
 
 
 def generateDefaultScene():
@@ -28,14 +28,14 @@ class StatsManager:
 
         self.manager = manager
         self.log_dir = log_dir
-        self.writer = tb.SummaryWriter(log_dir)
+        self.writer = SummaryWriter(log_dir)
         # import os
         # os.popen(f'tensorboard --logdir={log_dir} &')
         # import webbrowser
         # # TODO Inspect previous command string to get the good ip adress
         # webbrowser.open('http://localhost:6006/')
-        self.mean = np.full(4, np.inf)  # Contain in the first dimension the mean, and second the variance of the mean
-        self.train_loss = np.array([])
+        self.mean = full(4, inf)  # Contain in the first dimension the mean, and second the variance of the mean
+        self.train_loss = array([])
         self.keep_losses = keep_losses
         self.tag_dict = {}
 
@@ -61,7 +61,7 @@ class StatsManager:
         if var is not None:
             self.writer.add_scalar("Train/Batch/Variance", var, count)
         if self.keep_losses is True:
-            self.train_loss = np.append(self.train_loss, value)
+            self.train_loss = append(self.train_loss, value)
 
     def add_trainEpochLoss(self, value, count):
         """
@@ -180,8 +180,8 @@ class StatsManager:
         :return:
         """
         if index > self.mean.shape[0] - 1:
-            self.mean = np.concatenate((self.mean, np.full(index - (self.mean.shape[0] - 1), np.inf)))
-        if self.mean[index] == np.inf:
+            self.mean = concatenate((self.mean, full(index - (self.mean.shape[0] - 1), inf)))
+        if self.mean[index] == inf:
             self.mean[index] = value
             return None
         else:

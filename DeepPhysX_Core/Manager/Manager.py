@@ -1,22 +1,17 @@
-import os
-
-from DeepPhysX_Core.Pipelines.BasePipeline import BasePipeline
+from os.path import join as osPathJoin
+from os.path import isfile, basename, exists
 
 from DeepPhysX_Core.Manager.DataManager import DataManager
 from DeepPhysX_Core.Manager.NetworkManager import NetworkManager
 from DeepPhysX_Core.Manager.StatsManager import StatsManager
 
-from DeepPhysX_Core.Dataset.BaseDatasetConfig import BaseDatasetConfig
-from DeepPhysX_Core.Network.BaseNetworkConfig import BaseNetworkConfig
-from DeepPhysX_Core.Environment.BaseEnvironmentConfig import BaseEnvironmentConfig
-
-import DeepPhysX_Core.utils.pathUtils as pathUtils
+from DeepPhysX_Core.utils.pathUtils import getFirstCaller, createDir
 
 
 class Manager:
 
-    def __init__(self, pipeline: BasePipeline, network_config: BaseNetworkConfig, dataset_config: BaseDatasetConfig,
-                 environment_config: BaseEnvironmentConfig, session_name='default', session_dir=None, new_session=True,
+    def __init__(self, pipeline=None, network_config=None, dataset_config=None,
+                 environment_config=None, session_name='default', session_dir=None, new_session=True,
                  batch_size=1):
         """
         Collection of all the specialized managers. Allows for some basic functions call. More specific behaviour have to
@@ -35,10 +30,10 @@ class Manager:
         if pipeline.type == 'training':
             train = True
             # Create manager directory from the session name
-            self.session_dir = os.path.join(pathUtils.getFirstCaller(), session_name)
+            self.session_dir = osPathJoin(getFirstCaller(), session_name)
             # Avoid unwanted overwritten data
             if new_session:
-                self.session_dir = pathUtils.createDir(self.session_dir, check_existing=session_name)
+                self.session_dir = createDir(self.session_dir, check_existing=session_name)
         # Prediction: work in an existing session
         elif pipeline.type == 'prediction':
             train = False
@@ -46,17 +41,17 @@ class Manager:
             if session_dir is None:
                 if session_name is None:
                     raise ValueError("[Manager] Prediction needs at least the session directory or the session name.")
-                self.session_dir = os.path.join(pathUtils.getFirstCaller(), session_name)
+                self.session_dir = osPathJoin(getFirstCaller(), session_name)
             # Find the session name with the directory
             else:
                 self.session_dir = session_dir
-            if not os.path.exists(self.session_dir):
+            if not exists(self.session_dir):
                 raise ValueError("[Manager] The session directory {} does not exists.".format(self.session_dir))
 
         else:
             raise ValueError("[Manager] The pipeline must be either training or prediction.")
 
-        self.session_name = (session_name if session_name is not None else os.path.basename(session_dir)).split("/")[-1]
+        self.session_name = (session_name if session_name is not None else basename(session_dir)).split("/")[-1]
         # Always create the network manager (man it's DEEP physics here...)
         self.network_manager = NetworkManager(manager=self, network_config=network_config, session_name=self.session_name,
                                               session_dir=self.session_dir, new_session=new_session, train=train)
@@ -67,7 +62,7 @@ class Manager:
                                         training=train, record_data=pipeline.record_data, batch_size=batch_size)
 
         # Create the stats manager for training
-        self.stats_manager = StatsManager(manager=self, log_dir=os.path.join(self.session_dir, 'stats/')) if train else None
+        self.stats_manager = StatsManager(manager=self, log_dir=osPathJoin(self.session_dir, 'stats/')) if train else None
 
     def getPipeline(self):
         """
@@ -134,8 +129,8 @@ class Manager:
 
         :return:
         """
-        filename = os.path.join(self.session_dir, 'infos.txt')
-        if not os.path.isfile(filename):
+        filename = osPathJoin(self.session_dir, 'infos.txt')
+        if not isfile(filename):
             f = open(filename, "w+")
             # Session description template for user
             f.write("## DeepPhysX Training Session ##\n\n")

@@ -1,14 +1,11 @@
 from DeepPhysX_Core.Pipelines.BasePipeline import BasePipeline
 from DeepPhysX_Core.Manager.Manager import Manager
-from DeepPhysX_Core.Network.BaseNetworkConfig import BaseNetworkConfig
-from DeepPhysX_Core.Dataset.BaseDatasetConfig import BaseDatasetConfig
-from DeepPhysX_Core.Environment.BaseEnvironmentConfig import BaseEnvironmentConfig
 
 
 class BaseRunner(BasePipeline):
 
-    def __init__(self, network_config: BaseNetworkConfig, dataset_config: BaseDatasetConfig,
-                 environment_config: BaseEnvironmentConfig, visualizer_class=None, session_name='default', session_dir=None,
+    def __init__(self, network_config, dataset_config,
+                 environment_config, session_name='default', session_dir=None,
                  nb_steps=0, record_inputs=False, record_outputs=False):
         """
         BaseRunner is a pipeline defining the running process of an artificial neural network.
@@ -28,7 +25,7 @@ class BaseRunner(BasePipeline):
                               session_name=session_name, session_dir=session_dir, pipeline='prediction')
 
         self.manager = Manager(pipeline=self, network_config=self.network_config, dataset_config=dataset_config,
-                               environment_config=self.environment_config, visualizer_class=visualizer_class, session_name=session_name,
+                               environment_config=self.environment_config, session_name=session_name,
                                session_dir=session_dir, new_session=True)
 
         self.name = self.__class__.__name__
@@ -41,7 +38,6 @@ class BaseRunner(BasePipeline):
 
         # Tell if data is recording while predicting (output is recorded only if input too)
         self.record_data = {"in": record_inputs, "out": record_outputs and record_inputs}
-
 
     def execute(self):
         """

@@ -1,13 +1,15 @@
-import os
-import numpy as np
+from os import listdir
+from os.path import join as osPathJoin
+from os.path import isdir, isfile
+from numpy import copy, array
 
 from DeepPhysX_Core.Network.BaseNetworkConfig import BaseNetworkConfig
-import DeepPhysX_Core.utils.pathUtils as pathUtils
+from DeepPhysX_Core.utils.pathUtils import copyDir, createDir, getFirstCaller
 
 
 class NetworkManager:
 
-    def __init__(self, network_config: BaseNetworkConfig, manager=None, session_name='default', session_dir=None, new_session=True,
+    def __init__(self, network_config=None, manager=None, session_name='default', session_dir=None, new_session=True,
                  train=True):
         """
         Deals with all the interactions with the neural network. Predictions, saves, initialisation, loading,
@@ -34,7 +36,7 @@ class NetworkManager:
         if session_dir is not None:
             if type(session_dir) != str:
                 raise TypeError(f"[{self.name}] Wrong 'session_dir' type: str required, get {type(session_dir)}")
-            if not os.path.isdir(session_dir):
+            if not isdir(session_dir):
                 raise ValueError(f"[{self.name}] Given 'session_dir' does not exists: {session_dir}")
         # Check new_session type
         if type(new_session) != bool:
@@ -44,8 +46,7 @@ class NetworkManager:
             raise TypeError(f"[{self.name}] Wrong 'train' type: bool required, get {type(train)}")
 
         # Storage management
-        self.session_dir = session_dir if session_dir is not None else os.path.join(pathUtils.getFirstCaller(),
-                                                                                    session_name)
+        self.session_dir = session_dir if session_dir is not None else osPathJoin(getFirstCaller(), session_name)
         self.new_session = new_session
         self.network_dir = None
         self.network_template_name = session_name + '_network_{}'
@@ -95,33 +96,26 @@ class NetworkManager:
             self.network.setTrain()
             self.optimization.setOptimizer(self.network)
             # Setting network directory
-            if self.new_session:
-                if self.network_config.network_dir is not None:
-                    if os.path.isdir(self.network_config.network_dir):
-                        self.network_dir = self.network_config.network_dir
-                        self.network_dir = pathUtils.copyDir(self.network_dir, self.session_dir, dest_dir='network')
-                    else:
-                        self.network_dir = os.path.join(self.session_dir, 'network/')
-                        self.network_dir = pathUtils.createDir(self.network_dir, check_existing='network')
-                else:
-                    self.network_dir = os.path.join(self.session_dir, 'network/')
-                    self.network_dir = pathUtils.createDir(self.network_dir, check_existing='network')
+            if self.new_session and self.network_config.network_dir is not None and isdir(self.network_config.network_dir):
+                self.network_dir = self.network_config.network_dir
+                self.network_dir = copyDir(self.network_dir, self.session_dir, dest_dir='network')
             else:
-                self.network_dir = os.path.join(self.session_dir, 'network/')
+                self.network_dir = osPathJoin(self.session_dir, 'network/')
+                self.network_dir = createDir(self.network_dir, check_existing='network')
 
         # Prediction
         else:
             # Configure as prediction
             self.network.setEval()
             # Need an existing network
-            self.network_dir = os.path.join(self.session_dir, 'network/')
+            self.network_dir = osPathJoin(self.session_dir, 'network/')
             # Get eventual epoch saved networks
-            networks_list = [os.path.join(self.network_dir, f) for f in os.listdir(self.network_dir) if
-                             os.path.isfile(os.path.join(self.network_dir, f)) and f.__contains__('_network_.')]
+            networks_list = [osPathJoin(self.network_dir, f) for f in listdir(self.network_dir) if
+                             isfile(osPathJoin(self.network_dir, f)) and f.__contains__('_network_.')]
             networks_list = sorted(networks_list)
             # Add the final saved network
-            last_saved_network = [os.path.join(self.network_dir, f) for f in os.listdir(self.network_dir) if
-                                  os.path.isfile(os.path.join(self.network_dir, f)) and f.__contains__('network.')]
+            last_saved_network = [osPathJoin(self.network_dir, f) for f in listdir(self.network_dir) if
+                                  isfile(osPathJoin(self.network_dir, f)) and f.__contains__('network.')]
             networks_list = networks_list + last_saved_network
             which_network = self.network_config.which_network
             if len(networks_list) == 0:
@@ -178,7 +172,7 @@ class NetworkManager:
         :return:
         """
         # Getting data from the data manager
-        data_in = self.network.transformFromNumpy(np.copy(network_input))
+        data_in = self.network.transformFromNumpy(copy(network_input))
 
         # Compute prediction
         data_in = self.data_transformation.transformBeforePrediction(data_in)
@@ -187,7 +181,7 @@ class NetworkManager:
         pred, _ = self.data_transformation.transformBeforeLoss(pred, pred)
         pred = self.data_transformation.transformBeforeApply(pred)
         pred = self.network.transformToNumpy(pred)
-        pred = np.array(pred, dtype=float)
+        pred = array(pred, dtype=float)
         return pred.reshape(-1)
 
     def saveNetwork(self, last_save=False):

@@ -1,6 +1,9 @@
-import numpy as np
-import operator
+from numpy import array, ndarray, concatenate, save
+from numpy import arange as numpyarange
+from numpy.random import shuffle as numpyshuffle
+from operator import mul as operatormul
 import functools
+
 
 class BaseDataset:
 
@@ -16,7 +19,7 @@ class BaseDataset:
         self.name = self.__class__.__name__
 
         # Data storage
-        self.data_in, self.data_out = np.array([]), np.array([])
+        self.data_in, self.data_out = array([]), array([])
         self.in_shape, self.in_flat_shape = None, None
         self.out_shape, self.out_flat_shape = None, None
         self.max_size = config.max_size
@@ -34,13 +37,13 @@ class BaseDataset:
         # Init data_in
         if side == 'in':
             self.in_shape = shape
-            self.in_flat_shape = functools.reduce(operator.mul, shape, 1)
-            self.data_in = np.array([]).reshape((0, self.in_flat_shape))
+            self.in_flat_shape = functools.reduce(operatormul, shape, 1)
+            self.data_in = array([]).reshape((0, self.in_flat_shape))
         # Init data_out
         else:
             self.out_shape = shape
-            self.out_flat_shape = functools.reduce(operator.mul, shape, 1)
-            self.data_out = np.array([]).reshape((0, self.out_flat_shape))
+            self.out_flat_shape = functools.reduce(operatormul, shape, 1)
+            self.data_out = array([]).reshape((0, self.out_flat_shape))
 
     def reset(self):
         """
@@ -48,8 +51,8 @@ class BaseDataset:
 
         :return:
         """
-        self.data_in = np.array([]).reshape((0, self.in_flat_shape)) if self.in_flat_shape is not None else np.array([])
-        self.data_out = np.array([]).reshape((0, self.out_flat_shape)) if self.out_flat_shape is not None else np.array([])
+        self.data_in = array([]).reshape((0, self.in_flat_shape)) if self.in_flat_shape is not None else array([])
+        self.data_out = array([]).reshape((0, self.out_flat_shape)) if self.out_flat_shape is not None else array([])
         self.current_sample = 0
 
     def memory_size(self):
@@ -67,7 +70,7 @@ class BaseDataset:
         :return:
         """
         side = "inputs" if side == 'in' else "outputs"
-        if type(data) != np.ndarray:
+        if type(data) != ndarray:
             raise TypeError(f"[{self.name}] Wrong data {side}: numpy.ndarray required, got {type(data)}")
 
     def add(self, side, data, partition_file):
@@ -96,8 +99,8 @@ class BaseDataset:
 
         # Store and save each sample in batch
         for sample in data:
-            data_tensor = np.concatenate((data_tensor, sample.flatten()[None, :]))
-            np.save(partition_file, sample.flatten())
+            data_tensor = concatenate((data_tensor, sample.flatten()[None, :]))
+            save(partition_file, sample.flatten())
         if side == "in":
             self.data_in = data_tensor
         else:
@@ -120,14 +123,14 @@ class BaseDataset:
             if self.in_flat_shape is None:
                 self.init_data_size(side, data.shape)
             # Store sample
-            self.data_in = np.concatenate((self.data_in, data[None, :]), axis=0)
+            self.data_in = concatenate((self.data_in, data[None, :]), axis=0)
         # Adding output data
         else:
             # Init sizes variables
             if self.out_flat_shape is None:
                 self.init_data_size(side, data.shape)
             # Store sample
-            self.data_out = np.concatenate((self.data_out, data[None, :]), axis=0)
+            self.data_out = concatenate((self.data_out, data[None, :]), axis=0)
         self.current_sample = max(len(self.data_in), len(self.data_out))
 
     def shuffle(self):
@@ -140,8 +143,8 @@ class BaseDataset:
         if self.in_flat_shape is None and self.out_flat_shape is None:
             return
         # Generate a shuffle pattern
-        shuffle_pattern = np.arange(self.data_in.shape[0])
-        np.random.shuffle(shuffle_pattern)
+        shuffle_pattern = numpyarange(self.data_in.shape[0])
+        numpyshuffle(shuffle_pattern)
         # Permute elements in data_in
         if self.in_flat_shape is not None:
             self.data_in = self.data_in[shuffle_pattern]

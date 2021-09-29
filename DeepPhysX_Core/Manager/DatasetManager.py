@@ -1,8 +1,11 @@
-import os
-import numpy as np
+from os.path import join as osPathJoin
+from os.path import isfile, isdir
+from os import listdir, fstat, stat
+
+from numpy import array, load, squeeze
 
 from DeepPhysX_Core.Dataset.BaseDatasetConfig import BaseDatasetConfig
-import DeepPhysX_Core.utils.pathUtils as pathUtils
+from DeepPhysX_Core.utils.pathUtils import getFirstCaller, createDir
 
 
 class DatasetManager:
@@ -66,7 +69,7 @@ class DatasetManager:
         self.saved = True
 
         # Init dataset directories
-        self.session_dir = session_dir if session_dir is not None else os.path.join(pathUtils.getFirstCaller(),
+        self.session_dir = session_dir if session_dir is not None else osPathJoin(getFirstCaller(),
                                                                                     session_name)
         dataset_dir = dataset_config.dataset_dir
         self.new_session = new_session
@@ -74,7 +77,7 @@ class DatasetManager:
         if train:
             if new_session:
                 if dataset_dir is None:  # New dataset
-                    self.dataset_dir = pathUtils.createDir(dirname=os.path.join(self.session_dir, 'dataset/'),
+                    self.dataset_dir = createDir(dirname=osPathJoin(self.session_dir, 'dataset/'),
                                                            check_existing='dataset')
                     self.createNewPartitions()
                 else:  # Train from another session's dataset
@@ -85,12 +88,12 @@ class DatasetManager:
                     self.dataset_dir = dataset_dir
                     self.loadDirectory()
             else:  # Train from this session's dataset
-                self.dataset_dir = os.path.join(self.session_dir, 'dataset/')
+                self.dataset_dir = osPathJoin(self.session_dir, 'dataset/')
                 self.loadDirectory()
 
         # Prediction
         else:
-            self.dataset_dir = os.path.join(self.session_dir, 'dataset/')
+            self.dataset_dir = osPathJoin(self.session_dir, 'dataset/')
             self.createRunningPartitions()
 
     def getDataManager(self):
@@ -109,7 +112,7 @@ class DatasetManager:
         """
         # Create in and out partitions
         print("New Partition: A new partition has been created with max size ~{}Gb".format(float(self.max_size) / 1e9))
-        file = os.path.join(self.dataset_dir, self.partitions_list_files[self.mode])
+        file = osPathJoin(self.dataset_dir, self.partitions_list_files[self.mode])
         partitions_list_file = open(file, 'a')
 
         if self.record_data['in']:
@@ -138,33 +141,33 @@ class DatasetManager:
         :return:
         """
         # 0. Check that the dataset repository is existing
-        if not os.path.isdir(self.dataset_dir):
+        if not isdir(self.dataset_dir):
             raise Warning("[{}]: The given path is not an existing directory.".format(self.name))
         # 1. Check whether if some running partitions
-        running_partitions_file = [f for f in os.listdir(self.dataset_dir) if
-                                   os.path.isfile(os.path.join(self.dataset_dir, f)) and
+        running_partitions_file = [f for f in listdir(self.dataset_dir) if
+                                   isfile(osPathJoin(self.dataset_dir, f)) and
                                    f.endswith('Running_partitions.txt')]
         # 1.1. No list file found, do a manual search for the partitions
         if running_partitions_file:
             print("[{}] Listing file not found, searching for existing running partitions.".format(self.name))
-            running_in_partitions = [f for f in os.listdir(self.dataset_dir) if
-                                     os.path.isfile(os.path.join(self.dataset_dir, f)) and f.endswith('.npy') and
+            running_in_partitions = [f for f in listdir(self.dataset_dir) if
+                                     isfile(osPathJoin(self.dataset_dir, f)) and f.endswith('.npy') and
                                      f.__contains__('running_IN')]
-            running_out_partitions = [f for f in os.listdir(self.dataset_dir) if
-                                      os.path.isfile(os.path.join(self.dataset_dir, f)) and f.endswith('.npy') and
+            running_out_partitions = [f for f in listdir(self.dataset_dir) if
+                                      isfile(osPathJoin(self.dataset_dir, f)) and f.endswith('.npy') and
                                       f.__contains__('running_OUT')]
         # 1.2. Normally there is a single list of partitions per mode
         elif len(running_partitions_file) != 1:
             raise ValueError("[{}] It appears that several running partition lists have been found.")
         # 1.3. Simply get the partitions from the list file
         else:
-            reader = open(os.path.join(self.dataset_dir, running_partitions_file[0]))
+            reader = open(osPathJoin(self.dataset_dir, running_partitions_file[0]))
             running_partitions_list = reader.read().splitlines()
             running_in_partitions = [f for f in running_partitions_list if
-                                     os.path.isfile(os.path.join(self.dataset_dir, f)) and f.endswith('.npy') and
+                                     isfile(osPathJoin(self.dataset_dir, f)) and f.endswith('.npy') and
                                      f.__contains__('running_IN')]
             running_out_partitions = [f for f in running_partitions_list if
-                                      os.path.isfile(os.path.join(self.dataset_dir, f)) and f.endswith('.npy') and
+                                      isfile(osPathJoin(self.dataset_dir, f)) and f.endswith('.npy') and
                                       f.__contains__('running_OUT')]
         # 2. Create the appropriate partitions
         nb_running_partitions = max(len(running_in_partitions), len(running_out_partitions))
@@ -179,19 +182,19 @@ class DatasetManager:
         """
         # Load a directory according to the distribution given by the lists
         print("Loading directory: Read dataset from {}".format(self.dataset_dir))
-        if not os.path.isdir(self.dataset_dir):
+        if not isdir(self.dataset_dir):
             raise Warning("Loading directory: The given path is not an existing directory")
         # Look for file which ends with 'mode_partitions.txt'
         for mode in ['Training', 'Validation', 'Running']:
-            partitions_list_file = [f for f in os.listdir(self.dataset_dir) if
-                                    os.path.isfile(os.path.join(self.dataset_dir, f)) and
+            partitions_list_file = [f for f in listdir(self.dataset_dir) if
+                                    isfile(osPathJoin(self.dataset_dir, f)) and
                                     f.endswith(mode[1:] + '_partitions.txt')]
             # If there is no such files then proceed to load any dataset found as in/out
             if not partitions_list_file:
                 print("Loading directory: Partitions list not found for {} mode, will consider any .npy file as "
                       "input/output.".format(mode))
-                partitions_list = [f for f in os.listdir(self.dataset_dir) if
-                                   os.path.isfile(os.path.join(self.dataset_dir, f)) and f.endswith(".npy") and
+                partitions_list = [f for f in listdir(self.dataset_dir) if
+                                   isfile(osPathJoin(self.dataset_dir, f)) and f.endswith(".npy") and
                                    f.__contains__(mode)]
             # If partitions_list.txt found then proceed to load the specific dataset as input/output
             else:
@@ -288,18 +291,18 @@ class DatasetManager:
         # Input
         self.current_in_partition_name = self.dataset_dir + self.list_in_partitions[self.mode][-1]
         with open(self.current_in_partition_name, 'rb') as in_file:
-            in_size = os.fstat(in_file.fileno()).st_size
+            in_size = fstat(in_file.fileno()).st_size
             while self.dataset.data_in.nbytes < in_size:
                 in_size -= 128  # Each array takes 128 extra bytes in memory
-                data_in = np.load(in_file)
+                data_in = load(in_file)
                 self.dataset.load('in', data_in)
         # Output
         self.current_out_partition_name = self.dataset_dir + self.list_out_partitions[self.mode][-1]
         with open(self.current_out_partition_name, 'rb') as out_file:
-            out_size = os.fstat(out_file.fileno()).st_size
+            out_size = fstat(out_file.fileno()).st_size
             while self.dataset.data_out.nbytes < out_size:
                 out_size -= 128  # Each array takes 128 extra bytes in memory
-                data_out = np.load(out_file)
+                data_out = load(out_file)
                 self.dataset.load('out', data_out)
 
     def getData(self, get_inputs, get_outputs, batch_size=1, batched=True, force_partition_reload=False):
@@ -322,17 +325,17 @@ class DatasetManager:
                 self.dataset.shuffle()
             self.dataset.current_sample = 0
         idx = self.dataset.current_sample
-        data = {'in': np.array([]), 'out': np.array([])}
+        data = {'in': array([]), 'out': array([])}
         if get_inputs:
             if batched:
                 data['in'] = self.dataset.data_in[idx: idx + batch_size].reshape((-1, *self.dataset.in_shape))
             else:
-                data['in'] = np.squeeze(self.dataset.data_in[idx: idx + batch_size], axis=0)
+                data['in'] = squeeze(self.dataset.data_in[idx: idx + batch_size], axis=0)
         if get_outputs:
             if batched:
                 data['out'] = self.dataset.data_out[idx: idx + batch_size].reshape((-1, *self.dataset.out_shape))
             else:
-                data['out'] = np.squeeze(self.dataset.data_out[idx: idx + batch_size], axis=0)
+                data['out'] = squeeze(self.dataset.data_out[idx: idx + batch_size], axis=0)
         self.dataset.current_sample += batch_size
         return data
 
@@ -404,15 +407,15 @@ class DatasetManager:
             out_filenames += [self.dataset_dir + partition for partition in self.list_out_partitions[mode]]
         in_files = [open(filename, 'rb') for filename in in_filenames]
         out_files = [open(filename, 'rb') for filename in out_filenames]
-        in_sizes = [os.stat(in_file.fileno()).st_size for in_file in in_files]
-        out_sizes = [os.stat(out_file.fileno()).st_size for out_file in out_files]
+        in_sizes = [stat(in_file.fileno()).st_size for in_file in in_files]
+        out_sizes = [stat(out_file.fileno()).st_size for out_file in out_files]
         in_loaded = [0.] * len(in_sizes)
         out_loaded = [0.] * len(out_sizes)
         end_partition = False
         idx_file = 0
         while self.dataset.memory_size() < self.max_size:
             in_sizes[idx_file] -= 128
-            data_in = np.load(in_files[idx_file])
+            data_in = load(in_files[idx_file])
             in_loaded[idx_file] += data_in.nbytes
             self.dataset.load('in', data_in)
             if in_loaded[idx_file] >= in_sizes[idx_file]:
@@ -420,7 +423,7 @@ class DatasetManager:
 
             try:
                 out_sizes[idx_file] -= 128
-                data_out = np.load(out_files[idx_file])
+                data_out = load(out_files[idx_file])
                 out_loaded[idx_file] += data_out.nbytes
                 self.dataset.load('out', data_out)
                 if out_loaded[idx_file] >= out_sizes[idx_file]:
