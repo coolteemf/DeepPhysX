@@ -8,9 +8,9 @@ from DeepPhysX_Core.AsyncSocket.BytesBaseConverter import BytesBaseConverter as 
 if __name__ == '__main__':
 
     # Check script call
-    if len(sys.argv) != 7:
+    if len(sys.argv) != 8:
         print(f"Usage: python3 {sys.argv[0]} <file_path> <environment_class> <ip_address> <port> "
-              f"<converter_class> <idx>")
+              f"<converter_class> <instance_id> <max_instance_count>")
         sys.exit(1)
 
     # Import environment_class
@@ -26,9 +26,9 @@ if __name__ == '__main__':
 
     # Create, init and run Tcp-Ip environment
     client = root_node.addObject(Environment(ip_address=sys.argv[3], port=int(sys.argv[4]), data_converter=Converter,
-                                             instance_id=int(sys.argv[6]), root_node=root_node))
+                                             instance_id=int(sys.argv[6]), number_of_instances=int(sys.argv[7]), root_node=root_node))
 
     client.initialize()
-    client.run()
+    client.launch()
 
     print(f"[launcherBaseEnvironment] Shutting down client {sys.argv[3]}")
