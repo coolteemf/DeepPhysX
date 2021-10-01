@@ -1,13 +1,13 @@
 from asyncio import run, get_event_loop
 from numpy import array
 
-from DeepPhysX_Core.AsyncSocket.TcpIpObject import TcpIpObject, BytesNumpyConverter
+from DeepPhysX_Core.AsyncSocket.TcpIpObject import TcpIpObject
 from DeepPhysX_Core.AsyncSocket.AbstractEnvironment import AbstractEnvironment
 
 
 class TcpIpClient(TcpIpObject, AbstractEnvironment):
 
-    def __init__(self, ip_address='localhost', port=10000, data_converter=BytesNumpyConverter, instance_id=1, number_of_instances=1):
+    def __init__(self, ip_address='localhost', port=10000, data_converter=None, instance_id=1, number_of_instances=1):
         """
         TcpIpClient is a TcpIpObject which communicate with a TcpIpServer and an AbstractEnvironment to compute data.
 

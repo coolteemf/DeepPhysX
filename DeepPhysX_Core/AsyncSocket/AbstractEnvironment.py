@@ -6,7 +6,6 @@ class AbstractEnvironment:
 
         :param int instance_id: ID of the instance
         """
-
         self.name = self.__class__.__name__ + f"n°{instance_id}"
         self.instance_id = instance_id
         if instance_id < number_of_instances:

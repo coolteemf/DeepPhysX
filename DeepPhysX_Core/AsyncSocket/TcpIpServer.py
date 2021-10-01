@@ -205,14 +205,14 @@ class TcpIpServer(TcpIpObject):
             if self.batch_from_dataset is not None:
 
                 sample_in = np.array([])
-                if 'in' in self.batch_from_dataset:
-                    sample_in = self.batch_from_dataset['in'][0]
-                    self.batch_from_dataset['in'] = self.batch_from_dataset['in'][1:]
+                if 'input' in self.batch_from_dataset:
+                    sample_in = self.batch_from_dataset['input'][0]
+                    self.batch_from_dataset['input'] = self.batch_from_dataset['input'][1:]
 
                 sample_out = np.array([])
-                if 'out' in self.batch_from_dataset:
-                    sample_out = self.batch_from_dataset['out'][0]
-                    self.batch_from_dataset['out'] = self.batch_from_dataset['out'][1:]
+                if 'output' in self.batch_from_dataset:
+                    sample_out = self.batch_from_dataset['output'][0]
+                    self.batch_from_dataset['output'] = self.batch_from_dataset['output'][1:]
 
                 await self.send_command_sample(loop=loop, receiver=client)
                 await self.send_data(data_to_send=sample_in, loop=loop, receiver=client)
@@ -231,12 +231,12 @@ class TcpIpServer(TcpIpObject):
         # Checkin input data size
         if get_inputs and self.data_dict[client_id]['input'].size == self.in_size.prod():
             data['input'] = self.data_dict[client_id]['input'].reshape(self.in_size)
-            del self.data_dict[client_id]['input']
+            #del self.data_dict[client_id]['input']
 
         # Checkin output data size
         if get_outputs and self.data_dict[client_id]['output'].size == self.out_size.prod():
             data['output'] = self.data_dict[client_id]['output'].reshape(self.out_size)
-            del self.data_dict[client_id]['output']
+            #del self.data_dict[client_id]['output']
 
         if 'loss' in self.data_dict[client_id]:
             data['loss'] = self.data_dict[client_id]['loss']
@@ -249,8 +249,8 @@ class TcpIpServer(TcpIpObject):
         :param batch:
         :return:
         """
-        if len(batch['in']) != self.batch_size:
-            return ValueError(f"[TcpIpServer] The size of batch from Dataset is {len(batch['in'])} while the batch size"
+        if len(batch['input']) != self.batch_size:
+            return ValueError(f"[TcpIpServer] The size of batch from Dataset is {len(batch['input'])} while the batch size"
                               f"was set to {self.batch_size}.")
         self.batch_from_dataset = copy.copy(batch)
 
