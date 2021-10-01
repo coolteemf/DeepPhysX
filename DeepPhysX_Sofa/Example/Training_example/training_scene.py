@@ -6,10 +6,11 @@ import torch
 from DeepPhysX_Core.Dataset.BaseDatasetConfig import BaseDatasetConfig
 from DeepPhysX_Core.Visualizer.MeshVisualizer import MeshVisualizer
 from DeepPhysX_Core.Pipelines.BaseTrainer import BaseTrainer
-from Example.Training_example.EnvironmentSofa import FEMBeam
+from DeepPhysX.Example.Training_example.EnvironmentSofa import FEMBeam
 
 # DeepPhysX's Sofa imports
-from DeepPhysX_Sofa.Environment.SofaEnvironmentConfig import SofaEnvironmentConfig, BytesNumpyConverter
+from DeepPhysX_Sofa.Environment.SofaEnvironmentConfig import SofaEnvironmentConfig
+from DeepPhysX_Core.AsyncSocket.BytesNumpyConverter import BytesNumpyConverter
 
 # DeepPhysX's Pytorch imports
 from DeepPhysX_PyTorch.FC.FCConfig import FCConfig
@@ -17,7 +18,7 @@ from DeepPhysX_PyTorch.FC.FCConfig import FCConfig
 
 def createScene(root_node=None):
     env_config = SofaEnvironmentConfig(environment_class=FEMBeam,
-                                       visualizer_class=MeshVisualizer,
+                                       visualizer_class=None,
                                        environment_file=sys.modules[FEMBeam.__module__].__file__,
                                        number_of_thread=int(sys.argv[1]),
                                        socket_data_converter=BytesNumpyConverter,

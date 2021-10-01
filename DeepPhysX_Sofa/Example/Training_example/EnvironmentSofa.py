@@ -4,14 +4,15 @@ import numpy as np
 import functools
 
 # DeepPhysX's Sofa imports
-from DeepPhysX_Sofa.Environment.SofaEnvironment import SofaEnvironment, BytesNumpyConverter
+from DeepPhysX_Sofa.Environment.SofaEnvironment import SofaEnvironment
 
 # Sofa related imports
 import SofaRuntime
 
 # Add the listed plugin to Sofa environment so we can run the scene
 SofaRuntime.PluginRepository.addFirstPath(os.environ['CARIBOU_INSTALL'])
-required_plugins = ['SofaComponentAll', 'SofaCaribou', 'SofaBaseTopology',
+SofaRuntime.PluginRepository.addFirstPath(os.environ['DEEPPHYSICSSOFA_INSTALL'])
+required_plugins = ['SofaComponentAll', 'SofaCaribou', 'DeepPhysicsSofa', 'SofaBaseTopology',
                     'SofaEngine', 'SofaBoundaryCondition', 'SofaTopologyMapping']
 
 # ENVIRONMENT PARAMETERS
@@ -34,10 +35,10 @@ batch_size = 32
 # Inherit from SofaEnvironment which allow to implement and create a Sofa scene in the DeepPhysX_Core pipeline
 class FEMBeam(SofaEnvironment):
 
-    def __init__(self, root_node, ip_address='localhost', port=10000, data_converter=BytesNumpyConverter,
-                 instance_id=1):
+    def __init__(self, root_node, ip_address='localhost', port=10000, data_converter=None,
+                 instance_id=1, number_of_instances=1):
         super(FEMBeam, self).__init__(ip_address=ip_address, port=port, data_converter=data_converter,
-                                      instance_id=instance_id, root_node=root_node)
+                                      instance_id=instance_id, number_of_instances=1, root_node=root_node)
         root_node.addObject('RequiredPlugin', pluginName=required_plugins)
 
     def create(self):
@@ -49,12 +50,19 @@ class FEMBeam(SofaEnvironment):
         #
         # BEAM FEM NODE
         self.root.addChild('beamFEM')
+        # # ODE solver + static solver
+        # self.root.beamFEM.addObject('LegacyStaticODESolver', name='ODESolver', newton_iterations=20,
+        #                             correction_tolerance_threshold=1e-6, residual_tolerance_threshold=1e-6,
+        #                             printLog=False)
+        # self.root.beamFEM.addObject('ConjugateGradientSolver', name='StaticSolver', preconditioning_method='Diagonal',
+        #                             maximum_number_of_iterations=1000, residual_tolerance_threshold=1e-9,
+        #                             printLog=False)
         # ODE solver + static solver
-        self.root.beamFEM.addObject('LegacyStaticODESolver', name='ODESolver', newton_iterations=20,
+        self.root.beamFEM.addObject('HybridNewtonRaphson', name='ODESolver', solve_with_inversion=True, newton_iterations=20,
                                     correction_tolerance_threshold=1e-6, residual_tolerance_threshold=1e-6,
                                     printLog=False)
-        self.root.beamFEM.addObject('ConjugateGradientSolver', name='StaticSolver', preconditioning_method='Diagonal',
-                                    maximum_number_of_iterations=1000, residual_tolerance_threshold=1e-9,
+        self.root.beamFEM.addObject('LDLTSolver', name='StaticSolver', #preconditioning_method='Diagonal',
+                                    #maximum_number_of_iterations=1000, residual_tolerance_threshold=1e-9,
                                     printLog=False)
         # Grid topology of the beam
         self.root.beamFEM.addObject('RegularGridTopology',
@@ -105,12 +113,13 @@ class FEMBeam(SofaEnvironment):
         self.output_size = self.MO.position.value.shape
 
     def send_visualization(self):
-        return self.visualizer.createObjectData(data_dict={}, positions=self.MO.position.value,
-                                                cells=self.surface.quads.value, at=0)
+        # return self.visualizer.createObjectData(data_dict={}, positions=self.MO.position.value,
+        #                                         cells=self.surface.quads.value, at=0)
+        return {}
 
-    def update_visualization(self):
-        visu_dict = self.visualizer.updateObjectData(data_dict={}, positions=self.MO.position.value)
-        self.sync_send_visualization_data(visu_dict)
+    # def update_visualization(self):
+    #     visu_dict = self.visualizer.updateObjectData(data_dict={}, positions=self.MO.position.value)
+    #     self.sync_send_visualization_data(visu_dict)
 
     def onAnimateBeginEvent(self, event):
         """
@@ -120,6 +129,9 @@ class FEMBeam(SofaEnvironment):
         """
         # Reset position
         self.MO.position.value = self.MO.rest_position.value
+        print(f"{np.linalg.norm((self.MO.position.value).reshape(-1))=}")
+        print(f"{np.linalg.norm((self.MO.rest_position.value).reshape(-1))=}")
+        print(f"{np.linalg.norm((self.MO.position.value-self.MO.rest_position.value).reshape(-1))=}")
 
         # Create a random force
         F = np.random.random(3) - np.random.random(3)
@@ -136,7 +148,7 @@ class FEMBeam(SofaEnvironment):
         if self.compute_essential_data:
             self.sync_send_training_data(network_input=self.CFF.forces.value,
                                          network_output=self.MO.position.value - self.MO.rest_position.value)
-            self.update_visualization()
+           # self.update_visualization()
         self.sync_send_command_done()
 
     def checkSample(self, check_input=True, check_output=True):
