@@ -5,6 +5,7 @@ from subprocess import run as subprocessRun
 from sys import modules
 
 from DeepPhysX_Core.AsyncSocket.TcpIpServer import TcpIpServer
+from DeepPhysX_Core.Environment.BaseEnvironment import BaseEnvironment
 
 
 class BaseEnvironmentConfig:
