@@ -40,7 +40,7 @@ class DatasetManager:
         if record_data is not None and type(record_data) != dict:
             raise TypeError("[DATASETMANAGER] The 'record_data' argument must be a dict.")
         elif record_data is not None:
-            if type(record_data['in']) != bool or type(record_data['out']) != bool:
+            if type(record_data['input']) != bool or type(record_data['output']) != bool:
                 raise TypeError("[DATASETMANAGER] The values of 'record_data' must be booleans.")
 
         # Create the dataset
@@ -50,19 +50,21 @@ class DatasetManager:
         # Get dataset parameters
         self.max_size = self.dataset.max_size
         self.shuffle_dataset = dataset_config.shuffle_dataset
-        self.record_data = record_data if record_data is not None else {'in': True, 'out': True}
+        self.record_data = record_data if record_data is not None else {'input': True, 'output': True}
 
         # Partition variables
         self.modes = {'Training': 0, 'Validation': 1, 'Running': 2}
+
         self.mode = self.modes['Training'] if train else self.modes['Running']
+        self.last_loaded_dataset_mode = self.mode
         self.partitions_templates = (session_name + '_training_{}_{}.npy',
                                      session_name + '_validation_{}_{}.npy',
                                      session_name + '_running_{}_{}.npy')
         self.partitions_list_files = ('Training_partitions.txt',
                                       'Validation_partitions.txt',
                                       'Running_partitions.txt')
-        self.list_in_partitions = [[], [], []] if self.record_data['in'] else None
-        self.list_out_partitions = [[], [], []] if self.record_data['out'] else None
+        self.list_in_partitions = [[], [], []] if self.record_data['input'] else None
+        self.list_out_partitions = [[], [], []] if self.record_data['output'] else None
         self.idx_partitions = [0, 0, 0]
         self.current_in_partition_name, self.current_out_partition_name = None, None
         self.current_in_partition, self.current_out_partition = None, None
@@ -115,7 +117,7 @@ class DatasetManager:
         file = osPathJoin(self.dataset_dir, self.partitions_list_files[self.mode])
         partitions_list_file = open(file, 'a')
 
-        if self.record_data['in']:
+        if self.record_data['input']:
             current_part_in = self.partitions_templates[self.mode].format('IN', self.idx_partitions[self.mode])
             print("               Inputs: {}".format(self.dataset_dir + current_part_in))
             self.list_in_partitions[self.mode].append(current_part_in)
@@ -123,7 +125,7 @@ class DatasetManager:
             self.current_in_partition_name = self.dataset_dir + current_part_in
             self.current_in_partition = open(self.current_in_partition_name, 'ab')
 
-        if self.record_data['out']:
+        if self.record_data['output']:
             current_part_out = self.partitions_templates[self.mode].format('OUT', self.idx_partitions[self.mode])
             print("               Outputs: {}".format(self.dataset_dir + current_part_out))
             self.list_out_partitions[self.mode].append(current_part_out)
@@ -225,19 +227,19 @@ class DatasetManager:
         """
         Push the data in the dataset. If max size is reached generate a new partition and write into it.
 
-        :param dict data: Format {'in':numpy.ndarray, 'out':numpy.ndarray}  contain in 'in' input tensors and in
-        'out' output tensors.
+        :param dict data: Format {'input':numpy.ndarray, 'output':numpy.ndarray}  contain in 'input' input tensors and in
+        'output' output tensors.
 
         :return:
         """
         self.saved = False
         # 1. Adding data to dataset
-        if self.record_data['in']:
-            self.dataset.add('in', data['in'], self.current_in_partition)
-        if self.record_data['out']:
-            self.dataset.add('out', data['out'], self.current_out_partition)
+        if self.record_data['input']:
+            self.dataset.add('input', data['input'], self.current_in_partition)
+        if self.record_data['output']:
+            self.dataset.add('output', data['output'], self.current_out_partition)
         # 2. Check the size of the dataset (input + output) (if only input, consider the virtual size of the output)
-        max_size = self.max_size if self.record_data['in'] and self.record_data['out'] else self.max_size / 2
+        max_size = self.max_size if self.record_data['input'] and self.record_data['output'] else self.max_size / 2
         if self.dataset.memory_size() > max_size:
             self.saveData()
             self.createNewPartitions()
@@ -295,7 +297,7 @@ class DatasetManager:
             while self.dataset.data_in.nbytes < in_size:
                 in_size -= 128  # Each array takes 128 extra bytes in memory
                 data_in = load(in_file)
-                self.dataset.load('in', data_in)
+                self.dataset.load('input', data_in)
         # Output
         self.current_out_partition_name = self.dataset_dir + self.list_out_partitions[self.mode][-1]
         with open(self.current_out_partition_name, 'rb') as out_file:
@@ -303,19 +305,19 @@ class DatasetManager:
             while self.dataset.data_out.nbytes < out_size:
                 out_size -= 128  # Each array takes 128 extra bytes in memory
                 data_out = load(out_file)
-                self.dataset.load('out', data_out)
+                self.dataset.load('output', data_out)
 
     def getData(self, get_inputs, get_outputs, batch_size=1, batched=True, force_partition_reload=False):
         """
         Fetch tensors from the dataset or reload partitions if dataset is empty or specified.
 
-        :param bool get_inputs: If True fill the data['in'] field
-        :param bool get_outputs: If True fill the data['out'] field
+        :param bool get_inputs: If True fill the data['input'] field
+        :param bool get_outputs: If True fill the data['output'] field
         :param int batch_size: Size of a batch
         :param bool batched: Add an empty dimension before [4,100] -> [0,4,100]
         :param bool force_partition_reload: If True force reload of partition
 
-        :return: dict of format {'in':numpy.ndarray, 'out':numpy.ndarray} filled with desired data
+        :return: dict of format {'input':numpy.ndarray, 'output':numpy.ndarray} filled with desired data
         """
         if self.current_in_partition_name is None or self.dataset.current_sample >= len(self.dataset.data_in):
             if not force_partition_reload:
@@ -325,42 +327,40 @@ class DatasetManager:
                 self.dataset.shuffle()
             self.dataset.current_sample = 0
         idx = self.dataset.current_sample
-        data = {'in': array([]), 'out': array([])}
+        data = {'input': array([]), 'output': array([])}
         if get_inputs:
-            if batched:
-                data['in'] = self.dataset.data_in[idx: idx + batch_size].reshape((-1, *self.dataset.in_shape))
-            else:
-                data['in'] = squeeze(self.dataset.data_in[idx: idx + batch_size], axis=0)
+            data['input'] = self.dataset.getInputBatch(idx, idx + batch_size).reshape((-1, *self.dataset.in_shape))
+            if not batched:
+                data['input'] = squeeze(data['input'], axis=0)
         if get_outputs:
-            if batched:
-                data['out'] = self.dataset.data_out[idx: idx + batch_size].reshape((-1, *self.dataset.out_shape))
-            else:
-                data['out'] = squeeze(self.dataset.data_out[idx: idx + batch_size], axis=0)
+            data['output'] = self.dataset.getOutputBatch(idx, idx + batch_size).reshape((-1, *self.dataset.out_shape))
+            if not batched:
+                data['output'] = squeeze(data['output'], axis=0)
         self.dataset.current_sample += batch_size
         return data
 
     def getNextBatch(self, batch_size):
         """
         :param int batch_size: Size of the batch
-        :return: dict of format {'in': numpy.ndarray, 'out': numpy.ndarray} filled with a batch of data
+        :return: dict of format {'input': numpy.ndarray, 'output': numpy.ndarray} filled with a batch of data
         """
         return self.getData(get_inputs=True, get_outputs=True, batch_size=batch_size, batched=True)
 
     def getNextSample(self, batched=True):
         """
-        :return: dict of format {'in': numpy.ndarray, 'out': numpy.ndarray} filled with a sample of data
+        :return: dict of format {'input': numpy.ndarray, 'output': numpy.ndarray} filled with a sample of data
         """
         return self.getData(get_inputs=True, get_outputs=True, batched=batched)
 
     def getNextInput(self, batched=False):
         """
-        :return: dict of format {'in': numpy.ndarray, 'out': numpy.ndarray} where only the input field is filled
+        :return: dict of format {'input': numpy.ndarray, 'output': numpy.ndarray} where only the input field is filled
         """
         return self.getData(get_inputs=True, get_outputs=False, batched=batched)
 
     def getNextOutput(self, batched=False):
         """
-        :return: dict of format {'in': numpy.ndarray, 'out': numpy.ndarray} where only the output field is filled
+        :return: dict of format {'input': numpy.ndarray, 'output': numpy.ndarray} where only the output field is filled
         """
         return self.getData(get_inputs=False, get_outputs=True, batched=batched)
 
@@ -371,6 +371,10 @@ class DatasetManager:
 
         :return:
         """
+        if self.last_loaded_dataset_mode == self.mode and len(self.list_in_partitions[self.mode]) == 1:
+            print("LOAD PARTITION SKIP")
+            return
+
         self.dataset.reset()
         # Testing mode
         if self.mode == self.modes['Validation']:
@@ -417,7 +421,7 @@ class DatasetManager:
             in_sizes[idx_file] -= 128
             data_in = load(in_files[idx_file])
             in_loaded[idx_file] += data_in.nbytes
-            self.dataset.load('in', data_in)
+            self.dataset.load('input', data_in)
             if in_loaded[idx_file] >= in_sizes[idx_file]:
                 break
 
@@ -425,7 +429,7 @@ class DatasetManager:
                 out_sizes[idx_file] -= 128
                 data_out = load(out_files[idx_file])
                 out_loaded[idx_file] += data_out.nbytes
-                self.dataset.load('out', data_out)
+                self.dataset.load('output', data_out)
                 if out_loaded[idx_file] >= out_sizes[idx_file]:
                     break
             except:
