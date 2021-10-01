@@ -137,14 +137,14 @@ class NetworkManager:
         """
         Make a prediction with the data passe as argument, optimize or not the network
 
-        :param dict batch:  Format {'in': numpy.ndarray, 'out': numpy.ndarray} Contains the input value and ground truth
+        :param dict batch:  Format {'input': numpy.ndarray, 'output': numpy.ndarray} Contains the input value and ground truth
         to compare against
         :param bool optimize: If true run a back propagation
 
         :return:
         """
         # Getting data from the data manager
-        data_in, data_gt = self.network.transformFromNumpy(batch['in']), self.network.transformFromNumpy(batch['out'])
+        data_in, data_gt = self.network.transformFromNumpy(batch['input']), self.network.transformFromNumpy(batch['output'])
         loss_data = self.network.transformFromNumpy(batch['loss']) if 'loss' in batch.keys() else None
 
         # Compute prediction

@@ -40,7 +40,7 @@ class DataManager:
             # Always create an environment for prediction
             create_environment = True
             # Create a dataset if data will be stored from environment during prediction
-            create_dataset = record_data is not None and (record_data['in'] or record_data['out'])
+            create_dataset = record_data is not None and (record_data['input'] or record_data['output'])
 
         # Create dataset if required
         if create_dataset:
@@ -94,10 +94,10 @@ class DataManager:
                 data = self.dataset_manager.getData(batch_size=batch_size, get_inputs=True, get_outputs=True, force_partition_reload=True)
                 if self.environment_manager is not None and self.environment_manager.use_prediction_in_environment:
                     new_data = self.environment_manager.dispatchBatch(batch=data)
-                    if len(new_data['in']) != 0:
-                        data['in'] = new_data['in']
-                    if len(new_data['out']) != 0:
-                        data['out'] = new_data['out']
+                    if len(new_data['input']) != 0:
+                        data['input'] = new_data['input']
+                    if len(new_data['output']) != 0:
+                        data['output'] = new_data['output']
                     if 'loss' in new_data:
                         data['loss'] = new_data['loss']
 
