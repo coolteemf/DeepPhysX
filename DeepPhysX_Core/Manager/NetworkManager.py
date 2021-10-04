@@ -9,7 +9,12 @@ from DeepPhysX_Core.utils.pathUtils import copyDir, createDir, getFirstCaller
 
 class NetworkManager:
 
-    def __init__(self, network_config=None, manager=None, session_name='default', session_dir=None, new_session=True,
+    def __init__(self,
+                 network_config=None,
+                 manager=None,
+                 session_name='default',
+                 session_dir=None,
+                 new_session=True,
                  train=True):
         """
         Deals with all the interactions with the neural network. Predictions, saves, initialisation, loading,

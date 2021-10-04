@@ -5,8 +5,13 @@ from DeepPhysX_Core.AsyncSocket.TcpIpClient import TcpIpClient
 
 class BaseEnvironment(TcpIpClient):
 
-    def __init__(self, ip_address='localhost', port=10000, data_converter=None, instance_id=1,
-                 number_of_instances=1, visualizer_class=None):
+    def __init__(self,
+                 ip_address='localhost',
+                 port=10000,
+                 data_converter=None,
+                 instance_id=1,
+                 number_of_instances=1,
+                 visualizer_class=None):
         """
         BaseEnvironment is an environment class to compute simulated data for the network and its optimization process.
 

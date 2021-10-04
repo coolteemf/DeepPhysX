@@ -10,8 +10,14 @@ from DeepPhysX_Core.utils.pathUtils import getFirstCaller, createDir
 
 class DatasetManager:
 
-    def __init__(self, dataset_config: BaseDatasetConfig, data_manager=None, session_name='default', session_dir=None, new_session=True,
-                 train=True, record_data=None):
+    def __init__(self,
+                 dataset_config: BaseDatasetConfig,
+                 data_manager=None,
+                 session_name='default',
+                 session_dir=None,
+                 new_session=True,
+                 train=True,
+                 record_data=None):
 
         """
         DatasetManager handle all operations with input / output files. Allows to save and read tensors from files.

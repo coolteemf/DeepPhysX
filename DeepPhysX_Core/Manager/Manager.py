@@ -10,8 +10,14 @@ from DeepPhysX_Core.utils.pathUtils import getFirstCaller, createDir
 
 class Manager:
 
-    def __init__(self, pipeline=None, network_config=None, dataset_config=None,
-                 environment_config=None, session_name='default', session_dir=None, new_session=True,
+    def __init__(self,
+                 pipeline=None,
+                 network_config=None,
+                 dataset_config=None,
+                 environment_config=None,
+                 session_name='default',
+                 session_dir=None,
+                 new_session=True,
                  batch_size=1):
         """
         Collection of all the specialized managers. Allows for some basic functions call. More specific behaviour have to

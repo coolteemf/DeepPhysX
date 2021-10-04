@@ -10,7 +10,11 @@ class BaseDatasetConfig:
     class BaseDatasetProperties:
         max_size: int
 
-    def __init__(self, dataset_class=BaseDataset, dataset_dir=None, partition_size=1., shuffle_dataset=False):
+    def __init__(self,
+                 dataset_class=BaseDataset,
+                 dataset_dir=None,
+                 partition_size=1.,
+                 shuffle_dataset=False):
         """
         BaseDatasetConfig is a configuration class to parameterize and create a BaseDataset for the DatasetManager.
 

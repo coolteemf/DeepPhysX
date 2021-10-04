@@ -16,7 +16,10 @@ from DeepPhysX_Core.AsyncSocket.BytesNumpyConverter import BytesNumpyConverter
 
 class TcpIpObject:
 
-    def __init__(self, ip_address='localhost', port=10000, data_converter=BytesNumpyConverter):
+    def __init__(self,
+                 ip_address='localhost',
+                 port=10000,
+                 data_converter=BytesNumpyConverter):
         """
         TcpIpObject defines communication protocols to send and receive data and commands.
 

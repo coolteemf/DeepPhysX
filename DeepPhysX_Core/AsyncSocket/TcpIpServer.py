@@ -1,15 +1,20 @@
-import asyncio
 from asyncio import get_event_loop, run, gather
 import numpy as np
 from queue import SimpleQueue
 from DeepPhysX_Core.AsyncSocket.TcpIpObject import TcpIpObject, BytesNumpyConverter
-import copy
+from copy import copy
 
 
 class TcpIpServer(TcpIpObject):
 
-    def __init__(self, ip_address='localhost', port=10000, data_converter=BytesNumpyConverter,
-                 max_client_count=10, batch_size=5, nb_client=5, manager=None):
+    def __init__(self,
+                 ip_address='localhost',
+                 port=10000,
+                 data_converter=BytesNumpyConverter,
+                 max_client_count=10,
+                 batch_size=5,
+                 nb_client=5,
+                 manager=None):
         """
         TcpIpServer is used to communicate with clients associated with Environment to produce batches for the
         EnvironmentManager.
@@ -252,7 +257,7 @@ class TcpIpServer(TcpIpObject):
         if len(batch['input']) != self.batch_size:
             return ValueError(f"[TcpIpServer] The size of batch from Dataset is {len(batch['input'])} while the batch size"
                               f"was set to {self.batch_size}.")
-        self.batch_from_dataset = copy.copy(batch)
+        self.batch_from_dataset = copy(batch)
 
     def applyPrediction(self, prediction):
         """

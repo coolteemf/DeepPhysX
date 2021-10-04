@@ -7,7 +7,12 @@ from DeepPhysX_Core.utils.pathUtils import createDir, getFirstCaller
 
 class BaseDataGenerator:
 
-    def __init__(self, dataset_config, environment_config, session_name='default', nb_batches=0, batch_size=0):
+    def __init__(self,
+                 dataset_config,
+                 environment_config,
+                 session_name='default',
+                 nb_batches=0,
+                 batch_size=0):
 
         session_dir = createDir(osPathJoin(getFirstCaller(), session_name), check_existing=session_name)
         session_name = (session_name if session_name is not None else basename(session_dir)).split("/")[-1]

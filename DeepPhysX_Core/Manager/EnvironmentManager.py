@@ -4,8 +4,11 @@ from DeepPhysX_Core.Manager.VisualizerManager import VisualizerManager
 
 class EnvironmentManager:
 
-    def __init__(self, environment_config=None, data_manager=None,
-                 session_dir=None, batch_size=1):
+    def __init__(self,
+                 environment_config=None,
+                 data_manager=None,
+                 session_dir=None,
+                 batch_size=1):
         """
         Deals with the online generation of data for both training and running of the neural networks
 

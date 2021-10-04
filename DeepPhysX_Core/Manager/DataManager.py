@@ -4,9 +4,16 @@ from DeepPhysX_Core.Manager.EnvironmentManager import EnvironmentManager
 
 class DataManager:
 
-    def __init__(self, dataset_config=None, environment_config=None, manager=None,
-                 session_name='default', session_dir=None, new_session=True,
-                 training=True, record_data=None, batch_size=1):
+    def __init__(self,
+                 dataset_config=None,
+                 environment_config=None,
+                 manager=None,
+                 session_name='default',
+                 session_dir=None,
+                 new_session=True,
+                 training=True,
+                 record_data=None,
+                 batch_size=1):
         """
         DataManager deals with the generation of input / output tensors. His job is to call getData on either the
         DatasetManager or the EnvironmentManager according to the context.

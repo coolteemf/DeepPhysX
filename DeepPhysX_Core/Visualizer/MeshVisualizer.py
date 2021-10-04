@@ -10,8 +10,13 @@ from DeepPhysX_Core.Visualizer.VedoVisualizer import VedoVisualizer
 
 class MeshVisualizer(VedoVisualizer):
 
-    def __init__(self, title='VedoVisualizer', interactive_window=False, show_axes=False,
-                 min_color='yellow', max_color='red', range_color=10):
+    def __init__(self,
+                 title='VedoVisualizer',
+                 interactive_window=False,
+                 show_axes=False,
+                 min_color='yellow',
+                 max_color='red',
+                 range_color=10):
         """
         Display added objects. Mostly used to visualize data during training or prediction phase directly from the network.
 

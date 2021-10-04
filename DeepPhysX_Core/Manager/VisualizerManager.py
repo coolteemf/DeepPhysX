@@ -3,7 +3,9 @@ from sys import maxsize as MAX_INT
 
 class VisualizerManager:
 
-    def __init__(self, data_manager=None, visualizer_class=None):
+    def __init__(self,
+                 data_manager=None,
+                 visualizer_class=None):
         """
         Handle the 3D representation of the data from a visualizer.
         Allows easy access to basic functionalities of the visualizer

@@ -12,7 +12,9 @@ class BaseTrainer(BasePipeline):
                  session_name='default',
                  session_dir=None,
                  new_session=True,
-                 nb_epochs=0, nb_batches=0, batch_size=0):
+                 nb_epochs=0,
+                 nb_batches=0,
+                 batch_size=0):
         """
         BaseTrainer is a pipeline defining the training process of an artificial neural network.
         It provide a highly tunable learning process that can be used with any machine learning library.

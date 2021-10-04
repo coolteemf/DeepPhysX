@@ -10,11 +10,22 @@ from DeepPhysX_Core.Environment.BaseEnvironment import BaseEnvironment
 
 class BaseEnvironmentConfig:
 
-    def __init__(self, environment_class=None, visualizer_class=None,
-                 simulations_per_step=1, max_wrong_samples_per_step=10, always_create_data=False,
-                 record_wrong_samples=False, use_prediction_in_environment=False, param_dict={}, as_tcpip_client=True,
-                 number_of_thread=1, max_client_connection=1000, environment_file='', ip_address='localhost',
-                 port=10000, socket_data_converter=None):
+    def __init__(self,
+                 environment_class=None,
+                 visualizer_class=None,
+                 simulations_per_step=1,
+                 max_wrong_samples_per_step=10,
+                 always_create_data=False,
+                 record_wrong_samples=False,
+                 use_prediction_in_environment=False,
+                 param_dict={},
+                 as_tcpip_client=True,
+                 number_of_thread=1,
+                 max_client_connection=1000,
+                 environment_file='',
+                 ip_address='localhost',
+                 port=10000,
+                 socket_data_converter=None):
         """
         BaseEnvironmentConfig is a configuration class to parameterize and create a BaseEnvironment for the
         EnvironmentManager.

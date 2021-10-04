@@ -4,9 +4,15 @@ from DeepPhysX_Core.Manager.Manager import Manager
 
 class BaseRunner(BasePipeline):
 
-    def __init__(self, network_config, dataset_config,
-                 environment_config, session_name='default', session_dir=None,
-                 nb_steps=0, record_inputs=False, record_outputs=False):
+    def __init__(self,
+                 network_config,
+                 dataset_config,
+                 environment_config,
+                 session_name='default',
+                 session_dir=None,
+                 nb_steps=0,
+                 record_inputs=False,
+                 record_outputs=False):
         """
         BaseRunner is a pipeline defining the running process of an artificial neural network.
         It provide a highly tunable learning process that can be used with any machine learning library.

@@ -7,7 +7,12 @@ from DeepPhysX_Core.AsyncSocket.AbstractEnvironment import AbstractEnvironment
 
 class TcpIpClient(TcpIpObject, AbstractEnvironment):
 
-    def __init__(self, ip_address='localhost', port=10000, data_converter=None, instance_id=1, number_of_instances=1):
+    def __init__(self,
+                 ip_address='localhost',
+                 port=10000,
+                 data_converter=None,
+                 instance_id=1,
+                 number_of_instances=1):
         """
         TcpIpClient is a TcpIpObject which communicate with a TcpIpServer and an AbstractEnvironment to compute data.
 
