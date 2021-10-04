@@ -1,5 +1,4 @@
-from DeepPhysX_Core.Environment.BaseEnvironment import BaseEnvironment, BytesNumpyConverter
-from DeepPhysX_Core.Visualizer.MeshVisualizer import MeshVisualizer
+from DeepPhysX_Core.Environment.BaseEnvironment import BaseEnvironment
 
 import Sofa
 import Sofa.Simulation
@@ -11,16 +10,20 @@ class SofaEnvironment(Sofa.Core.Controller, BaseEnvironment):
                  root_node,
                  ip_address='localhost',
                  port=10000,
-                 data_converter=BytesNumpyConverter,
+                 data_converter=None,
                  instance_id=1,
                  number_of_instances=1,
-                 visualizer_class=MeshVisualizer,
+                 as_tcpip_client=True,
+                 visual_object=None,
+                 environment_manager=None,
                  *args, **kwargs):
 
         Sofa.Core.Controller.__init__(self, *args, **kwargs)
         self.root = root_node
         BaseEnvironment.__init__(self, ip_address=ip_address, port=port, data_converter=data_converter,
-                                 instance_id=instance_id, number_of_instances=number_of_instances, visualizer_class=visualizer_class)
+                                 instance_id=instance_id, number_of_instances=number_of_instances,
+                                 as_tcpip_client=as_tcpip_client, visual_object=visual_object,
+                                 environment_manager=environment_manager)
 
     def create(self):
         raise NotImplementedError

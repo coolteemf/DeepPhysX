@@ -30,7 +30,7 @@ class MeshVisualizer(VedoVisualizer):
         :param int range_color: Number of interpolations between min and max color
         """
         self.data = {}
-        self.models = []
+        self.models = {}
         self.models_shapes = {}
         self.viewer = None
         self.colormap = buildPalette(color1=min_color, color2=max_color, N=range_color, hsv=False)
@@ -54,7 +54,7 @@ class MeshVisualizer(VedoVisualizer):
         for idx in data_dict:
             # A model is the set of meshes in an environment
             model = data_dict[idx]
-            self.models.append([])
+            self.models[idx] = []
             self.models_shapes[idx] = {}
 
             # Check if the field position is in model's data
@@ -97,7 +97,7 @@ class MeshVisualizer(VedoVisualizer):
             for i in range(len(positions)):
                 vedo_mesh = self.addObject(positions=positions[i], cells=cells[i], at=at[i], field_dict=field_dict[i])
                 meshes.append(vedo_mesh)
-                self.models[-1].append(vedo_mesh)
+                self.models[idx].append(vedo_mesh)
 
         self.viewer = Plotter(N=self.nb_view, title=self.params['title'], axes=self.params['axes'],
                                    sharecam=True, interactive=self.params['interactive'])

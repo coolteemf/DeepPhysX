@@ -12,7 +12,7 @@ class BaseEnvironmentConfig:
 
     def __init__(self,
                  environment_class=None,
-                 visualizer_class=None,
+                 visual_object=None,
                  simulations_per_step=1,
                  max_wrong_samples_per_step=10,
                  always_create_data=False,
@@ -26,6 +26,7 @@ class BaseEnvironmentConfig:
                  ip_address='localhost',
                  port=10000,
                  socket_data_converter=None):
+
         """
         BaseEnvironmentConfig is a configuration class to parameterize and create a BaseEnvironment for the
         EnvironmentManager.
@@ -69,6 +70,7 @@ class BaseEnvironmentConfig:
         # TcpIpClients parameterization
         self.environment_class = environment_class
         self.param_dict = param_dict
+        self.as_tcpip_client = as_tcpip_client
 
         # EnvironmentManager parameterization
         self.received_parameters = {}
@@ -77,7 +79,7 @@ class BaseEnvironmentConfig:
         self.use_prediction_in_environment = use_prediction_in_environment
         self.simulations_per_step = simulations_per_step
         self.max_wrong_samples_per_step = max_wrong_samples_per_step
-        self.visualizer_class = visualizer_class
+        self.visual_object = visual_object
 
         # TcpIpServer parameterization
         self.ip_address = ip_address
@@ -146,6 +148,17 @@ class BaseEnvironmentConfig:
                         self.socket_data_converter.__name__,
                         str(idx),
                         str(self.number_of_thread)])
+
+    def createEnvironment(self, environment_manager):
+        """
+
+        :return:
+        """
+        environment = self.environment_class(environment_manager=environment_manager, as_tcpip_client=False,
+                                             visual_object=self.visual_object)
+        environment.create()
+        environment.init()
+        return environment
 
     def __str__(self):
         """

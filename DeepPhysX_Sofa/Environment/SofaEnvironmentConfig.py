@@ -2,6 +2,8 @@ from os.path import join, dirname
 from sys import modules
 from subprocess import call as subprocesscall
 
+import Sofa
+
 from DeepPhysX_Core.Environment.BaseEnvironmentConfig import BaseEnvironmentConfig
 from .SofaEnvironment import SofaEnvironment
 
@@ -10,12 +12,13 @@ class SofaEnvironmentConfig(BaseEnvironmentConfig):
 
     def __init__(self,
                  environment_class=SofaEnvironment,
-                 visualizer_class=None,
+                 visual_object=None,
                  simulations_per_step=1,
                  max_wrong_samples_per_step=10,
                  always_create_data=False,
                  use_prediction_in_environment=False,
                  number_of_thread=1,
+                 as_tcpip_client=True,
                  max_client_connection=1000,
                  environment_file='',
                  param_dict={},
@@ -24,11 +27,12 @@ class SofaEnvironmentConfig(BaseEnvironmentConfig):
                  socket_data_converter=None):
 
         BaseEnvironmentConfig.__init__(self, environment_class=environment_class,
-                                       visualizer_class=visualizer_class,
+                                       visual_object=visual_object,
                                        simulations_per_step=simulations_per_step,
                                        max_wrong_samples_per_step=max_wrong_samples_per_step,
                                        always_create_data=always_create_data,
                                        use_prediction_in_environment=use_prediction_in_environment,
+                                       as_tcpip_client=as_tcpip_client,
                                        number_of_thread=number_of_thread,
                                        max_client_connection=max_client_connection,
                                        environment_file=environment_file,
@@ -47,3 +51,16 @@ class SofaEnvironmentConfig(BaseEnvironmentConfig):
                         self.socket_data_converter.__name__,
                         str(idx),
                         str(self.number_of_thread)])
+
+
+    def createEnvironment(self, environment_manager):
+        """
+
+        :return:
+        """
+        root_node = Sofa.Core.Node()
+        environment = root_node.addObject(self.environment_class(environment_manager=environment_manager, root_node=root_node, as_tcpip_client=False,
+                                                                 visual_object=self.visual_object))
+        environment.create()
+        environment.init()
+        return environment

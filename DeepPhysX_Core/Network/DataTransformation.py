@@ -15,7 +15,7 @@ class DataTransformation:
     def check_type(func):
         def inner(self, *args):
             for data in args:
-                if type(data) != self.data_type:
+                if data is not None and type(data) != self.data_type:
                     raise TypeError(f"[{self.name}] Wrong data type: {self.data_type} required, get {type(data)}")
             return func(self, *args)
         return inner
