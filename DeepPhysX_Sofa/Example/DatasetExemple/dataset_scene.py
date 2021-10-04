@@ -5,7 +5,7 @@ import sys
 from DeepPhysX_Core.Dataset.BaseDatasetConfig import BaseDatasetConfig
 from DeepPhysX_Core.Visualizer.MeshVisualizer import MeshVisualizer
 from DeepPhysX_Core.Pipelines.BaseDataGenerator import BaseDataGenerator
-from Example.Training_example.EnvironmentSofa import FEMBeam
+from DeepPhysX_Sofa.Example.Training_example.EnvironmentSofa import FEMBeam
 
 # DeepPhysX's Sofa imports
 from DeepPhysX_Sofa.Environment.SofaEnvironmentConfig import SofaEnvironmentConfig, BytesNumpyConverter

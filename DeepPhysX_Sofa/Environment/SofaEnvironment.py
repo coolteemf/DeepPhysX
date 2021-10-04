@@ -7,8 +7,15 @@ import Sofa.Simulation
 
 class SofaEnvironment(Sofa.Core.Controller, BaseEnvironment):
 
-    def __init__(self, root_node, ip_address='localhost', port=10000, data_converter=BytesNumpyConverter, instance_id=1,
-                 number_of_instances=1, visualizer_class=MeshVisualizer, *args, **kwargs):
+    def __init__(self,
+                 root_node,
+                 ip_address='localhost',
+                 port=10000,
+                 data_converter=BytesNumpyConverter,
+                 instance_id=1,
+                 number_of_instances=1,
+                 visualizer_class=MeshVisualizer,
+                 *args, **kwargs):
 
         Sofa.Core.Controller.__init__(self, *args, **kwargs)
         self.root = root_node

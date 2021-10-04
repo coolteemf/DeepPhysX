@@ -9,7 +9,7 @@ from DeepPhysX_Core.Visualizer.MeshVisualizer import MeshVisualizer
 # DeepPhysX's Sofa imports
 from DeepPhysX_Sofa.Environment.SofaEnvironmentConfig import SofaEnvironmentConfig, BytesNumpyConverter
 
-from Example.Visualizer_example.EnvironmentSofa import FEMBeam
+from DeepPhysX_Sofa.Example.Visualizer_example import FEMBeam
 
 
 
