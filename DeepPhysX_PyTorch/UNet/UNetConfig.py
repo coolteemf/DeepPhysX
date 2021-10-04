@@ -1,4 +1,4 @@
-import numpy as np
+from numpy import asarray, copy
 
 from DeepPhysX_PyTorch.Network.TorchNetworkConfig import TorchNetworkConfig
 from DeepPhysX_PyTorch.UNet.UnetDataTransformation import UnetDataTransformation
@@ -20,11 +20,25 @@ class UNetConfig(TorchNetworkConfig):
         grid_shape: list
         data_scale: float
 
-    def __init__(self, network_name="UNetName", data_transformation_class=UnetDataTransformation,
-                 loss=None, lr=None, optimizer=None,
-                 network_dir=None, save_each_epoch=None, which_network=0,
-                 steps=4, first_layer_channels=64, nb_classes=2, nb_input_channels=1, two_sublayers=True,
-                 nb_dims=2, border_mode='valid', skip_merge=False, grid_shape=None, data_scale=1.):
+    def __init__(self,
+                 network_name="UNetName",
+                 data_transformation_class=UnetDataTransformation,
+                 loss=None,
+                 lr=None,
+                 optimizer=None,
+                 network_dir=None,
+                 save_each_epoch=None,
+                 which_network=0,
+                 steps=4,
+                 first_layer_channels=64,
+                 nb_classes=2,
+                 nb_input_channels=1,
+                 two_sublayers=True,
+                 nb_dims=2,
+                 border_mode='valid',
+                 skip_merge=False,
+                 grid_shape=None,
+                 data_scale=1.):
 
         TorchNetworkConfig.__init__(self, network_class=UNet, network_name=network_name,
                                     network_type='UNet', data_transformation_class=data_transformation_class,
@@ -65,7 +79,7 @@ class UNetConfig(TorchNetworkConfig):
     def features_map_shapes(self, in_shape):
 
         def _feature_map_shapes():
-            shape = np.asarray(in_shape)
+            shape = asarray(in_shape)
             yield (self.network_config.nb_input_channels,) + tuple(shape)
             shape = self.first_step(shape)
             yield (self.network_config.first_layer_channels,) + tuple(shape)
@@ -97,11 +111,11 @@ class UNetConfig(TorchNetworkConfig):
             out_shape_upper_bound = out_shape_lower_bound
             out_step = self.out_step()
             out_shape_lower_bound = tuple(i - out_step + 1 for i in out_shape_upper_bound)
-        shape = np.asarray(out_shape_lower_bound)
+        shape = asarray(out_shape_lower_bound)
         for i in range(self.network_config.steps):
             shape = self.rev_up_step(shape)
         # Compute correct out shape from minimum shape
-        out_shape = np.copy(shape)
+        out_shape = copy(shape)
         for i in range(self.network_config.steps):
             out_shape = self.up_step(out_shape)
         # Best input shape

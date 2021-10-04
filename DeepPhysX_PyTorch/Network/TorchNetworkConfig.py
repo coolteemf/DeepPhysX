@@ -15,9 +15,18 @@ class TorchNetworkConfig(BaseNetworkConfig):
     class TorchOptimizationProperties(BaseNetworkConfig.BaseOptimizationProperties):
         pass
 
-    def __init__(self, network_class=TorchNetwork, optimization_class=TorchOptimization, network_dir=None,
-                 network_name='TorchNetwork', network_type='TorchNetwork', which_network=0, save_each_epoch=False,
-                 data_transformation_class=DataTransformation, loss=None, lr=None, optimizer=None):
+    def __init__(self,
+                 network_class=TorchNetwork,
+                 optimization_class=TorchOptimization,
+                 network_dir=None,
+                 network_name='TorchNetwork',
+                 network_type='TorchNetwork',
+                 which_network=0,
+                 save_each_epoch=False,
+                 data_transformation_class=DataTransformation,
+                 loss=None,
+                 lr=None,
+                 optimizer=None):
 
         BaseNetworkConfig.__init__(self, network_class=network_class, optimization_class=optimization_class,
                                    network_dir=network_dir, network_name=network_name, network_type=network_type,

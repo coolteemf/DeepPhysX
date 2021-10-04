@@ -1,5 +1,4 @@
-import torch
-import torch.nn.functional as F
+from torch.nn.functional import pad
 
 from DeepPhysX_PyTorch.Network.TorchDataTransformation import TorchDataTransformation
 
@@ -17,8 +16,7 @@ class UnetDataTransformation(TorchDataTransformation):
 
     @TorchDataTransformation.check_type
     def transformBeforePrediction(self, data_in):
-        data_in = torch.reshape(data_in,
-                                (-1, self.grid_shape[2], self.grid_shape[1], self.grid_shape[0], self.nb_channels))
+        data_in = data_in.view((-1, self.grid_shape[2], self.grid_shape[1], self.grid_shape[0], self.nb_channels))
         data_in = data_in.permute((0, 4, 1, 2, 3))
         # Compute padding
         if self.pad_widths is None:
@@ -37,8 +35,7 @@ class UnetDataTransformation(TorchDataTransformation):
     @TorchDataTransformation.check_type
     def transformBeforeLoss(self, data_out, data_gt):
         # Transform ground truth
-        data_gt = torch.reshape(data_gt,
-                                (-1, self.grid_shape[2], self.grid_shape[1], self.grid_shape[0], self.nb_classes))
+        data_gt = data_gt.view((-1, self.grid_shape[2], self.grid_shape[1], self.grid_shape[0], self.nb_classes))
         data_gt = self.data_scale * data_gt
         # Transform prediction
         data_out = self.inverse_padding(data_out)
@@ -51,7 +48,7 @@ class UnetDataTransformation(TorchDataTransformation):
         return data_out
 
     def padding(self, data):
-        return F.pad(data, self.pad_widths, mode='constant')
+        return pad(data, self.pad_widths, mode='constant')
 
     def inverse_padding(self, data):
         pad_widths = []

@@ -1,12 +1,13 @@
-import torch
+from torch import Tensor
 
 from DeepPhysX_Core.Network.DataTransformation import DataTransformation
+
 
 class TorchDataTransformation(DataTransformation):
 
     def __init__(self, network_config):
         super().__init__(network_config)
-        self.data_type = torch.Tensor
+        self.data_type = Tensor
 
     @DataTransformation.check_type
     def transformBeforePrediction(self, data_in):

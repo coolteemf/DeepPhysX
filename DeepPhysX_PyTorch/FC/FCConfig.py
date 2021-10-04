@@ -10,10 +10,18 @@ class FCConfig(TorchNetworkConfig):
         dim_output: int
         dim_layers: list
 
-    def __init__(self, network_dir=None, network_name="FCName", optimization_class=TorchOptimization,
-                 save_each_epoch=False, which_network=0,
-                 data_transformation_class=DataTransformation, loss=None, lr=None, optimizer=None,
-                 dim_output=None, dim_layers=None):
+    def __init__(self,
+                 network_dir=None,
+                 network_name="FCName",
+                 optimization_class=TorchOptimization,
+                 save_each_epoch=False,
+                 which_network=0,
+                 data_transformation_class=DataTransformation,
+                 loss=None,
+                 lr=None,
+                 optimizer=None,
+                 dim_output=None,
+                 dim_layers=None):
 
         TorchNetworkConfig.__init__(self, network_class=FC, network_dir=network_dir, network_name=network_name,
                                     network_type='FC', save_each_epoch=save_each_epoch, optimization_class=optimization_class,

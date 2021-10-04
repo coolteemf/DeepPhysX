@@ -1,5 +1,5 @@
-import torch
-import torch.nn as nn
+from torch import zeros_like
+from torch.nn import Module, Conv2d, Conv3d, BatchNorm3d, ReLU, Sequential, MaxPool2d, MaxPool3d, ConvTranspose2d, ConvTranspose3d
 
 from DeepPhysX_PyTorch.Network.TorchNetwork import TorchNetwork
 from DeepPhysX_PyTorch.EncoderDecoder.EncoderDecoder import EncoderDecoder
@@ -7,20 +7,23 @@ from .utils import crop_and_merge
 
 
 class UNet(TorchNetwork):
-    class UNetLayer(nn.Module):
+    class UNetLayer(Module):
 
-        def __init__(self, nb_input_channels, nb_output_channels, config):
+        def __init__(self,
+                     nb_input_channels,
+                     nb_output_channels,
+                     config):
             super().__init__()
-            conv = nn.Conv2d if config.nb_dims == 2 else nn.Conv3d
+            conv = Conv2d if config.nb_dims == 2 else Conv3d
             padding = 0 if config.border_mode == 'valid' else 1
             layers = [conv(nb_input_channels, nb_output_channels, kernel_size=3, padding=padding),
-                      nn.BatchNorm3d(nb_output_channels),
-                      nn.ReLU()]
+                      BatchNorm3d(nb_output_channels),
+                      ReLU()]
             if config.two_sublayers:
                 layers = layers + [conv(nb_output_channels, nb_output_channels, kernel_size=3, padding=padding),
-                                   nn.BatchNorm3d(nb_output_channels),
-                                   nn.ReLU()]
-            self.unetLayer = nn.Sequential(*layers)
+                                   BatchNorm3d(nb_output_channels),
+                                   ReLU()]
+            self.unetLayer = Sequential(*layers)
 
         def forward(self, x):
             return self.unetLayer(x)
@@ -28,9 +31,9 @@ class UNet(TorchNetwork):
     def __init__(self, config):
         TorchNetwork.__init__(self, config)
 
-        self.max_pool = nn.MaxPool2d(2) if config.nb_dims == 2 else nn.MaxPool3d(2)
-        last_conv_layer = nn.Conv2d if config.nb_dims == 2 else nn.Conv3d
-        up_conv_layer = nn.ConvTranspose2d if config.nb_dims == 2 else nn.ConvTranspose3d
+        self.max_pool = MaxPool2d(2) if config.nb_dims == 2 else MaxPool3d(2)
+        last_conv_layer = Conv2d if config.nb_dims == 2 else Conv3d
+        up_conv_layer = ConvTranspose2d if config.nb_dims == 2 else ConvTranspose3d
 
         in_count = config.first_layer_channels
         self.skip_merge = config.skip_merge
@@ -57,7 +60,7 @@ class UNet(TorchNetwork):
             down_outputs.append(unet_layer(self.max_pool(down_outputs[-1])))
         x = down_outputs[-1]
         for (up_conv_layer, unet_layer), down_output in zip(self.architecture.decoder[:-1], down_outputs[-2::-1]):
-            same_level_down_output = torch.zeros_like(down_output) if self.skip_merge else down_output
+            same_level_down_output = zeros_like(down_output) if self.skip_merge else down_output
             x = unet_layer(crop_and_merge(same_level_down_output, up_conv_layer(x)))
         return self.architecture.decoder[-1](x)
 

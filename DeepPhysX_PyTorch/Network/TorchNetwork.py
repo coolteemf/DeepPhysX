@@ -1,14 +1,17 @@
-import torch
-import gc
+from torch import device, set_num_threads, load, save, as_tensor
+from torch import float as tfloat
+from torch.cuda import is_available, empty_cache
+from torch.nn import Module
+from gc import collect
 from psutil import cpu_count
 
 from DeepPhysX_Core.Network.BaseNetwork import BaseNetwork
 
 
-class TorchNetwork(torch.nn.Module, BaseNetwork):
+class TorchNetwork(Module, BaseNetwork):
 
     def __init__(self, config):
-        torch.nn.Module.__init__(self)
+        Module.__init__(self)
         BaseNetwork.__init__(self, config)
 
     def forward(self, x):
@@ -21,31 +24,32 @@ class TorchNetwork(torch.nn.Module, BaseNetwork):
         self.eval()
 
     def setDevice(self):
-        if torch.cuda.is_available():
-            self.device = torch.device('cuda')
-            gc.collect()
-            torch.cuda.empty_cache()
+        if is_available():
+            self.device = device('cuda')
+            # Garbage collector run
+            collect()
+            empty_cache()
         else:
-            self.device = torch.device('cpu')
-            torch.set_num_threads(cpu_count(logical=True) - 1)
+            self.device = device('cpu')
+            set_num_threads(cpu_count(logical=True) - 1)
         self.to(self.device)
         print("[{}]: Device is {}".format(self.name, self.device))
 
     def loadParameters(self, path):
-        self.load_state_dict(torch.load(path, map_location=self.device))
+        self.load_state_dict(load(path, map_location=self.device))
 
     def getParameters(self):
         return self.state_dict()
 
     def saveParameters(self, path):
         path = path + '.pth'
-        torch.save(self.state_dict(), path)
+        save(self.state_dict(), path)
 
     def nbParameters(self):
         return sum(p.numel() for p in self.parameters())
 
     def transformFromNumpy(self, x):
-        x = torch.as_tensor(x, dtype=torch.float, device=self.device)
+        x = as_tensor(x, dtype=tfloat, device=self.device)
         x.requires_grad_()
         return x
 
