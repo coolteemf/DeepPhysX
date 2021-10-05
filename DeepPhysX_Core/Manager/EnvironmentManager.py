@@ -153,7 +153,10 @@ class EnvironmentManager:
 
         :return:
         """
-        self.server.close()
+        if self.server:
+            self.server.close()
+        if self.environment:
+            self.environment.close()
 
     def __str__(self):
         """
