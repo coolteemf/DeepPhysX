@@ -131,8 +131,8 @@ class EnvironmentManager:
                 # if self.data_manager is not None and self.data_manager.visualizer_manager is not None:
                 #     self.data_manager.visualizer_manager.saveSample(self.session_dir)
                 pass
-        training_data = {'in': inputs,
-                         'out': outputs}
+        training_data = {'input': inputs,
+                         'output': outputs}
         if 'loss' in data_dict.keys():
             training_data['loss'] = data_dict['loss']
         return training_data
