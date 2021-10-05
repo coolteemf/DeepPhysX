@@ -119,8 +119,8 @@ class DataManager:
 
         self.data = data
 
-    def applyPrediction(self, prediction):
-        if self.environment_manager is not None:
+    def applyPrediction(self, prediction, epoch):
+        if self.environment_manager is not None and (epoch == 0 or self.environment_manager.always_create_data):
             self.environment_manager.applyPrediction(prediction)
 
     def close(self):
