@@ -4,7 +4,7 @@ from os.path import sep
 current_absolute_path = Path(__file__).parent.absolute()
 
 for rootdir, dirs, files in walk(current_absolute_path):
-    if "__pycache__" not in rootdir and files != ["__init__.py"]:
+    if "__pycache__" not in rootdir and "Example" not in rootdir and files != ["__init__.py"]:
         for file in files:
             if "pyc" not in file and file != "__init__.py":
                 splitted_path = str(rootdir).split(sep)
