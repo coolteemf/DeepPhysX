@@ -14,7 +14,7 @@ class BaseDatasetConfig:
                  dataset_class=BaseDataset,
                  dataset_dir=None,
                  partition_size=1.,
-                 shuffle_dataset=False):
+                 shuffle_dataset=True):
         """
         BaseDatasetConfig is a configuration class to parameterize and create a BaseDataset for the DatasetManager.
 
