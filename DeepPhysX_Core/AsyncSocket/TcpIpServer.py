@@ -342,7 +342,7 @@ class TcpIpServer(TcpIpObject):
         elif self.environment_manager.data_manager.manager.network_manager is None:
             raise ValueError("Cannot request prediction if NetworkManager does not exist")
         else:
-            prediction = self.environment_manager.data_manager.manager.network_manager.computeOnlinePrediction(network_input=network_input[None, ])
+            prediction = self.environment_manager.requestPrediction(network_input=network_input[None, ])
             await self.send_labeled_data(data_to_send=prediction, label="prediction", receiver=receiver, send_read_command=False)
 
     async def update_visualizer(self, visualization_data, client_id):

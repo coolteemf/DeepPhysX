@@ -14,7 +14,7 @@ class TorchDataTransformation(DataTransformation):
         return data_in
 
     @DataTransformation.check_type
-    def transformBeforeLoss(self, data_out, data_gt):
+    def transformBeforeLoss(self, data_out, data_gt=None):
         return data_out, data_gt
 
     @DataTransformation.check_type

@@ -40,7 +40,7 @@ class BaseNetwork:
     def nbParameters(self):
         raise NotImplementedError
 
-    def transformFromNumpy(self, x):
+    def transformFromNumpy(self, x, grad=True):
         raise NotImplementedError
 
     def transformToNumpy(self, x):

@@ -29,7 +29,7 @@ class DataTransformation:
         """
         return data_in
 
-    def transformBeforeLoss(self, data_out, data_gt):
+    def transformBeforeLoss(self, data_out, data_gt=None):
         """
         Apply data operations between network's prediction and loss computation.
 

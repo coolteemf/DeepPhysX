@@ -111,14 +111,9 @@ class BaseEnvironment(TcpIpClient):
     def getPrediction(self, input_array):
         if self.as_tcpip_client:
             return self.sync_send_prediction_request(network_input=input_array)
-        if self.environment_manager.data_manager is None:
-            raise ValueError("Cannot request prediction if DataManager does not exist")
-        elif self.environment_manager.data_manager.manager is None:
-            raise ValueError("Cannot request prediction if Manager does not exist")
-        elif self.environment_manager.data_manager.manager.network_manager is None:
-            raise ValueError("Cannot request prediction if NetworkManager does not exist")
-        else:
-            return self.environment_manager.data_manager.manager.network_manager.computeOnlinePrediction(network_input=input_array[None, ])
+        if self.environment_manager is not None:
+            return self.environment_manager.requestPrediction(network_input=input_array)
+        raise ValueError(f"[{self.name}] Can't get prediction since Environment has no Manager.")
 
     def setVisualizationData(self, visu_dict):
         if self.as_tcpip_client:

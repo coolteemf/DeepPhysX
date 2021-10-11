@@ -24,7 +24,7 @@ class SofaRunner(Sofa.Core.Controller, BaseRunner):
         if self.runningCondition():
             self.sampleBegin()
             prediction, loss = self.predict(animate=False)
-            self.manager.data_manager.environment_manager.environment.applyPrediction(prediction)
+            self.manager.data_manager.environment_manager.applyPrediction(prediction)
             self.sampleEnd()
         else:
             self.runEnd()

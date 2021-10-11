@@ -48,9 +48,10 @@ class TorchNetwork(Module, BaseNetwork):
     def nbParameters(self):
         return sum(p.numel() for p in self.parameters())
 
-    def transformFromNumpy(self, x):
+    def transformFromNumpy(self, x, grad=True):
         x = as_tensor(x, dtype=tfloat, device=self.device)
-        x.requires_grad_()
+        if grad:
+            x.requires_grad_()
         return x
 
     def transformToNumpy(self, x):

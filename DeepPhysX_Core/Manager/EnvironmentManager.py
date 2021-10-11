@@ -42,6 +42,8 @@ class EnvironmentManager:
         self.simulations_per_step = environment_config.simulations_per_step
         self.max_wrong_samples_per_step = environment_config.max_wrong_samples_per_step
 
+        self.prediction_requested = False
+
     def getDataManager(self):
         """
         :return: DataManager that handle The EnvironmentManager
@@ -108,6 +110,7 @@ class EnvironmentManager:
         data_dict = {}
 
         while input_condition(inputs) and output_condition(outputs):
+            self.prediction_requested = False
             if animate:
                 for current_step in range(self.simulations_per_step):
                     if current_step != self.simulations_per_step - 1:
@@ -123,10 +126,9 @@ class EnvironmentManager:
                     outputs = concatenate((outputs, self.environment.output[None, :]))
                 # received_data_dict = self.environment.data_dict
                 # for key in received_data_dict:
-                #     data_dict[key] = np.concatenate((data_dict[key], received_data_dict[key][None, :])) \
-                #         if key in data_dict else np.array([received_data_dict[key]])
+                #     data_dict[key] = concatenate((data_dict[key], received_data_dict[key][None, :])) \
+                #         if key in data_dict else array([received_data_dict[key]])
             else:
-                print('Wrong sample')
                 # Record wrong sample
                 # if self.data_manager is not None and self.data_manager.visualizer_manager is not None:
                 #     self.data_manager.visualizer_manager.saveSample(self.session_dir)
@@ -137,11 +139,18 @@ class EnvironmentManager:
             training_data['loss'] = data_dict['loss']
         return training_data
 
+    def requestPrediction(self, network_input):
+        self.prediction_requested = True
+        return self.data_manager.manager.network_manager.computeOnlinePrediction(network_input)
+
     def updateVisualizer(self, visualization_data, id):
         self.visualizer_manager.updateFromSample(visualization_data, id)
 
     def applyPrediction(self, prediction):
-        self.server.applyPrediction(prediction)
+        if self.server and not self.prediction_requested:
+            self.server.applyPrediction(prediction)
+        if self.environment and not self.prediction_requested:
+            self.environment.applyPrediction(prediction)
 
     def dispatchBatch(self, batch):
         self.server.setDatasetBatch(batch)

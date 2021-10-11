@@ -27,7 +27,7 @@ class UNetConfig(TorchNetworkConfig):
                  lr=None,
                  optimizer=None,
                  network_dir=None,
-                 save_each_epoch=None,
+                 save_each_epoch=False,
                  which_network=0,
                  steps=4,
                  first_layer_channels=64,

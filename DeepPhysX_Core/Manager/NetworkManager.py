@@ -149,8 +149,9 @@ class NetworkManager:
         :return:
         """
         # Getting data from the data manager
-        data_in, data_gt = self.network.transformFromNumpy(batch['input']), self.network.transformFromNumpy(batch['output'])
-        loss_data = self.network.transformFromNumpy(batch['loss']) if 'loss' in batch.keys() else None
+        data_in = self.network.transformFromNumpy(batch['input'], grad=optimize)
+        data_gt = self.network.transformFromNumpy(batch['output'], grad=optimize)
+        loss_data = self.network.transformFromNumpy(batch['loss'], grad=False) if 'loss' in batch.keys() else None
 
         # Compute prediction
         data_in = self.data_transformation.transformBeforePrediction(data_in)
@@ -167,23 +168,21 @@ class NetworkManager:
         prediction = self.network.transformToNumpy(data_out)
         return prediction, loss_dict
 
-    def computeOnlinePrediction(self, network_input, compute_gradient=False):
+    def computeOnlinePrediction(self, network_input):
         """
         Make a prediction with the data passe as argument, optimize or not the network
 
-        :param bool compute_gradient: Compute gradient when predicting
         :param numpy.ndarray network_input: Input of the network=
 
         :return:
         """
         # Getting data from the data manager
-        data_in = self.network.transformFromNumpy(copy(network_input))
+        data_in = self.network.transformFromNumpy(copy(network_input), grad=False)
 
         # Compute prediction
         data_in = self.data_transformation.transformBeforePrediction(data_in)
-        # data_in.requires_grad = compute_gradient
         pred = self.network.predict(data_in)
-        pred, _ = self.data_transformation.transformBeforeLoss(pred, None)
+        pred, _ = self.data_transformation.transformBeforeLoss(pred)
         pred = self.data_transformation.transformBeforeApply(pred)
         pred = self.network.transformToNumpy(pred)
         pred = array(pred, dtype=float)
