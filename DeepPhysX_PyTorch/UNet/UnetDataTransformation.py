@@ -1,6 +1,6 @@
 from torch.nn.functional import pad
 from torch import reshape
-from numpy import asarray, copy
+from numpy import asarray
 
 from DeepPhysX_PyTorch.Network.TorchDataTransformation import TorchDataTransformation
 
@@ -11,6 +11,7 @@ class UnetDataTransformation(TorchDataTransformation):
 
         super().__init__(network_config)
 
+        # Configure the transformation parameters
         self.input_size = self.network_config.network_config.input_size
         self.nb_steps = self.network_config.network_config.nb_steps
         self.nb_output_channels = self.network_config.network_config.nb_output_channels
@@ -19,9 +20,9 @@ class UnetDataTransformation(TorchDataTransformation):
         self.pad_widths = None
         self.inverse_pad_widths = None
 
+        # Define shape transformations
         border = 4 if self.network_config.network_config.two_sublayers else 2
-        if self.network_config.network_config.border_mode == 'same':
-            border = 0
+        border = 0 if self.network_config.network_config.border_mode == 'same' else border
         self.reverse_first_step = lambda x: x + border
         self.reverse_down_step = lambda x: (x + border) * 2
         self.reverse_up_step = lambda x: (x + border - 1) // 2 + 1
@@ -44,18 +45,25 @@ class UnetDataTransformation(TorchDataTransformation):
 
     @TorchDataTransformation.check_type
     def transformBeforeLoss(self, data_out, data_gt=None):
+
         # Transform ground truth
+        # Transform tensor shape, apply scale
         if data_gt is not None:
             data_gt = reshape(data_gt,
                               (-1, self.input_size[2], self.input_size[1], self.input_size[0], self.nb_output_channels))
             data_gt = self.data_scale * data_gt
+
         # Transform prediction
+        # Apply inverse padding, permute
         data_out = pad(data_out, self.inverse_pad_widths)
         data_out = data_out.permute(0, 2, 3, 4, 1)
+
         return data_out, data_gt
 
     @TorchDataTransformation.check_type
     def transformBeforeApply(self, data_out):
+
+        # Rescale prediction
         data_out = data_out / self.data_scale
         return data_out
 
@@ -75,7 +83,7 @@ class UnetDataTransformation(TorchDataTransformation):
         self.pad_widths, self.inverse_pad_widths = (), ()
         for p in pad_widths:
             self.pad_widths += p
-            self.inverse_pad_widths += (-p[0], -p[1])
+            self.inverse_pad_widths += (-p[0], -p[1])   # PyTorch accepts negative padding
 
     def __str__(self):
         description = "\n"
@@ -83,7 +91,7 @@ class UnetDataTransformation(TorchDataTransformation):
         description += f"    Data type: {self.data_type}\n"
         description += f"    Data scale: {self.data_scale}\n"
         description += f"    Transformation before prediction: Input -> Reshape + Permute + Padding\n"
-        description += f"    Transformation before loss: Ground Truth -> Reshape + Upscale / Prediction -> Inverse " \
-                       f"padding + Permute\n"
+        description += f"    Transformation before loss: Ground Truth -> Reshape + Upscale\n"
+        description += f"                                Prediction -> Inverse padding + Permute\n"
         description += f"    Transformation before apply: Prediction -> Downscale\n"
         return description
