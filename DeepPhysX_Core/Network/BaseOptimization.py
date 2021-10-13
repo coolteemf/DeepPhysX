@@ -39,7 +39,8 @@ class BaseOptimization:
         """
         description = "\n"
         description += f"  {self.name}\n"
-        description += f"    Loss class: {self.loss_class.__name__}\n"
-        description += f"    Optimizer class: {self.optimizer_class.__name__}\n"
+        description += f"    Loss class: {self.loss_class.__name__}\n" if self.loss_class else f"    Loss class: None\n"
+        description += f"    Optimizer class: {self.optimizer_class.__name__}\n" if self.optimizer_class else \
+            f"    Optimizer class: None\n"
         description += f"    Learning rate: {self.lr}\n"
         return description

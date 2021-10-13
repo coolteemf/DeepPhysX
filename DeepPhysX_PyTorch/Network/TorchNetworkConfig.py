@@ -18,21 +18,28 @@ class TorchNetworkConfig(BaseNetworkConfig):
     def __init__(self,
                  network_class=TorchNetwork,
                  optimization_class=TorchOptimization,
+                 data_transformation_class=DataTransformation,
                  network_dir=None,
                  network_name='TorchNetwork',
                  network_type='TorchNetwork',
                  which_network=0,
                  save_each_epoch=False,
-                 data_transformation_class=DataTransformation,
                  loss=None,
                  lr=None,
                  optimizer=None):
 
-        BaseNetworkConfig.__init__(self, network_class=network_class, optimization_class=optimization_class,
-                                   network_dir=network_dir, network_name=network_name, network_type=network_type,
-                                   save_each_epoch=save_each_epoch, which_network=which_network,
+        BaseNetworkConfig.__init__(self,
+                                   network_class=network_class,
+                                   optimization_class=optimization_class,
                                    data_transformation_class=data_transformation_class,
-                                   loss=loss, lr=lr, optimizer=optimizer)
+                                   network_dir=network_dir,
+                                   network_name=network_name,
+                                   network_type=network_type,
+                                   which_network=which_network,
+                                   save_each_epoch=save_each_epoch,
+                                   loss=loss,
+                                   lr=lr,
+                                   optimizer=optimizer)
 
         self.network_config = self.TorchNetworkProperties(network_name=network_name, network_type=network_type)
         self.optimization_config = self.TorchOptimizationProperties(loss=loss, lr=lr, optimizer=optimizer)

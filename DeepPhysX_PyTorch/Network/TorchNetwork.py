@@ -2,6 +2,7 @@ from torch import device, set_num_threads, load, save, as_tensor
 from torch import float as tfloat
 from torch.cuda import is_available, empty_cache
 from torch.nn import Module
+from torchsummary import summary
 from gc import collect
 from psutil import cpu_count
 
@@ -56,6 +57,13 @@ class TorchNetwork(Module, BaseNetwork):
 
     def transformToNumpy(self, x):
         return x.cpu().detach().numpy()
+
+    def printArchitecture(self, architecture):
+        lines = architecture.splitlines()
+        architecture = ''
+        for line in lines:
+            architecture += '\n      ' + line
+        return architecture
 
     def __str__(self):
         description = BaseNetwork.__str__(self)
