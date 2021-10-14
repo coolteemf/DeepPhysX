@@ -1,5 +1,6 @@
 from os.path import join as osPathJoin
 from os.path import isfile, basename, exists
+from datetime import datetime
 
 from DeepPhysX_Core.Manager.DataManager import DataManager
 from DeepPhysX_Core.Manager.NetworkManager import NetworkManager
@@ -136,10 +137,12 @@ class Manager:
         :return:
         """
         filename = osPathJoin(self.session_dir, 'infos.txt')
+        date_time = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
         if not isfile(filename):
             f = open(filename, "w+")
             # Session description template for user
-            f.write("## DeepPhysX Training Session ##\n\n")
+            f.write("## DeepPhysX Training Session ##\n")
+            f.write(date_time + "\n\n")
             f.write("Purpose of the training session:\nNetwork Input:\nNetwork Output:\nComments:\n\n")
             # Listing every component descriptions
             f.write("## List of Components Parameters ##\n")
