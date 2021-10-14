@@ -39,7 +39,7 @@ class Manager:
             self.session_dir = osPathJoin(getFirstCaller(), session_name)
             # Avoid unwanted overwritten data
             if new_session:
-                self.session_dir = createDir(self.session_dir, check_existing=session_name)
+                self.session_dir = createDir(self.session_dir, dir_name=session_name)
         # Prediction: work in an existing session
         elif pipeline.type == 'prediction':
             train = False

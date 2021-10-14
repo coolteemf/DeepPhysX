@@ -5,28 +5,33 @@ from inspect import getmodule, stack
 from shutil import copytree
 
 
-def createDir(dirname, check_existing):
-    # TODO Rename variable and update doc
+def createDir(dir_path, dir_name):
     """
     Create a directory of the given name. If it already exist and specified, add a unique identifier at the end.
 
-    :param str dirname: Name of the directory to create
-    :param str check_existing: If True check for existence of a similar directory
+    :param str dir_path: Absolute directory to create
+    :param str dir_name: Name of the directory to check for existence of a similar directories
 
     :return: Name of the created directory as string
     """
-    if isdir(dirname):
-        print("Directory conflict: you are going to overwrite {}.".format(dirname))
-        parent = abspath(osPathJoin(dirname, pardir))
-        deepest_repertory = check_existing.split('/')[-1]
+    if isdir(dir_path):
+        print(f"Directory conflict: you are going to overwrite {dir_path}.")
+        # Get the parent dir of training sessions
+        parent = abspath(osPathJoin(dir_path, pardir))
+        # Find all the duplicated folder
+        deepest_repertory = dir_name.split('/')[-1] + '_'
         copies_list = [folder for folder in listdir(parent) if
                        isdir(osPathJoin(parent, folder)) and
-                       folder.__contains__(deepest_repertory)]
-        new_name = basename(normpath(dirname)) + '_{}/'.format(len(copies_list))
-        dirname = osPathJoin(parent, new_name)
-        print("Create a new directory {} for this session.".format(dirname))
-    makedirs(dirname)
-    return dirname
+                       folder.__contains__(deepest_repertory) and
+                       len(folder) in [len(deepest_repertory) + i for i in range(1, 4)]]
+        # Get the indices of copies
+        indices = [int(folder[len(deepest_repertory):]) for folder in copies_list]
+        # The new copy is the max int + 1
+        new_name = basename(normpath(dir_path)) + f'_{max(indices) + 1}/'
+        dir_path = osPathJoin(parent, new_name)
+        print(f"Create a new directory {dir_path} for this session.")
+    makedirs(dir_path)
+    return dir_path
 
 
 def copyDir(src_dir, dest_parent_dir, dest_dir):

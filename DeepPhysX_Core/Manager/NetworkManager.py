@@ -106,7 +106,7 @@ class NetworkManager:
                 self.network_dir = copyDir(self.network_dir, self.session_dir, dest_dir='network')
             else:
                 self.network_dir = osPathJoin(self.session_dir, 'network/')
-                self.network_dir = createDir(self.network_dir, check_existing='network')
+                self.network_dir = createDir(self.network_dir, dir_name='network')
 
         # Prediction
         else:

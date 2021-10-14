@@ -14,7 +14,7 @@ class BaseDataGenerator:
                  nb_batches=0,
                  batch_size=0):
 
-        session_dir = createDir(osPathJoin(getFirstCaller(), session_name), check_existing=session_name)
+        session_dir = createDir(osPathJoin(getFirstCaller(), session_name), dir_name=session_name)
         session_name = (session_name if session_name is not None else basename(session_dir)).split("/")[-1]
         self.data_manager = DataManager(manager=self,
                                         dataset_config=dataset_config,

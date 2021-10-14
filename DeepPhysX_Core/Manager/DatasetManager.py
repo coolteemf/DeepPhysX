@@ -85,8 +85,8 @@ class DatasetManager:
         if train:
             if new_session:
                 if dataset_dir is None:  # New dataset
-                    self.dataset_dir = createDir(dirname=osPathJoin(self.session_dir, 'dataset/'),
-                                                           check_existing='dataset')
+                    self.dataset_dir = createDir(dir_path=osPathJoin(self.session_dir, 'dataset/'),
+                                                 dir_name='dataset')
                     self.createNewPartitions()
                 else:  # Train from another session's dataset
                     if dataset_dir[-1] != "/":
