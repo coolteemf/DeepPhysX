@@ -10,7 +10,6 @@ class SofaEnvironment(Sofa.Core.Controller, BaseEnvironment):
                  root_node,
                  ip_address='localhost',
                  port=10000,
-                 data_converter=None,
                  instance_id=1,
                  number_of_instances=1,
                  as_tcpip_client=True,
@@ -20,10 +19,9 @@ class SofaEnvironment(Sofa.Core.Controller, BaseEnvironment):
 
         Sofa.Core.Controller.__init__(self, *args, **kwargs)
         self.root = root_node
-        BaseEnvironment.__init__(self, ip_address=ip_address, port=port, data_converter=data_converter,
-                                 instance_id=instance_id, number_of_instances=number_of_instances,
-                                 as_tcpip_client=as_tcpip_client, visual_object=visual_object,
-                                 environment_manager=environment_manager)
+        BaseEnvironment.__init__(self, ip_address=ip_address, port=port, instance_id=instance_id,
+                                 number_of_instances=number_of_instances, as_tcpip_client=as_tcpip_client,
+                                 visual_object=visual_object, environment_manager=environment_manager)
 
     def create(self):
         raise NotImplementedError

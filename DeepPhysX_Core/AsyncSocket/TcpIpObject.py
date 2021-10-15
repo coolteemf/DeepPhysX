@@ -1,7 +1,7 @@
 from socket import socket, AF_INET, SOCK_STREAM, SOL_SOCKET, SO_REUSEADDR
 from asyncio import get_event_loop
 from threading import Lock
-from DeepPhysX_Core.AsyncSocket.BytesNumpyConverter import BytesNumpyConverter
+from DeepPhysX_Core.AsyncSocket.BytesConverter import BytesConverter
 
 # import threading
 #
@@ -18,14 +18,12 @@ class TcpIpObject:
 
     def __init__(self,
                  ip_address='localhost',
-                 port=10000,
-                 data_converter=BytesNumpyConverter):
+                 port=10000):
         """
         TcpIpObject defines communication protocols to send and receive data and commands.
 
         :param str ip_address: IP address of the TcpIpObject
         :param int port: Port number of the TcpIpObject
-        :param data_converter: BytesBaseConverter class to convert data to bytes (NumPy by default)
         """
         # Define socket
         self.sock = socket(AF_INET, SOCK_STREAM)
@@ -34,7 +32,7 @@ class TcpIpObject:
         self.ip_address = ip_address
         self.port = port
         # Create data converter
-        self.data_converter = data_converter()
+        self.data_converter = BytesConverter()
         # Available commands
         self.command_dict = {'exit': b'exit', 'step': b'step', 'check': b'test', 'size': b'size', 'done': b'done',
                              'received': b'recv', 'prediction': b'pred', 'compute': b'cmpt', 'read': b'read',
@@ -44,59 +42,64 @@ class TcpIpObject:
         # self.receive_lock = Lock()
 
     # Asynchronous definition of the functions
-    async def send_data(self, data_to_send, loop=None, receiver=None, do_convert=True):
+    async def send_data(self, data_to_send, loop=None, receiver=None):
         """
         Send data from a TcpIpObject to another.
 
         :param data_to_send: Data that will be sent on socket
         :param loop: asyncio.get_event_loop() return
         :param receiver: TcpIpObject receiver
-        :param bool do_convert: Data will be converted in bytes by default. If the data is already in bytes, set to
-               False
         :return:
         """
         loop = get_event_loop() if loop is None else loop
         receiver = self.sock if receiver is None else receiver
         # Cast data to bytes field
-        data_as_bytes = self.data_converter.data_to_bytes(data_to_send) if type(data_to_send) == self.data_converter.data_type() else data_to_send
-        # Size of tha data to send
-        data_size = len(data_as_bytes)
-        # Send the size of the next receive
-        await loop.sock_sendall(sock=receiver, data=data_size.to_bytes(4, byteorder='big'))
-        # Send the actual data
-        await loop.sock_sendall(sock=receiver, data=data_as_bytes)
+        nb_bytes_fields, data_as_bytes = self.data_converter.data_to_bytes(data_to_send)
+        # Send the number of bytes fields
+        await loop.sock_sendall(sock=receiver, data=nb_bytes_fields)
+        # Send each bytes field
+        for field in data_as_bytes:
+            # Send the size of the next receive
+            await loop.sock_sendall(sock=receiver, data=len(field).to_bytes(4, byteorder='big'))
+            # Send the field
+            await loop.sock_sendall(sock=receiver, data=field)
 
-    async def receive_data(self, loop, sender, is_bytes_data=False):
+    async def receive_data(self, loop, sender):
         """
         Receive data from another TcpIpObject.
 
         :param loop: asyncio.get_event_loop() return
         :param sender: TcpIpObject sender
-        :param is_bytes_data: Data will be converted from bytes by default. If the expected data is in bytes, set to
-               True
         :return:
         """
         # Maximum read sizes array
         read_sizes = [4096, 2048, 1024, 512, 256]
         read_size_idx = 0
-        # Always expect to receive the size of the data to read first
-        data_size_to_read = int.from_bytes(await loop.sock_recv(sender, 4), 'big')
-        data_as_bytes = b''
-        # Proceed to read chunk by chunk
-        while data_size_to_read > 0:
-            # Select the good amount of bytes to read
-            while read_size_idx < len(read_sizes) and data_size_to_read < read_sizes[read_size_idx]:
-                read_size_idx += 1
-            # If the amount of bytes to read is too small then read it all
-            chunk_size_to_read = data_size_to_read if read_size_idx >= len(read_sizes) else read_sizes[read_size_idx]
-            # Try to read at most "chunk_size_to_read" bytes from the socket
-            data_received_as_bytes = await loop.sock_recv(sender, chunk_size_to_read)
-            # Todo: add security with <<await asyncio.wait_for(loop.sock_recv(sender, chunk_size_to_read), timeout=1.)>>
-            # Accumulate the data
-            data_as_bytes += data_received_as_bytes
-            data_size_to_read -= len(data_received_as_bytes)
+        # Receive the number of fields to receive
+        nb_bytes_fields = int.from_bytes(await loop.sock_recv(sender, 1), byteorder='big')
+        bytes_fields = ()
+        # Receive each bytes field
+        for _ in range(nb_bytes_fields):
+            # Always expect to receive the size of the data to read first
+            field_size_to_read = int.from_bytes(await loop.sock_recv(sender, 4), 'big')
+            field_as_bytes = b''
+            # Proceed to read chunk by chunk
+            while field_size_to_read > 0:
+                # Select the good amount of bytes to read
+                while read_size_idx < len(read_sizes) and field_size_to_read < read_sizes[read_size_idx]:
+                    read_size_idx += 1
+                # If the amount of bytes to read is too small then read it all
+                chunk_size_to_read = field_size_to_read if read_size_idx >= len(read_sizes) else read_sizes[read_size_idx]
+                # Try to read at most "chunk_size_to_read" bytes from the socket
+                data_received_as_bytes = await loop.sock_recv(sender, chunk_size_to_read)
+                # Todo: add security with <<await asyncio.wait_for(loop.sock_recv(sender, chunk_size_to_read), timeout=1.)>>
+                # Accumulate the data
+                field_as_bytes += data_received_as_bytes
+                field_size_to_read -= len(data_received_as_bytes)
+            # Add the field
+            bytes_fields += (field_as_bytes,)
         # Return the data in the expected format
-        return data_as_bytes if is_bytes_data else self.data_converter.bytes_to_data(data_as_bytes)
+        return self.data_converter.bytes_to_data(bytes_fields)
 
     async def send_labeled_data(self, data_to_send, label, receiver=None, loop=None, do_convert=True, send_read_command=True):
         """
@@ -114,8 +117,8 @@ class TcpIpObject:
         receiver = self.sock if receiver is None else receiver
         if send_read_command:
             await self.send_command_read()
-        await self.send_data(data_to_send=bytes(label.lower(), "utf-8"), loop=loop, receiver=receiver, do_convert=False)
-        await self.send_data(data_to_send=data_to_send, loop=loop, receiver=receiver, do_convert=do_convert)
+        await self.send_data(data_to_send=bytes(label.lower(), "utf-8"), loop=loop, receiver=receiver)
+        await self.send_data(data_to_send=data_to_send, loop=loop, receiver=receiver)
 
     async def receive_labeled_data(self, loop, sender, is_bytes_data=False):
         """
@@ -127,14 +130,14 @@ class TcpIpObject:
                True
         :return:
         """
-        data = await self.receive_data(loop=loop, sender=sender, is_bytes_data=True)
+        data = await self.receive_data(loop=loop, sender=sender)
         if data in self.command_dict.values():
-            label = (await self.receive_data(loop=loop, sender=sender, is_bytes_data=True)).decode("utf-8")
+            label = (await self.receive_data(loop=loop, sender=sender)).decode("utf-8")
         else:
             label = data.decode("utf-8")
         if label in ["check", "addvedo"]:
             is_bytes_data = True
-        data = await self.receive_data(loop=loop, sender=sender, is_bytes_data=is_bytes_data)
+        data = await self.receive_data(loop=loop, sender=sender)
         return label, data
 
     async def send_command(self, loop, receiver, command=''):
@@ -152,10 +155,10 @@ class TcpIpObject:
         except KeyError:
             raise KeyError(f"\"{command}\" is not a valid command. Use {self.command_dict.keys()} instead.")
         # Send command as a byte data
-        await self.send_data(data_to_send=cmd, loop=loop, receiver=receiver, do_convert=False)
+        await self.send_data(data_to_send=cmd, loop=loop, receiver=receiver)
 
     async def listen_while_not_done(self, loop, sender, data_dict, client_id=None):
-        while await self.receive_data(loop=loop, sender=sender, is_bytes_data=True) != self.command_dict['done']:
+        while await self.receive_data(loop=loop, sender=sender) != self.command_dict['done']:
             label, param = await self.receive_labeled_data(loop=loop, sender=sender)
             data_dict[label] = param
 
@@ -216,17 +219,15 @@ class TcpIpObject:
         """
         receiver = self.sock if receiver is None else receiver
         # Cast data to bytes field
-        data_as_bytes = self.data_converter.data_to_bytes(data_to_send) if do_convert else data_to_send
-        # Size of tha data to send
-        data_size = len(data_as_bytes)
-        # Send the size of the next receive
-        #self.send_lock.acquire()
-        receiver.sendall(data_size.to_bytes(4, byteorder='big'))
-        #self.send_lock.release()
-        # Send the actual data
-        #self.send_lock.acquire()
-        receiver.sendall(data_as_bytes)
-        #self.send_lock.release()
+        nb_bytes_fields, data_as_bytes = self.data_converter.data_to_bytes(data_to_send)
+        # Send the number of bytes fields
+        receiver.sendall(nb_bytes_fields)
+        # Send each bytes field
+        for field in data_as_bytes:
+            # Send the size of the next receive
+            receiver.sendall(len(field).to_bytes(4, byteorder='big'))
+            # Send the field
+            receiver.sendall(field)
 
     #@launchInThread
     def sync_receive_data(self, is_bytes_data=False):
@@ -241,27 +242,34 @@ class TcpIpObject:
         read_sizes = [4096, 2048, 1024, 512, 256]
         read_size_idx = 0
         self.sock.setblocking(True)
-        # Always expect to receive the size of the data to read first
-        #self.receive_lock.acquire()
-        data_size_to_read = int.from_bytes(self.sock.recv(4), 'big')
-        #self.receive_lock.release()
-        data_as_bytes = b''
-        # Proceed to read chunk by chunk
-        while data_size_to_read > 0:
-            # Select the good amount of bytes to read
-            while read_size_idx < len(read_sizes) and data_size_to_read < read_sizes[read_size_idx]:
-                read_size_idx += 1
-            # If the amount of bytes to read is too small then read it all
-            chunk_size_to_read = data_size_to_read if read_size_idx >= len(read_sizes) else read_sizes[read_size_idx]
-            # Try to read at most "chunk_size_to_read" bytes from the socket
+        # Receive the number of fields to receive
+        nb_bytes_fields = int.from_bytes(self.sock.recv(1), byteorder='big')
+        bytes_fields = ()
+        # Receive each bytes field
+        for _ in range(nb_bytes_fields):
+            # Always expect to receive the size of the data to read first
             #self.receive_lock.acquire()
-            data_received_as_bytes = self.sock.recv(chunk_size_to_read)
+            field_size_to_read = int.from_bytes(self.sock.recv(4), 'big')
             #self.receive_lock.release()
-            # Accumulate the data
-            data_as_bytes += data_received_as_bytes
-            data_size_to_read -= len(data_received_as_bytes)
+            field_as_bytes = b''
+            # Proceed to read chunk by chunk
+            while field_size_to_read > 0:
+                # Select the good amount of bytes to read
+                while read_size_idx < len(read_sizes) and field_size_to_read < read_sizes[read_size_idx]:
+                    read_size_idx += 1
+                # If the amount of bytes to read is too small then read it all
+                chunk_size_to_read = field_size_to_read if read_size_idx >= len(read_sizes) else read_sizes[read_size_idx]
+                # Try to read at most "chunk_size_to_read" bytes from the socket
+                #self.receive_lock.acquire()
+                data_received_as_bytes = self.sock.recv(chunk_size_to_read)
+                #self.receive_lock.release()
+                # Accumulate the data
+                field_as_bytes += data_received_as_bytes
+                field_size_to_read -= len(data_received_as_bytes)
+            # Add the bytes field
+            bytes_fields += (field_as_bytes,)
         # Return the data in the expected format
-        return data_as_bytes if is_bytes_data else self.data_converter.bytes_to_data(data_as_bytes)
+        return self.data_converter.bytes_to_data(bytes_fields)
 
     # Functions below might not need the thread thingy
     #@launchInThread

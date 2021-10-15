@@ -24,8 +24,7 @@ class BaseEnvironmentConfig:
                  max_client_connection=1000,
                  environment_file='',
                  ip_address='localhost',
-                 port=10000,
-                 socket_data_converter=None):
+                 port=10000):
 
         """
         BaseEnvironmentConfig is a configuration class to parameterize and create a BaseEnvironment for the
@@ -63,7 +62,6 @@ class BaseEnvironmentConfig:
 
         if type(number_of_thread) != int and number_of_thread < 0:
             raise TypeError(f"[{self.name}] The number_of_thread number must be a positive integer.")
-        self.socket_data_converter = socket_data_converter
         self.max_client_connections = max_client_connection
         self.environment_file = environment_file
 
@@ -97,8 +95,8 @@ class BaseEnvironmentConfig:
         :return: TcpIpServer
         """
         # Create server
-        server = TcpIpServer(data_converter=self.socket_data_converter, max_client_count=self.max_client_connections,
-                             batch_size=batch_size, nb_client=self.number_of_thread, manager=environment_manager)
+        server = TcpIpServer(max_client_count=self.max_client_connections, batch_size=batch_size,
+                             nb_client=self.number_of_thread, manager=environment_manager)
 
         server_thread = Thread(target=self.start_server, args=(server,))
         server_thread.start()
@@ -138,14 +136,13 @@ class BaseEnvironmentConfig:
         """
         script = join(dirname(modules[BaseEnvironment.__module__].__file__),
                               'launcherBaseEnvironment.py')
-        # Usage: python3 script.py <file_path> <environment_class> <ip_address> <port> <converter_class> <idx>"
+        # Usage: python3 script.py <file_path> <environment_class> <ip_address> <port> <idx> <nb_threads>"
         subprocessRun(['python3',
                         script,
                         self.environment_file,
                         self.environment_class.__name__,
                         self.ip_address,
                         str(self.port),
-                        self.socket_data_converter.__name__,
                         str(idx),
                         str(self.number_of_thread)])
 

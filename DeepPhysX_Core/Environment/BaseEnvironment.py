@@ -8,7 +8,6 @@ class BaseEnvironment(TcpIpClient):
     def __init__(self,
                  ip_address='localhost',
                  port=10000,
-                 data_converter=None,
                  instance_id=1,
                  number_of_instances=1,
                  as_tcpip_client=True,
@@ -19,9 +18,8 @@ class BaseEnvironment(TcpIpClient):
 
         :param int instance_id: ID of the instance
         """
-        TcpIpClient.__init__(self, ip_address=ip_address, port=port, data_converter=data_converter,
-                             instance_id=instance_id, number_of_instances=number_of_instances,
-                             as_tcpip_client=as_tcpip_client)
+        TcpIpClient.__init__(self, ip_address=ip_address, port=port, instance_id=instance_id,
+                             number_of_instances=number_of_instances, as_tcpip_client=as_tcpip_client)
         self.input, self.output = array([]), array([])
         self.visual_object = visual_object(visualizer=None) if visual_object is not None else None
         self.environment_manager = environment_manager

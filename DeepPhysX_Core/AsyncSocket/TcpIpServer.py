@@ -1,7 +1,7 @@
 from asyncio import get_event_loop, run, gather
 import numpy as np
 from queue import SimpleQueue
-from DeepPhysX_Core.AsyncSocket.TcpIpObject import TcpIpObject, BytesNumpyConverter
+from DeepPhysX_Core.AsyncSocket.TcpIpObject import TcpIpObject
 from copy import copy
 
 
@@ -10,7 +10,6 @@ class TcpIpServer(TcpIpObject):
     def __init__(self,
                  ip_address='localhost',
                  port=10000,
-                 data_converter=BytesNumpyConverter,
                  max_client_count=10,
                  batch_size=5,
                  nb_client=5,
@@ -21,12 +20,11 @@ class TcpIpServer(TcpIpObject):
 
         :param str ip_address: IP address of the TcpIpObject
         :param int port: Port number of the TcpIpObject
-        :param data_converter: BytesBaseConverter class to convert data to bytes (NumPy by default)
         :param int max_client_count: Maximum number of allowed clients
         :param int batch_size: Number of samples in a batch
         :param int nb_client: Number of expected client connections
         """
-        super(TcpIpServer, self).__init__(ip_address=ip_address, port=port, data_converter=data_converter)
+        super(TcpIpServer, self).__init__(ip_address=ip_address, port=port)
         # Bind to server address
         print(f'Binding to IP Address: {ip_address} on PORT: {port} with maximum client count: {max_client_count}')
         self.sock.bind((ip_address, port))
@@ -315,15 +313,14 @@ class TcpIpServer(TcpIpObject):
         :return:
         """
         loop = get_event_loop()
-        print("Sending exit command to", idx)
         await self.send_command_exit(loop=loop, receiver=client)
         # Wait for exit confirmation
-        data = await self.receive_data(loop=loop, sender=client, is_bytes_data=True)
+        data = await self.receive_data(loop=loop, sender=client)
         if data != b'exit':
             raise ValueError(f"Client {idx} was supposed to exit.")
 
     async def listen_while_not_done(self, loop, sender, data_dict, client_id=None):
-        while (cmd := await self.receive_data(loop=loop, sender=sender, is_bytes_data=True)) != self.command_dict['done']:
+        while (cmd := await self.receive_data(loop=loop, sender=sender)) != self.command_dict['done']:
             if cmd == self.command_dict['visualization']:
                 visu_dict = {}
                 await self.listen_while_not_done(loop=loop, sender=sender, data_dict=visu_dict, client_id=client_id)

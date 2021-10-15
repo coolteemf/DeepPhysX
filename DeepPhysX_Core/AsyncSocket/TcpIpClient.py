@@ -10,7 +10,6 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
     def __init__(self,
                  ip_address='localhost',
                  port=10000,
-                 data_converter=None,
                  instance_id=1,
                  number_of_instances=1,
                  as_tcpip_client=True):
@@ -19,10 +18,9 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
 
         :param str ip_address: IP address of the TcpIpObject
         :param int port: Port number of the TcpIpObject
-        :param data_converter: BytesBaseConverter class to convert data to bytes (NumPy by default)
         :param int instance_id: ID of the instance
         """
-        TcpIpObject.__init__(self, ip_address=ip_address, port=port, data_converter=data_converter)
+        TcpIpObject.__init__(self, ip_address=ip_address, port=port)
         AbstractEnvironment.__init__(self, instance_id=instance_id, number_of_instances=number_of_instances,
                                      as_tcpip_client=as_tcpip_client)
         # Bind to client address
@@ -74,7 +72,7 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
         await self.send_command_done(loop=loop, receiver=self.sock)
 
         # Receive and check last init server command
-        cmd = await self.receive_data(loop, self.sock, is_bytes_data=True)
+        cmd = await self.receive_data(loop, self.sock)
         if cmd not in [b'done', b'size']:
             raise ValueError(f"Unknown command {cmd}, must be in {[b'done', b'size']}")
         # If server asked to send IO sizes
@@ -119,7 +117,7 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
         loop = get_event_loop()
 
         # Receive and check command
-        command = await self.receive_data(loop, server, is_bytes_data=True)
+        command = await self.receive_data(loop, server)
         if command not in self.command_dict.values():
             raise ValueError(f"Unknown command {command}")
 
@@ -139,7 +137,7 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
         # 'test': check if the sample is exploitable
         elif command == b'test':
             check = b'1' if self.checkSample() else b'0'
-            await self.send_data(data_to_send=check, loop=loop, receiver=server, do_convert=False)
+            await self.send_data(data_to_send=check, loop=loop, receiver=server)
         # 'pred': receive prediction and apply it
         elif command == b'pred':
             prediction = await self.receive_data(loop=loop, sender=server)

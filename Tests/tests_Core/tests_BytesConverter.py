@@ -12,13 +12,16 @@ class TestBytesConverter(unittest.TestCase):
     def test_conversions(self):
         # Check conversions for all types except numpy array
         for data in [b'test', 'test', 1, -1, 1., -1., [0.1, 0.1], [[-1, 0], [0, 1]]]:
-            conversion = self.converter.data_to_bytes(data)
+            size, conversion = self.converter.data_to_bytes(data)
             recovered_data = self.converter.bytes_to_data(conversion)
             self.assertEqual(data, recovered_data)
             self.assertEqual(type(data), type(recovered_data))
+            test_size = 4 if type(data) == list else 2
+            self.assertEqual(int.from_bytes(size, byteorder='big', signed=True), test_size)
         # Check conversions for numpy array
         for data in [array([0.1, 0.1]), array([[-1, 0], [0, 1]])]:
-            conversion = self.converter.data_to_bytes(data)
+            size, conversion = self.converter.data_to_bytes(data)
             recovered_data = self.converter.bytes_to_data(conversion)
             self.assertTrue((data == recovered_data).all())
             self.assertEqual(type(data), type(recovered_data))
+            self.assertEqual(int.from_bytes(size, byteorder='big', signed=True), 4)

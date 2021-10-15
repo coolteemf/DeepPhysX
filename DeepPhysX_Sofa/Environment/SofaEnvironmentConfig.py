@@ -23,8 +23,7 @@ class SofaEnvironmentConfig(BaseEnvironmentConfig):
                  environment_file='',
                  param_dict={},
                  ip_address='localhost',
-                 port=10000,
-                 socket_data_converter=None):
+                 port=10000):
 
         BaseEnvironmentConfig.__init__(self, environment_class=environment_class,
                                        visual_object=visual_object,
@@ -36,8 +35,7 @@ class SofaEnvironmentConfig(BaseEnvironmentConfig):
                                        number_of_thread=number_of_thread,
                                        max_client_connection=max_client_connection,
                                        environment_file=environment_file,
-                                       param_dict=param_dict, ip_address=ip_address, port=port,
-                                       socket_data_converter=socket_data_converter)
+                                       param_dict=param_dict, ip_address=ip_address, port=port)
 
     def start_client(self, idx=1):
         script = join(dirname(modules[SofaEnvironment.__module__].__file__),
@@ -48,7 +46,6 @@ class SofaEnvironmentConfig(BaseEnvironmentConfig):
                         self.environment_class.__name__,
                         self.ip_address,
                         str(self.port),
-                        self.socket_data_converter.__name__,
                         str(idx),
                         str(self.number_of_thread)])
 
@@ -59,7 +56,8 @@ class SofaEnvironmentConfig(BaseEnvironmentConfig):
         :return:
         """
         root_node = Sofa.Core.Node()
-        environment = root_node.addObject(self.environment_class(environment_manager=environment_manager, root_node=root_node, as_tcpip_client=False,
+        environment = root_node.addObject(self.environment_class(environment_manager=environment_manager,
+                                                                 root_node=root_node, as_tcpip_client=False,
                                                                  visual_object=self.visual_object))
         environment.create()
         environment.init()

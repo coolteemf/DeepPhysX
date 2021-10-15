@@ -25,7 +25,7 @@ class BytesConverter:
         Convert data to bytes. Available types are: bytes, str, int, float, list, ndarray.
 
         :param data: Data to convert.
-        :return: Tuple of bytes: (Type, Size in bytes, Data, *args)
+        :return: Tuple of bytes: Size of tuple in bytes, (Type, Data, *args)
         """
 
         # Convert the type of 'data' to bytes
@@ -43,16 +43,18 @@ class BytesConverter:
             # Convert data shape to bytes
             args += (self.__data_to_bytes_conversion[ndarray](array(data).shape),)
 
-        return type_data, len(data_bytes), data_bytes, *args
+        size = self.__data_to_bytes_conversion[int](2 + len(args))
+
+        return size, (type_data, data_bytes, *args)
 
     def bytes_to_data(self, bytes_fields):
         """
         Recover data from bytes fields. Available types are: bytes, str, int, float, list, ndarray.
 
-        :param bytes_fields: Tuple of bytes containing : (Type, Size in bytes, Data, *args)
+        :param bytes_fields: Tuple of bytes containing : (Type, Data, *args)
         :return: Recovered data
         """
-        
+
         # Recover the data type
         data_type = self.__bytes_to_data_conversion[str.__name__](bytes_fields[0])
 
@@ -60,11 +62,11 @@ class BytesConverter:
         args = ()
         if data_type in [list.__name__, ndarray.__name__]:
             # Recover datatype of array
-            args += (self.__bytes_to_data_conversion[str.__name__](bytes_fields[3]),)
+            args += (self.__bytes_to_data_conversion[str.__name__](bytes_fields[2]),)
             # Recover shape of array
-            args += (self.__bytes_to_data_conversion[ndarray.__name__](bytes_fields[4], int, -1),)
+            args += (self.__bytes_to_data_conversion[ndarray.__name__](bytes_fields[3], int, -1),)
 
         # Convert bytes to data
-        data = self.__bytes_to_data_conversion[data_type](bytes_fields[2], *args)
+        data = self.__bytes_to_data_conversion[data_type](bytes_fields[1], *args)
 
         return data
