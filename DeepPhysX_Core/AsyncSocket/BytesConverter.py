@@ -1,19 +1,4 @@
-# from numpy import frombuffer, array
-
-# from DeepPhysX_Core.AsyncSocket.BytesBaseConverter import BytesBaseConverter
-#
-#
-# class BytesNumpyConverter(BytesBaseConverter):
-#
-#     def bytes_to_data(self, bytes_field):
-#         return frombuffer(bytes_field)
-#
-#     def data_to_bytes(self, data):
-#         return data.tobytes()
-#
-#     def data_type(self):
-#         return type(array([]))
-from struct import pack, unpack
+from numpy import ndarray, array, frombuffer, zeros
 
 
 class BytesConverter:
@@ -24,27 +9,62 @@ class BytesConverter:
                                            str: lambda d: d.lower().encode('utf-8'),
                                            int: lambda d: d.to_bytes(length=(8 + (d + (d < 0)).bit_length()) // 8,
                                                                      byteorder='big', signed=True),
-                                           float: lambda d: pack('f', d)}
+                                           float: lambda d: array(d, dtype=float).tobytes(),
+                                           list: lambda d: array(d, dtype=float).tobytes(),
+                                           ndarray: lambda d: array(d, dtype=float).tobytes()}
         # Bytes to data conversions
         self.__bytes_to_data_conversion = {bytes.__name__: lambda b: b,
                                            str.__name__: lambda b: b.decode('utf-8'),
                                            int.__name__: lambda b: int.from_bytes(b, byteorder='big', signed=True),
-                                           float.__name__: lambda b: unpack('f', b)[0]}
+                                           float.__name__: lambda b: frombuffer(b).item(),
+                                           list.__name__: lambda b, t, s: frombuffer(b).astype(t).reshape(s).tolist(),
+                                           ndarray.__name__: lambda b, t, s: frombuffer(b).astype(t).reshape(s)}
 
     def data_to_bytes(self, data):
-        return self.__data_to_bytes_conversion[type(data)](data)
+        """
+        Convert data to bytes. Available types are: bytes, str, int, float, list, ndarray.
 
-    def bytes_to_data(self, bytes_field, data_type):
-        return self.__bytes_to_data_conversion[data_type](bytes_field)
+        :param data: Data to convert.
+        :return: Tuple of bytes: (Type, Size in bytes, Data, *args)
+        """
 
+        # Convert the type of 'data' to bytes
+        type_data = self.__data_to_bytes_conversion[str](type(data).__name__)
+        # Convert 'data' to bytes
+        data_bytes = self.__data_to_bytes_conversion[type(data)](data)
 
-if __name__ == '__main__':
-    converter = BytesConverter()
+        # Additional arguments
+        args = ()
+        if type(data) in [list, ndarray]:
+            # Get python native datatype of array
+            dtype = type(zeros(1, dtype=array(data).dtype).item()).__name__
+            # Convert datatype of array to bytes
+            args += (self.__data_to_bytes_conversion[str](dtype),)
+            # Convert data shape to bytes
+            args += (self.__data_to_bytes_conversion[ndarray](array(data).shape),)
 
-    for data in [b'test', 'test', 1740, -56, 17.40, -1e-3]:
+        return type_data, len(data_bytes), data_bytes, *args
 
-        sending = [type(data).__name__, data]
-        b_sending = [converter.data_to_bytes(s) for s in sending]
+    def bytes_to_data(self, bytes_fields):
+        """
+        Recover data from bytes fields. Available types are: bytes, str, int, float, list, ndarray.
 
-        data_reco = converter.bytes_to_data(b_sending[1], converter.bytes_to_data(b_sending[0], str.__name__))
-        print(data, b_sending, data_reco)
+        :param bytes_fields: Tuple of bytes containing : (Type, Size in bytes, Data, *args)
+        :return: Recovered data
+        """
+        
+        # Recover the data type
+        data_type = self.__bytes_to_data_conversion[str.__name__](bytes_fields[0])
+
+        # Recover additional arguments
+        args = ()
+        if data_type in [list.__name__, ndarray.__name__]:
+            # Recover datatype of array
+            args += (self.__bytes_to_data_conversion[str.__name__](bytes_fields[3]),)
+            # Recover shape of array
+            args += (self.__bytes_to_data_conversion[ndarray.__name__](bytes_fields[4], int, -1),)
+
+        # Convert bytes to data
+        data = self.__bytes_to_data_conversion[data_type](bytes_fields[2], *args)
+
+        return data
