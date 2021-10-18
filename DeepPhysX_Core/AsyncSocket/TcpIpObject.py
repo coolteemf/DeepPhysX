@@ -25,6 +25,9 @@ class TcpIpObject:
         :param str ip_address: IP address of the TcpIpObject
         :param int port: Port number of the TcpIpObject
         """
+
+        self.name = self.__class__.__name__
+
         # Define socket
         self.sock = socket(AF_INET, SOCK_STREAM)
         self.sock.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
@@ -110,8 +113,7 @@ class TcpIpObject:
         :param str label: Associated label
         :param loop: asyncio.get_event_loop() return
         :param receiver: TcpIpObject receiver
-        :param bool do_convert: Data will be converted in bytes by default. If the data is already in bytes, set to
-               False
+        :param bool send_read_command: If True, the command 'read' is sent before sending data
         :return:
         """
         loop = get_event_loop() if loop is None else loop
@@ -127,8 +129,6 @@ class TcpIpObject:
 
         :param loop: asyncio.get_event_loop() return
         :param sender: TcpIpObject sender
-        :param is_bytes_data: Data will be converted from bytes by default. If the expected data is in bytes, set to
-               True
         :return:
         """
         data = await self.receive_data(loop=loop, sender=sender)
@@ -155,24 +155,6 @@ class TcpIpObject:
             raise KeyError(f"\"{command}\" is not a valid command. Use {self.command_dict.keys()} instead.")
         # Send command as a byte data
         await self.send_data(data_to_send=cmd, loop=loop, receiver=receiver)
-
-    async def listen_while_not_done(self, loop, sender, data_dict, client_id=None):
-        while await self.receive_data(loop=loop, sender=sender) != self.command_dict['done']:
-            label, param = await self.receive_labeled_data(loop=loop, sender=sender)
-            data_dict[label] = param
-
-        # ############ This is debug mode of above. DO NOT ERASE
-        # import time
-        # while True:
-        #     cmd = await self.receive_data(loop=loop, sender=sender, is_bytes_data=True)
-        #     time.sleep(2)
-        #     print(f"CMD ::: {cmd}")
-        #     if cmd == b'done':
-        #         break
-        #     label, param = await self.receive_labeled_data(loop=loop, sender=sender)
-        #     print(f"received {label=}")
-        #     #print(f"value = {param}")
-        #     data_dict[label] = param
 
     async def send_command_exit(self, loop=None, receiver=None):
         await self.send_command(loop=loop, receiver=receiver, command='exit')
@@ -322,11 +304,6 @@ class TcpIpObject:
             raise KeyError(f"\"{command}\" is not a valid command. Use {self.command_dict.keys()} instead.")
         # Send command as a byte data
         self.sync_send_data(data_to_send=cmd, receiver=receiver)
-
-    def sync_listen_while_not_done(self, data_dict):
-        while self.sync_receive_data() != self.command_dict['done']:
-            label, param = self.sync_receive_labeled_data()
-            data_dict[label] = param
 
     def sync_send_command_exit(self, receiver=None):
         self.sync_send_command(receiver=receiver, command='exit')

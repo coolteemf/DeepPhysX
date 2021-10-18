@@ -23,10 +23,12 @@ class TcpIpServer(TcpIpObject):
         :param int max_client_count: Maximum number of allowed clients
         :param int batch_size: Number of samples in a batch
         :param int nb_client: Number of expected client connections
+        :param manager: EnvironmentManager that handles the TcpIpServer
         """
-        super(TcpIpServer, self).__init__(ip_address=ip_address, port=port)
+        super(TcpIpServer, self).__init__(ip_address=ip_address,
+                                          port=port)
         # Bind to server address
-        print(f'Binding to IP Address: {ip_address} on PORT: {port} with maximum client count: {max_client_count}')
+        print(f"[{self.name}] Binding to IP Address: {ip_address} on PORT: {port} with maximum client count: {max_client_count}")
         self.sock.bind((ip_address, port))
         self.sock.listen(max_client_count)
         self.sock.setblocking(False)
@@ -52,7 +54,7 @@ class TcpIpServer(TcpIpObject):
 
         :return:
         """
-        print(f"Waiting for clients:")
+        print(f"[{self.name}] Waiting for clients:")
         run(self.__connect())
 
     async def __connect(self):
@@ -65,7 +67,7 @@ class TcpIpServer(TcpIpObject):
         # Accept clients connections one by one
         for _ in range(self.nb_client):
             client, _ = await loop.sock_accept(self.sock)
-            print(f'Client n°{len(self.clients)} connected: {client}')
+            print(f"[{self.name}] Client n°{len(self.clients)} connected: {client}")
             self.clients.append(client)
 
     def initialize(self, param_dict):
@@ -187,12 +189,8 @@ class TcpIpServer(TcpIpObject):
         """
         Communication protocol with a client. It goes trough different steps:
         1) Running steps
-        2) Receiving additional data
-        3) Compute IO data
-        4) Check the IO sample
-        5) Receive the IO data
-        6) Add sample to batch
-        7) If sample is not exploitable save the wrong sample
+        2) Receiving training data
+        3) Add data to the Queue
 
         :param client: TcpIpObject client to communicate with
         :param int client_id: Index of the client
@@ -205,56 +203,61 @@ class TcpIpServer(TcpIpObject):
 
         # 1) Tell client to compute steps in the environment
         if animate:
+            # 1.1) If a sample from Dataset is given, sent it to the Environment
             if self.batch_from_dataset is not None:
-
+                # Pop the first input of the samples
+                # Todo: pop the last ?
                 sample_in = np.array([])
                 if 'input' in self.batch_from_dataset:
                     sample_in = self.batch_from_dataset['input'][0]
                     self.batch_from_dataset['input'] = self.batch_from_dataset['input'][1:]
-
+                # Pop the first outputs of the samples
+                # Todo: pop the last ?
                 sample_out = np.array([])
                 if 'output' in self.batch_from_dataset:
                     sample_out = self.batch_from_dataset['output'][0]
                     self.batch_from_dataset['output'] = self.batch_from_dataset['output'][1:]
-
+                # Send the sample to the TcpIpClient
                 await self.send_command_sample(loop=loop, receiver=client)
                 await self.send_data(data_to_send=sample_in, loop=loop, receiver=client)
                 await self.send_data(data_to_send=sample_out, loop=loop, receiver=client)
-            # Execute n steps, the last one send data computation signal
+            # 1.2) Execute n steps, the last one send data computation signal
             for current_step in range(self.environment_manager.simulations_per_step):
                 if current_step == self.environment_manager.simulations_per_step - 1:
                     await self.send_command_compute(loop=loop, receiver=client)
                 else:
                     await self.send_command_step(loop=loop, receiver=client)
-                # Receive data
-                await self.listen_while_not_done(loop=loop, sender=client, data_dict=self.data_dict[client_id],
-                                                 client_id=client_id)
-
+            # 2) Receive training data
+            await self.listen_while_not_done(loop=loop, sender=client, data_dict=self.data_dict[client_id],
+                                             client_id=client_id)
+        # 3) Fill the data Queue
         data = {}
         # Checkin input data size
         if get_inputs and self.data_dict[client_id]['input'].size == self.in_size.prod():
             data['input'] = self.data_dict[client_id]['input'].reshape(self.in_size)
             #del self.data_dict[client_id]['input']
-
         # Checkin output data size
         if get_outputs and self.data_dict[client_id]['output'].size == self.out_size.prod():
             data['output'] = self.data_dict[client_id]['output'].reshape(self.out_size)
             #del self.data_dict[client_id]['output']
-
+        # Add loss data if provided
         if 'loss' in self.data_dict[client_id]:
             data['loss'] = self.data_dict[client_id]['loss']
-
+        # Identify sample
         data['ID'] = client_id
+        # Add data to the Queue
         self.data_fifo.put(data)
 
     def setDatasetBatch(self, batch):
         """
-        :param batch:
+        Receive a batch of data from the Dataset. Samples will be dispatched between clients.
+
+        :param batch: Batch of data
         :return:
         """
         if len(batch['input']) != self.batch_size:
-            return ValueError(f"[TcpIpServer] The size of batch from Dataset is {len(batch['input'])} while the batch size"
-                              f"was set to {self.batch_size}.")
+            return ValueError(f"[{self.name}] The size of batch from Dataset is {len(batch['input'])} while the batch "
+                              f"size was set to {self.batch_size}.")
         self.batch_from_dataset = copy(batch)
 
     def applyPrediction(self, prediction):
@@ -317,30 +320,61 @@ class TcpIpServer(TcpIpObject):
         # Wait for exit confirmation
         data = await self.receive_data(loop=loop, sender=client)
         if data != b'exit':
-            raise ValueError(f"Client {idx} was supposed to exit.")
+            raise ValueError(f"[{self.name}] Client {idx} was supposed to exit.")
 
     async def listen_while_not_done(self, loop, sender, data_dict, client_id=None):
+        """
+        Listening to data until command 'done' is received.
+
+        :param loop: asyncio.get_event_loop() return
+        :param sender: TcpIpObject sender
+        :param data_dict: Dictionary in which data is stored
+        :param client_id: ID of the sender client
+        :return:
+        """
+        # Execute while command 'done' is not received
         while (cmd := await self.receive_data(loop=loop, sender=sender)) != self.command_dict['done']:
+            # With command visualization, receive each field of the visualization dict
             if cmd == self.command_dict['visualization']:
                 visu_dict = {}
+                # Receive fields until 'done' command
                 await self.listen_while_not_done(loop=loop, sender=sender, data_dict=visu_dict, client_id=client_id)
+                # Update the visualization
                 await self.update_visualizer(visu_dict, client_id)
+            # Simply get labeled data once for other commands
             else:
                 label, param = await self.receive_labeled_data(loop=loop, sender=sender)
                 data_dict[label] = param
+                # If command prediction is received then compute and send back the network prediction
                 if cmd == self.command_dict['prediction']:
                     await self.compute_and_send_prediction(network_input=data_dict[label], receiver=sender)
 
     async def compute_and_send_prediction(self, network_input, receiver):
+        """
+        Compute and send back the network prediction.
+
+        :param network_input: Input of the network
+        :param receiver: TcpIpObject receiver
+        :return:
+        """
+        # Check that managers can communicate
         if self.environment_manager.data_manager is None:
             raise ValueError("Cannot request prediction if DataManager does not exist")
         elif self.environment_manager.data_manager.manager is None:
             raise ValueError("Cannot request prediction if Manager does not exist")
         elif self.environment_manager.data_manager.manager.network_manager is None:
             raise ValueError("Cannot request prediction if NetworkManager does not exist")
-        else:
-            prediction = self.environment_manager.requestPrediction(network_input=network_input[None, ])
-            await self.send_labeled_data(data_to_send=prediction, label="prediction", receiver=receiver, send_read_command=False)
+        # Get the prediction of the network
+        prediction = self.environment_manager.requestPrediction(network_input=network_input[None, ])
+        # Send the prediction back to the TcpIpClient
+        await self.send_labeled_data(data_to_send=prediction, label="prediction", receiver=receiver, send_read_command=False)
 
     async def update_visualizer(self, visualization_data, client_id):
+        """
+        Send the updated visualization data to the associate manager.
+
+        :param visualization_data: Dict containing the data fields to update the visualization
+        :param client_id: ID of the client
+        :return:
+        """
         self.environment_manager.updateVisualizer(visualization_data, client_id)
