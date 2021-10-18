@@ -58,6 +58,8 @@ class BaseDataset:
 
     def memory_size(self):
         """
+        Return the actual memory size of the dataset.
+
         :return: Size in bytes of the current dataset.
         """
         return self.data_in.nbytes + self.data_out.nbytes
@@ -134,9 +136,23 @@ class BaseDataset:
         self.current_sample = max(len(self.data_in), len(self.data_out))
 
     def getInputBatch(self, begin_idx, end_idx):
+        """
+        Get a batch of input data.
+
+        :param begin_idx: Index of the first sample
+        :param end_idx: Index of the last sample
+        :return:
+        """
         return self.data_in[self.shuffle_pattern[begin_idx:end_idx]]
 
     def getOutputBatch(self, begin_idx, end_idx):
+        """
+        Get a batch of output data.
+
+        :param begin_idx: Index of the first sample
+        :param end_idx: Index of the last sample
+        :return:
+        """
         return self.data_out[self.shuffle_pattern[begin_idx:end_idx]]
 
     def shuffle(self):
