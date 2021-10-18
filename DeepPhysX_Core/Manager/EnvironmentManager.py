@@ -17,6 +17,8 @@ class EnvironmentManager:
         :param BaseEnvironmentConfig environment_config:
         :param DataManager data_manager: DataManager that handles the EnvironmentManager
         :param str session_dir: Name of the directory in which to write all of the necessary data
+        :param int batch_size: Number of samples in a batch of data
+        :param bool train: True if this session is a network training
         """
 
         self.name = self.__class__.__name__
@@ -46,6 +48,8 @@ class EnvironmentManager:
 
     def getDataManager(self):
         """
+        Return the Manager of the EnvironmentManager.
+
         :return: DataManager that handle The EnvironmentManager
         """
         return self.data_manager
@@ -70,7 +74,8 @@ class EnvironmentManager:
         :param bool get_inputs: If True, compute and return input
         :param bool get_outputs: If True, compute and return output
         :param bool animate: If True, triggers an environment step
-        :return: dictionnary containing all labeled data sent by the clients in their own dictionnary + in and out key corresponding to the batch
+        :return: Dictionary containing all labeled data sent by the clients in their own dictionary + in and out key
+        corresponding to the batch
         """
         if self.server is not None:
             return self.getDataFromServer(get_inputs, get_outputs, animate)
@@ -80,11 +85,13 @@ class EnvironmentManager:
 
     def getDataFromServer(self, get_inputs, get_outputs, animate):
         """
+        Compute a batch of data from Environments requested through TcpIpServer.
 
-        :param get_inputs:
-        :param get_outputs:
-        :param animate:
-        :return:
+        :param bool get_inputs: If True, compute and return input
+        :param bool get_outputs: If True, compute and return output
+        :param bool animate: If True, triggers an environment step
+        :return: Dictionary containing all labeled data sent by the clients in their own dictionary + in and out key
+        corresponding to the batch
         """
         batch, data_dict = self.server.getBatch(get_inputs, get_outputs, animate)
         # if self.visualizer_manager is not None:
@@ -100,8 +107,13 @@ class EnvironmentManager:
 
     def getDataFromEnvironment(self, get_inputs, get_outputs, animate):
         """
+        Compute a batch of data directly from Environment.
 
-        :return:
+        :param bool get_inputs: If True, compute and return input
+        :param bool get_outputs: If True, compute and return output
+        :param bool animate: If True, triggers an environment step
+        :return: Dictionary containing all labeled data sent by the clients in their own dictionary + in and out key
+        corresponding to the batch
         """
         inputs = empty((0, *self.environment.input_size)) if get_inputs else array([])
         input_condition = lambda input_array: input_array.shape[0] < self.batch_size if get_inputs else lambda _: False
@@ -140,19 +152,44 @@ class EnvironmentManager:
         return training_data
 
     def requestPrediction(self, network_input):
+        """
+        Get a prediction of the network.
+
+        :param network_input: Input of the network
+        :return: Prediction of the network
+        """
         self.prediction_requested = True
         return self.data_manager.manager.network_manager.computeOnlinePrediction(network_input)
 
-    def updateVisualizer(self, visualization_data, id):
-        self.visualizer_manager.updateFromSample(visualization_data, id)
+    def updateVisualizer(self, visualization_data, index):
+        """
+        Update visualization.
+
+        :param visualization_data: Dictionary containing visualization fields
+        :param index: Index of the client
+        :return:
+        """
+        self.visualizer_manager.updateFromSample(visualization_data, index)
 
     def applyPrediction(self, prediction):
+        """
+        Apply the prediction in the environment.
+
+        :param prediction: Network prediction
+        :return:
+        """
         if self.server and not self.prediction_requested:
             self.server.applyPrediction(prediction)
         if self.environment and not self.prediction_requested:
             self.environment.applyPrediction(prediction)
 
     def dispatchBatch(self, batch):
+        """
+        Send samples from dataset to the Environments. Get back the training data.
+
+        :param batch: Batch of samples.
+        :return: Batch of training data.
+        """
         self.server.setDatasetBatch(batch)
         return self.getData(get_inputs=False, get_outputs=False, animate=True)
 

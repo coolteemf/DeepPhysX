@@ -26,6 +26,7 @@ class DataManager:
         :param bool new_session: Define the creation of new directories to store data
         :param bool training: True if this session is a network training
         :param dict record_data: Format {\'in\': bool, \'out\': bool} save the tensor when bool is True
+        :param int batch_size: Number of samples in a batch
         """
 
         self.name = self.__class__.__name__
@@ -64,8 +65,9 @@ class DataManager:
 
     def getManager(self):
         """
+        Return the manager of DataManager.
 
-        :return: Manager that handle The DataManager
+        :return: Manager that handle the DataManager
         """
         return self.manager
 
@@ -119,7 +121,14 @@ class DataManager:
 
         self.data = data
 
-    def applyPrediction(self, prediction, epoch):
+    def applyPrediction(self, prediction, epoch=0):
+        """
+        Apply the prediction of the network in the Environment.
+
+        :param prediction: Prediction of the network
+        :param epoch: Current training epoch
+        :return:
+        """
         if self.environment_manager is not None and (epoch == 0 or self.environment_manager.always_create_data):
             self.environment_manager.applyPrediction(prediction)
 

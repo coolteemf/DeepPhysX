@@ -29,8 +29,9 @@ class Manager:
         :param BaseDatasetConfig dataset_config: Specialisation containing the parameters of the dataset manager
         :param BaseEnvironmentConfig environment_config: Specialisation containing the parameters of the environment manager
         :param str session_name: Name of the newly created directory if session_dir is not defined
-        :param str session_dir: Name of the directory in which to write all of the neccesary data
+        :param str session_dir: Name of the directory in which to write all of the necessary data
         :param bool new_session: Define the creation of new directories to store data
+        :param int batch_size: umber of samples in a batch
         """
         self.pipeline = pipeline
         # Trainer: must create a new session to avoid overwriting
@@ -73,6 +74,7 @@ class Manager:
 
     def getPipeline(self):
         """
+        Return the pipeline that is using the Manager.
 
         :return: Pipeline that uses the manager
         """

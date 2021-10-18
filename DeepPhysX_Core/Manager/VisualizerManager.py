@@ -12,27 +12,45 @@ class VisualizerManager:
         Handle the 3D representation of the data from a visualizer.
         Allows easy access to basic functionalities of the visualizer
 
-        :param DataManager datamanager: DataManager that handles the VisualizerManager
-        :param visualizer_class: The class of the desired visualizer
+        :param DataManager data_manager: DataManager that handles the VisualizerManager
+        :param visual_object: The class of the desired vedo object
         """
         self.data_manager = data_manager
-
         self.visualizer = VedoVisualizer(visual_object=visual_object)
 
     def getDataManager(self):
         """
+        Return the manager that handles the VisualizerManager.
 
         :return: DataManager that handles the VisualizerManager
         """
         return self.data_manager
 
     def initView(self, data_dict):
+        """
+        Init the visualization window.
+
+        :param data_dict: Dictionary containing all the visualization data fields.
+        :return:
+        """
         self.visualizer.init(data_dict)
 
-    def updateFromSample(self, sample, id):
-        self.visualizer.updateFromSample(sample, id)
+    def updateFromSample(self, sample, index):
+        """
+        Update the rendering windows with a sample of visualization data.
+
+        :param sample: Sample of updated visualization data
+        :param index: ID of the client
+        :return:
+        """
+        self.visualizer.updateFromSample(sample, index)
 
     def render(self):
+        """
+        Trigger a render step of the visualization window.
+
+        :return:
+        """
         self.visualizer.render()
 
     def saveSample(self, session_dir):

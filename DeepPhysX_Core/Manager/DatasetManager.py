@@ -27,27 +27,27 @@ class DatasetManager:
         :param str session_name: Name of the newly created directory if session_dir is not defined
         :param str session_dir: Name of the directory in which to write all of the neccesary data
         :param bool new_session: Define the creation of new directories to store data
-        :param bool training: True if this session is a network training
+        :param bool train: True if this session is a network training
         :param dict record_data: Format {\'in\': bool, \'out\': bool} save the tensor when bool is True
         """
         self.name = self.__class__.__name__
         self.data_manager = data_manager
         # Checking arguments
         if dataset_config is not None and not isinstance(dataset_config, BaseDatasetConfig):
-            raise TypeError("[DATASETMANAGER] The dataset config must be a BaseDatasetConfig object.")
+            raise TypeError(f"[{self.name}] The dataset config must be a BaseDatasetConfig object.")
         if type(session_name) != str:
-            raise TypeError("[DATASETMANAGER] The session name must be a str.")
+            raise TypeError(f"[{self.name}] The session name must be a str.")
         if session_dir is not None and type(session_dir) != str:
-            raise TypeError("[DATASETMANAGER] The session directory must be a str.")
+            raise TypeError(f"[{self.name}] The session directory must be a str.")
         if type(new_session) != bool:
-            raise TypeError("[DATASETMANAGER] The 'new_network' argument must be a boolean.")
+            raise TypeError(f"[{self.name}] The 'new_network' argument must be a boolean.")
         if type(train) != bool:
-            raise TypeError("[DATASETMANAGER] The 'train' argument must be a boolean.")
+            raise TypeError(f"[{self.name}] The 'train' argument must be a boolean.")
         if record_data is not None and type(record_data) != dict:
-            raise TypeError("[DATASETMANAGER] The 'record_data' argument must be a dict.")
+            raise TypeError(f"[{self.name}] The 'record_data' argument must be a dict.")
         elif record_data is not None:
             if type(record_data['input']) != bool or type(record_data['output']) != bool:
-                raise TypeError("[DATASETMANAGER] The values of 'record_data' must be booleans.")
+                raise TypeError(f"[{self.name}] The values of 'record_data' must be booleans.")
 
         # Create the dataset
         dataset_config = BaseDatasetConfig() if dataset_config is None else dataset_config
@@ -106,6 +106,7 @@ class DatasetManager:
 
     def getDataManager(self):
         """
+        Return the Manager of the DataManager.
 
         :return: DataManager that handle The DatasetManager
         """
@@ -119,13 +120,13 @@ class DatasetManager:
         :return:
         """
         # Create in and out partitions
-        print("New Partition: A new partition has been created with max size ~{}Gb".format(float(self.max_size) / 1e9))
+        print(f"New Partition: A new partition has been created with max size ~{float(self.max_size) / 1e9}Gb")
         file = osPathJoin(self.dataset_dir, self.partitions_list_files[self.mode])
         partitions_list_file = open(file, 'a')
 
         if self.record_data['input']:
             current_part_in = self.partitions_templates[self.mode].format('IN', self.idx_partitions[self.mode])
-            print("               Inputs: {}".format(self.dataset_dir + current_part_in))
+            print(f"               Inputs: {self.dataset_dir + current_part_in}")
             self.list_in_partitions[self.mode].append(current_part_in)
             partitions_list_file.write(current_part_in + '\n')
             self.current_in_partition_name = self.dataset_dir + current_part_in
@@ -133,7 +134,7 @@ class DatasetManager:
 
         if self.record_data['output']:
             current_part_out = self.partitions_templates[self.mode].format('OUT', self.idx_partitions[self.mode])
-            print("               Outputs: {}".format(self.dataset_dir + current_part_out))
+            print(f"               Outputs: {self.dataset_dir + current_part_out}")
             self.list_out_partitions[self.mode].append(current_part_out)
             partitions_list_file.write(current_part_out + '\n')
             self.current_out_partition_name = self.dataset_dir + current_part_out
@@ -150,14 +151,14 @@ class DatasetManager:
         """
         # 0. Check that the dataset repository is existing
         if not isdir(self.dataset_dir):
-            raise Warning("[{}]: The given path is not an existing directory.".format(self.name))
+            raise Warning(f"[{self.name}]: The given path is not an existing directory.")
         # 1. Check whether if some running partitions
         running_partitions_file = [f for f in listdir(self.dataset_dir) if
                                    isfile(osPathJoin(self.dataset_dir, f)) and
                                    f.endswith('Running_partitions.txt')]
         # 1.1. No list file found, do a manual search for the partitions
         if running_partitions_file:
-            print("[{}] Listing file not found, searching for existing running partitions.".format(self.name))
+            print(f"[{self.name}] Listing file not found, searching for existing running partitions.")
             running_in_partitions = [f for f in listdir(self.dataset_dir) if
                                      isfile(osPathJoin(self.dataset_dir, f)) and f.endswith('.npy') and
                                      f.__contains__('running_IN')]
@@ -166,7 +167,7 @@ class DatasetManager:
                                       f.__contains__('running_OUT')]
         # 1.2. Normally there is a single list of partitions per mode
         elif len(running_partitions_file) != 1:
-            raise ValueError("[{}] It appears that several running partition lists have been found.")
+            raise ValueError(f"[{self.name}] It appears that several running partition lists have been found.")
         # 1.3. Simply get the partitions from the list file
         else:
             reader = open(osPathJoin(self.dataset_dir, running_partitions_file[0]))
@@ -186,12 +187,13 @@ class DatasetManager:
         """
         Load the desired directory. Try to find partition list and upload it.
         No data loading here.
+
         :return:
         """
         # Load a directory according to the distribution given by the lists
-        print("Loading directory: Read dataset from {}".format(self.dataset_dir))
+        print(f"[{self.name}] Loading directory: Read dataset from {self.dataset_dir}")
         if not isdir(self.dataset_dir):
-            raise Warning("Loading directory: The given path is not an existing directory")
+            raise Warning(f"[{self.name}] Loading directory: The given path is not an existing directory")
         # Look for file which ends with 'mode_partitions.txt'
         for mode in ['Training', 'Validation', 'Running']:
             partitions_list_file = [f for f in listdir(self.dataset_dir) if
@@ -199,8 +201,8 @@ class DatasetManager:
                                     f.endswith(mode[1:] + '_partitions.txt')]
             # If there is no such files then proceed to load any dataset found as in/out
             if not partitions_list_file:
-                print("Loading directory: Partitions list not found for {} mode, will consider any .npy file as "
-                      "input/output.".format(mode))
+                print(f"Loading directory: Partitions list not found for {mode} mode, will consider any .npy file as "
+                      "input/output.")
                 partitions_list = [f for f in listdir(self.dataset_dir) if
                                    isfile(osPathJoin(self.dataset_dir, f)) and f.endswith(".npy") and
                                    f.__contains__(mode)]
@@ -214,7 +216,7 @@ class DatasetManager:
             partitions_in = sorted([f for f in partitions_list if f.__contains__('IN')])
             partitions_out = sorted([f for f in partitions_list if f.__contains__('OUT')])
             if nb_parts != len(partitions_in) + len(partitions_out):
-                raise ValueError("[{}] The number of partitions is ambiguous.".format(self.name))
+                raise ValueError(f"[{self.name}] The number of partitions is ambiguous.")
             self.list_in_partitions[self.modes[mode]] = partitions_in
             self.list_out_partitions[self.modes[mode]] = partitions_out
 
@@ -275,7 +277,7 @@ class DatasetManager:
         if mode == self.mode:
             return
         if self.mode == self.modes['Running']:
-            print("[{}] It's not possible to switch dataset mode while running.".format(self.name))
+            print(f"[{self.name}] It's not possible to switch dataset mode while running.")
         else:
             # Save dataset before changing mode
             if not self.saved:
@@ -284,15 +286,15 @@ class DatasetManager:
             self.dataset.reset()
             # Create or load partition for the new mode
             if self.idx_partitions[self.mode] == 0:
-                print("Change to {} mode, create a new partition".format(self.mode))
+                print(f"[{self.name}] Change to {self.mode} mode, create a new partition")
                 self.createNewPartitions()
             else:
-                print("Change to {} mode, load last partition".format(self.mode))
+                print(f"[{self.name}] Change to {self.mode} mode, load last partition")
                 self.loadLastPartitions()
 
     def loadLastPartitions(self):
         """
-        Load the last partition is the partion list
+        Load the last partition is the partition list.
 
         :return:
         """
@@ -385,7 +387,7 @@ class DatasetManager:
         # Testing mode
         if self.mode == self.modes['Validation']:
             if len(self.list_in_partitions[self.mode]) == 0:
-                raise ValueError("[{}] No partitions to read for testing mode.")
+                raise ValueError(f"[{self.name}] No partitions to read for testing mode.")
             elif len(self.list_in_partitions[self.mode]) == 1:
                 self.loadLastPartitions()
             else:
