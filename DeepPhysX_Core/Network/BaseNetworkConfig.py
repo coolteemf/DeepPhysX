@@ -25,10 +25,18 @@ class BaseNetworkConfig:
         lr: float
         optimizer: Any
 
-    def __init__(self, network_class=BaseNetwork, optimization_class=BaseOptimization,
-                 data_transformation_class=DataTransformation, network_dir=None, network_name='Network',
-                 network_type='BaseNetwork', which_network=0, save_each_epoch=False,
-                 loss=None, lr=None, optimizer=None):
+    def __init__(self,
+                 network_class=BaseNetwork,
+                 optimization_class=BaseOptimization,
+                 data_transformation_class=DataTransformation,
+                 network_dir=None,
+                 network_name='Network',
+                 network_type='BaseNetwork',
+                 which_network=0,
+                 save_each_epoch=False,
+                 loss=None,
+                 lr=None,
+                 optimizer=None):
         """
         BaseNetworkConfig is a configuration class to parameterize and create BaseNetwork, BaseOptimization and
         DataTransformation for the NetworkManager.
