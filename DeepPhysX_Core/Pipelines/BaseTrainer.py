@@ -4,9 +4,11 @@ from DeepPhysX_Core.Manager.Manager import Manager
 from vedo import ProgressBar
 from sys import stdout
 
+
 class BaseTrainer(BasePipeline):
 
-    def __init__(self, network_config,
+    def __init__(self,
+                 network_config,
                  dataset_config,
                  environment_config,
                  session_name='default',

@@ -18,11 +18,8 @@ class BasePipeline:
         :param BaseNetworkConfig network_config: Specialisation containing the parameters of the network manager
         :param BaseDatasetConfig dataset_config: Specialisation containing the parameters of the dataset manager
         :param BaseEnvironmentConfig environment_config: Specialisation containing the parameters of the environment manager
-        :param visualizer_class: Visualization class from which an instance will be created
-        :type visualizer_class: type[BaseVisualizer]
         :param str session_name: Name of the newly created directory if session_dir is not defined
         :param str session_dir: Name of the directory in which to write all of the neccesary data
-        :param bool new_session: Define the creation of new directories to store data
         :param str pipeline: Values at either 'training' or 'prediction'
         """
 
