@@ -6,12 +6,13 @@ class BytesConverter:
     def __init__(self):
         """
         Convert usual types to bytes and vice versa.
-        Available types: bytes, str, signed int, float, list, array
+        Available types: bytes, str, bool, signed int, float, list, array
         """
 
         # Data to bytes conversions
         self.__data_to_bytes_conversion = {bytes: lambda d: d,
                                            str: lambda d: d.lower().encode('utf-8'),
+                                           bool: lambda d: int(d).to_bytes(1, byteorder='big'),
                                            int: lambda d: d.to_bytes(length=(8 + (d + (d < 0)).bit_length()) // 8,
                                                                      byteorder='big', signed=True),
                                            float: lambda d: array(d, dtype=float).tobytes(),
@@ -21,6 +22,7 @@ class BytesConverter:
         # Bytes to data conversions
         self.__bytes_to_data_conversion = {bytes.__name__: lambda b: b,
                                            str.__name__: lambda b: b.decode('utf-8'),
+                                           bool.__name__: lambda b: bool(int.from_bytes(b, byteorder='big')),
                                            int.__name__: lambda b: int.from_bytes(b, byteorder='big', signed=True),
                                            float.__name__: lambda b: frombuffer(b).item(),
                                            list.__name__: lambda b, t, s: frombuffer(b).astype(t).reshape(s).tolist(),
@@ -29,7 +31,7 @@ class BytesConverter:
     def data_to_bytes(self, data):
         """
         Convert data to bytes.
-        Available types: bytes, str, signed int, float, list, array.
+        Available types: bytes, str, bool, signed int, float, list, array.
 
         :param data: Data to convert.
         :return: bytes_fields: Size of tuple in bytes, (Type, Data, *args)
@@ -59,7 +61,7 @@ class BytesConverter:
     def bytes_to_data(self, bytes_fields):
         """
         Recover data from bytes fields.
-        Available types: bytes, str, signed int, float, list, array.
+        Available types: bytes, str, bool, signed int, float, list, array.
 
         :param bytes_fields: (Type, Data, *args)
         :return: Recovered data

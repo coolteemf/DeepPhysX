@@ -66,8 +66,7 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
         param_dict = self.send_parameters()
         for key in param_dict:
             # Send the parameter (label + data)
-            await self.send_labeled_data(data_to_send=param_dict[key], label=key, loop=loop, receiver=self.sock,
-                                         do_convert=key != 'addvedo')
+            await self.send_labeled_data(data_to_send=param_dict[key], label=key, loop=loop, receiver=self.sock)
             # Tell the client to stop receiving data
         await self.send_command_done(loop=loop, receiver=self.sock)
 
@@ -173,8 +172,7 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
         loop = get_event_loop() if loop is None else loop
         receiver = self.sock if receiver is None else receiver
         check = self.checkSample()
-        await self.send_labeled_data(data_to_send=b'1' if check else b'0', label="check", loop=loop, receiver=receiver,
-                                     do_convert=False)
+        await self.send_labeled_data(data_to_send=check, label="check", loop=loop, receiver=receiver)
         if check:
             if network_input is not None:
                 await self.send_labeled_data(data_to_send=network_input, label="input", loop=loop, receiver=receiver)
@@ -192,8 +190,7 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
         receiver = self.sock if receiver is None else receiver
         check = self.checkSample()
         self.sync_send_command_read()
-        self.sync_send_labeled_data(data_to_send=b'1' if check else b'0', label="check", receiver=receiver,
-                                    do_convert=False)
+        self.sync_send_labeled_data(data_to_send=check, label="check", receiver=receiver)
         if check:
             if network_input is not None:
                 self.sync_send_command_read()

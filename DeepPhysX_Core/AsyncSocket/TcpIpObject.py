@@ -74,7 +74,7 @@ class TcpIpObject:
         """
         # Maximum read sizes array
         read_sizes = [4096, 2048, 1024, 512, 256]
-        read_size_idx = 0
+
         # Receive the number of fields to receive
         nb_bytes_fields = int.from_bytes(await loop.sock_recv(sender, 1), byteorder='big')
         bytes_fields = ()
@@ -85,6 +85,7 @@ class TcpIpObject:
             field_as_bytes = b''
             # Proceed to read chunk by chunk
             while field_size_to_read > 0:
+                read_size_idx = 0
                 # Select the good amount of bytes to read
                 while read_size_idx < len(read_sizes) and field_size_to_read < read_sizes[read_size_idx]:
                     read_size_idx += 1
@@ -101,7 +102,7 @@ class TcpIpObject:
         # Return the data in the expected format
         return self.data_converter.bytes_to_data(bytes_fields)
 
-    async def send_labeled_data(self, data_to_send, label, receiver=None, loop=None, do_convert=True, send_read_command=True):
+    async def send_labeled_data(self, data_to_send, label, receiver=None, loop=None, send_read_command=True):
         """
         Send data with an associated label.
 
@@ -117,10 +118,10 @@ class TcpIpObject:
         receiver = self.sock if receiver is None else receiver
         if send_read_command:
             await self.send_command_read()
-        await self.send_data(data_to_send=bytes(label.lower(), "utf-8"), loop=loop, receiver=receiver)
+        await self.send_data(data_to_send=label.lower(), loop=loop, receiver=receiver)
         await self.send_data(data_to_send=data_to_send, loop=loop, receiver=receiver)
 
-    async def receive_labeled_data(self, loop, sender, is_bytes_data=False):
+    async def receive_labeled_data(self, loop, sender):
         """
         Receive data and an associated label.
 
@@ -132,11 +133,9 @@ class TcpIpObject:
         """
         data = await self.receive_data(loop=loop, sender=sender)
         if data in self.command_dict.values():
-            label = (await self.receive_data(loop=loop, sender=sender)).decode("utf-8")
+            label = await self.receive_data(loop=loop, sender=sender)
         else:
-            label = data.decode("utf-8")
-        if label in ["check", "addvedo"]:
-            is_bytes_data = True
+            label = data
         data = await self.receive_data(loop=loop, sender=sender)
         return label, data
 
@@ -207,7 +206,7 @@ class TcpIpObject:
 
     # Synchronous definition of the functions
     #@launchInThread
-    def sync_send_data(self, data_to_send, receiver=None, do_convert=True):
+    def sync_send_data(self, data_to_send, receiver=None):
         """
         Send data from a TcpIpObject to another.
 
@@ -230,7 +229,7 @@ class TcpIpObject:
             receiver.sendall(field)
 
     #@launchInThread
-    def sync_receive_data(self, is_bytes_data=False):
+    def sync_receive_data(self):
         """
         Receive data from another TcpIpObject.
 
@@ -240,7 +239,6 @@ class TcpIpObject:
         """
         # Maximum read sizes array
         read_sizes = [4096, 2048, 1024, 512, 256]
-        read_size_idx = 0
         self.sock.setblocking(True)
         # Receive the number of fields to receive
         nb_bytes_fields = int.from_bytes(self.sock.recv(1), byteorder='big')
@@ -254,6 +252,7 @@ class TcpIpObject:
             field_as_bytes = b''
             # Proceed to read chunk by chunk
             while field_size_to_read > 0:
+                read_size_idx = 0
                 # Select the good amount of bytes to read
                 while read_size_idx < len(read_sizes) and field_size_to_read < read_sizes[read_size_idx]:
                     read_size_idx += 1
@@ -273,7 +272,7 @@ class TcpIpObject:
 
     # Functions below might not need the thread thingy
     #@launchInThread
-    def sync_send_labeled_data(self, data_to_send, label, receiver=None, do_convert=True, send_read_command=True):
+    def sync_send_labeled_data(self, data_to_send, label, receiver=None, send_read_command=True):
         """
         Send data with an associated label.
 
@@ -286,11 +285,11 @@ class TcpIpObject:
         """
         if send_read_command:
             self.sync_send_command_read()
-        self.sync_send_data(data_to_send=bytes(label.lower(), "utf-8"), receiver=receiver, do_convert=False)
-        self.sync_send_data(data_to_send=data_to_send, receiver=receiver, do_convert=do_convert)
+        self.sync_send_data(data_to_send=label.lower(), receiver=receiver)
+        self.sync_send_data(data_to_send=data_to_send, receiver=receiver)
 
     #@launchInThread
-    def sync_receive_labeled_data(self, is_bytes_data=False):
+    def sync_receive_labeled_data(self):
         """
         Receive data and an associated label.
 
@@ -299,14 +298,12 @@ class TcpIpObject:
                True
         :return:
         """
-        data = self.sync_receive_data(is_bytes_data=True)
+        data = self.sync_receive_data()
         if data in self.command_dict.values():
-            label = self.sync_receive_data(is_bytes_data=True).decode("utf-8")
+            label = self.sync_receive_data()
         else:
-            label = data.decode("utf-8")
-        if label == "check":
-            is_bytes_data = True
-        data = self.sync_receive_data(is_bytes_data=is_bytes_data)
+            label = data
+        data = self.sync_receive_data()
         return label, data
 
     #@launchInThread
@@ -324,10 +321,10 @@ class TcpIpObject:
         except KeyError:
             raise KeyError(f"\"{command}\" is not a valid command. Use {self.command_dict.keys()} instead.")
         # Send command as a byte data
-        self.sync_send_data(data_to_send=cmd, receiver=receiver, do_convert=False)
+        self.sync_send_data(data_to_send=cmd, receiver=receiver)
 
     def sync_listen_while_not_done(self, data_dict):
-        while self.sync_receive_data(is_bytes_data=True) != self.command_dict['done']:
+        while self.sync_receive_data() != self.command_dict['done']:
             label, param = self.sync_receive_labeled_data()
             data_dict[label] = param
 
