@@ -18,8 +18,6 @@ if __name__ == '__main__':
     # Create, init and run Tcp-Ip environment
     client = Environment(ip_address=argv[3], port=int(argv[4]), instance_id=int(argv[5]),
                          number_of_instances=int(argv[6]))
-
-    print("INIT DONE")
     client.initialize()
     client.launch()
 

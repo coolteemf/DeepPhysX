@@ -6,25 +6,36 @@ from DeepPhysX_Core.AsyncSocket.TcpIpClient import TcpIpClient
 class BaseEnvironment(TcpIpClient):
 
     def __init__(self,
-                 ip_address='localhost',
-                 port=10000,
                  instance_id=1,
                  number_of_instances=1,
                  as_tcpip_client=True,
+                 ip_address='localhost',
+                 port=10000,
                  visual_object=None,
                  environment_manager=None):
         """
         BaseEnvironment is an environment class to compute simulated data for the network and its optimization process.
 
         :param int instance_id: ID of the instance
+        :param int number_of_instances: Number of simultaneously launched instances
+        :param as_tcpip_client: Environment is own by a TcpIpClient if True, by an EnvironmentManager if False
+        :param ip_address: IP address of the TcpIpObject
+        :param port: Port number of the TcpIpObject
+        :param visual_object: VedoObject class to template visual data
+        :param environment_manager: EnvironmentManager that handles the Environment if as_tcpip_client is False
         """
-        TcpIpClient.__init__(self, ip_address=ip_address, port=port, instance_id=instance_id,
-                             number_of_instances=number_of_instances, as_tcpip_client=as_tcpip_client)
+
+        TcpIpClient.__init__(self,
+                             instance_id=instance_id,
+                             number_of_instances=number_of_instances,
+                             as_tcpip_client=as_tcpip_client,
+                             ip_address=ip_address,
+                             port=port)
+
         self.input, self.output = array([]), array([])
         self.visual_object = visual_object(visualizer=None) if visual_object is not None else None
         self.environment_manager = environment_manager
         self.sample_in, self.sample_out = None, None
-
 
     def create(self):
         """
@@ -95,10 +106,24 @@ class BaseEnvironment(TcpIpClient):
         pass
 
     def setDatasetSample(self, sample_in, sample_out):
+        """
+        Set the sample received from Dataset.
+
+        :param sample_in: Input sample
+        :param sample_out: Associated output sample
+        :return:
+        """
         self.sample_in = sample_in
         self.sample_out = sample_out
 
     def setTrainingData(self, input_array, output_array):
+        """
+        Set the training data to send to the TcpIpServer.
+
+        :param input_array: Network input
+        :param output_array: Network expected output
+        :return:
+        """
         if self.compute_essential_data:
             if self.as_tcpip_client:
                 self.sync_send_training_data(network_input=input_array, network_output=output_array)
@@ -107,6 +132,12 @@ class BaseEnvironment(TcpIpClient):
                 self.output = output_array
 
     def getPrediction(self, input_array):
+        """
+        Request a prediction from Environment.
+
+        :param input_array: Network input
+        :return:
+        """
         if self.as_tcpip_client:
             return self.sync_send_prediction_request(network_input=input_array)
         if self.environment_manager is not None:
@@ -114,6 +145,12 @@ class BaseEnvironment(TcpIpClient):
         raise ValueError(f"[{self.name}] Can't get prediction since Environment has no Manager.")
 
     def setVisualizationData(self, visu_dict):
+        """
+        Set the updated visualization data.
+
+        :param visu_dict: Dictionary containing visualization data fields
+        :return:
+        """
         if self.as_tcpip_client:
             self.sync_send_visualization_data(visu_dict)
         else:

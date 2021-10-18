@@ -25,20 +25,27 @@ class BaseEnvironmentConfig:
                  environment_file='',
                  ip_address='localhost',
                  port=10000):
-
         """
         BaseEnvironmentConfig is a configuration class to parameterize and create a BaseEnvironment for the
         EnvironmentManager.
 
         :param environment_class: Class from which an instance will be created
         :type environment_class: type[BaseEnvironment]
+        :param visual_object: Class of the visual object which template visual data
         :param int simulations_per_step: Number of iterations to compute in the Environment at each time step
         :param int max_wrong_samples_per_step: Maximum number of wrong samples to produce in a step
         :param bool always_create_data: If True, data will always be created from environment. If False, data will be
                                         created from the environment during the first epoch and then re-used from the
                                         Dataset.
         :param bool record_wrong_samples: If True, wrong samples are recorded through Visualizer
+        :param use_prediction_in_environment: If True, the prediction will always be used in the environment
+        :param param_dict: Dictionary containing specific environment parameters
+        :param as_tcpip_client: Environment is own by a TcpIpClient if True, by an EnvironmentManager if False
         :param int number_of_thread: Number of thread to run
+        :param max_client_connection: Maximum number of handled instances
+        :param environment_file: Path of the file containing the Environment class
+        :param ip_address: IP address of the TcpIpObject
+        :param port: Port number of the TcpIpObject
         """
 
         self.name = self.__class__.__name__
@@ -86,7 +93,6 @@ class BaseEnvironmentConfig:
         self.number_of_thread = min(max(number_of_thread, 1), cpu_count())  # Assert nb is between 1 and cpu_count
 
     def createServer(self, environment_manager=None, batch_size=1):
-
         """
         Create a TcpIpServer and launch TcpIpClients in subprocesses.
 
@@ -117,6 +123,7 @@ class BaseEnvironmentConfig:
     def start_server(self, server):
         """
         Start TcpIpServer.
+
         :param server: TcpIpServer
         :return:
         """
@@ -148,11 +155,15 @@ class BaseEnvironmentConfig:
 
     def createEnvironment(self, environment_manager):
         """
+        Create an Environment that will not be a TcpIpObject.
 
-        :return:
+        :param environment_manager: EnvironmentManager that handles the Environment
+        :return: Environment
         """
+        # Create instance
         environment = self.environment_class(environment_manager=environment_manager, as_tcpip_client=False,
                                              visual_object=self.visual_object)
+        # Create environment objects and initialize
         environment.create()
         environment.init()
         return environment
