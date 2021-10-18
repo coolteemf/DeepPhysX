@@ -10,7 +10,6 @@ from DeepPhysX.Example.Training_example.EnvironmentSofa import FEMBeam
 
 # DeepPhysX's Sofa imports
 from DeepPhysX_Sofa.Environment.SofaEnvironmentConfig import SofaEnvironmentConfig
-from DeepPhysX_Core.AsyncSocket.BytesNumpyConverter import BytesNumpyConverter
 
 # DeepPhysX's Pytorch imports
 from DeepPhysX_PyTorch.FC.FCConfig import FCConfig
@@ -18,10 +17,9 @@ from DeepPhysX_PyTorch.FC.FCConfig import FCConfig
 
 def createScene(root_node=None):
     env_config = SofaEnvironmentConfig(environment_class=FEMBeam,
-                                       visualizer_class=None,
+                                       visual_object=None,
                                        environment_file=sys.modules[FEMBeam.__module__].__file__,
                                        number_of_thread=int(sys.argv[1]),
-                                       socket_data_converter=BytesNumpyConverter,
                                        always_create_data=False)
 
     neurones_per_layer = 25 * 5 * 5 * 3  # Grid of size 25x5x5
