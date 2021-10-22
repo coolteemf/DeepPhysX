@@ -16,6 +16,18 @@ class SofaEnvironment(Sofa.Core.Controller, BaseEnvironment):
                  visual_object=None,
                  environment_manager=None,
                  *args, **kwargs):
+        """
+        SofaEnvironment is an environment class to compute simulated data for the network and its optimization process.
+
+        :param root_node: Sofa.Core.Node used to create the scene graph
+        :param int instance_id: ID of the instance
+        :param int number_of_instances: Number of simultaneously launched instances
+        :param as_tcpip_client: Environment is own by a TcpIpClient if True, by an EnvironmentManager if False
+        :param ip_address: IP address of the TcpIpObject
+        :param port: Port number of the TcpIpObject
+        :param visual_object: VedoObject class to template visual data
+        :param environment_manager: EnvironmentManager that handles the Environment if as_tcpip_client is False
+        """
 
         Sofa.Core.Controller.__init__(self, *args, **kwargs)
         self.root = root_node
@@ -24,28 +36,71 @@ class SofaEnvironment(Sofa.Core.Controller, BaseEnvironment):
                                  visual_object=visual_object, environment_manager=environment_manager)
 
     def create(self):
+        """
+        Create the environment given the configuration. Must be implemented by user.
+
+        :return:
+        """
         raise NotImplementedError
 
     def init(self):
+        """
+        Initialize environment.
+
+        :return:
+        """
         Sofa.Simulation.init(self.root)
 
     async def animate(self):
+        """
+        Trigger an Animation step.
+
+        :return:
+        """
         Sofa.Simulation.animate(self.root, self.root.dt.value)
 
     async def step(self):
+        """
+        Compute the number of steps specified by simulations_per_step
+
+        :return:
+        """
         await self.animate()
         await self.onStep()
 
     async def onStep(self):
+        """
+        Executed after an animation step.
+
+        :return:
+        """
         pass
 
     def checkSample(self, check_input=True, check_output=True):
+        """
+        Check if the current sample is an outlier.
+
+        :param bool check_input: True if input tensor need to be checked
+        :param bool check_output: True if output tensor need to be checked
+        :return: Current data can be used or not.
+        """
         return True
 
     def applyPrediction(self, prediction):
+        """
+        Apply network prediction in environment.
+
+        :param prediction: Prediction data
+        :return:
+        """
         pass
 
     def initVisualizer(self):
+        """
+        Init visualization data.
+
+        :return:
+        """
         pass
 
     def __str__(self):
