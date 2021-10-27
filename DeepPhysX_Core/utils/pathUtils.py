@@ -27,7 +27,8 @@ def createDir(dir_path, dir_name):
         # Get the indices of copies
         indices = [int(folder[len(deepest_repertory):]) for folder in copies_list]
         # The new copy is the max int + 1
-        new_name = basename(normpath(dir_path)) + f'_{max(indices) + 1}/'
+        max_ind = max(indices) if len(indices) > 0 else 0
+        new_name = basename(normpath(dir_path)) + f'_{max_ind + 1}/'
         dir_path = osPathJoin(parent, new_name)
         print(f"Create a new directory {dir_path} for this session.")
     makedirs(dir_path)

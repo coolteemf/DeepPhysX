@@ -28,19 +28,29 @@ class BytesConverter:
                                            list.__name__: lambda b, t, s: frombuffer(b).astype(t).reshape(s).tolist(),
                                            ndarray.__name__: lambda b, t, s: frombuffer(b).astype(t).reshape(s)}
 
-    def data_to_bytes(self, data):
+        # Size of a bytes field will be encoded on 4 bytes
+        self.size_to_bytes = lambda i: len(i).to_bytes(4, byteorder='big')
+        self.size_from_bytes = lambda b: int.from_bytes(b, byteorder='big')
+
+    def data_to_bytes(self, data, as_list=False):
         """
         Convert data to bytes.
         Available types: bytes, str, bool, signed int, float, list, array.
 
         :param data: Data to convert.
+        :param as_list: (for tests) If True, the return will be a list of bytes fields. If False, the whole bytes
+        message is returned
         :return: bytes_fields: Size of tuple in bytes, (Type, Data, *args)
         """
 
+        # Store the sizes of the bytes fields, sizes will have a constant number of 4 bytes
+        sizes = ()
         # Convert the type of 'data' from str to bytes
         type_data = self.__data_to_bytes_conversion[str](type(data).__name__)
+        sizes += (self.size_to_bytes(type_data),)
         # Convert 'data' to bytes
         data_bytes = self.__data_to_bytes_conversion[type(data)](data)
+        sizes += (self.size_to_bytes(data_bytes),)
 
         # Additional arguments
         args = ()
@@ -49,14 +59,27 @@ class BytesConverter:
             # Get python native datatype of array
             dtype = type(zeros(1, dtype=array(data).dtype).item()).__name__
             # Convert datatype of array from str to bytes
-            args += (self.__data_to_bytes_conversion[str](dtype),)
+            dtype_bytes = self.__data_to_bytes_conversion[str](dtype)
+            args += (dtype_bytes,)
+            sizes += (self.size_to_bytes(dtype_bytes),)
             # Convert data shape from array to bytes
-            args += (self.__data_to_bytes_conversion[ndarray](array(data).shape),)
+            shape_bytes = self.__data_to_bytes_conversion[ndarray](array(data).shape)
+            args += (shape_bytes,)
+            sizes += (self.size_to_bytes(shape_bytes),)
 
         # Convert the number of bytes fields to bytes
-        size = self.__data_to_bytes_conversion[int](2 + len(args))
+        nb_fields = self.__data_to_bytes_conversion[int](2 + len(args))
 
-        return size, (type_data, data_bytes, *args)
+        # Gather all bytes fields in the desired order
+        fields = [nb_fields, *sizes, type_data, data_bytes, *args]
+        if as_list:
+            return fields
+
+        # Concatenate bytes fields
+        bytes_message = fields[0]
+        for f in fields[1:]:
+            bytes_message += f
+        return bytes_message
 
     def bytes_to_data(self, bytes_fields):
         """
