@@ -102,7 +102,8 @@ class BaseEnvironmentConfig:
         """
         # Create server
         server = TcpIpServer(max_client_count=self.max_client_connections, batch_size=batch_size,
-                             nb_client=self.number_of_thread, manager=environment_manager)
+                             nb_client=self.number_of_thread, manager=environment_manager,
+                             ip_address=self.ip_address, port=self.port)
 
         server_thread = Thread(target=self.start_server, args=(server,))
         server_thread.start()
