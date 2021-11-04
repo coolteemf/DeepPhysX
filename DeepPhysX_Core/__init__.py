@@ -8,7 +8,12 @@ for rootdir, dirs, files in walk(current_absolute_path):
         for file in files:
             if "pyc" not in file and file != "__init__.py":
                 splitted_path = str(rootdir).split(sep)
-                main_lib = splitted_path[-2]        # DeepPhysX_Core
-                sub_lib = splitted_path[-1]         # Pipeline, utils, Network...
-                filename = str(file).split(".")[0]  # BaseNetwork, TcpIpClient, DatasetManager...
-                exec(f"from {main_lib}.{sub_lib}.{filename} import *")
+                # additiv process to include anything below DeepPhysX_Core
+                import_path = f""
+                for lib in splitted_path[::-1]:
+                    if 'DeepPhysX_Core' == lib:
+                        filename = str(file).split(".")[0]  # BaseNetwork, TcpIpClient, DatasetManager...
+                        print(f"from {lib}.{import_path}{filename} import *")
+                        exec(f"from {lib}.{import_path}{filename} import *")
+                        break
+                    import_path = f"{lib}." + import_path

@@ -5,11 +5,9 @@ import torch
 # DeepPhysX's Core imports
 from DeepPhysX_Core import BaseDatasetConfig
 from DeepPhysX_Core import BaseTrainer
-from DeepPhysX.Example.Mean_training.Producer import MeanEnvironment as Environment
-
-# DeepPhysX's Sofa imports
 from DeepPhysX_Core import BaseEnvironmentConfig
 from DeepPhysX_Core import BytesNumpyConverter
+from DeepPhysX.Example.Mean_training.Producer import MeanEnvironment as Environment
 
 # DeepPhysX's Pytorch imports
 from DeepPhysX_PyTorch import FCConfig
