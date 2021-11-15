@@ -121,8 +121,8 @@ class TcpIpObject:
         loop = get_event_loop() if loop is None else loop
         receiver = self.sock if receiver is None else receiver
         if send_read_command:
-            await self.send_command_read()
-        await self.send_data(data_to_send=label.lower(), loop=loop, receiver=receiver)
+            await self.send_command_read(loop=loop, receiver=receiver)
+        await self.send_data(data_to_send=label, loop=loop, receiver=receiver)
         await self.send_data(data_to_send=data_to_send, loop=loop, receiver=receiver)
 
     async def receive_labeled_data(self, loop, sender):
@@ -140,6 +140,33 @@ class TcpIpObject:
             label = data
         data = await self.receive_data(loop=loop, sender=sender)
         return label, data
+
+    async def send_dict_data(self, dict_data, receiver=None, loop=None):
+        """
+        Send a dictionary item by item.
+
+        :param dict_data: Dict of data that will be sent on socket.
+        :param receiver: TcpIpObject receiver.
+        :param loop: asyncio.get_event_loop() return
+        :return:
+        """
+        for field in dict_data.keys():
+            await self.send_labeled_data(data_to_send=dict_data[field], label=field, receiver=receiver, loop=loop)
+        await self.send_command_done(loop=loop, receiver=receiver)
+
+    async def receive_dict_data(self, loop, sender):
+        """
+        Receive a dictionary item by item.
+
+        :param loop: asyncio.get_event_loop() return
+        :param sender: TcpIpObject sender
+        :return:
+        """
+        dict_data = {}
+        while await self.receive_data(loop=loop, sender=sender) != self.command_dict['done']:
+            label, data = await self.receive_labeled_data(loop=loop, sender=sender)
+            dict_data[label] = data
+        return dict_data
 
     async def send_command(self, loop, receiver, command=''):
         """
@@ -260,7 +287,7 @@ class TcpIpObject:
         """
         if send_read_command:
             self.sync_send_command_read()
-        self.sync_send_data(data_to_send=label.lower(), receiver=receiver)
+        self.sync_send_data(data_to_send=label, receiver=receiver)
         self.sync_send_data(data_to_send=data_to_send, receiver=receiver)
 
     #@launchInThread
@@ -277,6 +304,31 @@ class TcpIpObject:
             label = data
         data = self.sync_receive_data()
         return label, data
+
+    def sync_send_dict_data(self, dict_data, receiver=None):
+        """
+        Send a dictionary item by item.
+
+        :param dict_data:
+        :param receiver:
+        :return:
+        """
+        for field in dict_data.keys():
+            self.sync_send_labeled_data(data_to_send=dict_data[field], label=field, receiver=receiver,
+                                        send_read_command=True)
+        self.sync_send_command_done()
+
+    def sync_receive_dict_data(self):
+        """
+        Receive a dictionary item by item.
+
+        :return:
+        """
+        dict_data = {}
+        while self.sync_receive_data() != self.command_dict['done']:
+            label, data = self.sync_receive_labeled_data()
+            dict_data[label] = data
+        return dict_data
 
     #@launchInThread
     def sync_send_command(self, receiver, command=''):

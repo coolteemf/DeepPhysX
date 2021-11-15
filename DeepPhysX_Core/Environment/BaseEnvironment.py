@@ -36,6 +36,7 @@ class BaseEnvironment(TcpIpClient):
         self.visual_object = visual_object(visualizer=None) if visual_object is not None else None
         self.environment_manager = environment_manager
         self.sample_in, self.sample_out = None, None
+        self.loss_data = None
 
     def create(self):
         """
@@ -96,6 +97,9 @@ class BaseEnvironment(TcpIpClient):
         """
         return {}
 
+    def send_visualization(self):
+        return {}
+
     def applyPrediction(self, prediction):
         """
         Apply network prediction in environment.
@@ -105,16 +109,20 @@ class BaseEnvironment(TcpIpClient):
         """
         pass
 
-    def setDatasetSample(self, sample_in, sample_out):
+    def setDatasetSample(self, sample_in, sample_out, additional_in=None, additional_out=None):
         """
         Set the sample received from Dataset.
 
+        :param additional_out:
+        :param additional_in:
         :param sample_in: Input sample
         :param sample_out: Associated output sample
         :return:
         """
         self.sample_in = sample_in
         self.sample_out = sample_out
+        self.additional_inputs = additional_in
+        self.additional_outputs = additional_out
 
     def setTrainingData(self, input_array, output_array):
         """
@@ -130,6 +138,40 @@ class BaseEnvironment(TcpIpClient):
             else:
                 self.input = input_array
                 self.output = output_array
+                # Todo: same without server
+
+    def setLossData(self, loss_data):
+        """
+        Set the loss data to send to the TcpIpServer.
+
+        :param loss_data: Optional data to compute loss.
+        :return:
+        """
+        if self.compute_essential_data:
+            if self.as_tcpip_client:
+                self.sync_send_labeled_data(loss_data, 'loss')
+            else:
+                self.loss_data = loss_data
+
+    def additionalInDataset(self, label, data_array):
+        """
+        Set additional input data fields to store in the dataset.
+
+        :param str label: Name of the data field
+        :param data_array: Data to store
+        :return:
+        """
+        self.additional_inputs[label] = data_array
+
+    def additionalOutDataset(self, label, data_array):
+        """
+        Set additional output data fields to store in the dataset.
+
+        :param str label: Name of the data field
+        :param data_array: Data to store
+        :return:
+        """
+        self.additional_outputs[label] = data_array
 
     def getPrediction(self, input_array):
         """

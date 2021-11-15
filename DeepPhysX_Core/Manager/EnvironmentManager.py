@@ -1,4 +1,5 @@
 from numpy import array, empty, concatenate
+from asyncio import run
 from DeepPhysX_Core.Manager.VisualizerManager import VisualizerManager
 
 
@@ -45,6 +46,7 @@ class EnvironmentManager:
         self.max_wrong_samples_per_step = environment_config.max_wrong_samples_per_step
 
         self.prediction_requested = False
+        self.dataset_batch = None
 
     def getDataManager(self):
         """
@@ -96,13 +98,15 @@ class EnvironmentManager:
         batch, data_dict = self.server.getBatch(get_inputs, get_outputs, animate)
         # if self.visualizer_manager is not None:
         #     self.visualizer_manager.updateFromBatch(data_dict)
-
         training_data = {'input': array(batch[0]) if get_inputs else array([]),
                          'output': array(batch[1]) if get_outputs else array([])}
+        for key in ['dataset_in', 'dataset_out']:
+            for field in data_dict[key]:
+                data_dict[key][field] = array(data_dict[key][field])
+            training_data[key] = data_dict[key]
 
         if 'loss' in data_dict:
             training_data['loss'] = data_dict['loss']
-
         return training_data
 
     def getDataFromEnvironment(self, get_inputs, get_outputs, animate):
@@ -115,38 +119,78 @@ class EnvironmentManager:
         :return: Dictionary containing all labeled data sent by the clients in their own dictionary + in and out key
         corresponding to the batch
         """
-        inputs = empty((0, *self.environment.input_size)) if get_inputs else array([])
-        input_condition = lambda input_array: input_array.shape[0] < self.batch_size if get_inputs else lambda _: False
-        outputs = empty((0, *self.environment.output_size)) if get_outputs else array([])
-        output_condition = lambda output_array: output_array.shape[0] < self.batch_size if get_outputs else lambda _: False
+        inputs, outputs = [], []
+        input_condition = lambda x: len(x) < self.batch_size if get_inputs else lambda _: False
+        output_condition = lambda x: len(x) < self.batch_size if get_outputs else lambda _: False
         data_dict = {}
-
+        # Produce batch
         while input_condition(inputs) and output_condition(outputs):
             self.prediction_requested = False
+
+            if self.dataset_batch is not None:
+                sample_in = self.dataset_batch['input'][0]
+                self.dataset_batch['input'] = self.dataset_batch['input'][1:]
+                sample_out = self.dataset_batch['output'][0]
+                self.dataset_batch['output'] = self.dataset_batch['output'][1:]
+                additional_in, additional_out = None, None
+                if 'dataset_in' in self.dataset_batch:
+                    additional_in = {}
+                    for field in self.dataset_batch['dataset_in']:
+                        additional_in[field] = self.dataset_batch['dataset_in'][field][0]
+                        self.dataset_batch['dataset_in'][field] = self.dataset_batch['dataset_in'][field][1:]
+                if 'dataset_out' in self.dataset_batch:
+                    additional_out = {}
+                    for field in self.dataset_batch['dataset_out']:
+                        additional_out[field] = self.dataset_batch['dataset_out'][field][0]
+                        self.dataset_batch['dataset_out'][field] = self.dataset_batch['dataset_out'][field][1:]
+                self.environment.setDatasetSample(sample_in, sample_out, additional_in, additional_out)
+
             if animate:
                 for current_step in range(self.simulations_per_step):
                     if current_step != self.simulations_per_step - 1:
                         self.environment.compute_essential_data = False
-                        self.environment.step()
+                        run(self.environment.step())
                     else:
                         self.environment.compute_essential_data = True
-                        self.environment.step()
+                        run(self.environment.step())
+
             if self.environment.checkSample() or not self.train:
+                # Network's input
                 if get_inputs:
-                    inputs = concatenate((inputs, self.environment.input[None, :]))
+                    inputs.append(self.environment.input)
+                # Network's output
                 if get_outputs:
-                    outputs = concatenate((outputs, self.environment.output[None, :]))
-                # received_data_dict = self.environment.data_dict
-                # for key in received_data_dict:
-                #     data_dict[key] = concatenate((data_dict[key], received_data_dict[key][None, :])) \
-                #         if key in data_dict else array([received_data_dict[key]])
-            else:
-                # Record wrong sample
-                # if self.data_manager is not None and self.data_manager.visualizer_manager is not None:
-                #     self.data_manager.visualizer_manager.saveSample(self.session_dir)
-                pass
-        training_data = {'input': inputs,
-                         'output': outputs}
+                    outputs.append(self.environment.output)
+                # Check if there is loss data
+                if self.environment.loss_data is not None:
+                    if 'loss' not in data_dict:
+                        data_dict['loss'] = []
+                    data_dict['loss'].append(self.environment.loss_data)
+                # Check if there is additional input data fields
+                if self.environment.additional_inputs != {}:
+                    if 'dataset_in' not in data_dict:
+                        data_dict['dataset_in'] = {}
+                    for field in self.environment.additional_inputs:
+                        if field not in data_dict['dataset_in']:
+                            data_dict['dataset_in'][field] = []
+                        data_dict['dataset_in'][field].append(self.environment.additional_inputs[field])
+                # Check if there is additional output data fields
+                if self.environment.additional_outputs != {}:
+                    if 'dataset_out' not in data_dict:
+                        data_dict['dataset_out'] = {}
+                    for field in self.environment.additional_outputs:
+                        if field not in data_dict['dataset_out']:
+                            data_dict['dataset_out'][field] = []
+                        data_dict['dataset_out'][field].append(self.environment.additional_outputs[field])
+        # Convert network data
+        training_data = {'input': array(inputs),
+                         'output': array(outputs)}
+        # Convert additional data
+        for key in ['dataset_in', 'dataset_out']:
+            for field in data_dict[key]:
+                data_dict[key][field] = array(data_dict[key][field])
+            training_data[key] = data_dict[key]
+        # Convert loss data
         if 'loss' in data_dict.keys():
             training_data['loss'] = data_dict['loss']
         return training_data
@@ -190,8 +234,11 @@ class EnvironmentManager:
         :param batch: Batch of samples.
         :return: Batch of training data.
         """
-        self.server.setDatasetBatch(batch)
-        return self.getData(get_inputs=False, get_outputs=False, animate=True)
+        if self.server:
+            self.server.setDatasetBatch(batch)
+        if self.environment:
+            self.dataset_batch = batch
+        return self.getData(animate=True)
 
     def close(self):
         """

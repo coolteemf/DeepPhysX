@@ -152,7 +152,14 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
         elif command == b'samp':
             sample_in = await self.receive_data(loop=loop, sender=server)
             sample_out = await self.receive_data(loop=loop, sender=server)
-            self.setDatasetSample(sample_in, sample_out)
+            additional_in, additional_out = None, None
+            # Is there other in fields ?
+            if await self.receive_data(loop=loop, sender=server):
+                additional_in = await self.receive_dict_data(loop=loop, sender=server)
+            # Is there other out fields ?
+            if await self.receive_data(loop=loop, sender=server):
+                additional_out = await self.receive_dict_data(loop=loop, sender=server)
+            self.setDatasetSample(sample_in, sample_out, additional_in, additional_out)
 
     async def __close(self):
         """
@@ -229,6 +236,13 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
             # Send network output
             if network_output is not None:
                 await self.send_labeled_data(data_to_send=network_output, label="output", loop=loop, receiver=receiver)
+            # Send additional data
+            for key in self.additional_inputs.keys():
+                await self.send_labeled_data(data_to_send=self.additional_inputs[key], label='dataset_in'+key,
+                                             loop=loop, receiver=receiver)
+            for key in self.additional_outputs.keys():
+                await self.send_labeled_data(data_to_send=self.additional_outputs[key], label='dataset_out'+key,
+                                             loop=loop, receiver=receiver)
 
     def sync_send_training_data(self, network_input=None, network_output=None, receiver=None):
         """
@@ -251,6 +265,13 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
             # Send network output
             if network_output is not None:
                 self.sync_send_labeled_data(data_to_send=network_output, label="output", receiver=receiver)
+            # Send additional data
+            for key in self.additional_inputs.keys():
+                self.sync_send_labeled_data(data_to_send=self.additional_inputs[key], label='dataset_in'+key,
+                                            receiver=receiver)
+            for key in self.additional_outputs.keys():
+                self.sync_send_labeled_data(data_to_send=self.additional_outputs[key], label='dataset_out'+key,
+                                            receiver=receiver)
 
     def sync_send_prediction_request(self, network_input=None, receiver=None):
         """

@@ -23,6 +23,7 @@ def createDir(dir_path, dir_name):
         copies_list = [folder for folder in listdir(parent) if
                        isdir(osPathJoin(parent, folder)) and
                        folder.__contains__(deepest_repertory) and
+                       folder.find(deepest_repertory) == 0 and
                        len(folder) in [len(deepest_repertory) + i for i in range(1, 4)]]
         # Get the indices of copies
         indices = [int(folder[len(deepest_repertory):]) for folder in copies_list]

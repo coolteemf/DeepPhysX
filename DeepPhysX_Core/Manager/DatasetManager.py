@@ -25,13 +25,15 @@ class DatasetManager:
         :param BaseDatasetConfig dataset_config: Specialisation containing the parameters of the dataset manager
         :param DataManager data_manager: DataManager that handles the DatasetManager
         :param str session_name: Name of the newly created directory if session_dir is not defined
-        :param str session_dir: Name of the directory in which to write all of the neccesary data
+        :param str session_dir: Name of the directory in which to write all of the necessary data
         :param bool new_session: Define the creation of new directories to store data
         :param bool train: True if this session is a network training
         :param dict record_data: Format {\'in\': bool, \'out\': bool} save the tensor when bool is True
         """
+
         self.name = self.__class__.__name__
         self.data_manager = data_manager
+
         # Checking arguments
         if dataset_config is not None and not isinstance(dataset_config, BaseDatasetConfig):
             raise TypeError(f"[{self.name}] The dataset config must be a BaseDatasetConfig object.")
@@ -60,7 +62,6 @@ class DatasetManager:
 
         # Partition variables
         self.modes = {'Training': 0, 'Validation': 1, 'Running': 2}
-
         self.mode = self.modes['Training'] if train else self.modes['Running']
         self.last_loaded_dataset_mode = self.mode
         self.partitions_templates = (session_name + '_training_{}_{}.npy',
@@ -69,16 +70,23 @@ class DatasetManager:
         self.partitions_list_files = ('Training_partitions.txt',
                                       'Validation_partitions.txt',
                                       'Running_partitions.txt')
-        self.list_in_partitions = [[], [], []] if self.record_data['input'] else None
-        self.list_out_partitions = [[], [], []] if self.record_data['output'] else None
+        self.fields = {'IN': ['input'], 'OUT': ['output']}
+
+        self.list_partitions = {'input': [[], [], []] if self.record_data['input'] else None,
+                                'output': [[], [], []] if self.record_data['output'] else None}
         self.idx_partitions = [0, 0, 0]
-        self.current_in_partition_name, self.current_out_partition_name = None, None
-        self.current_in_partition, self.current_out_partition = None, None
+        self.current_partition_path = {'input': None, 'output': None}
+        self.current_partition_file = {'input': None, 'output': None}
+
         self.saved = True
+        self.first_add = True
+
+        self.read_list_path = {field: [] for field in self.fields['IN'] + self.fields['OUT']}
+        self.read_list_file, self.read_sizes, self.read_loaded = {}, {}, {}
+        self.read_end_partitions = {field: [] for field in self.fields['IN'] + self.fields['OUT']}
 
         # Init dataset directories
-        self.session_dir = session_dir if session_dir is not None else osPathJoin(getFirstCaller(),
-                                                                                    session_name)
+        self.session_dir = session_dir if session_dir is not None else osPathJoin(getFirstCaller(), session_name)
         dataset_dir = dataset_config.dataset_dir
         self.new_session = new_session
         # Training
@@ -119,28 +127,46 @@ class DatasetManager:
 
         :return:
         """
-        # Create in and out partitions
+        # Open the file containing the list of partitions files for the current mode
         print(f"New Partition: A new partition has been created with max size ~{float(self.max_size) / 1e9}Gb")
         file = osPathJoin(self.dataset_dir, self.partitions_list_files[self.mode])
         partitions_list_file = open(file, 'a')
-
-        if self.record_data['input']:
-            current_part_in = self.partitions_templates[self.mode].format('IN', self.idx_partitions[self.mode])
-            print(f"               Inputs: {self.dataset_dir + current_part_in}")
-            self.list_in_partitions[self.mode].append(current_part_in)
-            partitions_list_file.write(current_part_in + '\n')
-            self.current_in_partition_name = self.dataset_dir + current_part_in
-            self.current_in_partition = open(self.current_in_partition_name, 'ab')
-
-        if self.record_data['output']:
-            current_part_out = self.partitions_templates[self.mode].format('OUT', self.idx_partitions[self.mode])
-            print(f"               Outputs: {self.dataset_dir + current_part_out}")
-            self.list_out_partitions[self.mode].append(current_part_out)
-            partitions_list_file.write(current_part_out + '\n')
-            self.current_out_partition_name = self.dataset_dir + current_part_out
-            self.current_out_partition = open(self.current_out_partition_name, 'ab')
+        # Loop on all the registered data fields
+        for side in self.fields:
+            for field in self.fields[side]:
+                if self.record_data[field]:
+                    name = side if field in ['input', 'output'] else field
+                    partition_name = self.partitions_templates[self.mode].format(name, self.idx_partitions[self.mode])
+                    print(f"               {'In' if side == 'IN' else 'Out'}puts: {self.dataset_dir + partition_name}")
+                    self.list_partitions[field][self.mode].append(partition_name)
+                    partitions_list_file.write(partition_name + '\n')
+                    self.current_partition_path[field] = self.dataset_dir + partition_name
+                    self.current_partition_file[field] = open(self.current_partition_path[field], 'ab')
 
         self.idx_partitions[self.mode] += 1
+        partitions_list_file.close()
+
+    def register_new_field(self, side, field):
+        """
+        Add a new data field in the dataset.
+
+        :param side: Either 'IN' side or 'OUT' side of the dataset
+        :param field: Name of the new field
+        :return:
+        """
+        # Register new field
+        self.fields[side].append(field)
+        self.list_partitions[field] = [[], [], []]
+        self.record_data[field] = True
+        # Open the file containing the list of partitions files for the current mode
+        file = osPathJoin(self.dataset_dir, self.partitions_list_files[self.mode])
+        partitions_list_file = open(file, 'a')
+        # Create partition for the new field
+        partition_name = self.partitions_templates[self.mode].format(field, self.idx_partitions[self.mode] - 1)
+        self.list_partitions[field][self.mode].append(partition_name)
+        partitions_list_file.write(partition_name + '\n')
+        self.current_partition_path[field] = self.dataset_dir + partition_name
+        self.current_partition_file[field] = open(self.current_partition_path[field], 'ab')
         partitions_list_file.close()
 
     def createRunningPartitions(self):
@@ -211,14 +237,31 @@ class DatasetManager:
                 reader = open(self.dataset_dir + partitions_list_file[0])
                 partitions_list = reader.read().splitlines()
                 reader.close()
-            # Add partitions to lists
-            nb_parts = len(partitions_list)
-            partitions_in = sorted([f for f in partitions_list if f.__contains__('IN')])
-            partitions_out = sorted([f for f in partitions_list if f.__contains__('OUT')])
-            if nb_parts != len(partitions_in) + len(partitions_out):
-                raise ValueError(f"[{self.name}] The number of partitions is ambiguous.")
-            self.list_in_partitions[self.modes[mode]] = partitions_in
-            self.list_out_partitions[self.modes[mode]] = partitions_out
+            # Split partitions in sides
+            in_partitions = sorted([file for file in partitions_list if file.__contains__('_IN_')])
+            out_partitions = sorted([file for file in partitions_list if file.__contains__('_OUT_')])
+            # Classify by field
+            for side, side_partitions, network_field in zip(['IN', 'OUT'], [in_partitions, out_partitions],
+                                                            ['input', 'output']):
+                for partition in side_partitions:
+                    split_name = partition.split('_')
+                    indicators = split_name[split_name.index(side) + 1:]
+                    # One indicator: index of a partition for a network input
+                    if len(indicators) == 1:
+                        self.list_partitions[network_field][self.modes[mode]].append(partition)
+                    # More than one indicator: field name + index for an additional input
+                    else:
+                        field_name = side
+                        for ind in indicators[:-1]:
+                            field_name += '_' + ind
+                        self.register_new_field(side=side, field=field_name)
+                        self.list_partitions[field_name][self.modes[mode]].append(partition)
+            # Check that the number of partitions is the same for each field
+            number_of_partitions = len(self.list_partitions[self.fields['IN'][0]][self.modes[mode]])
+            for field in self.fields['IN'] + self.fields['OUT']:
+                if len(self.list_partitions[field][self.modes[mode]]) != number_of_partitions:
+                    raise ValueError(f"[{self.name}] The number of partitions is different for {field} with "
+                                     f"{len(self.list_partitions[field][self.modes[mode]])} partitions found.")
 
     def requireEnvironment(self):
         """
@@ -227,31 +270,59 @@ class DatasetManager:
         :return: True if need to compute a new sample
         """
         # self.new_session or
-        return self.new_session or len(self.list_in_partitions[0]) > len(self.list_out_partitions[0]) or \
-               len(self.list_in_partitions[1]) > len(self.list_out_partitions[1]) or \
-               len(self.list_in_partitions[2]) > len(self.list_out_partitions[2])
+        return self.new_session or \
+               len(self.list_partitions['input'][0]) > len(self.list_partitions['output'][0]) or \
+               len(self.list_partitions['input'][1]) > len(self.list_partitions['output'][1]) or \
+               len(self.list_partitions['input'][2]) > len(self.list_partitions['output'][2])
 
     def addData(self, data):
         """
         Push the data in the dataset. If max size is reached generate a new partition and write into it.
 
-        :param dict data: Format {'input':numpy.ndarray, 'output':numpy.ndarray}  contain in 'input' input tensors and in
-        'output' output tensors.
+        :param dict data: Format {'input':numpy.ndarray, 'output':numpy.ndarray}  contain in 'input' input tensors and
+        in 'output' output tensors.
 
         :return:
         """
         self.saved = False
-        # 1. Adding data to dataset
-        if self.record_data['input']:
-            self.dataset.add('input', data['input'], self.current_in_partition)
-        if self.record_data['output']:
-            self.dataset.add('output', data['output'], self.current_out_partition)
-        # 2. Check the size of the dataset (input + output) (if only input, consider the virtual size of the output)
-        max_size = self.max_size if self.record_data['input'] and self.record_data['output'] else self.max_size / 2
-        if self.dataset.memory_size() > max_size:
+        # 1. Adding network data to dataset
+        for field in ['input', 'output']:
+            if self.record_data[field]:
+                self.dataset.add(field, data[field], self.current_partition_file[field])
+        # 2. Add additional dataset
+        for side, key in zip(['IN', 'OUT'], ['dataset_in', 'dataset_out']):
+            additional_data = {}
+            for field in data[key].keys():
+                additional_data[side + '_' + field] = data[key][field]
+            if additional_data != {}:
+                self.add_additionalData(side, additional_data)
+        self.first_add = False
+        # 3. Check the size of the dataset (input + output) (if only input, consider the virtual size of the output)
+        if self.dataset.memory_size() > self.max_size:
             self.saveData()
             self.createNewPartitions()
             self.dataset.reset()
+
+    def add_additionalData(self, side, additional_data):
+        """
+        Push an additional data in the dataset.
+
+        :param side: Either 'IN' side or 'OUT' side of the dataset
+        :param additional_data: Batch of additional dataset
+        :return:
+        """
+        # If partitions exists other than in / out, check that a sample is given for each additional partition
+        if len(self.fields[side][1:]) > 0 and not self.first_add:
+            for field in self.fields[side][1:]:
+                if field not in additional_data:
+                    raise ValueError(f"[{self.name}] No data received for the additional dataset field {field}.")
+        # Add data for each field
+        for field in additional_data:
+            # First time, key does not exists
+            if field not in self.fields['IN'][1:] + self.fields['OUT'][1:]:
+                self.register_new_field(side, field)
+            # Add data to field
+            self.dataset.add(field, additional_data[field], self.current_partition_file[field])
 
     def saveData(self):
         """
@@ -259,10 +330,9 @@ class DatasetManager:
 
         :return:
         """
-
         self.saved = True
-        self.current_in_partition.close()
-        self.current_out_partition.close()
+        for field in self.current_partition_file.keys():
+            self.current_partition_file[field].close()
 
     def setMode(self, mode):
         """
@@ -298,22 +368,16 @@ class DatasetManager:
 
         :return:
         """
-        # Input
-        self.current_in_partition_name = self.dataset_dir + self.list_in_partitions[self.mode][-1]
-        with open(self.current_in_partition_name, 'rb') as in_file:
-            in_size = fstat(in_file.fileno()).st_size
-            while self.dataset.data_in.nbytes < in_size:
-                in_size -= 128  # Each array takes 128 extra bytes in memory
-                data_in = load(in_file)
-                self.dataset.load('input', data_in)
-        # Output
-        self.current_out_partition_name = self.dataset_dir + self.list_out_partitions[self.mode][-1]
-        with open(self.current_out_partition_name, 'rb') as out_file:
-            out_size = fstat(out_file.fileno()).st_size
-            while self.dataset.data_out.nbytes < out_size:
-                out_size -= 128  # Each array takes 128 extra bytes in memory
-                data_out = load(out_file)
-                self.dataset.load('output', data_out)
+        # Load last created partition for each data field
+        for field in self.fields['IN'] + self.fields['OUT']:
+            # Get the path of he partition
+            self.current_partition_path[field] = self.dataset_dir + self.list_partitions[field][self.mode][-1]
+            with open(self.current_partition_path[field], 'rb') as file:
+                size = fstat(file.fileno()).st_size
+                while self.dataset.memory_size(field) < size:
+                    size -= 128  # Each array takes 128 extra bytes in memory
+                    data = load(file)
+                    self.dataset.add(field, array([data]))
 
     def getData(self, get_inputs, get_outputs, batch_size=1, batched=True, force_partition_reload=False):
         """
@@ -327,7 +391,9 @@ class DatasetManager:
 
         :return: dict of format {'input':numpy.ndarray, 'output':numpy.ndarray} filled with desired data
         """
-        if self.current_in_partition_name is None or self.dataset.current_sample >= len(self.dataset.data_in):
+        # Check if at least input field is loaded
+        if self.current_partition_path['input'] is None or self.dataset.current_sample >= len(
+                self.dataset.data['input']):
             if not force_partition_reload:
                 return None
             self.loadPartitions()
@@ -335,15 +401,25 @@ class DatasetManager:
                 self.dataset.shuffle()
             self.dataset.current_sample = 0
         idx = self.dataset.current_sample
-        data = {'input': array([]), 'output': array([])}
-        if get_inputs:
-            data['input'] = self.dataset.getInputBatch(idx, idx + batch_size).reshape((-1, *self.dataset.in_shape))
-            if not batched:
-                data['input'] = squeeze(data['input'], axis=0)
-        if get_outputs:
-            data['output'] = self.dataset.getOutputBatch(idx, idx + batch_size).reshape((-1, *self.dataset.out_shape))
-            if not batched:
-                data['output'] = squeeze(data['output'], axis=0)
+        data = {}
+        # Get batch for each input / output field
+        fields = self.fields['IN'][:] if get_inputs else []
+        fields += self.fields['OUT'][:] if get_outputs else []
+        # Get data for each additional field
+        for field in fields:
+            if field in ['input', 'output']:
+                data[field] = self.dataset.get(field, idx, idx + batch_size)
+                if not batched:
+                    data[field] = squeeze(data[field], axis=0)
+            else:
+                side = 'dataset_in' if field[:3] == 'IN_' else 'dataset_out'
+                if side not in data.keys():
+                    data[side] = {}
+                user_field = field[3:] if side == 'dataset_in' else field[4:]
+                data[side][user_field] = self.dataset.get(field, idx, idx + batch_size)
+                if not batched:
+                    data[side][user_field] = squeeze(data[side][user_field], axis=0)
+        # Index dataset
         self.dataset.current_sample += batch_size
         return data
 
@@ -379,28 +455,30 @@ class DatasetManager:
 
         :return:
         """
-        if self.last_loaded_dataset_mode == self.mode and len(self.list_in_partitions[self.mode]) == 1:
+        # If there is only one partition for the current mode for input field at least, don't need to reload it
+        if self.last_loaded_dataset_mode == self.mode and len(self.list_partitions['input'][self.mode]) == 1:
             print("LOAD PARTITION SKIP")
             return
-
+        # Otherwise reload partitions
         self.dataset.reset()
         # Testing mode
         if self.mode == self.modes['Validation']:
-            if len(self.list_in_partitions[self.mode]) == 0:
+            # Check if some partitions exist for this mode for input field at least
+            if len(self.list_partitions['input'][self.mode]) == 0:
                 raise ValueError(f"[{self.name}] No partitions to read for testing mode.")
-            elif len(self.list_in_partitions[self.mode]) == 1:
+            elif len(self.list_partitions['input'][self.mode]) == 1:
                 self.loadLastPartitions()
             else:
                 self.loadMultiplePartitions([self.mode])
         # Training mode, loadPartition not called in running mode
         else:
             # Mixed dataset
-            if len(self.list_in_partitions[self.modes['Running']]) > 0:
+            if len(self.list_partitions['input'][self.modes['Running']]) > 0:
                 self.loadMultiplePartitions([self.modes['Training'], self.modes['Running']])
             else:
-                if len(self.list_in_partitions[self.mode]) == 0:
+                if len(self.list_partitions['input'][self.mode]) == 0:
                     raise ValueError("[{}] No partitions to read for training mode.")
-                elif len(self.list_in_partitions[self.mode]) == 1:
+                elif len(self.list_partitions['input'][self.mode]) == 1:
                     self.loadLastPartitions()
                 else:
                     self.loadMultiplePartitions([self.mode])
@@ -408,42 +486,55 @@ class DatasetManager:
     def loadMultiplePartitions(self, modes):
         """
         Specialisation of the loadPartitions function. It can load a list of partitions
-        :param int modes: Recommended to use datasetManager.modes['name_of_desired_mode'] in order to correctly load
+
+        :param list modes: Recommended to use datasetManager.modes['name_of_desired_mode'] in order to correctly load
         the dataset
+        :return:
+        """
+        if self.endReadPartitions():
+            self.read_list_path = {field: [] for field in self.fields['IN'] + self.fields['OUT']}
+            self.read_list_file, self.read_sizes, self.read_loaded = {}, {}, {}
+            self.read_end_partitions = {field: [] for field in self.fields['IN'] + self.fields['OUT']}
+            # Open all partitions, get sizes before to load in the dataset
+            for field in self.fields['IN'] + self.fields['OUT']:
+                for mode in modes:
+                    self.read_list_path[field] += [self.dataset_dir + partition for partition in self.list_partitions[field][mode]]
+                self.read_list_file[field] = [open(path, 'rb') for path in self.read_list_path[field]]
+                self.read_sizes[field] = [stat(file.fileno()).st_size for file in self.read_list_file[field]]
+                self.read_loaded[field] = [0.] * len(self.read_list_file[field])
+                self.read_end_partitions[field] = [False for _ in self.read_list_path[field]]
+        self.readMultiplePartitions()
+            
+    def readMultiplePartitions(self):
+        """
+        Read data in a list of partitions.
 
         :return:
         """
-        in_filenames, out_filenames = [], []
-        for mode in modes:
-            in_filenames += [self.dataset_dir + partition for partition in self.list_in_partitions[mode]]
-            out_filenames += [self.dataset_dir + partition for partition in self.list_out_partitions[mode]]
-        in_files = [open(filename, 'rb') for filename in in_filenames]
-        out_files = [open(filename, 'rb') for filename in out_filenames]
-        in_sizes = [stat(in_file.fileno()).st_size for in_file in in_files]
-        out_sizes = [stat(out_file.fileno()).st_size for out_file in out_files]
-        in_loaded = [0.] * len(in_sizes)
-        out_loaded = [0.] * len(out_sizes)
-        end_partition = False
         idx_file = 0
-        while self.dataset.memory_size() < self.max_size:
-            in_sizes[idx_file] -= 128
-            data_in = load(in_files[idx_file])
-            in_loaded[idx_file] += data_in.nbytes
-            self.dataset.load('input', data_in)
-            if in_loaded[idx_file] >= in_sizes[idx_file]:
-                break
+        # Load fields until dataset is full
+        while self.dataset.memory_size() < self.max_size and not self.endReadPartitions():
+            for field in self.read_list_path.keys():
+                if not self.read_end_partitions[field][idx_file]:
+                    data = load(self.read_list_file[field][idx_file])
+                    self.read_sizes[field][idx_file] -= 128
+                    self.read_loaded[field][idx_file] += data.nbytes
+                    if self.read_loaded[field][idx_file] >= self.read_sizes[field][idx_file]:
+                        self.read_end_partitions[field][idx_file] = True
+                    self.dataset.add(field, array([data]))
+            idx_file = (idx_file + 1) % len(self.read_list_path[field])
 
-            try:
-                out_sizes[idx_file] -= 128
-                data_out = load(out_files[idx_file])
-                out_loaded[idx_file] += data_out.nbytes
-                self.dataset.load('output', data_out)
-                if out_loaded[idx_file] >= out_sizes[idx_file]:
-                    break
-            except:
-                pass
+    def endReadPartitions(self):
+        """
+        Check if all reading partitions are done.
 
-            idx_file = (idx_file + 1) % len(in_files)
+        :return:
+        """
+        res = True
+        for field in self.read_end_partitions:
+            for check in self.read_end_partitions[field]:
+                res = check and res
+        return res
 
     def close(self):
         """

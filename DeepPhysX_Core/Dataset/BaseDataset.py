@@ -1,7 +1,5 @@
-from numpy import array, ndarray, concatenate, save
-from numpy import arange as numpyarange
-from numpy.random import shuffle as numpyshuffle
-from operator import mul as operatormul
+from numpy import array, ndarray, concatenate, save, arange
+from numpy.random import shuffle
 import functools
 
 
@@ -18,33 +16,65 @@ class BaseDataset:
 
         self.name = self.__class__.__name__
 
-        # Data storage
-        self.data_in, self.data_out = array([]), array([])
-        self.in_shape, self.in_flat_shape = None, None
-        self.out_shape, self.out_flat_shape = None, None
-        self.shuffle_pattern = None
-        self.max_size = config.max_size
-        self.current_sample = 0
+        # Data fields containers
+        self.data = {'input': array([]), 'output': array([])}
+        self.shape = {'input': None, 'output': None}
+        self.flat = {'input': None, 'output': None}
+        self.fields = {'IN': ['input'], 'OUT': ['output']}
 
-    def init_data_size(self, side, shape):
+        # Indexing
+        self.shuffle_pattern = None
+        self.current_sample = 0
+        self.max_size = config.max_size
+        self.batch_per_field = {field: 0 for field in ['input', 'output']}
+        self.empty = True
+
+    def is_empty(self):
+        """
+        Check if the fields of the dataset are empty. A field is considered as non empty if it is filled another time.
+
+        :return:
+        """
+        # The empty flag is set to False once th Dataset is considered as non empty
+        if not self.empty:
+            return False
+        # Check each registered data field
+        for field in self.fields['IN'] + self.fields['OUT']:
+            # Dataset is considered as non empty if a field is fed another time
+            if self.batch_per_field[field] > 1:
+                self.empty = False
+                return False
+        # If all field are considered as non empty then the Dataset is empty
+        return True
+
+    def init_data_size(self, field, shape):
         """
         Keep in the original shape of data and its flat shape.
         Init data_in and data_out as arrays containing each flat sample.
 
-        :param str side: Values at 'input' or anything else. Define if the associated shape is correspond to input shape or output one.
+        :param str field: Values at 'input' or anything else. Define if the associated shape is correspond to input
+        shape or output one.
         :param numpy.ndarray shape: Shape of the corresponding tensor
         :return:
         """
-        # Init data_in
-        if side == 'input':
-            self.in_shape = shape
-            self.in_flat_shape = functools.reduce(operatormul, shape, 1)
-            self.data_in = array([]).reshape((0, self.in_flat_shape))
-        # Init data_out
-        else:
-            self.out_shape = shape
-            self.out_flat_shape = functools.reduce(operatormul, shape, 1)
-            self.data_out = array([]).reshape((0, self.out_flat_shape))
+        self.shape[field] = shape
+        self.flat[field] = functools.reduce(lambda x, y: x * y, shape, 1)
+        self.data[field] = array([]).reshape((0, self.flat[field]))
+
+    def init_additional_field(self, field, shape):
+        """
+        Register a new data field.
+
+        :param field:
+        :param shape:
+        :return:
+        """
+        # Register the data field
+        side = 'IN' if field[:3] == 'IN_' else 'OUT'
+        self.fields[side].append(field)
+        self.batch_per_field[field] = 0
+        # Init the field shape
+        self.init_data_size(field, shape)
 
     def reset(self):
         """
@@ -52,108 +82,75 @@ class BaseDataset:
 
         :return:
         """
-        self.data_in = array([]).reshape((0, self.in_flat_shape)) if self.in_flat_shape is not None else array([])
-        self.data_out = array([]).reshape((0, self.out_flat_shape)) if self.out_flat_shape is not None else array([])
+        for field in self.fields['IN'] + self.fields['OUT']:
+            self.data[field] = array([]).reshape((0, self.flat[field])) if self.flat[field] is not None else array([])
         self.current_sample = 0
 
-    def memory_size(self):
+    def memory_size(self, field=None):
         """
-        Return the actual memory size of the dataset.
+        Return the actual memory size of the dataset if field is None. Otherwise, return the actual memory size of the
+        field.
 
+        :param str field: Name of the data field
         :return: Size in bytes of the current dataset.
         """
-        return self.data_in.nbytes + self.data_out.nbytes
+        if field is None:
+            return sum([self.data[field].nbytes for field in self.fields['IN'] + self.fields['OUT']])
+        return self.data[field].nbytes
 
-    def check_data(self, side, data):
+    def check_data(self, field, data):
         """
         Check if the data is a numpy array.
 
-        :param str side: Values at 'input' or anything else. Define if the associated shape is correspond to input shape or output one.
+        :param str field: Values at 'input' or anything else. Define if the associated shape is correspond to input
+        shape or output one.
         :param numpy.ndarray data: Corresponding tensor
         :return:
         """
         if type(data) != ndarray:
-            raise TypeError(f"[{self.name}] Wrong data {side}: numpy.ndarray required, got {type(data)}")
+            raise TypeError(f"[{self.name}] Wrong data type in field '{field}': numpy array required, got {type(data)}")
 
-    def add(self, side, data, partition_file):
+    def add(self, field, data, partition_file=None):
         """
         Add new data to the dataset.
 
-        :param str side: Values at 'input' or anything else. Define if the associated shape is correspond to input shape or output one.
+        :param str field: Values at 'input' or anything else. Define if the associated shape is correspond to input
+        shape or output one.
         :param numpy.ndarray data: Corresponding tensor
         :param str partition_file: Path or string to the file in which to write the data
         :return:
         """
         # Check data type
-        self.check_data(side, data)
-        # Adding input data
-        if side == 'input':
-            # Init sizes variables
-            if self.in_flat_shape is None:
-                self.init_data_size(side, data[0].shape)
-            data_tensor = self.data_in
-        # Adding output data
-        else:
-            # Init sizes variables
-            if self.out_flat_shape is None:
-                self.init_data_size(side, data[0].shape)
-            data_tensor = self.data_out
-
-        # Store and save each sample in batch
+        self.check_data(field, data)
+        # Check if field is registered
+        if field not in self.fields['IN'] + self.fields['OUT']:
+            if not self.is_empty():
+                raise ValueError(f"[{self.name}] A new field {field} tries to be created as Dataset is non empty. This "
+                                 f"will lead to a different number of sample for each field of the dataset.")
+            self.init_additional_field(field, data[0].shape)
+        # Check data size initialization
+        if self.flat[field] is None:
+            self.init_data_size(field, data[0].shape)
+        # Add each sample
         for sample in data:
-            data_tensor = concatenate((data_tensor, sample.flatten()[None, :]))
-            save(partition_file, sample.flatten())
-        if side == 'input':
-            self.data_in = data_tensor
-        else:
-            self.data_out = data_tensor
+            self.data[field] = concatenate((self.data[field], sample.flatten()[None, :]))
+            if partition_file is not None:
+                save(partition_file, sample.flatten())
+        # Update sample indexing in dataset
+        self.batch_per_field[field] += 1
+        self.current_sample = max([len(self.data[f]) for f in self.fields['IN'] + self.fields['OUT']])
 
-        self.current_sample = max(len(self.data_in), len(self.data_out))
-
-    def load(self, side, data):
+    def get(self, field, idx_begin, idx_end):
         """
-        Add existing data to the dataset.
+        Get a batch of data 'field'.
 
-        :param str side: Values at 'input' or anything else. Define if the associated shape is correspond to input shape or output one.
-        :param numpy.ndarray data: Corresponding tensor
+        :param str field: Data field
+        :param int idx_begin: Index of the first sample
+        :param int idx_end: Index of the last sample
         :return:
         """
-        self.check_data(side, data)
-        # Adding input data
-        if side == 'input':
-            # Init sizes variables
-            if self.in_flat_shape is None:
-                self.init_data_size(side, data.shape)
-            # Store sample
-            self.data_in = concatenate((self.data_in, data[None, :]), axis=0)
-        # Adding output data
-        else:
-            # Init sizes variables
-            if self.out_flat_shape is None:
-                self.init_data_size(side, data.shape)
-            # Store sample
-            self.data_out = concatenate((self.data_out, data[None, :]), axis=0)
-        self.current_sample = max(len(self.data_in), len(self.data_out))
-
-    def getInputBatch(self, begin_idx, end_idx):
-        """
-        Get a batch of input data.
-
-        :param begin_idx: Index of the first sample
-        :param end_idx: Index of the last sample
-        :return:
-        """
-        return self.data_in[self.shuffle_pattern[begin_idx:end_idx]]
-
-    def getOutputBatch(self, begin_idx, end_idx):
-        """
-        Get a batch of output data.
-
-        :param begin_idx: Index of the first sample
-        :param end_idx: Index of the last sample
-        :return:
-        """
-        return self.data_out[self.shuffle_pattern[begin_idx:end_idx]]
+        indices = slice(idx_begin, idx_end) if self.shuffle_pattern is None else self.shuffle_pattern[idx_begin:idx_end]
+        return self.data[field][indices].reshape((-1, *self.shape[field]))
 
     def shuffle(self):
         """
@@ -161,12 +158,11 @@ class BaseDataset:
 
         :return:
         """
-
-        if self.in_flat_shape is None and self.out_flat_shape is None:
+        if self.is_empty():
             return
         # Generate a shuffle pattern
-        self.shuffle_pattern = numpyarange(self.data_in.shape[0])
-        numpyshuffle(self.shuffle_pattern)
+        self.shuffle_pattern = arange(self.current_sample)
+        shuffle(self.shuffle_pattern)
 
     def __str__(self):
         """
@@ -175,6 +171,8 @@ class BaseDataset:
         description = "\n"
         description += f"  {self.name}\n"
         description += f"    Max size: {self.max_size}\n"
-        description += f"    Input shape, input flat shape: {self.in_shape}, {self.in_flat_shape}\n"
-        description += f"    Output shape, output flat shape: {self.out_shape}, {self.out_flat_shape}\n"
+        for side in ['IN', 'OUT']:
+            description += f"    {'in' if side == 'IN' else 'Out'}put data fields: {self.fields[side]}"
+            for field in self.fields[side]:
+                description += f"      {field} shape: {self.shape[field]} // {field} flat shape: {self.flat[field]}"
         return description

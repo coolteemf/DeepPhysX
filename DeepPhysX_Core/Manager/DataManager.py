@@ -96,7 +96,7 @@ class DataManager:
                 self.allow_dataset_fetch = False
                 data = self.environment_manager.getData(animate=animate, get_inputs=True, get_outputs=True)
                 # We create a partition to write down the data in the case it's not already existing.
-                if self.dataset_manager.current_in_partition is None:
+                if self.dataset_manager.current_partition_file['input'] is None:
                     self.dataset_manager.createNewPartitions()
                 self.dataset_manager.addData(data)
             # Force data from the dataset

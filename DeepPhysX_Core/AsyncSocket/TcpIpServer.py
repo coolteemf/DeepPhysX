@@ -28,7 +28,8 @@ class TcpIpServer(TcpIpObject):
         super(TcpIpServer, self).__init__(ip_address=ip_address,
                                           port=port)
         # Bind to server address
-        print(f"[{self.name}] Binding to IP Address: {ip_address} on PORT: {port} with maximum client count: {max_client_count}")
+        print(f"[{self.name}] Binding to IP Address: {ip_address} on PORT: {port} with maximum client count: "
+              f"{max_client_count}")
         self.sock.bind((ip_address, port))
         self.sock.listen(max_client_count)
         self.sock.setblocking(False)
@@ -146,23 +147,30 @@ class TcpIpServer(TcpIpObject):
         """
         # Trigger communication protocol
         run(self.__request_data_from_client(get_inputs=get_inputs, get_outputs=get_outputs, animate=animate))
-        data_sorter = {'input': [], 'output': [], 'loss': []}
+        data_sorter = {'input': [], 'dataset_in': {}, 'output': [], 'dataset_out': {}, 'loss': []}
         self.sample_to_client_id = []
-        while max(len(data_sorter['input']),
-                  len(data_sorter['output']),
+        while max(len(data_sorter['input']), len(data_sorter['dataset_in']),
+                  len(data_sorter['output']), len(data_sorter['dataset_out']),
                   len(data_sorter['loss']),
                   len(self.sample_to_client_id)) < self.batch_size and not self.data_fifo.empty():
             data = self.data_fifo.get()
-            if 'input' in data:
-                data_sorter['input'].append(data['input'])
-            if 'output' in data:
-                data_sorter['output'].append(data['output'])
-            if 'loss' in data:
-                data_sorter['loss'].append(data['loss'])
+            # Network in / out / loss
+            for field in ['input', 'output', 'loss']:
+                if field in data:
+                    data_sorter[field].append(data[field])
+            # Additional in / out
+            for field in ['dataset_in', 'dataset_out']:
+                if field in data:
+                    for key in data[field]:
+                        if key not in data_sorter[field].keys():
+                            data_sorter[field][key] = []
+                        data_sorter[field][key].append(data[field][key])
+            # ID of client
             if 'ID' in data:
                 self.sample_to_client_id.append(data['ID'])
-
         self.data_dict['loss'] = data_sorter['loss']
+        self.data_dict['dataset_in'] = data_sorter['dataset_in']
+        self.data_dict['dataset_out'] = data_sorter['dataset_out']
         return [data_sorter['input'], data_sorter['output']], self.data_dict
 
     async def __request_data_from_client(self, get_inputs=True, get_outputs=True, animate=True):
@@ -205,22 +213,26 @@ class TcpIpServer(TcpIpObject):
         if animate:
             # 1.1) If a sample from Dataset is given, sent it to the Environment
             if self.batch_from_dataset is not None:
-                # Pop the first input of the samples
-                # Todo: pop the last ?
-                sample_in = np.array([])
-                if 'input' in self.batch_from_dataset:
-                    sample_in = self.batch_from_dataset['input'][0]
-                    self.batch_from_dataset['input'] = self.batch_from_dataset['input'][1:]
-                # Pop the first outputs of the samples
-                # Todo: pop the last ?
-                sample_out = np.array([])
-                if 'output' in self.batch_from_dataset:
-                    sample_out = self.batch_from_dataset['output'][0]
-                    self.batch_from_dataset['output'] = self.batch_from_dataset['output'][1:]
                 # Send the sample to the TcpIpClient
                 await self.send_command_sample(loop=loop, receiver=client)
-                await self.send_data(data_to_send=sample_in, loop=loop, receiver=client)
-                await self.send_data(data_to_send=sample_out, loop=loop, receiver=client)
+                # Pop the first sample of the numpy batch for network in / out
+                for field in ['input', 'output']:
+                    sample = np.array([])
+                    if field in self.batch_from_dataset:
+                        sample = self.batch_from_dataset[field][0]
+                        self.batch_from_dataset[field] = self.batch_from_dataset[field][1:]
+                    await self.send_data(data_to_send=sample, loop=loop, receiver=client)
+                # Pop the first sample of the numpy batch for each additional in / out
+                for field in ['dataset_in', 'dataset_out']:
+                    # Is there additional data for this field ?
+                    await self.send_data(data_to_send=field in self.batch_from_dataset, loop=loop, receiver=client)
+                    if field in self.batch_from_dataset:
+                        sample = {}
+                        for key in self.batch_from_dataset[field]:
+                            sample[key] = self.batch_from_dataset[field][key][0]
+                            self.batch_from_dataset[field][key] = self.batch_from_dataset[field][key][1:]
+                        await self.send_dict_data(dict_data=sample, loop=loop, receiver=client)
+
             # 1.2) Execute n steps, the last one send data computation signal
             for current_step in range(self.environment_manager.simulations_per_step):
                 if current_step == self.environment_manager.simulations_per_step - 1:
@@ -232,21 +244,32 @@ class TcpIpServer(TcpIpObject):
                                              client_id=client_id)
         # 3) Fill the data Queue
         data = {}
-        # Checkin input data size
-        if get_inputs and self.data_dict[client_id]['input'].size == self.in_size.prod():
-            data['input'] = self.data_dict[client_id]['input'].reshape(self.in_size)
-            #del self.data_dict[client_id]['input']
-        # Checkin output data size
-        if get_outputs and self.data_dict[client_id]['output'].size == self.out_size.prod():
-            data['output'] = self.data_dict[client_id]['output'].reshape(self.out_size)
-            #del self.data_dict[client_id]['output']
-        # Add loss data if provided
-        if 'loss' in self.data_dict[client_id]:
-            data['loss'] = self.data_dict[client_id]['loss']
-        # Identify sample
-        data['ID'] = client_id
-        # Add data to the Queue
-        self.data_fifo.put(data)
+        if self.data_dict[client_id]['check']:
+
+            for get_data, data_size, net_field, add_field in zip([get_inputs, get_outputs],
+                                                                 [self.in_size, self.out_size],
+                                                                 ['input', 'output'],
+                                                                 ['dataset_in', 'dataset_out']):
+                # Check flat data size
+                if get_data and self.data_dict[client_id][net_field].size == data_size.prod():
+                    data[net_field] = self.data_dict[client_id][net_field].reshape(data_size)
+                    # del self.data_dict[client_id][net_field]
+                    # Get additional dataset
+                    additional_fields = [key for key in self.data_dict[client_id].keys() if key.__contains__(add_field)]
+                    data[add_field] = {}
+                    for field in additional_fields:
+                        data[add_field][field[len(add_field):]] = self.data_dict[client_id][field]
+
+            # Add loss data if provided
+            if 'loss' in self.data_dict[client_id]:
+                data['loss'] = self.data_dict[client_id]['loss']
+            # Identify sample
+            data['ID'] = client_id
+            # Add data to the Queue
+            self.data_fifo.put(data)
+        else:
+            await self.__communicate(client=client, client_id=client_id, get_inputs=get_inputs, get_outputs=get_outputs,
+                                     animate=animate)
 
     def setDatasetBatch(self, batch):
         """
@@ -256,8 +279,8 @@ class TcpIpServer(TcpIpObject):
         :return:
         """
         if len(batch['input']) != self.batch_size:
-            return ValueError(f"[{self.name}] The size of batch from Dataset is {len(batch['input'])} while the batch "
-                              f"size was set to {self.batch_size}.")
+            raise ValueError(f"[{self.name}] The size of batch from Dataset is {len(batch['input'])} while the batch "
+                             f"size was set to {self.batch_size}.")
         self.batch_from_dataset = copy(batch)
 
     def applyPrediction(self, prediction):
@@ -285,7 +308,8 @@ class TcpIpServer(TcpIpObject):
             # Tell the client to receive and apply prediction
             await self.send_command_prediction(loop=loop, receiver=self.clients[self.sample_to_client_id[client_id]])
             # Send prediction data to the client
-            await self.send_data(data_to_send=np.array(data, dtype=float), loop=loop, receiver=self.clients[self.sample_to_client_id[client_id]])
+            await self.send_data(data_to_send=np.array(data, dtype=float), loop=loop,
+                                 receiver=self.clients[self.sample_to_client_id[client_id]])
 
     def close(self):
         """
@@ -367,7 +391,8 @@ class TcpIpServer(TcpIpObject):
         # Get the prediction of the network
         prediction = self.environment_manager.requestPrediction(network_input=network_input[None, ])
         # Send the prediction back to the TcpIpClient
-        await self.send_labeled_data(data_to_send=prediction, label="prediction", receiver=receiver, send_read_command=False)
+        await self.send_labeled_data(data_to_send=prediction, label="prediction", receiver=receiver,
+                                     send_read_command=False)
 
     async def update_visualizer(self, visualization_data, client_id):
         """

@@ -11,7 +11,7 @@ class BytesConverter:
 
         # Data to bytes conversions
         self.__data_to_bytes_conversion = {bytes: lambda d: d,
-                                           str: lambda d: d.lower().encode('utf-8'),
+                                           str: lambda d: d.encode('utf-8'),
                                            bool: lambda d: int(d).to_bytes(1, byteorder='big'),
                                            int: lambda d: d.to_bytes(length=(8 + (d + (d < 0)).bit_length()) // 8,
                                                                      byteorder='big', signed=True),

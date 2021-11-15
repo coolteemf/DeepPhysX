@@ -14,15 +14,16 @@ class AbstractEnvironment:
 
         self.name = self.__class__.__name__ + f"n°{instance_id}"
 
-        if instance_id < number_of_instances:
-            self.instance_id = instance_id
-            self.number_of_instances = number_of_instances
-        else:
-            raise ValueError(f"[{self.name}] Instance ID ({instance_id}) is bigger than max instances ({number_of_instances})")
+        if instance_id > number_of_instances:
+            raise ValueError(f"[{self.name}] Instance ID ({instance_id}) is bigger than max instances "
+                             f"({number_of_instances})")
+        self.instance_id = instance_id
+        self.number_of_instances = number_of_instances
         self.as_tcpip_client = as_tcpip_client
 
         self.input, self.output = None, None
         self.input_size, self.output_size = None, None
+        self.additional_inputs, self.additional_outputs = {}, {}
         self.compute_essential_data = True
 
     def create(self):
@@ -52,5 +53,5 @@ class AbstractEnvironment:
     def applyPrediction(self, prediction):
         raise NotImplementedError
 
-    def setDatasetSample(self, sample_in, sample_out):
+    def setDatasetSample(self, sample_in, sample_out, additional_in=None, additional_out=None):
         raise NotImplementedError
