@@ -1,4 +1,4 @@
-from DeepPhysX_Core import BaseEnvironment
+from DeepPhysX_Core.Environment.BaseEnvironment import BaseEnvironment
 from DeepPhysX_Core.Visualizer.VedoObjectFactories.VedoObjectFactory import VedoObjectFactory
 from numpy import mean, pi, array
 from numpy.random import random
@@ -30,14 +30,17 @@ class MeanEnvironment(BaseEnvironment):
         self.factory = VedoObjectFactory()
 
     def send_visualization(self):
-        pos = random((25, 2))
+        pos = pi * random((25, 2))
         # Point cloud
-        self.factory.addObject(object_type="Points", data_dict={"positions": pos})
+        self.factory.addObject(object_type="Points", data_dict={"positions": pos, "c": "blue", "at": self.instance_id, "r": 8})
         # Ground truth value
-        self.factory.addObject(object_type="Points", data_dict={"positions": mean(pos, axis=0), "c": "red"})
+        self.factory.addObject(object_type="Points", data_dict={"positions": mean(pos, axis=0)[None,:], "c": "red", "at": self.instance_id, "r": 12})
         # Prediction value
-        self.factory.addObject(object_type="Points", data_dict={"positions": mean(pos, axis=0), "c": "green"})
+        self.factory.addObject(object_type="Points", data_dict={"positions": mean(pos, axis=0)[None,:], "c": "green", "at": self.instance_id, "r": 12})
         return self.factory.objects_dict
+
+    def send_parameters(self):
+        return
 
     def create(self):
         print(f"Created client n°{self.instance_id}")
@@ -48,8 +51,8 @@ class MeanEnvironment(BaseEnvironment):
 
     async def animate(self):
         self.input = pi * random((25, 2))
-        self.output = array([mean(self.input, axis=0)])
-        time.sleep(0.001)
+        self.output = mean(self.input, axis=0)
+        #print(f"INPUT SHAPE {self.input}")
 
     async def step(self):
         await self.animate()
@@ -66,8 +69,3 @@ class MeanEnvironment(BaseEnvironment):
     async def onStep(self):
         self.setVisualizationData(visu_dict=self.factory.objects_dict)
         await self.send_training_data(network_input=self.input, network_output=self.output)
-        await self.send_command_done()
-        # print("DATA SENT")
-
-    def checkSample(self, check_input=True, check_output=True):
-        return True
