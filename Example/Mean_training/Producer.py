@@ -1,4 +1,4 @@
-from DeepPhysX_Core import BaseEnvironment
+from DeepPhysX_Core.Environment.BaseEnvironment import BaseEnvironment
 
 from numpy import mean, pi, array
 from numpy.random import random
@@ -27,21 +27,12 @@ class MeanEnvironment(BaseEnvironment):
                                  number_of_instances=number_of_instances,
                                  visual_object=visualizer_class)
 
-    def send_visualization(self):
-        # There is no visualisation, we send an empty dictionnary
-        return {}
-
     def create(self):
         print(f"Created client n°{self.instance_id}")
-        # Data size HAVE to be set before we start sending data
-        # Get the data sizes
-        self.input_size = [25, 2]
-        self.output_size = [2]
 
     async def animate(self):
         self.input = pi * random((25, 2))
-        self.output = array([mean(self.input, axis=0)])
-        time.sleep(0.001)
+        self.output = mean(self.input, axis=0)
 
     async def step(self):
         await self.animate()
@@ -49,8 +40,6 @@ class MeanEnvironment(BaseEnvironment):
 
     async def onStep(self):
         await self.send_training_data(network_input=self.input, network_output=self.output)
-        await self.send_command_done()
-        #print("DATA SENT")
 
-    def checkSample(self, check_input=True, check_output=True):
-        return True
+    def send_visualization(self):
+        return
