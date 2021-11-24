@@ -13,7 +13,7 @@ for rootdir, dirs, files in walk(current_absolute_path):
                 for lib in splitted_path[::-1]:
                     if 'DeepPhysX_Core' == lib:
                         filename = str(file).split(".")[0]  # BaseNetwork, TcpIpClient, DatasetManager...
-                        print(f"from {lib}.{import_path}{filename} import *")
+                        # print(f"from {lib}.{import_path}{filename} import *")
                         exec(f"from {lib}.{import_path}{filename} import *")
                         break
                     import_path = f"{lib}." + import_path
