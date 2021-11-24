@@ -12,7 +12,7 @@ class BaseEnvironmentConfig:
 
     def __init__(self,
                  environment_class=None,
-                 visual_object=None,
+                 visualizer=None,
                  simulations_per_step=1,
                  max_wrong_samples_per_step=10,
                  always_create_data=False,
@@ -84,7 +84,7 @@ class BaseEnvironmentConfig:
         self.use_prediction_in_environment = use_prediction_in_environment
         self.simulations_per_step = simulations_per_step
         self.max_wrong_samples_per_step = max_wrong_samples_per_step
-        self.visual_object = visual_object
+        self.visualizer = visualizer
 
         # TcpIpServer parameterization
         self.ip_address = ip_address

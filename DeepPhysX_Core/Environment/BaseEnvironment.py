@@ -95,7 +95,10 @@ class BaseEnvironment(TcpIpClient):
 
         :return: Dictionary of parameters
         """
-        return {}
+        return
+
+    def send_visualization(self):
+        return
 
     def send_visualization(self):
         return {}
