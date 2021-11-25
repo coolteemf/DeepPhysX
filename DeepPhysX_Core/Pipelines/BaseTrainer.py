@@ -57,7 +57,7 @@ class BaseTrainer(BasePipeline):
         self.loss_dict = None
 
         # Tell if data is recording while predicting (output is recorded only if input too)
-        self.record_data = {"in": True, "out": True}
+        self.record_data = {'input': True, 'output': True}
 
         self.training_progress_bar = ProgressBar(start=0, stop=self.nb_samples, c='orange', title="Training")
         self.manager.saveInfoFile()
