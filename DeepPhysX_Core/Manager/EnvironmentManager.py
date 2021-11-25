@@ -187,9 +187,10 @@ class EnvironmentManager:
                          'output': array(outputs)}
         # Convert additional data
         for key in ['dataset_in', 'dataset_out']:
-            for field in data_dict[key]:
-                data_dict[key][field] = array(data_dict[key][field])
-            training_data[key] = data_dict[key]
+            if key in data_dict.keys():
+                for field in data_dict[key]:
+                    data_dict[key][field] = array(data_dict[key][field])
+                training_data[key] = data_dict[key]
         # Convert loss data
         if 'loss' in data_dict.keys():
             training_data['loss'] = data_dict['loss']
