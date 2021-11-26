@@ -48,11 +48,16 @@ class VisualizerManager:
         """
         Update the rendering windows with a sample of visualization data.
 
+<<<<<<< HEAD
         :param sample: Sample of updated visualization data
         :param index: ID of the client
         :return:
         """
         self.visualizer.updateFromSample(sample, index)
+=======
+    def updateVisualizer(self, sample):
+        self.visualizer.updateVisualizer(sample)
+>>>>>>> updated manager to remove useless server functionallities, changed function name too
 
     def render(self):
         """

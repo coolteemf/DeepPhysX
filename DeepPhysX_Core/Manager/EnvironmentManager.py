@@ -60,7 +60,6 @@ class EnvironmentManager:
         if self.visualizer_manager is not None:
             if self.server is not None:
                 data_dict = {}
-
                 for client_id in self.server.data_dict:
                     data_dict[client_id] = self.server.data_dict[client_id]['visualisation']
                 self.visualizer_manager.initView(data_dict)
@@ -79,8 +78,12 @@ class EnvironmentManager:
         :param bool get_inputs: If True, compute and return input
         :param bool get_outputs: If True, compute and return output
         :param bool animate: If True, triggers an environment step
+<<<<<<< HEAD
         :return: Dictionary containing all labeled data sent by the clients in their own dictionary + in and out key
         corresponding to the batch
+=======
+        :return: dictionary containing all labeled data sent by the clients in their own dictionnary + in and out key corresponding to the batch
+>>>>>>> updated manager to remove useless server functionallities, changed function name too
         """
         if self.server is not None:
             return self.getDataFromServer(get_inputs, get_outputs, animate)
@@ -199,6 +202,7 @@ class EnvironmentManager:
             training_data['loss'] = data_dict['loss']
         return training_data
 
+<<<<<<< HEAD
     def requestPrediction(self, network_input):
         """
         Get a prediction of the network.
@@ -230,6 +234,11 @@ class EnvironmentManager:
             self.server.applyPrediction(prediction)
         if self.environment and not self.prediction_requested:
             self.environment.applyPrediction(prediction)
+=======
+    def updateVisualizer(self, visualization_data,):
+        self.visualizer_manager.updateVisualizer(visualization_data)
+        self.visualizer_manager.render()
+>>>>>>> updated manager to remove useless server functionallities, changed function name too
 
     def dispatchBatch(self, batch):
         """
