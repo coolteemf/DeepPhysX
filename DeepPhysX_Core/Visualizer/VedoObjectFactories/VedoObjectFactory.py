@@ -24,6 +24,7 @@ class VedoObjectFactory:
     def __init__(self):
         self.next_ID = 0
         self.objects_dict = {}
+        self.updated_object_dict = {}
         self.windows_id = []
         self.factories = {}
 
@@ -46,9 +47,18 @@ class VedoObjectFactory:
         if object_id not in self.factories:
             self.factories[object_id] = factory_getter(self.objects_dict[object_id]["type"])
         self.objects_dict[object_id] = self.factories[object_id].update_dict(new_data_dict)
+
+        self.updated_object_dict[object_id] = {}
+        for field in new_data_dict:
+            self.updated_object_dict[object_id][field] = new_data_dict[field]
+
         return self.objects_dict[object_id], self.factories[object_id]
 
     def updateObject_instance(self, object_id: int, instance):
         if object_id not in self.factories:
             self.factories[object_id] = factory_getter(self.objects_dict[object_id]["type"])
-        return self.factories[object_id].update_instance(instance)
+
+        updated_instance = self.factories[object_id].update_instance(instance)
+        self.updated_object_dict[object_id] = {}
+
+        return updated_instance

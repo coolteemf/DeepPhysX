@@ -35,7 +35,6 @@ class update_wrapper:
                 instance = kwargs["instance"]
             else:
                 instance = args[-1]
-
             if "colormap" in object_factory.dirty_fields:
                 instance.c(object_factory.parsed_data["colormap"])
                 object_factory.dirty_fields.remove("colormap")

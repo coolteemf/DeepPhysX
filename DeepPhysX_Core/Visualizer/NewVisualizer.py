@@ -29,52 +29,53 @@ class NewVisualizer:
         :return:
         """
         from itertools import filterfalse
-        for scene_id in data_dict:  # For each scene/client
+        for scene_id in sorted(data_dict):  # For each scene/client
             self.scene.update({scene_id: VedoObjects()})
 
-            for object_id in data_dict[scene_id]:  # For each object in current client/scene
-                self.scene[scene_id].createObject(data_dict[scene_id][object_id])
+            scene = self.scene[scene_id]
+
+            for object_id in data_dict[scene_id]:  # For each object in current scene/client
+                scene.createObject(data_dict[scene_id][object_id])
 
             # Simple syntax shortcuts
-            objects_instance = self.scene[scene_id].objects_instance
-            objects_dict = self.scene[scene_id].objects_factory.objects_dict
+            objects_dict = scene.objects_factory.objects_dict
 
             # Deal with all of the windows and object attached to these windows first
-            remaining_object_id = list(self.scene[scene_id].objects_factory.objects_dict.keys())
-
-            for window_id in self.scene[scene_id].objects_factory.windows_id:
+            remaining_object_id = list(objects_dict.keys())
+            for window_id in scene.objects_factory.windows_id:
+                print(f"Removing window id {window_id}")
                 remaining_object_id.remove(window_id)
                 # Vedo can only handle 1 axe type per viewer so we create as much viewers as needed
                 viewer_id = objects_dict[window_id]['axes']
+                viewer = self.viewers[viewer_id]
                 if viewer_id in self.viewers:
+                    print("Viewer already exist we simply add the object parameters")
                     # If atleast one need a sharedcam then we wet true for all
-                    self.viewers[viewer_id]['sharecam'] |= objects_dict[window_id]['sharecam']
+                    viewer['sharecam'] |= objects_dict[window_id]['sharecam']
                     # If one requires that the window is not interactive then it's not interactive.
-                    self.viewers[viewer_id]['interactive'] &= objects_dict[window_id]['interactive']
+                    viewer['interactive'] &= objects_dict[window_id]['interactive']
                 else:
-                    self.viewers[viewer_id]['sharecam'] = objects_dict[window_id]['sharecam']
-                    self.viewers[viewer_id]['interactive'] = objects_dict[window_id]['interactive']
-                    self.viewers[viewer_id]['instances'] = []
-                    self.viewers[viewer_id]['title'] = f"Vedo_axes_{objects_dict[window_id]['axes']}"
+                    print("Viewer do not exist we set parameters")
+                    viewer['sharecam'] = objects_dict[window_id]['sharecam']
+                    viewer['interactive'] = objects_dict[window_id]['interactive']
+                    viewer['instances'] = []
+                    viewer['title'] = f"Vedo_axes_{objects_dict[window_id]['axes']}"
 
                 # CA VA SANS DOUTE BUGGER DANS LE COIN
                 remaining_object_id = list(
-                    filterfalse(lambda x: x not in objects_instance[objects_dict[window_id]['objects_id']],
-                                remaining_object_id))
-                self.viewers[viewer_id]['instances'].append(objects_instance[objects_dict[window_id]['objects_id']]['instance'])
+                    filterfalse(lambda x: x not in objects_dict[window_id]['objects_id'], remaining_object_id))
+                viewer['instances'].append([scene_id, objects_dict[window_id]['objects_id']])
                 # JUSQU'A LA
-
-
 
             # Deals with the remaining objects that are not specified in windows
             for object_id in remaining_object_id:
                 # Affects the object in the existing window
                 if -1 < objects_dict[object_id]['at'] < len(self.viewers[2]['instances']):
-                    self.viewers[2]['instances'][objects_dict[object_id]['at']].append(objects_instance[object_id]['instance'])
+                    self.viewers[2]['instances'][objects_dict[object_id]['at']].append([scene_id, object_id])
                 else:
                     # Affects the object in the next non existing window.
                     objects_dict[object_id]['at'] = len(self.viewers[2]['instances'])
-                    self.viewers[2]['instances'].append([objects_instance[object_id]['instance']])
+                    self.viewers[2]['instances'].append([[scene_id, object_id]])
 
         # Once all objects are created we create the plotter with the corresponding parameters
         for viewer_id in self.viewers:
@@ -86,10 +87,9 @@ class NewVisualizer:
 
             # self.viewers[viewer_id]['instances'] is a list of list of instances
             # Each sublist contains all instances present in a window hence, each sublist has it own "at"
-            for at, meshes in enumerate(self.viewers[viewer_id]['instances']):
-                print(meshes)
-                for mesh in meshes:
-                    self.viewers[viewer_id]['plotter'].add(mesh, at=at, render=False)
+            for at, ids in enumerate(self.viewers[viewer_id]['instances']):
+                for scene_id, object_in_scene_id in ids:
+                    self.viewers[viewer_id]['plotter'].add(self.scene[scene_id].objects_instance[object_in_scene_id]['instance'], at=at, render=False)
 
             self.viewers[viewer_id]['plotter'].show(interactive=True)
 
@@ -110,7 +110,7 @@ class NewVisualizer:
             for object_id in self.scene[scene_id].objects_instance:
                 self.scene[scene_id].updateInstance(object_id)
 
-    def updateFromClients(self, data_dict: dict):
+    def updateVisualizer(self, data_dict: dict):
         for scene_id in data_dict:
             for object_id in data_dict[scene_id]:
                 self.scene[scene_id].objects_factory.updateObject_dict(object_id, data_dict[scene_id][object_id])

@@ -39,7 +39,6 @@ class VedoObjects:
         self.objects_factory = VedoObjectFactory()
 
     def createObject(self, data_dict: dict):
-        #print(f"VedoObjects CreateObject {data_dict}")
         sorted_data_dict, object_id, _ = self.objects_factory.addObject(object_type=data_dict['type'], data_dict=data_dict)
         self.objects_instance[object_id] = {"instance": create_filter[data_dict['type']](sorted_data_dict)}
 
@@ -47,7 +46,7 @@ class VedoObjects:
         self.objects_factory.updateObject_dict(object_id, new_dict)
 
     def updateInstance(self, object_id: int):
-        self.objects_factory.updateObject_instance(object_id=object_id, instance=self.objects_instance[object_id]['instance'])
+        return self.objects_factory.updateObject_instance(object_id=object_id, instance=self.objects_instance[object_id]['instance'])
 
     def update(self, object_id: int, new_dict: dict):
         self.updateObjects(object_id=object_id, new_dict=new_dict)
