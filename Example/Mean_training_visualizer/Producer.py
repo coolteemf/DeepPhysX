@@ -44,21 +44,17 @@ class MeanEnvironment(BaseEnvironment):
 
     def create(self):
         print(f"Created client n°{self.instance_id}")
-        # Data size HAVE to be set before we start sending data
-        # Get the data sizes
-        self.input_size = [25, 2]
-        self.output_size = [2]
 
     async def animate(self):
         self.input = pi * random((25, 2))
         self.output = mean(self.input, axis=0)
-        #print(f"INPUT SHAPE {self.input}")
 
     async def step(self):
         await self.animate()
+        self.apply_prediction(await self.get_prediction(input_array=self.input))
         await self.onStep()
 
-    def applyPrediction(self, prediction):
+    def apply_prediction(self, prediction):
         # Point cloud
         self.factory.updateObject_dict(object_id=0, new_data_dict={'positions': self.input})
         # Ground truth value
@@ -67,5 +63,5 @@ class MeanEnvironment(BaseEnvironment):
         self.factory.updateObject_dict(object_id=2, new_data_dict={'position': prediction})
 
     async def onStep(self):
-        self.setVisualizationData(visu_dict=self.factory.objects_dict)
+        await self.update_visualisation(visu_dict=self.factory.updated_object_dict)
         await self.send_training_data(network_input=self.input, network_output=self.output)
