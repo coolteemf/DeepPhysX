@@ -93,7 +93,10 @@ class BaseTrainer(BasePipeline):
         self.manager.getData(self.id_epoch, self.batch_size)
         prediction, self.loss_dict = self.manager.optimizeNetwork()
         print(f"Current loss : {self.loss_dict['loss']}")
+<<<<<<< HEAD
         self.manager.data_manager.applyPrediction(prediction, self.id_epoch)
+=======
+>>>>>>> Removed useless function call
 
     def saveNetwork(self):
         """
