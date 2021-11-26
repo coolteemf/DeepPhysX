@@ -7,8 +7,8 @@ class BasePipeline:
 
     def __init__(self,
                  network_config,
-                 dataset_config,
-                 environment_config,
+                 dataset_config=None,
+                 environment_config=None,
                  session_name='default',
                  session_dir=None,
                  pipeline=None):
@@ -19,14 +19,14 @@ class BasePipeline:
         :param BaseDatasetConfig dataset_config: Specialisation containing the parameters of the dataset manager
         :param BaseEnvironmentConfig environment_config: Specialisation containing the parameters of the environment manager
         :param str session_name: Name of the newly created directory if session_dir is not defined
-        :param str session_dir: Name of the directory in which to write all of the neccesary data
+        :param str session_dir: Name of the directory in which to write all of the necessary data
         :param str pipeline: Values at either 'training' or 'prediction'
         """
 
         # Check the arguments
         if not isinstance(network_config, BaseNetworkConfig):
             raise TypeError("[BaseRunner] The network configuration must be a BaseNetworkConfig")
-        if not isinstance(environment_config, BaseEnvironmentConfig):
+        if environment_config is not None and not isinstance(environment_config, BaseEnvironmentConfig):
             raise TypeError("[BaseRunner] The environment configuration must be a BaseEnvironmentConfig")
         if dataset_config is not None and not isinstance(dataset_config, BaseDatasetConfig):
             raise TypeError("[BaseRunner] The dataset configuration must be a BaseDatasetConfig")

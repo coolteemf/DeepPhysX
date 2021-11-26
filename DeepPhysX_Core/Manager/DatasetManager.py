@@ -102,11 +102,20 @@ class DatasetManager:
                     if dataset_dir[-8:] != "dataset/":
                         dataset_dir += "dataset/"
                     self.dataset_dir = dataset_dir
+                    if dataset_config.input_shape is None or dataset_config.output_shape is None:
+                        raise ValueError(f"[{self.name}] Data shapes must be set in DatasetConfig when loading an "
+                                         f"existing dataset.")
+                    self.dataset.init_data_size('input', dataset_config.input_shape)
+                    self.dataset.init_data_size('output', dataset_config.output_shape)
                     self.loadDirectory()
             else:  # Train from this session's dataset
                 self.dataset_dir = osPathJoin(self.session_dir, 'dataset/')
+                if dataset_config.input_shape is None or dataset_config.output_shape is None:
+                    raise ValueError(f"[{self.name}] Data shapes must be set in DatasetConfig when loading an "
+                                     f"existing dataset.")
+                self.dataset.init_data_size('input', dataset_config.input_shape)
+                self.dataset.init_data_size('output', dataset_config.output_shape)
                 self.loadDirectory()
-
         # Prediction
         else:
             self.dataset_dir = osPathJoin(self.session_dir, 'dataset/')
@@ -262,6 +271,7 @@ class DatasetManager:
                 if len(self.list_partitions[field][self.modes[mode]]) != number_of_partitions:
                     raise ValueError(f"[{self.name}] The number of partitions is different for {field} with "
                                      f"{len(self.list_partitions[field][self.modes[mode]])} partitions found.")
+        self.loadPartitions(force_partition_reload=True)
 
     def requireEnvironment(self):
         """
@@ -448,15 +458,17 @@ class DatasetManager:
         """
         return self.getData(get_inputs=False, get_outputs=True, batched=batched)
 
-    def loadPartitions(self):
+    def loadPartitions(self, force_partition_reload=False):
         """
         Load partitions as specified in the class initialisation. At the end of the function the dataset hopefully
         is non empty.
 
+        :param bool force_partition_reload: If True force reload of partition
         :return:
         """
         # If there is only one partition for the current mode for input field at least, don't need to reload it
-        if self.last_loaded_dataset_mode == self.mode and len(self.list_partitions['input'][self.mode]) == 1:
+        if self.last_loaded_dataset_mode == self.mode and len(self.list_partitions['input'][self.mode]) == 1\
+                and not force_partition_reload:
             print("LOAD PARTITION SKIP")
             return
         # Otherwise reload partitions

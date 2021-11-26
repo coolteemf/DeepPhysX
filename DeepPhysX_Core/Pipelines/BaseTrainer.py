@@ -31,7 +31,6 @@ class BaseTrainer(BasePipeline):
         :param int nb_batches: Number of batches
         :param int batch_size: Size of a batch
         """
-
         self.name = self.__class__.__name__
 
         if environment_config is None and dataset_config.dataset_dir is None:
@@ -132,7 +131,6 @@ class BaseTrainer(BasePipeline):
         :return:
         """
         self.id_batch = 0
-        self.manager.data_manager.dataset_manager.dataset.shuffle()
 
     def epochEnd(self):
         """

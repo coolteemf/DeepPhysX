@@ -42,7 +42,9 @@ class DataManager:
             # Always create a dataset_manager for training
             create_dataset = True
             # Create an environment if prediction must be applied else ask DatasetManager
-            create_environment = None if not environment_config.use_prediction_in_environment else True
+            create_environment = False
+            if environment_config is not None:
+                create_environment = None if not environment_config.use_prediction_in_environment else True
         # Prediction
         else:
             # Always create an environment for prediction

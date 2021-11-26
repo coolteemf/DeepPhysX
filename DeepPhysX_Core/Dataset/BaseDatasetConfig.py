@@ -14,7 +14,9 @@ class BaseDatasetConfig:
                  dataset_class=BaseDataset,
                  dataset_dir=None,
                  partition_size=1.,
-                 shuffle_dataset=True):
+                 shuffle_dataset=True,
+                 input_shape=None,
+                 output_shape=None):
         """
         BaseDatasetConfig is a configuration class to parameterize and create a BaseDataset for the DatasetManager.
 
@@ -23,6 +25,8 @@ class BaseDatasetConfig:
         :param str dataset_dir: Name of an existing dataset repository
         :param float partition_size: Maximum size in Gb of a single dataset partition
         :param bool shuffle_dataset: Specify if existing dataset should be shuffled
+        :param tuple input_shape: Mandatory when training from existing dataset, give the shape of the network's input
+        :param tuple output_shape: Mandatory when training from existing dataset, give the shape of the network's output
         """
 
         self.name = self.__class__.__name__
@@ -45,6 +49,8 @@ class BaseDatasetConfig:
         # BaseDataset parameterization
         self.dataset_class = dataset_class
         self.dataset_config = self.BaseDatasetProperties(max_size=int(partition_size * 1e9))
+        self.input_shape = input_shape
+        self.output_shape = output_shape
 
         # DatasetManager parameterization
         self.dataset_dir = dataset_dir
