@@ -36,7 +36,10 @@ class BaseEnvironment(TcpIpClient):
         self.visual_object = visual_object(visualizer=None) if visual_object is not None else None
         self.environment_manager = environment_manager
         self.sample_in, self.sample_out = None, None
+<<<<<<< HEAD
         self.loss_data = None
+=======
+>>>>>>> Environment update
 
     def create(self):
         """
@@ -62,7 +65,7 @@ class BaseEnvironment(TcpIpClient):
         """
         raise NotImplementedError
 
-    def checkSample(self, check_input=True, check_output=True):
+    def check_sample(self, check_input=True, check_output=True):
         """
         Check if the current sample is an outlier.
 
@@ -100,10 +103,14 @@ class BaseEnvironment(TcpIpClient):
     def send_visualization(self):
         return
 
+<<<<<<< HEAD
     def send_visualization(self):
         return {}
 
     def applyPrediction(self, prediction):
+=======
+    def apply_prediction(self, prediction):
+>>>>>>> Environment update
         """
         Apply network prediction in environment.
 
@@ -112,6 +119,7 @@ class BaseEnvironment(TcpIpClient):
         """
         pass
 
+<<<<<<< HEAD
     def setDatasetSample(self, sample_in, sample_out, additional_in=None, additional_out=None):
         """
         Set the sample received from Dataset.
@@ -122,11 +130,15 @@ class BaseEnvironment(TcpIpClient):
         :param sample_out: Associated output sample
         :return:
         """
+=======
+    def set_dataset_sample(self, sample_in, sample_out):
+>>>>>>> Environment update
         self.sample_in = sample_in
         self.sample_out = sample_out
         self.additional_inputs = additional_in
         self.additional_outputs = additional_out
 
+<<<<<<< HEAD
     def setTrainingData(self, input_array, output_array):
         """
         Set the training data to send to the TcpIpServer.
@@ -135,6 +147,9 @@ class BaseEnvironment(TcpIpClient):
         :param output_array: Network expected output
         :return:
         """
+=======
+    def set_training_data(self, input_array, output_array):
+>>>>>>> Environment update
         if self.compute_essential_data:
             if self.as_tcpip_client:
                 self.sync_send_training_data(network_input=input_array, network_output=output_array)
@@ -176,6 +191,7 @@ class BaseEnvironment(TcpIpClient):
         """
         self.additional_outputs[label] = data_array
 
+<<<<<<< HEAD
     def getPrediction(self, input_array):
         """
         Request a prediction from Environment.
@@ -183,12 +199,16 @@ class BaseEnvironment(TcpIpClient):
         :param input_array: Network input
         :return:
         """
+=======
+    def sync_get_prediction(self, input_array):
+>>>>>>> Environment update
         if self.as_tcpip_client:
             return self.sync_send_prediction_request(network_input=input_array)
         if self.environment_manager is not None:
             return self.environment_manager.requestPrediction(network_input=input_array)
         raise ValueError(f"[{self.name}] Can't get prediction since Environment has no Manager.")
 
+<<<<<<< HEAD
     def setVisualizationData(self, visu_dict):
         """
         Set the updated visualization data.
@@ -196,8 +216,29 @@ class BaseEnvironment(TcpIpClient):
         :param visu_dict: Dictionary containing visualization data fields
         :return:
         """
+=======
+    async def get_prediction(self, input_array):
         if self.as_tcpip_client:
-            self.sync_send_visualization_data(visu_dict)
+            return await self.send_prediction_request(network_input=input_array)
+        if self.environment_manager.data_manager is None:
+            raise ValueError("Cannot request prediction if DataManager does not exist")
+        elif self.environment_manager.data_manager.manager is None:
+            raise ValueError("Cannot request prediction if Manager does not exist")
+        elif self.environment_manager.data_manager.manager.network_manager is None:
+            raise ValueError("Cannot request prediction if NetworkManager does not exist")
+        else:
+            return self.environment_manager.data_manager.manager.network_manager.computeOnlinePrediction(network_input=input_array[None, ])
+
+    async def update_visualisation(self, visu_dict):
+        if self.as_tcpip_client:
+            await self.send_visualization_data(visualization_data=visu_dict)
+        else:
+            self.environment_manager.visualizer.updateFromSample(visu_dict, self.instance_id)
+
+    def sync_update_visualisation(self, visu_dict):
+>>>>>>> Environment update
+        if self.as_tcpip_client:
+            self.sync_send_visualization_data(visualization_data=visu_dict)
         else:
             self.environment_manager.visualizer.updateFromSample(visu_dict, self.instance_id)
 

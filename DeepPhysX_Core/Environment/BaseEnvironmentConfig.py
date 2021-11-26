@@ -163,8 +163,12 @@ class BaseEnvironmentConfig:
         """
         # Create instance
         environment = self.environment_class(environment_manager=environment_manager, as_tcpip_client=False,
+<<<<<<< HEAD
                                              visual_object=self.visual_object)
         # Create environment objects and initialize
+=======
+                                             visual_object=self.visualizer)
+>>>>>>> Environment update
         environment.create()
         environment.init()
         return environment
