@@ -49,7 +49,7 @@ class TcpIpObject:
         self.data_converter = BytesConverter()
         # Available commands
         self.command_dict = {'exit': b'exit', 'step': b'step', 'done': b'done', 'prediction': b'pred',
-                             'compute': b'cmpt', 'read': b'read', 'sample': b'samp'}
+                             'compute': b'cmpt', 'read': b'read', 'sample': b'samp', 'visualisation': b'visu'}
         self.action_on_command = {
             self.command_dict["exit"]: self.action_on_exit,
             self.command_dict["step"]: self.action_on_step,
@@ -58,6 +58,7 @@ class TcpIpObject:
             self.command_dict["compute"]: self.action_on_compute,
             self.command_dict["read"]: self.action_on_read,
             self.command_dict["sample"]: self.action_on_sample,
+            self.command_dict["visualisation"]: self.action_on_visualisation,
         }
         # Synchronous variables
         # self.send_lock = Lock()
@@ -235,7 +236,7 @@ class TcpIpObject:
         return label, data
 
     async def listen_while_not_done(self, loop, sender, data_dict, client_id=None):
-        while (cmd := await self.receive_data(loop=loop, sender=sender)) != self.command_dict['done']:
+        while (cmd :=await self.receive_data(loop=loop, sender=sender)) != self.command_dict['done']:
             if cmd in self.command_dict.values():
                 await self.action_on_command[cmd](data_dict, client_id, sender, loop)
         return data_dict
@@ -336,9 +337,15 @@ class TcpIpObject:
         await self.send_command(loop=loop, receiver=receiver, command='sample')
 
 <<<<<<< HEAD
+<<<<<<< HEAD
     # Synchronous definition of the functions
     #@launchInThread
 =======
+=======
+    async def send_command_visualisation(self, loop=None, receiver=None):
+        await self.send_command(loop=loop, receiver=receiver, command='visualisation')
+
+>>>>>>> TCPIP Works with and without visualizer.
     async def action_on_exit(self, data, client_id, sender, loop):
         pass
 
@@ -356,13 +363,17 @@ class TcpIpObject:
 
     async def action_on_read(self, data, client_id, sender, loop):
         label, param = await self.receive_labeled_data(loop=loop, sender=sender)
+        print(f" LABEL {label} ::: PARAM {param}")
         if param == "::dict::":
-            data[label] = {}
-            await self.receive_dict(recv_to=data[label], sender=sender, loop=loop)
+            data[client_id][label] = {}
+            await self.receive_dict(recv_to=data[client_id][label], sender=sender, loop=loop)
         else:
-            data[label] = param
+            data[client_id][label] = param
 
     async def action_on_sample(self, data, client_id, sender, loop):
+        pass
+
+    async def action_on_visualisation(self, data, client_id, sender, loop):
         pass
 
     ##########################################################################################
@@ -600,3 +611,5 @@ class TcpIpObject:
     def sync_send_command_sample(self, receiver=None):
         self.sync_send_command(receiver=receiver, command='sample')
 
+    def sync_send_command_visualisation(self, receiver=None):
+        self.sync_send_command(receiver=receiver, command='visualisation')

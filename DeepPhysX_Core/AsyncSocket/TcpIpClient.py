@@ -33,6 +33,7 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
                                  ip_address=ip_address,
                                  port=port)
             self.sock.connect((ip_address, port))
+            self.sync_send_labeled_data(data_to_send=instance_id, label="instance_ID", receiver=self.sock, send_read_command=False)
         # Flag to trigger client's shutdown
         self.close_client = False
 
@@ -64,12 +65,12 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
         self.init()
 
         # Send visualization
-        print("CLIENT __initialize VISU")
         visu_dict = self.send_visualization()
         await self.send_visualization_data(visualization_data=visu_dict, loop=loop, receiver=self.sock)
 
         # Send parameters
         param_dict = self.send_parameters()
+<<<<<<< HEAD
 <<<<<<< HEAD
         for key in param_dict:
             # Send the parameter (label + data)
@@ -94,6 +95,13 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
 
         await self.send_command_done(loop=loop, receiver=self.sock)
 >>>>>>> Server and client handle multiple object types and dictionaries
+=======
+        await self.send_dict(name="parameters", dict_to_send=param_dict, loop=loop, receiver=self.sock)
+
+        # I don't know why but this if is needed
+        if visu_dict not in [{}, None] or param_dict not in [{}, None]:
+            await self.send_command_done(loop=loop, receiver=self.sock)
+>>>>>>> TCPIP Works with and without visualizer.
 
     def launch(self):
         """
@@ -261,6 +269,22 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
             await self.send_labeled_data(data_to_send=network_output, label="output", loop=loop, receiver=receiver)
 >>>>>>> Server and client handle multiple object types and dictionaries
 
+    async def send_prediction_request(self, network_input=None, loop=None, receiver=None):
+        """
+
+        :param loop:
+        :param network_input: Data to send under the label 'input'
+        :param receiver: TcpIpObject receiver
+        :return:
+        """
+        loop = get_event_loop() if loop is None else loop
+        receiver = self.sock if receiver is None else receiver
+        if network_input is not None:
+            await self.send_command_prediction()
+            await self.send_labeled_data(data_to_send=network_input, label='input', receiver=receiver)
+            label, pred = await self.receive_labeled_data(loop=loop, sender=receiver)
+            return pred
+
     def sync_send_training_data(self, network_input=None, network_output=None, receiver=None):
         """
         Send the training data to the TcpIpServer.
@@ -319,6 +343,7 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
 
     def sync_send_visualization_data(self, visualization_data=None, receiver=None):
 <<<<<<< HEAD
+<<<<<<< HEAD
         """
         Send the visualization data to the TcpIpServer.
 
@@ -336,11 +361,15 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
             # Done sending visualization data
             self.sync_send_command_done(receiver=self.sock)
 =======
+=======
+        self.sync_send_command_visualisation()
+>>>>>>> TCPIP Works with and without visualizer.
         self.sync_send_dict(name="visualisation", dict_to_send=visualization_data)
 
     async def send_visualization_data(self, visualization_data=None, loop=None, receiver=None):
         loop = get_event_loop() if loop is None else loop
         receiver = self.sock if receiver is None else receiver
+        await self.send_command_visualisation()
         await self.send_dict(name="visualisation", dict_to_send=visualization_data, receiver=receiver, loop=loop)
 
     async def action_on_exit(self, data, client_id, sender=None, loop=None):
@@ -349,7 +378,10 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
     async def action_on_step(self, data, client_id, sender=None, loop=None):
         self.compute_essential_data = False
         await self.step()
-        self.sync_send_command_done()
+        await self.send_command_done()
+        # I don't know why this second line is needed probably fuckedup somewhere
+        await self.send_command_done()
+
 
     async def action_on_done(self, data, client_id, sender=None, loop=None):
         pass
@@ -361,7 +393,9 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
     async def action_on_compute(self, data,  client_id, sender=None, loop=None):
         self.compute_essential_data = True
         await self.step()
-        self.sync_send_command_done()
+        await self.send_command_done()
+        # I don't know why this second line is needed probably fuckedup somewhere
+        await self.send_command_done()
 
     async def action_on_sample(self, data, client_id, sender=None, loop=None):
         sample_in = await self.receive_data(loop=loop, sender=sender)
