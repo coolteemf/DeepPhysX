@@ -535,6 +535,8 @@ class DatasetManager:
                         self.read_end_partitions[field][idx_file] = True
                     self.dataset.add(field, array([data]))
             idx_file = (idx_file + 1) % len(self.read_list_path[field])
+        self.current_partition_path['input'] = self.read_list_path[field][idx_file]
+        self.dataset.current_sample = 0
 
     def endReadPartitions(self):
         """

@@ -18,7 +18,7 @@ from DummyNetwork import DummyNetwork, DummyOptimizer
 def generate_dataset(nb_batch, batch_size):
     env_config = BaseEnvironmentConfig(environment_class=Environment,
                                        environment_file=sys.modules[Environment.__module__].__file__)
-    dataset_config = BaseDatasetConfig()
+    dataset_config = BaseDatasetConfig(partition_size=0.000001)
     pipeline = BaseDataGenerator(dataset_config=dataset_config,
                                  environment_config=env_config,
                                  session_name='generation',
@@ -58,7 +58,10 @@ def main(nb_batch, batch_size):
 
 if __name__ == '__main__':
     if not os.path.exists(os.getcwd() + '/generation'):
+        print("GENERATING DATASET...")
         generate_dataset(5, 10)
     if os.path.exists(os.getcwd() + '/training'):
+        print("REMOVE PREVIOUS TRAINING SESSION...")
         shutil.rmtree(os.getcwd() + '/training')
+    print("TRAINING FROM EXISTING DATASET...")
     main(10, 10)
