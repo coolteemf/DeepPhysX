@@ -9,7 +9,7 @@ class BytesConverter:
         Available types: bytes, str, bool, signed int, float, list, array
         """
 
-        self.int_size = 2
+        self.int_size = 4
 
         # Data to bytes conversions
         self.__data_to_bytes_conversion = {bytes: lambda d: d,

@@ -363,7 +363,6 @@ class TcpIpObject:
 
     async def action_on_read(self, data, client_id, sender, loop):
         label, param = await self.receive_labeled_data(loop=loop, sender=sender)
-        print(f" LABEL {label} ::: PARAM {param}")
         if param == "::dict::":
             data[client_id][label] = {}
             await self.receive_dict(recv_to=data[client_id][label], sender=sender, loop=loop)
