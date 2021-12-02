@@ -9,9 +9,13 @@ class BaseEnvironment(TcpIpClient):
                  instance_id=1,
                  number_of_instances=1,
                  as_tcpip_client=True,
+<<<<<<< HEAD
                  ip_address='localhost',
                  port=10000,
                  visual_object=None,
+=======
+                 visualizer_class=None,
+>>>>>>> Init parameter update
                  environment_manager=None):
         """
         BaseEnvironment is an environment class to compute simulated data for the network and its optimization process.
@@ -33,7 +37,7 @@ class BaseEnvironment(TcpIpClient):
                              port=port)
 
         self.input, self.output = array([]), array([])
-        self.visual_object = visual_object(visualizer=None) if visual_object is not None else None
+        self.visual_object = visualizer_class(visualizer=None) if visualizer_class is not None else None
         self.environment_manager = environment_manager
         self.sample_in, self.sample_out = None, None
 <<<<<<< HEAD
