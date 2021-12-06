@@ -2,6 +2,7 @@ from DeepPhysX_Core.Visualizer.VedoObjectFactories.BaseObjectFactory import *
 import numpy as np
 from vedo import utils
 
+
 class PointsFactory(BaseObjectFactory):
 
     def __init__(self):
