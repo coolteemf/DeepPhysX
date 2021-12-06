@@ -26,7 +26,7 @@ class MeanEnvironment(BaseEnvironment):
                                  data_converter=data_converter,
                                  instance_id=instance_id,
                                  number_of_instances=number_of_instances,
-                                 visual_object=visualizer_class)
+                                 visualizer_class=visualizer_class)
         self.factory = VedoObjectFactory()
 
     def send_visualization(self):
