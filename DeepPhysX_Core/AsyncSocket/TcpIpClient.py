@@ -370,7 +370,10 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
         loop = get_event_loop() if loop is None else loop
         receiver = self.sock if receiver is None else receiver
         await self.send_command_visualisation()
+        # print("CLIENT send visu")
+        # print(visualization_data)
         await self.send_dict(name="visualisation", dict_to_send=visualization_data, receiver=receiver, loop=loop)
+        #print("CLIENT VISU SENT")
 
     async def action_on_exit(self, data, client_id, sender=None, loop=None):
         self.close_client = True
