@@ -1,16 +1,13 @@
 from DeepPhysX_Core.Environment.BaseEnvironment import BaseEnvironment
 from DeepPhysX_Core.Visualizer.VedoObjectFactories.VedoObjectFactory import VedoObjectFactory
-from numpy import mean, pi, array
+from numpy import mean, pi
 from numpy.random import random
-
-import time
-
 
 # This class generate a random vector between 0 and pi of 50 value and compute its mean.
 # The vector is the input of the network and the groundtruth is the mean.
 # The data are generated on the animate function
 # The data are sent to the artificial neural network in the onStep function
-
+# Since we always send the same data one can observe how the prediction crawl toward the ground truth.
 class MeanEnvironment(BaseEnvironment):
 
     def __init__(self,
@@ -26,7 +23,7 @@ class MeanEnvironment(BaseEnvironment):
                                  data_converter=data_converter,
                                  instance_id=instance_id,
                                  number_of_instances=number_of_instances,
-                                 visual_object=visualizer_class)
+                                 visualizer_class=visualizer_class)
         self.factory = VedoObjectFactory()
 
     def send_visualization(self):
@@ -50,9 +47,13 @@ class MeanEnvironment(BaseEnvironment):
     async def animate(self):
         pass
 
-    async def step(self):
+    async def step(self):   # This function is called by a request of the server
         await self.animate()
-        self.apply_prediction(await self.get_prediction(input_array=self.input))
+        # get_prediction ask the neural network its output for the given input
+        neural_network_prediction = await self.get_prediction(input_array=self.input)
+
+        # Specify how to use the prediction
+        self.apply_prediction(neural_network_prediction)
         await self.onStep()
 
     def apply_prediction(self, prediction):
@@ -64,5 +65,7 @@ class MeanEnvironment(BaseEnvironment):
         self.factory.updateObject_dict(object_id=2, new_data_dict={'position': prediction})
 
     async def onStep(self):
+        # Send visualisation data to update
         await self.update_visualisation(visu_dict=self.factory.updated_object_dict)
+        # Send the training data
         await self.send_training_data(network_input=self.input, network_output=self.output)

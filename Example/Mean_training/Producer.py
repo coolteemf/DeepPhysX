@@ -31,12 +31,14 @@ class MeanEnvironment(BaseEnvironment):
         print(f"Created client n°{self.instance_id}")
 
     async def animate(self):
+        # Generate a random input the corresponding output
         self.input = pi * random((25, 2))
         self.output = mean(self.input, axis=0)
 
-    async def step(self):
+    async def step(self):  # This function is called by a request of the server
         await self.animate()
         await self.onStep()
 
     async def onStep(self):
+        # Send the training data
         await self.send_training_data(network_input=self.input, network_output=self.output)

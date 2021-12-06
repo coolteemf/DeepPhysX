@@ -5,8 +5,8 @@ from vedo import Mesh
 import os
 
 
-# This class generate a random vector between 0 and pi of 50 value and compute its mean.
-# The vector is the input of the network and the groundtruth is the mean.
+# This class generate a random position in the unit cube ([-1, -1, -1], [1, 1, 1]) (INPUT)
+# And compare its signed distance relative to the unit sphere. (OUTPUT)
 # The data are generated on the animate function
 # The data are sent to the artificial neural network in the onStep function
 
@@ -28,7 +28,7 @@ class MeanEnvironment(BaseEnvironment):
                                  visualizer_class=visualizer_class)
         self.factory = VedoObjectFactory()
         dir_path = os.path.dirname(os.path.realpath(__file__))
-        self.mesh = Mesh(f"{dir_path}/Sphere.obj")
+        self.mesh = Mesh(f"{dir_path}/ico.obj")
 
     def send_visualization(self):
 
@@ -52,15 +52,21 @@ class MeanEnvironment(BaseEnvironment):
         print(f"Created client n°{self.instance_id}")
 
     async def animate(self):
+
+        # Generate a random position between [-1, -1, -1] and [1, 1, 1]
         self.input = np.array([np.random.uniform(-1, 1), np.random.uniform(-1, 1), np.random.uniform(-1, 1)])
 
         # The mesh is a sphere of radius 1. We compute the signed distance to the sphere
         # positive = exterior, negative = interior, null = on the surface of the sphere
         self.output = float(np.linalg.norm(self.input) - 1.0)
 
-    async def step(self):
+    async def step(self):  # This function is called by a request of the server
         await self.animate()
-        self.apply_prediction(await self.get_prediction(input_array=self.input))
+        # get_prediction ask the neural network its output for the given input
+        neural_network_prediction = await self.get_prediction(input_array=self.input)
+
+        # Specify how to use the prediction
+        self.apply_prediction(neural_network_prediction)
         await self.onStep()
 
     def apply_prediction(self, prediction):
@@ -72,5 +78,7 @@ class MeanEnvironment(BaseEnvironment):
         self.factory.updateObject_dict(object_id=3, new_data_dict={'position': np.array([1, prediction[0], 1])})
 
     async def onStep(self):
+        # Send visualisation data to update
         await self.update_visualisation(visu_dict=self.factory.updated_object_dict)
+        # Send the training data
         await self.send_training_data(network_input=self.input, network_output=self.output)
