@@ -9,7 +9,7 @@ class PointsFactory(BaseObjectFactory):
 
         self.type = "Points"
 
-        self.grammar_plug = ['inputobj', 'r']
+        self.grammar_plug = ['positions', 'r']
         self.grammar.extend(self.grammar_plug)
         self.default_values.update({self.grammar_plug[0]: None, self.grammar_plug[1]: 4})
 

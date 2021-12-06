@@ -2,11 +2,11 @@ from vedo import Mesh, Points, Marker, Glyph
 from DeepPhysX_Core.Visualizer.VedoObjectFactories.VedoObjectFactory import VedoObjectFactory
 import numpy as np
 create_filter = {
-    "Mesh": lambda sorted_data: Mesh(inputobj=sorted_data["inputobj"],
+    "Mesh": lambda sorted_data: Mesh(inputobj=[sorted_data["positions"], sorted_data["cells"]],
                                      c=sorted_data["c"],
                                      alpha=sorted_data["alpha"],
                                      computeNormals=sorted_data["computeNormals"]),
-    "Points": lambda sorted_data: Points(inputobj=sorted_data["inputobj"],
+    "Points": lambda sorted_data: Points(inputobj=sorted_data["positions"],
                                          c=sorted_data["c"],
                                          alpha=sorted_data["alpha"],
                                          r=sorted_data["r"]),

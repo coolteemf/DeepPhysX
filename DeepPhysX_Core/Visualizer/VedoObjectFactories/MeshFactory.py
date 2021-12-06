@@ -9,14 +9,13 @@ class MeshFactory(BaseObjectFactory):
 
         self.type = "Mesh"
         self.number_of_dimensions = 0
-        self.grammar_plug = ['inputobj', 'computeNormals']
+        self.grammar_plug = ['positions', 'cells', 'computeNormals']
         self.grammar.extend(self.grammar_plug)
-        self.default_values.update({self.grammar_plug[0]: None, self.grammar_plug[1]: False})
+        self.default_values.update({self.grammar_plug[0]: None, self.grammar_plug[1]: None, self.grammar_plug[2]: False})
 
     @parse_wrapper()
     def parse(self, data_dict: dict):
 
-        inputobj = []
         # Look for position.s and cell.s to make inputobj
         pos = None
 
@@ -43,12 +42,10 @@ class MeshFactory(BaseObjectFactory):
             if n and len(pos[0]) == 2: # make it 3d
                 pos = np.c_[np.array(pos), np.zeros(len(pos))]
 
-            inputobj.append(pos)
+            self.parsed_data[self.grammar_plug[0]] = np.array(pos, dtype=float)
 
         if 'cell' in data_dict or 'cells' in data_dict:
-            inputobj.append(data_dict['cell'] if 'cell' in data_dict else data_dict['cells'])
-
-        self.parsed_data[self.grammar_plug[0]] = inputobj
+            self.parsed_data[self.grammar_plug[1]] = np.array(data_dict['cell'] if 'cell' in data_dict else data_dict['cells'], dtype=int)
 
     @update_wrapper()
     def update_instance(self, instance):
