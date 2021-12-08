@@ -24,12 +24,7 @@ class TcpIpObject:
 
     def __init__(self,
                  ip_address='localhost',
-<<<<<<< HEAD
                  port=10000):
-=======
-                 port=10000,
-                 data_converter=BytesConverter):
->>>>>>> Server and client handle multiple object types and dictionaries
         """
         TcpIpObject defines communication protocols to send and receive data and commands.
 
@@ -48,7 +43,7 @@ class TcpIpObject:
         # Create data converter
         self.data_converter = BytesConverter()
         # Available commands
-        self.command_dict = {'exit': b'exit', 'step': b'step', 'done': b'done', 'prediction': b'pred',
+        self.command_dict = {'exit': b'exit', 'step': b'step', 'done': b'done', 'finished': b'fini', 'prediction': b'pred',
                              'compute': b'cmpt', 'read': b'read', 'sample': b'samp', 'visualisation': b'visu'}
         self.action_on_command = {
             self.command_dict["exit"]: self.action_on_exit,
@@ -59,16 +54,11 @@ class TcpIpObject:
             self.command_dict["read"]: self.action_on_read,
             self.command_dict["sample"]: self.action_on_sample,
             self.command_dict["visualisation"]: self.action_on_visualisation,
+            self.command_dict["finished"]: self.action_on_finished,
         }
         # Synchronous variables
         # self.send_lock = Lock()
         # self.receive_lock = Lock()
-
-<<<<<<< HEAD
-        self.times = []
-
-    # Asynchronous definition of the functions
-=======
         # Asynchronous definition of the functions
 
     ##########################################################################################
@@ -78,7 +68,7 @@ class TcpIpObject:
     ##########################################################################################
     ##########################################################################################
     ##########################################################################################
->>>>>>> Server and client handle multiple object types and dictionaries
+
     async def send_data(self, data_to_send, loop=None, receiver=None):
         """
         Send data from a TcpIpObject to another.
@@ -93,12 +83,8 @@ class TcpIpObject:
         # Cast data to bytes fields
         data_as_bytes = self.data_converter.data_to_bytes(data_to_send)
         # Send the whole message
-<<<<<<< HEAD
-        await loop.sock_sendall(sock=receiver, data=data_as_bytes)
-=======
         if await loop.sock_sendall(sock=receiver, data=data_as_bytes) is not None:
             ValueError("Could not send all of the data for an unknown reason")
->>>>>>> Server and client handle multiple object types and dictionaries
 
     async def receive_data(self, loop, sender):
         """
@@ -109,17 +95,12 @@ class TcpIpObject:
         :return: Converted data
         """
         # Receive the number of fields to receive
-<<<<<<< HEAD
-        nb_bytes_fields = self.data_converter.size_from_bytes(await loop.sock_recv(sender, 1))
-        sizes = [self.data_converter.size_from_bytes(await loop.sock_recv(sender, 4)) for _ in range(nb_bytes_fields)]
-        # bytes_fields = [await loop.sock_recv(sender, size) for size in sizes]
-=======
+
         nb_bytes_fields_b = await loop.sock_recv(sender, self.data_converter.int_size)
         nb_bytes_fields = self.data_converter.size_from_bytes(nb_bytes_fields_b)
         sizes_b = [await loop.sock_recv(sender, self.data_converter.int_size) for _ in range(nb_bytes_fields)]
         sizes = [self.data_converter.size_from_bytes(size_b) for size_b in sizes_b]
 
->>>>>>> Server and client handle multiple object types and dictionaries
         bytes_fields = [await self.read_data(loop, sender, size) for size in sizes]
         # Return the data in the expected format
         return self.data_converter.bytes_to_data(bytes_fields)
@@ -134,11 +115,8 @@ class TcpIpObject:
         :return: Bytes field of read_size length
         """
         # Maximum read sizes array
-<<<<<<< HEAD
-        read_sizes = [8192, 4096, 2048, 1024, 512, 256]
-=======
+
         read_sizes = [4096]
->>>>>>> Server and client handle multiple object types and dictionaries
         bytes_field = b''
         while read_size > 0:
             # Select the good amount of bytes to read
@@ -155,8 +133,6 @@ class TcpIpObject:
             read_size -= len(data_received_as_bytes)
         return bytes_field
 
-<<<<<<< HEAD
-=======
     ##########################################################################################
     ##########################################################################################
     ##########################################################################################
@@ -164,7 +140,6 @@ class TcpIpObject:
     ##########################################################################################
     ##########################################################################################
     ##########################################################################################
->>>>>>> Server and client handle multiple object types and dictionaries
     async def send_labeled_data(self, data_to_send, label, receiver=None, loop=None, send_read_command=True):
         """
         Send data with an associated label.
@@ -179,11 +154,7 @@ class TcpIpObject:
         loop = get_event_loop() if loop is None else loop
         receiver = self.sock if receiver is None else receiver
         if send_read_command:
-<<<<<<< HEAD
             await self.send_command_read(loop=loop, receiver=receiver)
-=======
-            await self.send_command_read()
->>>>>>> Server and client handle multiple object types and dictionaries
         await self.send_data(data_to_send=label, loop=loop, receiver=receiver)
         await self.send_data(data_to_send=data_to_send, loop=loop, receiver=receiver)
 
@@ -201,37 +172,6 @@ class TcpIpObject:
         else:
             label = data
         data = await self.receive_data(loop=loop, sender=sender)
-<<<<<<< HEAD
-        return label, data
-
-    async def send_dict_data(self, dict_data, receiver=None, loop=None):
-        """
-        Send a dictionary item by item.
-
-        :param dict_data: Dict of data that will be sent on socket.
-        :param receiver: TcpIpObject receiver.
-        :param loop: asyncio.get_event_loop() return
-        :return:
-        """
-        for field in dict_data.keys():
-            await self.send_labeled_data(data_to_send=dict_data[field], label=field, receiver=receiver, loop=loop)
-        await self.send_command_done(loop=loop, receiver=receiver)
-
-    async def receive_dict_data(self, loop, sender):
-        """
-        Receive a dictionary item by item.
-
-        :param loop: asyncio.get_event_loop() return
-        :param sender: TcpIpObject sender
-        :return:
-        """
-        dict_data = {}
-        while await self.receive_data(loop=loop, sender=sender) != self.command_dict['done']:
-            label, data = await self.receive_labeled_data(loop=loop, sender=sender)
-            dict_data[label] = data
-        return dict_data
-
-=======
 
         return label, data
 
@@ -246,9 +186,8 @@ class TcpIpObject:
         receiver = self.sock if receiver is None else receiver
 
         if dict_to_send is None or dict_to_send == {}:
-            await self.send_command_done(loop=loop, receiver=receiver)
+            await self.send_command_finished(loop=loop, receiver=receiver)
             return
-
         await self.send_command_read(loop=loop, receiver=receiver)
         # Sending this so the listener start the receive_dict routine
         await self.send_labeled_data(data_to_send=name, label="::dict::", receiver=receiver, loop=loop,
@@ -261,9 +200,10 @@ class TcpIpObject:
             else:
                 await self.send_labeled_data(data_to_send=dict_to_send[key], label=key, receiver=receiver, loop=loop,
                                              send_read_command=True)
-        await self.send_command_done(loop=loop, receiver=receiver)
+        await self.send_command_finished(loop=loop, receiver=receiver)
 
-    async def __send_unnamed_dict(self, dict_to_send, receiver=None, loop=None):
+    async def __send_unnamed_dict(self, dict_to_send, receiver=None, loop=None, blank=""):
+        blank += "  "
         loop = get_event_loop() if loop is None else loop
         receiver = self.sock if receiver is None else receiver
         # Sending this so the listener start the receive_dict routine
@@ -271,24 +211,23 @@ class TcpIpObject:
             if type(dict_to_send[key]) == dict:
                 await self.send_labeled_data(data_to_send=key, label="dict_id", receiver=receiver, loop=loop,
                                              send_read_command=True)
-                await self.__send_unnamed_dict(dict_to_send=dict_to_send[key], receiver=receiver, loop=loop)
+                await self.__send_unnamed_dict(dict_to_send=dict_to_send[key], receiver=receiver, loop=loop, blank=blank)
             else:
                 await self.send_labeled_data(data_to_send=dict_to_send[key], label=key, receiver=receiver, loop=loop,
                                              send_read_command=True)
-        await self.send_command_done(loop=loop, receiver=receiver)
+        await self.send_command_finished(loop=loop, receiver=receiver)
+        await self.send_command_finished(loop=loop, receiver=receiver)
 
     async def receive_dict(self, recv_to, sender=None, loop=None):
         loop = get_event_loop() if loop is None else loop
         sender = self.sock if sender is None else sender
-
-        while await self.receive_data(loop=loop, sender=sender) != self.command_dict['done']:
+        while (cmd := await self.receive_data(loop=loop, sender=sender)) != self.command_dict['finished']:
             label, param = await self.receive_labeled_data(loop=loop, sender=sender)
             if label in ["::dict::", "dict_id"]:
                 recv_to[param] = {}
                 await self.receive_dict(recv_to=recv_to[param], sender=sender, loop=loop)
             else:
                 recv_to[label] = param
-
 
     ##########################################################################################
     ##########################################################################################
@@ -297,7 +236,7 @@ class TcpIpObject:
     ##########################################################################################
     ##########################################################################################
     ##########################################################################################
->>>>>>> Server and client handle multiple object types and dictionaries
+
     async def send_command(self, loop, receiver, command=''):
         """
         Send a bytes command among the available commands.
@@ -336,16 +275,13 @@ class TcpIpObject:
     async def send_command_sample(self, loop=None, receiver=None):
         await self.send_command(loop=loop, receiver=receiver, command='sample')
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-    # Synchronous definition of the functions
-    #@launchInThread
-=======
-=======
+
     async def send_command_visualisation(self, loop=None, receiver=None):
         await self.send_command(loop=loop, receiver=receiver, command='visualisation')
 
->>>>>>> TCPIP Works with and without visualizer.
+    async def send_command_finished(self, loop=None, receiver=None):
+        await self.send_command(loop=loop, receiver=receiver, command='finished')
+
     async def action_on_exit(self, data, client_id, sender, loop):
         pass
 
@@ -359,6 +295,9 @@ class TcpIpObject:
         pass
 
     async def action_on_compute(self, data, client_id, sender, loop):
+        pass
+
+    async def action_on_finished(self, data, client_id, sender, loop):
         pass
 
     async def action_on_read(self, data, client_id, sender, loop):
@@ -383,7 +322,6 @@ class TcpIpObject:
     ##########################################################################################
     ##########################################################################################
     # @launchInThread
->>>>>>> Server and client handle multiple object types and dictionaries
     def sync_send_data(self, data_to_send, receiver=None):
         """
         Send data from a TcpIpObject to another.
@@ -398,11 +336,6 @@ class TcpIpObject:
         # Send the whole message
         receiver.sendall(data_as_bytes)
 
-<<<<<<< HEAD
-    #@launchInThread
-=======
-    # @launchInThread
->>>>>>> Server and client handle multiple object types and dictionaries
     def sync_receive_data(self):
         """
         Receive data from another TcpIpObject.
@@ -428,12 +361,7 @@ class TcpIpObject:
         :return: Bytes field of read_size length
         """
         # Maximum read sizes array
-<<<<<<< HEAD
         read_sizes = [8192, 4096, 2048, 1024, 512, 256]
-=======
-        # read_sizes = [8192, 4096, 2048, 1024, 512, 256]
-        read_sizes = [4096]
->>>>>>> Server and client handle multiple object types and dictionaries
         bytes_field = b''
         while read_size > 0:
             # Select the good amount of bytes to read
@@ -450,10 +378,7 @@ class TcpIpObject:
             read_size -= len(data_received_as_bytes)
         return bytes_field
 
-<<<<<<< HEAD
-    # Functions below might not need the thread thingy
-    #@launchInThread
-=======
+
     ##########################################################################################
     ##########################################################################################
     ##########################################################################################
@@ -462,7 +387,6 @@ class TcpIpObject:
     ##########################################################################################
     ##########################################################################################
     # @launchInThread
->>>>>>> Server and client handle multiple object types and dictionaries
     def sync_send_labeled_data(self, data_to_send, label, receiver=None, send_read_command=True):
         """
         Send data with an associated label.
@@ -477,11 +401,6 @@ class TcpIpObject:
         self.sync_send_data(data_to_send=label, receiver=receiver)
         self.sync_send_data(data_to_send=data_to_send, receiver=receiver)
 
-<<<<<<< HEAD
-    #@launchInThread
-=======
-    # @launchInThread
->>>>>>> Server and client handle multiple object types and dictionaries
     def sync_receive_labeled_data(self):
         """
         Receive data and an associated label.
@@ -496,34 +415,6 @@ class TcpIpObject:
         data = self.sync_receive_data()
         return label, data
 
-<<<<<<< HEAD
-    def sync_send_dict_data(self, dict_data, receiver=None):
-        """
-        Send a dictionary item by item.
-
-        :param dict_data:
-        :param receiver:
-        :return:
-        """
-        for field in dict_data.keys():
-            self.sync_send_labeled_data(data_to_send=dict_data[field], label=field, receiver=receiver,
-                                        send_read_command=True)
-        self.sync_send_command_done()
-
-    def sync_receive_dict_data(self):
-        """
-        Receive a dictionary item by item.
-
-        :return:
-        """
-        dict_data = {}
-        while self.sync_receive_data() != self.command_dict['done']:
-            label, data = self.sync_receive_labeled_data()
-            dict_data[label] = data
-        return dict_data
-
-    #@launchInThread
-=======
     def sync_send_dict(self, name, dict_to_send, receiver=None):
         receiver = self.sock if receiver is None else receiver
 
@@ -555,9 +446,8 @@ class TcpIpObject:
 
     def sync_receive_dict(self, recv_to, sender=None):
         sender = self.sock if sender is None else sender
-        while self.sync_receive_data() != self.command_dict['done']:
+        while self.sync_receive_data() != self.command_dict['finished']:
             label, param = self.sync_receive_labeled_data()
-
             if label == "dict_id":
                 recv_to[param] = {}
                 self.sync_receive_dict(recv_to=recv_to[param], sender=sender)
@@ -572,7 +462,6 @@ class TcpIpObject:
     ##########################################################################################
     ##########################################################################################
     # @launchInThread
->>>>>>> Server and client handle multiple object types and dictionaries
     def sync_send_command(self, receiver, command=''):
         """
         Send a bytes command among the available commands.
@@ -612,3 +501,6 @@ class TcpIpObject:
 
     def sync_send_command_visualisation(self, receiver=None):
         self.sync_send_command(receiver=receiver, command='visualisation')
+
+    def sync_send_command_finished(self, receiver=None):
+        self.sync_send_command(receiver=receiver, command='finished')
