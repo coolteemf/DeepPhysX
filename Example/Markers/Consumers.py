@@ -9,7 +9,7 @@ from DeepPhysX_Core import BaseEnvironmentConfig
 from DeepPhysX_Core import BytesConverter
 from DeepPhysX_Core import NewVisualizer
 
-from DeepPhysX.Example.Mesh_distance.Producer import MeanEnvironment as Environment
+from DeepPhysX.Example.Markers.Producer import MeanEnvironment as Environment
 
 # DeepPhysX's Pytorch imports
 from DeepPhysX_PyTorch import FCConfig
@@ -29,8 +29,8 @@ def createScene():
     network_config = FCConfig(loss=torch.nn.MSELoss,                                                    # Loss function associated with the learning
                               lr=1e-5,                                                                  # Learning rate
                               optimizer=torch.optim.Adam,                                               # Optimizer associated with the learning process
-                              dim_layers=[3, 50, 50, 1],                                                   # Number of neurones for each layer (in the case of fully connected)
-                              dim_output=1)                                                             # Width of the output
+                              dim_layers=[50, 50, 2],                                                   # Number of neurones for each layer (in the case of fully connected)
+                              dim_output=2)                                                             # Width of the output
 
     dataset_config = BaseDatasetConfig(partition_size=1)                                                # Max file size in Gb
 

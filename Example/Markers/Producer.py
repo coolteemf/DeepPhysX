@@ -1,14 +1,16 @@
 from DeepPhysX_Core.Environment.BaseEnvironment import BaseEnvironment
 from DeepPhysX_Core.Visualizer.VedoObjectFactories.VedoObjectFactory import VedoObjectFactory
-import numpy as np
-from vedo import Mesh
-import os
+from numpy import mean, pi, array
+from numpy.random import random
+
+import time
 
 
-# This class generate a random position in the unit cube ([-1, -1, -1], [1, 1, 1]) (INPUT)
-# And compare its signed distance relative to the unit sphere. (OUTPUT)
+# This class generate a random vector between 0 and pi of 50 value and compute its mean.
+# The vector is the input of the network and the groundtruth is the mean.
 # The data are generated on the animate function
 # The data are sent to the artificial neural network in the onStep function
+# We added a visualizer hence we have to update the data at each step
 
 class MeanEnvironment(BaseEnvironment):
 
@@ -27,22 +29,17 @@ class MeanEnvironment(BaseEnvironment):
                                  number_of_instances=number_of_instances,
                                  visualizer_class=visualizer_class)
         self.factory = VedoObjectFactory()
-        dir_path = os.path.dirname(os.path.realpath(__file__))
-        self.mesh = Mesh(f"{dir_path}/ico.obj")
 
     def send_visualization(self):
-
-        # Mesh
-        self.factory.addObject(object_type="Mesh", data_dict={"positions": self.mesh.points().tolist(), "cells": self.mesh.cells(),  "c": "grey", "at": self.instance_id, "alpha": 0.5})
-
-        # Target
-        self.factory.addObject(object_type="Points", data_dict={"positions": [[1, 1, 0]], "c": "red", "at": self.instance_id, "r": 12})
-
-        # We will input the distance in the Y value to move them both on the same axis, thus displaying the error
-        # Real distance to the mesh
-        self.factory.addObject(object_type="Points", data_dict={"positions": [[1, 0, 1]], "c": "blue", "at": self.instance_id, "r": 20})
-        # Predicted distance to the mesh
-        self.factory.addObject(object_type="Points", data_dict={"positions": [[1, 1, 1]], "c": "green", "at": self.instance_id, "r": 20})
+        pos = pi * random((25, 2))
+        # Dummy factory so we don't have a point at (0, 0, 0) (default value)
+        marker_dict, _, _ = VedoObjectFactory().addObject(object_type="Marker", data_dict={"symbol": "s", "s": 0.15})
+        # Point cloud
+        self.factory.addObject(object_type="Glyph", data_dict={"positions": pos, "Marker": marker_dict, "c": "blue", "at": self.instance_id})
+        # Ground truth value
+        self.factory.addObject(object_type="Marker", data_dict={"symbol": "x", "s": 0.15, "position": mean(pos, axis=0), "c": "red", "at": self.instance_id})
+        # Prediction value
+        self.factory.addObject(object_type="Marker", data_dict={"symbol": "+", "s": 0.15, "position": mean(pos, axis=0), "c": "green", "at": self.instance_id})
         return self.factory.objects_dict
 
     def send_parameters(self):
@@ -52,13 +49,8 @@ class MeanEnvironment(BaseEnvironment):
         print(f"Created client n°{self.instance_id}")
 
     async def animate(self):
-
-        # Generate a random position between [-1, -1, -1] and [1, 1, 1]
-        self.input = np.array([np.random.uniform(-1, 1), np.random.uniform(-1, 1), np.random.uniform(-1, 1)])
-
-        # The mesh is a sphere of radius 1. We compute the signed distance to the sphere
-        # positive = exterior, negative = interior, null = on the surface of the sphere
-        self.output = float(np.linalg.norm(self.input) - 1.0)
+        self.input = pi * random((25, 2))
+        self.output = mean(self.input, axis=0)
 
     async def step(self):  # This function is called by a request of the server
         await self.animate()
@@ -70,12 +62,13 @@ class MeanEnvironment(BaseEnvironment):
         await self.onStep()
 
     def apply_prediction(self, prediction):
+        # In our case the prediction is only used to update the visual data
         # Point cloud
-        self.factory.updateObject_dict(object_id=1, new_data_dict={'positions': self.input})
+        self.factory.updateObject_dict(object_id=0, new_data_dict={'positions': self.input})
         # Ground truth value
-        self.factory.updateObject_dict(object_id=2, new_data_dict={'position': np.array([1, self.output, 1])})
+        self.factory.updateObject_dict(object_id=1, new_data_dict={'position': self.output})
         # Prediction value
-        self.factory.updateObject_dict(object_id=3, new_data_dict={'position': np.array([1, prediction[0], 1])})
+        self.factory.updateObject_dict(object_id=2, new_data_dict={'position': prediction})
 
     async def onStep(self):
         # Send visualisation data to update
