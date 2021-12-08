@@ -1,6 +1,8 @@
 from numpy import ndarray, array, frombuffer, zeros
 
 from struct import pack, unpack, calcsize
+
+
 class BytesConverter:
 
     def __init__(self):
@@ -10,8 +12,9 @@ class BytesConverter:
         """
 
         self.int_size = calcsize("i")
-        #Data to bytes conversions
-        self.__data_to_bytes_conversion = {bytes: lambda d: d,
+        # Data to bytes conversions
+        self.__data_to_bytes_conversion = {type(None): lambda d: b'0',
+                                           bytes: lambda d: d,
                                            str: lambda d: d.encode('utf-8'),
                                            bool: lambda d: bytearray(pack('?', d)),
                                            int: lambda d: bytearray(pack('i', d)),
@@ -20,7 +23,8 @@ class BytesConverter:
                                            ndarray: lambda d: array(d, dtype=float).tobytes()}
 
         # Bytes to data conversions
-        self.__bytes_to_data_conversion = {bytes.__name__: lambda b: b,
+        self.__bytes_to_data_conversion = {type(None).__name__: lambda b: None,
+                                           bytes.__name__: lambda b: b,
                                            str.__name__: lambda b: b.decode('utf-8'),
                                            bool.__name__: lambda b: unpack('?', b)[0],
                                            int.__name__: lambda b: unpack('i', b)[0],
@@ -48,6 +52,7 @@ class BytesConverter:
         # Convert the type of 'data' from str to bytes
         type_data = self.__data_to_bytes_conversion[str](type(data).__name__)
         sizes += (self.size_to_bytes(type_data),)
+        #print(f"BytesConverter : {type(data)} : {data}")
         # Convert 'data' to bytes
         data_bytes = self.__data_to_bytes_conversion[type(data)](data)
         sizes += (self.size_to_bytes(data_bytes),)
@@ -56,7 +61,6 @@ class BytesConverter:
         args = ()
         # Shape and data type for list and array
         if type(data) in [list, ndarray]:
-
             # Get python native datatype of array
             dtype = type(zeros(1, dtype=array(data).dtype).item()).__name__
             # Convert datatype of array from str to bytes
