@@ -201,6 +201,7 @@ class TcpIpObject:
                 await self.send_labeled_data(data_to_send=dict_to_send[key], label=key, receiver=receiver, loop=loop,
                                              send_read_command=True)
         await self.send_command_finished(loop=loop, receiver=receiver)
+        await self.send_command_finished(loop=loop, receiver=receiver)
 
     async def __send_unnamed_dict(self, dict_to_send, receiver=None, loop=None, blank=""):
         blank += "  "
@@ -215,7 +216,6 @@ class TcpIpObject:
             else:
                 await self.send_labeled_data(data_to_send=dict_to_send[key], label=key, receiver=receiver, loop=loop,
                                              send_read_command=True)
-        await self.send_command_finished(loop=loop, receiver=receiver)
         await self.send_command_finished(loop=loop, receiver=receiver)
 
     async def receive_dict(self, recv_to, sender=None, loop=None):
