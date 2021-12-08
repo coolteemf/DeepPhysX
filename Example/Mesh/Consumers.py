@@ -9,7 +9,7 @@ from DeepPhysX_Core import BaseEnvironmentConfig
 from DeepPhysX_Core import BytesConverter
 from DeepPhysX_Core import NewVisualizer
 
-from DeepPhysX.Example.Mesh_distance.Producer import MeanEnvironment as Environment
+from DeepPhysX.Example.Mesh.Producer import MeanEnvironment as Environment
 
 # DeepPhysX's Pytorch imports
 from DeepPhysX_PyTorch import FCConfig
