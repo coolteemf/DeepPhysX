@@ -1,3 +1,6 @@
+from vedo import utils
+import numpy as np
+
 class parse_wrapper:
     def __call__(self, specialized_parse):
         def general_parse(*args, **kwargs):
@@ -56,6 +59,46 @@ class update_wrapper:
 
             return instance
         return general_update
+
+
+def parse_position(data_dict, wrap=True):
+    # Look for position.s and cell.s to make inputobj
+    pos = None
+
+    # Either positions and cells have been passed as independant array or are inexistant
+    if 'position' in data_dict:
+        pos = data_dict['position']
+    elif 'positions' in data_dict:
+        pos = data_dict['positions']
+
+    if utils.isSequence(pos): # passing point coords
+        if not utils.isSequence(pos[0]) and wrap:
+            pos = [pos]
+        n = len(pos)
+
+        if n == 3:  # assume pos is in the format [all_x, all_y, all_z]
+            if utils.isSequence(pos[0]) and len(pos[0]) > 3:
+                pos = np.stack((pos[0], pos[1], pos[2]), axis=1)
+        elif n == 2:  # assume pos is in the format [all_x, all_y, 0]
+            if utils.isSequence(pos[0]) and len(pos[0]) > 3:
+                pos = np.stack((pos[0], pos[1], np.zeros(len(pos[0]))), axis=1)
+            else:
+                pos = np.array([pos[0], pos[1], 0])
+
+        if n and wrap and len(pos[0]) == 2: # make it 3d
+            pos = np.c_[np.array(pos), np.zeros(len(pos))]
+
+    return pos
+
+
+def update_position(instance, parsed_data, dirty_fields, grammar_plug):
+    print(parsed_data[grammar_plug])
+    if 'position' in dirty_fields:
+        instance.points(parsed_data[grammar_plug])
+        dirty_fields.remove('position')
+    if 'positions' in dirty_fields:
+        instance.points(parsed_data[grammar_plug])
+        dirty_fields.remove('positions')
 
 
 class BaseObjectFactory:

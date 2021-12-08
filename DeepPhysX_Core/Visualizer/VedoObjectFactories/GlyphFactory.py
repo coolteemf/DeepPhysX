@@ -1,5 +1,7 @@
 from DeepPhysX_Core.Visualizer.VedoObjectFactories.BaseObjectFactory import *
 from DeepPhysX_Core.Visualizer.VedoObjectFactories.MarkerFactory import *
+from vedo import utils
+import numpy as np
 
 class GlyphFactory(BaseObjectFactory):
 
@@ -8,7 +10,7 @@ class GlyphFactory(BaseObjectFactory):
 
         self.type = "Glyph"
 
-        self.grammar_plug = ['mesh', 'glyphObj',
+        self.grammar_plug = ['positions', 'glyphObj',
                              'orientationArray', 'scaleByScalar',
                              'scaleByVectorSize', 'scaleByVectorComponents',
                              'colorByScalar', 'colorByVectorSize', 'tol']
@@ -22,38 +24,25 @@ class GlyphFactory(BaseObjectFactory):
 
     @parse_wrapper()
     def parse(self, data_dict: dict):
-        # Look for position.s and cell.s to make inputobj
-        if self.grammar_plug[0] not in self.parsed_data:
-            mesh = []
-            # Either positions and cells have been passed as independant array or are inexistant
-            if 'position' in data_dict or 'positions' in data_dict:
-                mesh.append(data_dict['position'] if 'position' in data_dict else data_dict['positions'])
-            self.parsed_data[self.grammar_plug[0]] = mesh
+
+        pos = parse_position(data_dict=data_dict, wrap=True)
+        if pos is not None:
+            self.parsed_data[self.grammar_plug[0]] = pos
 
         self.marker_factory = MarkerFactory()
-        marker_data = {}
-        if self.grammar_plug[1] not in self.parsed_data:
-            if 'Marker' in data_dict:
-                marker_data = data_dict['Marker']
-            elif "marker" in data_dict:
-                marker_data = data_dict['marker']
-            elif 'Markers' in data_dict:
-                marker_data = data_dict['Markers']
-            elif "markers" in data_dict:
-                marker_data = data_dict['markers']
-        else:
-            marker_data = self.parsed_data[self.grammar_plug[1]]
-        self.marker_factory.parse(data_dict=marker_data)
+        if 'Marker' in data_dict:
+            self.marker_factory.parse(data_dict=data_dict['Marker'])
+        elif "marker" in data_dict:
+            self.marker_factory.parse(data_dict=data_dict['marker'])
+        elif 'Markers' in data_dict:
+            self.marker_factory.parse(data_dict=data_dict['Markers'])
+        elif "markers" in data_dict:
+            self.marker_factory.parse(data_dict=data_dict['markers'])
+        elif self.grammar_plug[1] in data_dict:
+            self.marker_factory.parse(data_dict=data_dict[self.grammar_plug[1]])
         self.parsed_data[self.grammar_plug[1]] = self.marker_factory.get_data()
 
     @update_wrapper()
     def update_instance(self, instance):
-        if self.grammar_plug[0] in self.dirty_fields:
-            instance.points(self.parsed_data[self.grammar_plug[0]])
-            self.dirty_fields.remove(self.grammar_plug[0])
-        if 'position' in self.dirty_fields:
-            instance.points(self.parsed_data[self.grammar_plug[0]])
-            self.dirty_fields.remove('position')
-        if 'positions' in self.dirty_fields:
-            instance.points(self.parsed_data[self.grammar_plug[0]])
-            self.dirty_fields.remove('positions')
+        # update_position(instance, self.parsed_data, self.dirty_fields, self.grammar_plug[0])
+        pass
