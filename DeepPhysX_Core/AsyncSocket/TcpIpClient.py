@@ -68,14 +68,9 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
 
         # Send parameters
         param_dict = self.send_parameters()
-
-        print("CLIENT __initialize PARAM")
         await self.send_dict(name="parameters", dict_to_send=param_dict, loop=loop, receiver=self.sock)
 
-
-        # I don't know why but this if is needed
-        if visu_dict not in [{}, None] or param_dict not in [{}, None]:
-            await self.send_command_done(loop=loop, receiver=self.sock)
+        await self.send_command_done(loop=loop, receiver=self.sock)
 
 
     def launch(self):
@@ -111,7 +106,7 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
         """
         loop = get_event_loop()
 
-        await self.listen_while_not_done(loop=loop, sender=server, data_dict={}, client_id=None)
+        await self.listen_while_not_done(loop=loop, sender=server, data_dict={})
 
     async def __close(self):
         """
@@ -129,42 +124,6 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
         # Close socket
         self.sock.close()
 
-    async def listen_while_not_done(self, loop, sender, data_dict):
-        """
-        Listening to data until command 'done' is received.
-
-        :param loop: asyncio.get_event_loop() return
-        :param sender: TcpIpObject sender
-        :param data_dict: Dictionary in which data is stored
-        :return:
-        """
-        while await self.receive_data(loop=loop, sender=sender) != self.command_dict['done']:
-            label, param = await self.receive_labeled_data(loop=loop, sender=sender)
-            data_dict[label] = param
-        # ############ This is debug mode of above. DO NOT ERASE
-        # import time
-        # while True:
-        #     cmd = await self.receive_data(loop=loop, sender=sender, is_bytes_data=True)
-        #     time.sleep(2)
-        #     print(f"CMD ::: {cmd}")
-        #     if cmd == b'done':
-        #         break
-        #     label, param = await self.receive_labeled_data(loop=loop, sender=sender)
-        #     print(f"received {label=}")
-        #     #print(f"value = {param}")
-        #     data_dict[label] = param
-
-    def sync_listen_while_not_done(self, data_dict):
-        """
-        Listening to data until command 'done' is received.
-
-        :param data_dict: Dictionary in which data is stored
-        :return:
-        """
-        while self.sync_receive_data() != self.command_dict['done']:
-            label, param = self.sync_receive_labeled_data()
-            data_dict[label] = param
-
     async def send_training_data(self, network_input=None, network_output=None, loop=None, receiver=None):
         """
         Send the training data to the TcpIpServer.
@@ -177,24 +136,20 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
         """
         loop = get_event_loop() if loop is None else loop
         receiver = self.sock if receiver is None else receiver
-        # Check the validity of the computed sample
-        check = self.checkSample()
-        await self.send_labeled_data(data_to_send=check, label="check", loop=loop, receiver=receiver)
-        # Send training data if sample is valid
-        if check:
-            # Send network input
-            if network_input is not None:
-                await self.send_labeled_data(data_to_send=network_input, label="input", loop=loop, receiver=receiver)
-            # Send network output
-            if network_output is not None:
-                await self.send_labeled_data(data_to_send=network_output, label="output", loop=loop, receiver=receiver)
-            # Send additional data
-            for key in self.additional_inputs.keys():
-                await self.send_labeled_data(data_to_send=self.additional_inputs[key], label='dataset_in'+key,
-                                             loop=loop, receiver=receiver)
-            for key in self.additional_outputs.keys():
-                await self.send_labeled_data(data_to_send=self.additional_outputs[key], label='dataset_out'+key,
-                                             loop=loop, receiver=receiver)
+
+        # Send network input
+        if network_input is not None:
+            await self.send_labeled_data(data_to_send=network_input, label="input", loop=loop, receiver=receiver)
+        # Send network output
+        if network_output is not None:
+            await self.send_labeled_data(data_to_send=network_output, label="output", loop=loop, receiver=receiver)
+        # Send additional data
+        for key in self.additional_inputs.keys():
+            await self.send_labeled_data(data_to_send=self.additional_inputs[key], label='dataset_in'+key,
+                                         loop=loop, receiver=receiver)
+        for key in self.additional_outputs.keys():
+            await self.send_labeled_data(data_to_send=self.additional_outputs[key], label='dataset_out'+key,
+                                         loop=loop, receiver=receiver)
 
     async def send_prediction_request(self, network_input=None, loop=None, receiver=None):
         """

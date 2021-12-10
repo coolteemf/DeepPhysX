@@ -202,43 +202,9 @@ class EnvironmentManager:
             training_data['loss'] = data_dict['loss']
         return training_data
 
-<<<<<<< HEAD
-    def requestPrediction(self, network_input):
-        """
-        Get a prediction of the network.
-
-        :param network_input: Input of the network
-        :return: Prediction of the network
-        """
-        self.prediction_requested = True
-        return self.data_manager.manager.network_manager.computeOnlinePrediction(network_input)
-
-    def updateVisualizer(self, visualization_data, index):
-        """
-        Update visualization.
-
-        :param visualization_data: Dictionary containing visualization fields
-        :param index: Index of the client
-        :return:
-        """
-        self.visualizer_manager.updateFromSample(visualization_data, index)
-
-    def applyPrediction(self, prediction):
-        """
-        Apply the prediction in the environment.
-
-        :param prediction: Network prediction
-        :return:
-        """
-        if self.server and not self.prediction_requested:
-            self.server.applyPrediction(prediction)
-        if self.environment and not self.prediction_requested:
-            self.environment.applyPrediction(prediction)
-=======
     def updateVisualizer(self, visualization_data,):
         self.visualizer_manager.updateVisualizer(visualization_data)
         self.visualizer_manager.render()
->>>>>>> updated manager to remove useless server functionallities, changed function name too
 
     def dispatchBatch(self, batch):
         """

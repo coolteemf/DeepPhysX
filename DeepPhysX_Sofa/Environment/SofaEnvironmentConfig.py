@@ -27,8 +27,6 @@ class SofaEnvironmentConfig(BaseEnvironmentConfig):
         """
         SofaEnvironmentConfig is a configuration class to parameterize and create a SofaEnvironment for the
         EnvironmentManager.
-
-<<<<<<< HEAD
         :param environment_class: Class from which an instance will be created
         :type environment_class: type[SofaEnvironment]
         :param visual_object: Class of the visual object which template visual data
@@ -46,13 +44,10 @@ class SofaEnvironmentConfig(BaseEnvironmentConfig):
         :param ip_address: IP address of the TcpIpObject
         :param port: Port number of the TcpIpObject
         """
-        BaseEnvironmentConfig.__init__(self, environment_class=environment_class,
-                                       visual_object=visual_object,
-=======
+
         BaseEnvironmentConfig.__init__(self,
                                        environment_class=environment_class,
                                        visualizer=visualizer,
->>>>>>> Init parameter update
                                        simulations_per_step=simulations_per_step,
                                        max_wrong_samples_per_step=max_wrong_samples_per_step,
                                        always_create_data=always_create_data,
@@ -84,7 +79,6 @@ class SofaEnvironmentConfig(BaseEnvironmentConfig):
 
     def createEnvironment(self, environment_manager):
         """
-<<<<<<< HEAD
         Create an Environment that will not be a TcpIpObject.
 
         :param environment_manager: EnvironmentManager that handles the Environment
@@ -92,17 +86,9 @@ class SofaEnvironmentConfig(BaseEnvironmentConfig):
         """
         root_node = Sofa.Core.Node()
         environment = root_node.addObject(self.environment_class(environment_manager=environment_manager,
-                                                                 root_node=root_node, as_tcpip_client=False,
-                                                                 visual_object=self.visual_object))
-=======
-        :return:
-        """
-        root_node = Sofa.Core.Node()
-        environment = root_node.addObject(self.environment_class(environment_manager=environment_manager,
                                                                  root_node=root_node,
                                                                  as_tcpip_client=False,
                                                                  visualizer_class=self.visualizer))
->>>>>>> Init parameter update
         environment.create()
         environment.init()
         return environment

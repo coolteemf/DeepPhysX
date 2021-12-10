@@ -210,13 +210,12 @@ class TcpIpServer(TcpIpObject):
             if visu_dict != {}:
                 self.environment_manager.updateVisualizer(visu_dict)
         data = {}
-        for get_data, data_size, net_field, add_field in zip([get_inputs, get_outputs],
-                                                             [self.in_size, self.out_size],
+        for get_data, net_field, add_field in zip([get_inputs, get_outputs],
                                                              ['input', 'output'],
                                                              ['dataset_in', 'dataset_out']):
             # Check flat data size
-            if get_data and self.data_dict[client_id][net_field].size == data_size.prod():
-                data[net_field] = self.data_dict[client_id][net_field].reshape(data_size)
+            if get_data :
+                data[net_field] = self.data_dict[client_id][net_field]
                 # del self.data_dict[client_id][net_field]
                 # Get additional dataset
                 additional_fields = [key for key in self.data_dict[client_id].keys() if key.__contains__(add_field)]

@@ -11,12 +11,7 @@ class VisualizerManager:
         :param visual_object: The class of the desired vedo object
         """
         self.data_manager = data_manager
-<<<<<<< HEAD
-        self.visualizer = VedoVisualizer(visual_object=visual_object)
-=======
-
         self.visualizer = visualizer()
->>>>>>> Changes from BaseEnvironment variable name
 
     def getDataManager(self):
         """
@@ -27,32 +22,17 @@ class VisualizerManager:
         return self.data_manager
 
     def initView(self, data_dict):
-<<<<<<< HEAD
         """
         Init the visualization window.
 
         :param data_dict: Dictionary containing all the visualization data fields.
         :return:
         """
-        self.visualizer.init(data_dict)
-=======
+
         self.visualizer.initView(data_dict)
->>>>>>> Changes from BaseEnvironment variable name
 
-    def updateFromSample(self, sample, index):
-        """
-        Update the rendering windows with a sample of visualization data.
-
-<<<<<<< HEAD
-        :param sample: Sample of updated visualization data
-        :param index: ID of the client
-        :return:
-        """
-        self.visualizer.updateFromSample(sample, index)
-=======
     def updateVisualizer(self, sample):
         self.visualizer.updateVisualizer(sample)
->>>>>>> updated manager to remove useless server functionallities, changed function name too
 
     def render(self):
         """

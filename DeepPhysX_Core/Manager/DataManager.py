@@ -123,20 +123,6 @@ class DataManager:
 
         self.data = data
 
-<<<<<<< HEAD
-    def applyPrediction(self, prediction, epoch=0):
-        """
-        Apply the prediction of the network in the Environment.
-
-        :param prediction: Prediction of the network
-        :param epoch: Current training epoch
-        :return:
-        """
-        if self.environment_manager is not None and (epoch == 0 or self.environment_manager.always_create_data):
-            self.environment_manager.applyPrediction(prediction)
-
-=======
->>>>>>> updated manager to remove useless server functionallities, changed function name too
     def close(self):
         """
         Launch the closing procedure on its managers
