@@ -1,8 +1,7 @@
 from DeepPhysX_Core.Environment.BaseEnvironment import BaseEnvironment
 from DeepPhysX_Core.Visualizer.VedoObjectFactories.VedoObjectFactory import VedoObjectFactory
-from numpy import mean, pi, random
+from numpy import random
 import numpy as np
-import time
 
 
 # This class generate a random vector 2D vector and compute its polar representation
@@ -16,14 +15,12 @@ class MeanEnvironment(BaseEnvironment):
     def __init__(self,
                  ip_address='localhost',
                  port=10000,
-                 data_converter=None,
                  instance_id=1,
                  number_of_instances=1,
                  visualizer_class=None):
         BaseEnvironment.__init__(self,
                                  ip_address=ip_address,
                                  port=port,
-                                 data_converter=data_converter,
                                  instance_id=instance_id,
                                  number_of_instances=number_of_instances,
                                  visualizer_class=visualizer_class)

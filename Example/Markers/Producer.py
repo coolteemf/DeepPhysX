@@ -17,14 +17,12 @@ class MeanEnvironment(BaseEnvironment):
     def __init__(self,
                  ip_address='localhost',
                  port=10000,
-                 data_converter=None,
                  instance_id=1,
                  number_of_instances=1,
                  visualizer_class=None):
         BaseEnvironment.__init__(self,
                                  ip_address=ip_address,
                                  port=port,
-                                 data_converter=data_converter,
                                  instance_id=instance_id,
                                  number_of_instances=number_of_instances,
                                  visualizer_class=visualizer_class)

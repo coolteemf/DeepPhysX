@@ -6,8 +6,7 @@ import torch
 from DeepPhysX_Core import BaseDatasetConfig
 from DeepPhysX_Core import BaseTrainer
 from DeepPhysX_Core import BaseEnvironmentConfig
-from DeepPhysX_Core import BytesConverter
-from DeepPhysX_Core import NewVisualizer
+from DeepPhysX_Core import VedoVisualizer
 
 from DeepPhysX.Example.Window.Producer import MeanEnvironment as Environment
 
@@ -20,8 +19,7 @@ def createScene():
     env_config = BaseEnvironmentConfig(environment_class=Environment,                                   # Environment class to launch in external process
                                        environment_file=sys.modules[Environment.__module__].__file__,   # File containing this environment
                                        number_of_thread=int(sys.argv[1]),                               # Number of threads/process to launch
-                                       socket_data_converter=BytesConverter,                            # How to convert data to/from TCPIP format
-                                       visualizer=NewVisualizer)                                        # Provide a way to visualize data
+                                       visualizer=VedoVisualizer)                                       # Provide a way to visualize data
 
     # The number of neurones on the first and last layer is entierly
     # defined by the total amount of parameters in respectively the
