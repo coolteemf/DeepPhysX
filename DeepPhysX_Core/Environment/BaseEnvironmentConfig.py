@@ -22,7 +22,7 @@ class BaseEnvironmentConfig:
                  as_tcpip_client=True,
                  number_of_thread=1,
                  max_client_connection=1000,
-                 environment_file='',
+                 environment_file=None,
                  ip_address='localhost',
                  port=10000):
 <<<<<<< HEAD
@@ -74,10 +74,11 @@ class BaseEnvironmentConfig:
         if type(number_of_thread) != int and number_of_thread < 0:
             raise TypeError(f"[{self.name}] The number_of_thread number must be a positive integer.")
         self.max_client_connections = max_client_connection
-        self.environment_file = environment_file
+
 
         # TcpIpClients parameterization
         self.environment_class = environment_class
+        self.environment_file = environment_file if environment_file is not None else modules[self.environment_class.__module__].__file__
         self.param_dict = param_dict
         self.as_tcpip_client = as_tcpip_client
 

@@ -17,7 +17,6 @@ from DeepPhysX_PyTorch import FCConfig
 
 def createScene():
     env_config = BaseEnvironmentConfig(environment_class=Environment,                                   # Environment class to launch in external process
-                                       environment_file=sys.modules[Environment.__module__].__file__,   # File containing this environment
                                        number_of_thread=int(sys.argv[1]),                               # Number of threads/process to launch
                                        visualizer=VedoVisualizer)                                        # Provide a way to visualize data
 

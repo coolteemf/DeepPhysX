@@ -14,8 +14,7 @@ from DeepPhysX_PyTorch import FCConfig
 
 def createScene():
     env_config = BaseEnvironmentConfig(environment_class=Environment,                                   # Environment class to launch in external process
-                                       environment_file=sys.modules[Environment.__module__].__file__,   # File containing this environment
-                                       number_of_thread=int(sys.argv[1]))                            # How to convert data to/from TCPIP format
+                                       number_of_thread=int(sys.argv[1]))                               # How to convert data to/from TCPIP format
 
     # The number of neurones on the first and last layer is entierly
     # defined by the total amount of parameters in respectively the
