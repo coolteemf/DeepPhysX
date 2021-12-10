@@ -1,13 +1,13 @@
 from sys import maxsize as MAX_INT
 
-from DeepPhysX_Core.Visualizer.VedoVisualizer import VedoVisualizer, VedoObject
+from DeepPhysX_Core.Visualizer.NewVisualizer import NewVisualizer
 
 
 class VisualizerManager:
 
     def __init__(self,
                  data_manager=None,
-                 visual_object=None):
+                 visualizer=None):
         """
         Handle the 3D representation of the data from a visualizer.
         Allows easy access to basic functionalities of the visualizer
@@ -16,7 +16,12 @@ class VisualizerManager:
         :param visual_object: The class of the desired vedo object
         """
         self.data_manager = data_manager
+<<<<<<< HEAD
         self.visualizer = VedoVisualizer(visual_object=visual_object)
+=======
+
+        self.visualizer = visualizer()
+>>>>>>> Changes from BaseEnvironment variable name
 
     def getDataManager(self):
         """
@@ -27,6 +32,7 @@ class VisualizerManager:
         return self.data_manager
 
     def initView(self, data_dict):
+<<<<<<< HEAD
         """
         Init the visualization window.
 
@@ -34,6 +40,9 @@ class VisualizerManager:
         :return:
         """
         self.visualizer.init(data_dict)
+=======
+        self.visualizer.initView(data_dict)
+>>>>>>> Changes from BaseEnvironment variable name
 
     def updateFromSample(self, sample, index):
         """

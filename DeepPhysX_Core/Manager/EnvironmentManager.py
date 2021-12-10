@@ -34,10 +34,10 @@ class EnvironmentManager:
         self.train = train
 
         # Init visualizer
-        if environment_config.visual_object is None:
+        if environment_config.visualizer is None:
             self.visualizer_manager = None
         else:
-            self.visualizer_manager = VisualizerManager(data_manager=data_manager, visual_object=environment_config.visual_object)
+            self.visualizer_manager = VisualizerManager(data_manager=data_manager, visualizer=environment_config.visualizer)
             self.initVisualizer()
 
         self.always_create_data = environment_config.always_create_data
@@ -59,7 +59,10 @@ class EnvironmentManager:
     def initVisualizer(self):
         if self.visualizer_manager is not None:
             if self.server is not None:
-                data_dict = self.server.visu_dict
+                data_dict = {}
+
+                for client_id in self.server.data_dict:
+                    data_dict[client_id] = self.server.data_dict[client_id]['visualisation']
                 self.visualizer_manager.initView(data_dict)
 
     def step(self):
