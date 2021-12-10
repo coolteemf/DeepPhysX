@@ -1,136 +1,131 @@
-import numpy as np
-import vedo
-import os
+from typing import Dict, List, Any, Union
+from vedo import Plotter
+from os.path import join as osPathJoin
+from os import makedirs
 
-from DeepPhysX_Core.Visualizer.VedoObject import VedoObject
+from DeepPhysX_Core.Visualizer.VedoObjectGenerator import VedoObjects
 
 
-class VedoVisualizer:
+class NewVisualizer:
+    viewers: Dict[int, Dict[str, Union[str, List[Any], bool, Plotter]]]
 
-    def __init__(self, visual_object=VedoObject, title='VedoVisualizer', interactive_window=False, show_axes=False,
-                 min_color='yellow', max_color='red', range_color=10):
+    def __init__(self):
         """
-        Base class to display Vedo objects. Used to visualize data during training or prediction phase.
-
-        :param title: Name of the window
-        :param interactive_window: If True the Visualizer will be interactive
-        :param show_axes: If Ture display axes
-        :param min_color: Color of the min values of a mesh. Can be described as a list of 3 or 4 float using
-        RGB and RGBA convention
-        :param max_color: Color of the max values of a mesh. Can be described as a list of 3 or 4 float using
-        RGB and RGBA convention
-        :param range_color: Number of interpolations between min and max color
+        Display added objects. Mostly used to visualize data during training or prediction phase directly from the network.
+        :param str title: Name of the window
         """
-        self.name = self.__class__.__name__
-        # Models data
-        self.objects = {}
-        self.vedo_object = visual_object(visualizer=self)
-        self.scenes = []
-        self.shapes = []
-        # Viewer data
-        self.viewer = None
-        self.nb_view = 0
-        self.colormap = vedo.buildPalette(color1=min_color, color2=max_color, N=range_color, hsv=False)
-        self.window_parameters = {'title': title, 'interactive': interactive_window, 'axes': show_axes}
-        # Wrong sample saving data
+        super().__init__()
+        self.scene = {}  # objects[CLIENT_ID] -> VedoObjects (objects_instance[OBJECT_IN_CLIENT_ID] -> instance , objects_factory -> objects_dict[OBJECT_IN_CLIENT_ID] -> {})
+        self.default_viewer_id = 9
+        self.viewers = {self.default_viewer_id: {'title': f"Vedo_axes_{self.default_viewer_id}", 'instances': [], 'sharecam': False, 'interactive': True}}
+        # Wrong samples parameters
         self.folder = None
         self.nb_saved = 0
 
-    def init(self, data_dict):
+    def initView(self, data_dict):
         """
         Add all objects described in data_dict.
 
-        :param data_dict: Dictionary containing the whole visualization data.
+        :param data_dict: Dictionary containing the meshes data for each environment.
         :return:
         """
-        # List containing all the objects created for each environment
-        all_objects = []
+        from itertools import filterfalse
+        for scene_id in sorted(data_dict):  # For each scene/client
+            self.scene.update({scene_id: VedoObjects()})
 
-        # Loop on the environments
-        for idx in data_dict:
-            # A scene is the set of objects in an environment
-            scene = data_dict[idx]
-            objects, scene_shapes = self.vedo_object.createObjects(scene)
-            self.scenes.append(objects)
-            self.shapes.append(scene_shapes)
-            all_objects += objects
+            scene = self.scene[scene_id]
 
-        self.viewer = vedo.Plotter(N=self.nb_view, title=self.window_parameters['title'],
-                                   axes=self.window_parameters['axes'], sharecam=True,
-                                   interactive=self.window_parameters['interactive'])
-        for obj in all_objects:
-            self.viewer.add(obj, at=self.objects[obj]['at'])
-        print(f"[{self.name}] Set visualizer camera position then close visualizer window to start.")
-        self.viewer.show(interactive=True)
+            for object_id in data_dict[scene_id]:  # For each object in current scene/client
+                scene.createObject(data_dict[scene_id][object_id])
+
+            # Simple syntax shortcuts
+            objects_dict = scene.objects_factory.objects_dict
+
+            # Deal with all of the windows and object attached to these windows first
+            remaining_object_id = set(objects_dict.keys())
+            for window_id in scene.objects_factory.windows_id:
+                # Removes the window we are dealing with from the object we have to add to the plotter
+                remaining_object_id -= {window_id}
+                # Vedo can only handle 1 axe type per viewer so we create as much viewers as needed
+                viewer_id = objects_dict[window_id]['axes']
+                if viewer_id in self.viewers:
+                    # If atleast one need a sharedcam then we wet true for all
+                    self.viewers[viewer_id]['sharecam'] |= objects_dict[window_id]['sharecam']
+                    # If one requires that the window is not interactive then it's not interactive.
+                    self.viewers[viewer_id]['interactive'] &= objects_dict[window_id]['interactive']
+                else:
+                    self.viewers[viewer_id] = {}
+                    self.viewers[viewer_id]['sharecam'] = objects_dict[window_id]['sharecam']
+                    self.viewers[viewer_id]['interactive'] = objects_dict[window_id]['interactive']
+                    self.viewers[viewer_id]['instances'] = []
+                    self.viewers[viewer_id]['title'] = f"Vedo_axes_{objects_dict[window_id]['axes']}"
+
+                # Add the objects to the corresponding list
+                for object_id in objects_dict[window_id]['objects_id']:
+                    # Affects the object in the existing window
+                    if -1 < objects_dict[object_id]['at'] < len(self.viewers[viewer_id]['instances']):
+                        self.viewers[viewer_id]['instances'][objects_dict[object_id]['at']].append([scene_id, object_id])
+                    else:
+                        # Affects the object in the next non existing window.
+                        objects_dict[object_id]['at'] = len(self.viewers[viewer_id]['instances'])
+                        self.viewers[viewer_id]['instances'].append([[scene_id, object_id]])
+
+                # Removes all of the objects attached to the window from the object to deal with
+                remaining_object_id -= set(objects_dict[window_id]['objects_id'])
+
+            # Deals with the remaining objects that are not specified in windows
+            for object_id in remaining_object_id:
+                # Affects the object in the existing window
+                if -1 < objects_dict[object_id]['at'] < len(self.viewers[self.default_viewer_id]['instances']):
+                    self.viewers[self.default_viewer_id]['instances'][objects_dict[object_id]['at']].append([scene_id, object_id])
+                else:
+                    # Affects the object in the next non existing window.
+                    objects_dict[object_id]['at'] = len(self.viewers[self.default_viewer_id]['instances'])
+                    self.viewers[self.default_viewer_id]['instances'].append([[scene_id, object_id]])
+
+        # Once all objects are created we create the plotter with the corresponding parameters
+        for viewer_id in list(self.viewers.keys()):
+            if len(self.viewers[viewer_id]['instances']) == 0:
+                del self.viewers[viewer_id]
+                continue
+
+            self.viewers[viewer_id]['plotter'] = Plotter(N=len(self.viewers[viewer_id]['instances']),
+                                                         title=self.viewers[viewer_id]['title'],
+                                                         axes=viewer_id,
+                                                         sharecam=self.viewers[viewer_id]['sharecam'],
+                                                         interactive=self.viewers[viewer_id]['interactive'])
+
+            # self.viewers[viewer_id]['instances'] is a list of list of instances
+            # Each sublist contains all instances present in a window hence, each sublist has it own "at"
+            for at, ids in enumerate(self.viewers[viewer_id]['instances']):
+                for scene_id, object_in_scene_id in ids:
+                    self.viewers[viewer_id]['plotter'].add(self.scene[scene_id].objects_instance[object_in_scene_id]['instance'], at=at, render=False)
+
+            self.viewers[viewer_id]['plotter'].show(interactive=True)
+
         self.render()
 
     def render(self):
         """
         Render the meshes in the desired windows.
-
         :return:
         """
-        self.update()
-        self.viewer.render()
-        self.viewer.allowInteraction()
+        self.updateInstances()
+        for viewer_id in self.viewers:
+            self.viewers[viewer_id]['plotter'].render()
+            self.viewers[viewer_id]['plotter'].allowInteraction()
 
-    def update(self, position=True, scalar_field=True, cells=False):
-        """
+    def updateInstances(self):
+        for scene_id in self.scene:
+            for object_id in self.scene[scene_id].objects_instance:
+                self.scene[scene_id].updateInstance(object_id)
 
-        :param position:
-        :param scalar_field:
-        :param cells:
-        :return:
-        """
-        self.vedo_object.updateObjects()
+    def updateVisualizer(self, data_dict: dict):
+        for scene_id in data_dict:
+            for object_id in data_dict[scene_id]:
+                self.scene[scene_id].objects_factory.updateObject_dict(object_id, data_dict[scene_id][object_id])
 
-    def updateFromBatch(self, batch):
-        """
-        update vedo environment using batch information
-
-        :param batch: dict templated as
-                        {0: {client_parameters},
-                         1: {client_parameters},
-                         ...
-                         N-1: {client_parameters},
-                         'in': input_learning data,
-                         'out': output_learning data}
-
-                      client_parameter contain all data sent by the environment to the environment manager (position, velocity, strain, etc...)
-        :return:
-        """
-        # assume client order == vedo mesh order
-        for idx, sample in enumerate(batch):
-            self.updateFromSample(sample, idx)
-
-    def updateFromSample(self, sample, idx):
-        """
-        Update vedo meshes using a sample from an environment.
-
-        :param sample: Dict templated as {'position': [position_mesh_1, ..., position_mesh_N]}
-        :param idx: Index of environment
-        :return:
-        """
-        # Get the list of meshes recorded in vedo for the environment n°idx
-        scene = self.scenes[idx]
-        # Loop on sample.keys()
-        for key in sample:
-            # Check that the key is used to update a mesh
-            if key not in self.shapes[idx]:
-                raise ValueError(f"[{self.name}] Field {key} is missing to update from sample.")
-            # Reshape the array according to the number of meshes and the field's vector size
-            sample[key] = sample[key].reshape(self.shapes[idx][key])
-            # Check that the field contains an array for each object
-            if len(sample[key]) != len(scene):
-                raise ValueError(f"[{self.name}] The number of value in received data does not match the number of"
-                                 f"objects for field {key}.")
-            # Update the field for each object
-            for i in range(len(scene)):
-                self.objects[scene[i]][key] = sample[key][i]
-        # Update view
-        self.render()
-
-    def saveSample(self, session_dir):
+    def saveSample(self, session_dir, viewer_id):
         """
         Save the samples as a .npz file
 
@@ -139,11 +134,11 @@ class VedoVisualizer:
         :return:
         """
         if self.folder is None:
-            self.folder = os.path.join(session_dir, 'stats/wrong_samples')
-            os.makedirs(self.folder)
-            from DeepPhysX_Core.utils import wrong_samples
+            self.folder = osPathJoin(session_dir, 'stats/wrong_samples')
+            makedirs(self.folder)
+            from DeepPhysX_Core.Utils import wrong_samples
             import shutil
             shutil.copy(wrong_samples.__file__, self.folder)
-        filename = os.path.join(self.folder, f'wrong_sample_{self.nb_saved}.npz')
+        filename = osPathJoin(self.folder, f'wrong_sample_{self.nb_saved}.npz')
         self.nb_saved += 1
-        self.viewer.export(filename=filename)
+        self.viewers[viewer_id]['plotter'].export(filename=filename)
