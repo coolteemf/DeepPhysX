@@ -6,7 +6,7 @@ from os import makedirs
 from DeepPhysX_Core.Visualizer.VedoObjectGenerator import VedoObjects
 
 
-class NewVisualizer:
+class VedoVisualizer:
     viewers: Dict[int, Dict[str, Union[str, List[Any], bool, Plotter]]]
 
     def __init__(self):

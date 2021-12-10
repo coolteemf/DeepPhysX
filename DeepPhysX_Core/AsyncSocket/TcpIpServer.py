@@ -2,10 +2,7 @@ from asyncio import get_event_loop, run, gather
 import numpy as np
 from queue import SimpleQueue
 from DeepPhysX_Core.AsyncSocket.TcpIpObject import TcpIpObject
-<<<<<<< HEAD
-=======
-from DeepPhysX_Core.AsyncSocket.BytesConverter import BytesConverter
->>>>>>> Server and client handle multiple object types and dictionaries
+
 from copy import copy
 
 
@@ -14,10 +11,6 @@ class TcpIpServer(TcpIpObject):
     def __init__(self,
                  ip_address='localhost',
                  port=10000,
-<<<<<<< HEAD
-=======
-                 data_converter=BytesConverter,
->>>>>>> Server and client handle multiple object types and dictionaries
                  max_client_count=10,
                  batch_size=5,
                  nb_client=5,
@@ -33,8 +26,8 @@ class TcpIpServer(TcpIpObject):
         :param int nb_client: Number of expected client connections
         :param manager: EnvironmentManager that handles the TcpIpServer
         """
-        super(TcpIpServer, self).__init__(ip_address=ip_address,
-                                          port=port)
+
+        super(TcpIpServer, self).__init__(ip_address=ip_address, port=port)
         # Bind to server address
         print(f"[{self.name}] Binding to IP Address: {ip_address} on PORT: {port} with maximum client count: "
               f"{max_client_count}")
@@ -73,14 +66,9 @@ class TcpIpServer(TcpIpObject):
         # Accept clients connections one by one
         for _ in range(self.nb_client):
             client, _ = await loop.sock_accept(self.sock)
-<<<<<<< HEAD
-            print(f"[{self.name}] Client n°{len(self.clients)} connected: {client}")
-            self.clients.append(client)
-=======
             label, client_id = await self.receive_labeled_data(loop=loop, sender=client)
             print(f'Client n°{client_id} connected: {client}')
             self.clients.append([client_id, client])
->>>>>>> TCPIP Works with and without visualizer.
 
     def initialize(self, param_dict):
         """
@@ -120,13 +108,8 @@ class TcpIpServer(TcpIpObject):
         """
         # Trigger communication protocol
         run(self.__request_data_from_client(get_inputs=get_inputs, get_outputs=get_outputs, animate=animate))
-<<<<<<< HEAD
+
         data_sorter = {'input': [], 'dataset_in': {}, 'output': [], 'dataset_out': {}, 'loss': []}
-=======
-
-        data_sorter = {'input': [], 'output': [], 'loss': []}
-
->>>>>>> Server and client handle multiple object types and dictionaries
         self.sample_to_client_id = []
         while max(len(data_sorter['input']), len(data_sorter['dataset_in']),
                   len(data_sorter['output']), len(data_sorter['dataset_out']),
@@ -194,7 +177,6 @@ class TcpIpServer(TcpIpObject):
             if self.batch_from_dataset is not None:
                 # Send the sample to the TcpIpClient
                 await self.send_command_sample(loop=loop, receiver=client)
-<<<<<<< HEAD
                 # Pop the first sample of the numpy batch for network in / out
                 for field in ['input', 'output']:
                     sample = np.array([])
@@ -213,56 +195,13 @@ class TcpIpServer(TcpIpObject):
                             self.batch_from_dataset[field][key] = self.batch_from_dataset[field][key][1:]
                         await self.send_dict_data(dict_data=sample, loop=loop, receiver=client)
 
-            # 1.2) Execute n steps, the last one send data computation signal
-=======
-                await self.send_data(data_to_send=sample_in, loop=loop, receiver=client)
-                await self.send_data(data_to_send=sample_out, loop=loop, receiver=client)
-
             visu_dict = {}
-            # Execute n steps, the last one send data computation signal
->>>>>>> TCPIP Works with and without visualizer.
+            # 1.2) Execute n steps, the last one send data computation signal
             for current_step in range(self.environment_manager.simulations_per_step):
                 if current_step == self.environment_manager.simulations_per_step - 1:
                     await self.send_command_compute(loop=loop, receiver=client)
                 else:
                     await self.send_command_step(loop=loop, receiver=client)
-<<<<<<< HEAD
-<<<<<<< HEAD
-            # 2) Receive training data
-            await self.listen_while_not_done(loop=loop, sender=client, data_dict=self.data_dict[client_id],
-                                             client_id=client_id)
-        # 3) Fill the data Queue
-        data = {}
-        if self.data_dict[client_id]['check']:
-
-            for get_data, data_size, net_field, add_field in zip([get_inputs, get_outputs],
-                                                                 [self.in_size, self.out_size],
-                                                                 ['input', 'output'],
-                                                                 ['dataset_in', 'dataset_out']):
-                # Check flat data size
-                if get_data and self.data_dict[client_id][net_field].size == data_size.prod():
-                    data[net_field] = self.data_dict[client_id][net_field].reshape(data_size)
-                    # del self.data_dict[client_id][net_field]
-                    # Get additional dataset
-                    additional_fields = [key for key in self.data_dict[client_id].keys() if key.__contains__(add_field)]
-                    data[add_field] = {}
-                    for field in additional_fields:
-                        data[add_field][field[len(add_field):]] = self.data_dict[client_id][field]
-
-            # Add loss data if provided
-            if 'loss' in self.data_dict[client_id]:
-                data['loss'] = self.data_dict[client_id]['loss']
-            # Identify sample
-            data['ID'] = client_id
-            # Add data to the Queue
-            self.data_fifo.put(data)
-        else:
-            await self.__communicate(client=client, client_id=client_id, get_inputs=get_inputs, get_outputs=get_outputs,
-                                     animate=animate)
-=======
-=======
-
->>>>>>> TCPIP Works with and without visualizer.
                 # Receive data
                 await self.listen_while_not_done(loop=loop, sender=client, data_dict=self.data_dict, client_id=client_id)
                 if 'visualisation' in self.data_dict[client_id]:
@@ -271,20 +210,27 @@ class TcpIpServer(TcpIpObject):
             if visu_dict != {}:
                 self.environment_manager.updateVisualizer(visu_dict)
         data = {}
-        # Checkin input data size
-        if get_inputs:
-            data['input'] = self.data_dict[client_id]['input']
+        for get_data, data_size, net_field, add_field in zip([get_inputs, get_outputs],
+                                                             [self.in_size, self.out_size],
+                                                             ['input', 'output'],
+                                                             ['dataset_in', 'dataset_out']):
+            # Check flat data size
+            if get_data and self.data_dict[client_id][net_field].size == data_size.prod():
+                data[net_field] = self.data_dict[client_id][net_field].reshape(data_size)
+                # del self.data_dict[client_id][net_field]
+                # Get additional dataset
+                additional_fields = [key for key in self.data_dict[client_id].keys() if key.__contains__(add_field)]
+                data[add_field] = {}
+                for field in additional_fields:
+                    data[add_field][field[len(add_field):]] = self.data_dict[client_id][field]
 
-        # Checkin output data size
-        if get_outputs:
-            data['output'] = self.data_dict[client_id]['output']
-
+            # Add loss data if provided
         if 'loss' in self.data_dict[client_id]:
             data['loss'] = self.data_dict[client_id]['loss']
-
+            # Identify sample
         data['ID'] = client_id
+        # Add data to the Queue
         self.data_fifo.put(data)
->>>>>>> Server and client handle multiple object types and dictionaries
 
     def setDatasetBatch(self, batch):
         """
@@ -294,14 +240,9 @@ class TcpIpServer(TcpIpObject):
         :return:
         """
         if len(batch['input']) != self.batch_size:
-<<<<<<< HEAD
             raise ValueError(f"[{self.name}] The size of batch from Dataset is {len(batch['input'])} while the batch "
                              f"size was set to {self.batch_size}.")
-=======
-            return ValueError(
-                f"[TcpIpServer] The size of batch from Dataset is {len(batch['input'])} while the batch size"
-                f"was set to {self.batch_size}.")
->>>>>>> Server and client handle multiple object types and dictionaries
+
         self.batch_from_dataset = copy(batch)
 
     def close(self):
@@ -333,96 +274,27 @@ class TcpIpServer(TcpIpObject):
         :return:
         """
         loop = get_event_loop()
+        print("Sending exit command to", idx)
         await self.send_command_exit(loop=loop, receiver=client)
         # Wait for exit confirmation
         data = await self.receive_data(loop=loop, sender=client)
         if data != b'exit':
-            raise ValueError(f"[{self.name}] Client {idx} was supposed to exit.")
+            raise ValueError(f"Client {idx} was supposed to exit.")
 
-<<<<<<< HEAD
-    async def listen_while_not_done(self, loop, sender, data_dict, client_id=None):
-        """
-        Listening to data until command 'done' is received.
-
-<<<<<<< HEAD
-        :param loop: asyncio.get_event_loop() return
-        :param sender: TcpIpObject sender
-        :param data_dict: Dictionary in which data is stored
-        :param client_id: ID of the sender client
-        :return:
-        """
-        # Execute while command 'done' is not received
-        while (cmd := await self.receive_data(loop=loop, sender=sender)) != self.command_dict['done']:
-            # With command visualization, receive each field of the visualization dict
-            if cmd == self.command_dict['visualization']:
-                visu_dict = {}
-                # Receive fields until 'done' command
-                await self.listen_while_not_done(loop=loop, sender=sender, data_dict=visu_dict, client_id=client_id)
-                # Update the visualization
-                await self.update_visualizer(visu_dict, client_id)
-            # Simply get labeled data once for other commands
-            else:
-                label, param = await self.receive_labeled_data(loop=loop, sender=sender)
-                data_dict[label] = param
-                # If command prediction is received then compute and send back the network prediction
-                if cmd == self.command_dict['prediction']:
-                    await self.compute_and_send_prediction(network_input=data_dict[label], receiver=sender)
-
-=======
->>>>>>> Server and client handle multiple object types and dictionaries
-    async def compute_and_send_prediction(self, network_input, receiver):
-        """
-        Compute and send back the network prediction.
-
-        :param network_input: Input of the network
-        :param receiver: TcpIpObject receiver
-        :return:
-        """
-        # Check that managers can communicate
-=======
     async def update_visualizer(self, visualization_data, client_id):
         self.environment_manager.updateVisualizer(visualization_data, client_id)
 
     async def action_on_prediction(self, data, client_id, sender=None, loop=None):
         label, network_input = await self.receive_labeled_data(loop=loop, sender=sender)
->>>>>>> TCPIP Works with and without visualizer.
         if self.environment_manager.data_manager is None:
             raise ValueError("Cannot request prediction if DataManager does not exist")
         elif self.environment_manager.data_manager.manager is None:
             raise ValueError("Cannot request prediction if Manager does not exist")
         elif self.environment_manager.data_manager.manager.network_manager is None:
             raise ValueError("Cannot request prediction if NetworkManager does not exist")
-<<<<<<< HEAD
-        # Get the prediction of the network
-        prediction = self.environment_manager.requestPrediction(network_input=network_input[None, ])
-        # Send the prediction back to the TcpIpClient
-        await self.send_labeled_data(data_to_send=prediction, label="prediction", receiver=receiver,
-                                     send_read_command=False)
-=======
         else:
-<<<<<<< HEAD
-            prediction = self.environment_manager.data_manager.manager.network_manager.computeOnlinePrediction(
-                network_input=network_input[None,])
-            await self.send_labeled_data(data_to_send=prediction, label="prediction", receiver=receiver, send_read_command=False)
->>>>>>> Server and client handle multiple object types and dictionaries
-
-    async def update_visualizer(self, visualization_data, client_id):
-        """
-        Send the updated visualization data to the associate manager.
-
-        :param visualization_data: Dict containing the data fields to update the visualization
-        :param client_id: ID of the client
-        :return:
-        """
-        self.environment_manager.updateVisualizer(visualization_data, client_id)
-
-    async def action_on_prediction(self, data, client_id, sender=None, loop=None):
-        label, param = await self.receive_labeled_data(loop=loop, sender=sender)
-        await self.compute_and_send_prediction(network_input=param, receiver=sender)
-=======
             prediction = self.environment_manager.data_manager.manager.network_manager.computeOnlinePrediction(network_input=network_input[None,])
             await self.send_labeled_data(data_to_send=prediction, label="prediction", receiver=sender, send_read_command=False)
 
     async def action_on_visualisation(self, data, client_id, sender, loop):
         await self.receive_dict(data[client_id], sender=sender, loop=loop)
->>>>>>> TCPIP Works with and without visualizer.

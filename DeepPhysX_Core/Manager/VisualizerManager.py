@@ -1,8 +1,3 @@
-from sys import maxsize as MAX_INT
-
-from DeepPhysX_Core.Visualizer.NewVisualizer import NewVisualizer
-
-
 class VisualizerManager:
 
     def __init__(self,

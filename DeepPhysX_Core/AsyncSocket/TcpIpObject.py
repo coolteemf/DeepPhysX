@@ -1,13 +1,6 @@
 from socket import socket, AF_INET, SOCK_STREAM, SOL_SOCKET, SO_REUSEADDR
 from asyncio import get_event_loop
-from threading import Lock
-<<<<<<< HEAD
-
 from DeepPhysX_Core.AsyncSocket.BytesConverter import BytesConverter
-=======
-from DeepPhysX_Core.AsyncSocket.BytesConverter import BytesConverter
-
->>>>>>> Server and client handle multiple object types and dictionaries
 
 # import threading
 #

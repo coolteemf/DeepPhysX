@@ -1,5 +1,4 @@
 from asyncio import run, get_event_loop
-from numpy import array
 
 from DeepPhysX_Core.AsyncSocket.TcpIpObject import TcpIpObject
 from DeepPhysX_Core.AsyncSocket.AbstractEnvironment import AbstractEnvironment
@@ -23,9 +22,8 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
         :param int port: Port number of the TcpIpObject
         """
 
-        AbstractEnvironment.__init__(self,
-                                     instance_id=instance_id,
-                                     number_of_instances=number_of_instances,
+        TcpIpObject.__init__(self, ip_address=ip_address, port=port)
+        AbstractEnvironment.__init__(self, instance_id=instance_id, number_of_instances=number_of_instances,
                                      as_tcpip_client=as_tcpip_client)
         # Bind to client address
         if self.as_tcpip_client:

@@ -6,7 +6,7 @@ from DeepPhysX_Core.Manager.DataManager import DataManager
 from DeepPhysX_Core.Manager.NetworkManager import NetworkManager
 from DeepPhysX_Core.Manager.StatsManager import StatsManager
 
-from DeepPhysX_Core.utils.pathUtils import getFirstCaller, createDir
+from DeepPhysX_Core.Utils.pathUtils import getFirstCaller, createDir
 
 
 class Manager:

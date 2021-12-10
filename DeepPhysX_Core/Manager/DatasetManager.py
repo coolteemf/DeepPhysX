@@ -5,7 +5,7 @@ from os import listdir, fstat, stat
 from numpy import array, load, squeeze
 
 from DeepPhysX_Core.Dataset.BaseDatasetConfig import BaseDatasetConfig
-from DeepPhysX_Core.utils.pathUtils import getFirstCaller, createDir
+from DeepPhysX_Core.Utils.pathUtils import getFirstCaller, createDir
 
 
 class DatasetManager:

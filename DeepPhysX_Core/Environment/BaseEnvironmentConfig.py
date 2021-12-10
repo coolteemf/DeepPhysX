@@ -25,6 +25,10 @@ class BaseEnvironmentConfig:
                  environment_file='',
                  ip_address='localhost',
                  port=10000):
+<<<<<<< HEAD
+=======
+
+>>>>>>> ByteConverter is now a default member
         """
         BaseEnvironmentConfig is a configuration class to parameterize and create a BaseEnvironment for the
         EnvironmentManager.
@@ -101,9 +105,14 @@ class BaseEnvironmentConfig:
         :return: TcpIpServer
         """
         # Create server
+<<<<<<< HEAD
         server = TcpIpServer(max_client_count=self.max_client_connections, batch_size=batch_size,
                              nb_client=self.number_of_thread, manager=environment_manager,
                              ip_address=self.ip_address, port=self.port)
+=======
+        server = TcpIpServer(max_client_count=self.max_client_connections,
+                             batch_size=batch_size, nb_client=self.number_of_thread, manager=environment_manager)
+>>>>>>> ByteConverter is now a default member
 
         server_thread = Thread(target=self.start_server, args=(server,))
         server_thread.start()
