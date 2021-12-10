@@ -1,13 +1,12 @@
 from DeepPhysX_Core.Environment.BaseEnvironment import BaseEnvironment
 from DeepPhysX_Core.Visualizer.VedoObjectFactories.VedoObjectFactory import VedoObjectFactory
-from numpy import mean, pi, array
-from numpy.random import random
-
+from numpy import mean, pi, random
+import numpy as np
 import time
 
 
-# This class generate a random vector between 0 and pi of 50 value and compute its mean.
-# The vector is the input of the network and the groundtruth is the mean.
+# This class generate a random vector 2D vector and compute its polar representation
+# The vector is the input of the network and the groundtruth is its polar representation.
 # The data are generated on the animate function
 # The data are sent to the artificial neural network in the onStep function
 # We added a visualizer hence we have to update the data at each step
@@ -31,13 +30,16 @@ class MeanEnvironment(BaseEnvironment):
         self.factory = VedoObjectFactory()
 
     def send_visualization(self):
-        pos = pi * random((25, 2))
+        self.input = random.default_rng().uniform(low=-1, high=1, size=(2,)) / np.sqrt(2)
+        self.output = self.input
         # Point cloud
-        self.factory.addObject(object_type="Points", data_dict={"positions": pos, "c": "blue", "at": self.instance_id, "r": 8})
+        self.factory.addObject(object_type="Points", data_dict={"positions": self.input, "c": "blue", "at": self.instance_id, "r": 8})
         # Ground truth value
-        self.factory.addObject(object_type="Points", data_dict={"positions": mean(pos, axis=0)[None, :], "c": "red", "at": self.instance_id, "r": 12})
-        # Prediction value
-        self.factory.addObject(object_type="Points", data_dict={"positions": mean(pos, axis=0)[None, :], "c": "green", "at": self.instance_id, "r": 12})
+        self.factory.addObject(object_type="Points", data_dict={"positions": self.output, "c": "green", "at": self.instance_id, "r": 12})
+        # Prediction truth value
+        self.factory.addObject(object_type="Points", data_dict={"positions": self.output, "c": "red", "at": self.instance_id, "r": 12})
+        # Window to display in polar coordinate value
+        self.factory.addObject(object_type="Window", data_dict={"objects_id": [0, 1, 2], "axes": 12})
         return self.factory.objects_dict
 
     def send_parameters(self):
@@ -47,8 +49,8 @@ class MeanEnvironment(BaseEnvironment):
         print(f"Created client n°{self.instance_id}")
 
     async def animate(self):
-        self.input = pi * random((25, 2))
-        self.output = mean(self.input, axis=0)
+        self.input = random.default_rng().uniform(low=-1, high=1, size=(2,))
+        self.output = np.array([np.linalg.norm(self.input), np.arctan2(self.input[1], self.input[0])])
 
     async def step(self):  # This function is called by a request of the server
         await self.animate()
@@ -64,9 +66,10 @@ class MeanEnvironment(BaseEnvironment):
         # Point cloud
         self.factory.updateObject_dict(object_id=0, new_data_dict={'positions': self.input})
         # Ground truth value
-        self.factory.updateObject_dict(object_id=1, new_data_dict={'position': self.output})
+        # Cast polar to Cartesian :->
+        self.factory.updateObject_dict(object_id=1, new_data_dict={'position': np.array([self.output[0]*np.cos(self.output[1]), self.output[0]*np.sin(self.output[1])])})
         # Prediction value
-        self.factory.updateObject_dict(object_id=2, new_data_dict={'position': prediction})
+        self.factory.updateObject_dict(object_id=2, new_data_dict={'position':  np.array([prediction[0]*np.cos(prediction[1]), prediction[0]*np.sin(prediction[1])])})
 
     async def onStep(self):
         # Send visualisation data to update
