@@ -92,7 +92,6 @@ def parse_position(data_dict, wrap=True):
 
 
 def update_position(instance, parsed_data, dirty_fields, grammar_plug):
-    print(parsed_data[grammar_plug])
     if 'position' in dirty_fields:
         instance.points(parsed_data[grammar_plug])
         dirty_fields.remove('position')

@@ -16,7 +16,8 @@ class NewVisualizer:
         """
         super().__init__()
         self.scene = {}  # objects[CLIENT_ID] -> VedoObjects (objects_instance[OBJECT_IN_CLIENT_ID] -> instance , objects_factory -> objects_dict[OBJECT_IN_CLIENT_ID] -> {})
-        self.viewers = {2: {'title': "Vedo_axes_2", 'instances': [], 'sharecam': False, 'interactive': True}}
+        self.default_viewer_id = 9
+        self.viewers = {self.default_viewer_id: {'title': f"Vedo_axes_{self.default_viewer_id}", 'instances': [], 'sharecam': False, 'interactive': True}}
         # Wrong samples parameters
         self.folder = None
         self.nb_saved = 0
@@ -41,44 +42,53 @@ class NewVisualizer:
             objects_dict = scene.objects_factory.objects_dict
 
             # Deal with all of the windows and object attached to these windows first
-            remaining_object_id = list(objects_dict.keys())
+            remaining_object_id = set(objects_dict.keys())
             for window_id in scene.objects_factory.windows_id:
-                print(f"Removing window id {window_id}")
-                remaining_object_id.remove(window_id)
+                # Removes the window we are dealing with from the object we have to add to the plotter
+                remaining_object_id -= {window_id}
                 # Vedo can only handle 1 axe type per viewer so we create as much viewers as needed
                 viewer_id = objects_dict[window_id]['axes']
-                viewer = self.viewers[viewer_id]
                 if viewer_id in self.viewers:
-                    print("Viewer already exist we simply add the object parameters")
                     # If atleast one need a sharedcam then we wet true for all
-                    viewer['sharecam'] |= objects_dict[window_id]['sharecam']
+                    self.viewers[viewer_id]['sharecam'] |= objects_dict[window_id]['sharecam']
                     # If one requires that the window is not interactive then it's not interactive.
-                    viewer['interactive'] &= objects_dict[window_id]['interactive']
+                    self.viewers[viewer_id]['interactive'] &= objects_dict[window_id]['interactive']
                 else:
-                    print("Viewer do not exist we set parameters")
-                    viewer['sharecam'] = objects_dict[window_id]['sharecam']
-                    viewer['interactive'] = objects_dict[window_id]['interactive']
-                    viewer['instances'] = []
-                    viewer['title'] = f"Vedo_axes_{objects_dict[window_id]['axes']}"
+                    self.viewers[viewer_id] = {}
+                    self.viewers[viewer_id]['sharecam'] = objects_dict[window_id]['sharecam']
+                    self.viewers[viewer_id]['interactive'] = objects_dict[window_id]['interactive']
+                    self.viewers[viewer_id]['instances'] = []
+                    self.viewers[viewer_id]['title'] = f"Vedo_axes_{objects_dict[window_id]['axes']}"
 
-                # CA VA SANS DOUTE BUGGER DANS LE COIN
-                remaining_object_id = list(
-                    filterfalse(lambda x: x not in objects_dict[window_id]['objects_id'], remaining_object_id))
-                viewer['instances'].append([scene_id, objects_dict[window_id]['objects_id']])
-                # JUSQU'A LA
+                # Add the objects to the corresponding list
+                for object_id in objects_dict[window_id]['objects_id']:
+                    # Affects the object in the existing window
+                    if -1 < objects_dict[object_id]['at'] < len(self.viewers[viewer_id]['instances']):
+                        self.viewers[viewer_id]['instances'][objects_dict[object_id]['at']].append([scene_id, object_id])
+                    else:
+                        # Affects the object in the next non existing window.
+                        objects_dict[object_id]['at'] = len(self.viewers[viewer_id]['instances'])
+                        self.viewers[viewer_id]['instances'].append([[scene_id, object_id]])
+
+                # Removes all of the objects attached to the window from the object to deal with
+                remaining_object_id -= set(objects_dict[window_id]['objects_id'])
 
             # Deals with the remaining objects that are not specified in windows
             for object_id in remaining_object_id:
                 # Affects the object in the existing window
-                if -1 < objects_dict[object_id]['at'] < len(self.viewers[2]['instances']):
-                    self.viewers[2]['instances'][objects_dict[object_id]['at']].append([scene_id, object_id])
+                if -1 < objects_dict[object_id]['at'] < len(self.viewers[self.default_viewer_id]['instances']):
+                    self.viewers[self.default_viewer_id]['instances'][objects_dict[object_id]['at']].append([scene_id, object_id])
                 else:
                     # Affects the object in the next non existing window.
-                    objects_dict[object_id]['at'] = len(self.viewers[2]['instances'])
-                    self.viewers[2]['instances'].append([[scene_id, object_id]])
+                    objects_dict[object_id]['at'] = len(self.viewers[self.default_viewer_id]['instances'])
+                    self.viewers[self.default_viewer_id]['instances'].append([[scene_id, object_id]])
 
         # Once all objects are created we create the plotter with the corresponding parameters
-        for viewer_id in self.viewers:
+        for viewer_id in list(self.viewers.keys()):
+            if len(self.viewers[viewer_id]['instances']) == 0:
+                del self.viewers[viewer_id]
+                continue
+
             self.viewers[viewer_id]['plotter'] = Plotter(N=len(self.viewers[viewer_id]['instances']),
                                                          title=self.viewers[viewer_id]['title'],
                                                          axes=viewer_id,
