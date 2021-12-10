@@ -2,6 +2,10 @@ from asyncio import get_event_loop, run, gather
 import numpy as np
 from queue import SimpleQueue
 from DeepPhysX_Core.AsyncSocket.TcpIpObject import TcpIpObject
+<<<<<<< HEAD
+=======
+from DeepPhysX_Core.AsyncSocket.BytesConverter import BytesConverter
+>>>>>>> Server and client handle multiple object types and dictionaries
 from copy import copy
 
 
@@ -10,6 +14,10 @@ class TcpIpServer(TcpIpObject):
     def __init__(self,
                  ip_address='localhost',
                  port=10000,
+<<<<<<< HEAD
+=======
+                 data_converter=BytesConverter,
+>>>>>>> Server and client handle multiple object types and dictionaries
                  max_client_count=10,
                  batch_size=5,
                  nb_client=5,
@@ -39,10 +47,7 @@ class TcpIpServer(TcpIpObject):
         # Init data to communicate with EnvironmentManager and Clients
         self.batch_size = batch_size
         self.data_fifo = SimpleQueue()
-        self.in_size = None
-        self.out_size = None
         self.data_dict = {}
-        self.visu_dict = {}
         self.sample_to_client_id = []
         self.batch_from_dataset = None
         self.first_time = True
@@ -91,50 +96,18 @@ class TcpIpServer(TcpIpObject):
 
         # Empty dictionaries for received parameters from clients
         self.data_dict = {client_ID: {} for client_ID in range(len(self.clients))}
-        self.visu_dict = {client_ID: {} for client_ID in range(len(self.clients))}
-
         # Initialisation process for each client
         for client_id, client in enumerate(self.clients):
 
-            # Send parameters
-            for key in param_dict:
-                # Send the parameter (label + data)
-                await self.send_labeled_data(data_to_send=param_dict[key], label=key, loop=loop, receiver=client)
-            # Tell the client to stop receiving data
-            await self.send_command_done(loop=loop, receiver=client)
+            await self.send_dict(name="parameters", dict_to_send=param_dict, loop=loop, receiver=client)
 
-            # Receive visualization data
-            await self.listen_while_not_done(loop=loop, sender=client, data_dict=self.visu_dict[client_id],
-                                             client_id=client_id)
-
-            # Receive parameters
-            await self.listen_while_not_done(loop=loop, sender=client, data_dict=self.data_dict[client_id],
-                                             client_id=client_id)
-
-            # if 'addvedo' in self.data_dict[client_id] and self.data_dict[client_id]['addvedo']:
-            #
-            #     # Position typo check
-            #     positions = self.data_dict[client_id]['positions'] if 'positions' in self.data_dict[client_id] else np.array([])
-            #     positions = self.data_dict[client_id]['position'] if 'position' in self.data_dict[client_id] else pos
-            #
-            #     # cell existence/typo check
-            #     cells = self.data_dict[client_id]['cells'] if 'cells' in self.data_dict[client_id] else None
-            #     cells = self.data_dict[client_id]['cell'] if 'cell' in self.data_dict[client_id] else pos
-            #
-            #     self.environment_manager.visualizer.addObject(positions=positions, cells=cells)
-            # Get data sizes from the first client (these sizes are equals in all environments)
-            if client_id == 0:
-                # Ask the client to send data sizes
-                await self.send_command_size(loop=loop, receiver=client)
-                # Receive input size the output size
-                in_size = await self.receive_data(loop=loop, sender=client)
-                out_size = await self.receive_data(loop=loop, sender=client)
-                # Convert array from float to int
-                self.in_size = in_size.astype(int)
-                self.out_size = out_size.astype(int)
-            else:
-                # Tell the other clients not to send data sizes
-                await self.send_command_done(loop=loop, receiver=client)
+            # Receive visualization data and parameters
+            print("SERVER __initialize VISU")
+            await self.receive_dict(recv_to=self.data_dict[client_id], sender=client, loop=loop)
+            print("SERVER __initialize PARAM")
+            await self.receive_dict(recv_to=self.data_dict[client_id], sender=client, loop=loop)
+            print("SERVER __initialize END")
+        print(self.data_dict)
 
     def getBatch(self, get_inputs=True, get_outputs=True, animate=True):
         """
@@ -147,7 +120,13 @@ class TcpIpServer(TcpIpObject):
         """
         # Trigger communication protocol
         run(self.__request_data_from_client(get_inputs=get_inputs, get_outputs=get_outputs, animate=animate))
+<<<<<<< HEAD
         data_sorter = {'input': [], 'dataset_in': {}, 'output': [], 'dataset_out': {}, 'loss': []}
+=======
+
+        data_sorter = {'input': [], 'output': [], 'loss': []}
+
+>>>>>>> Server and client handle multiple object types and dictionaries
         self.sample_to_client_id = []
         while max(len(data_sorter['input']), len(data_sorter['dataset_in']),
                   len(data_sorter['output']), len(data_sorter['dataset_out']),
@@ -239,6 +218,7 @@ class TcpIpServer(TcpIpObject):
                     await self.send_command_compute(loop=loop, receiver=client)
                 else:
                     await self.send_command_step(loop=loop, receiver=client)
+<<<<<<< HEAD
             # 2) Receive training data
             await self.listen_while_not_done(loop=loop, sender=client, data_dict=self.data_dict[client_id],
                                              client_id=client_id)
@@ -270,6 +250,25 @@ class TcpIpServer(TcpIpObject):
         else:
             await self.__communicate(client=client, client_id=client_id, get_inputs=get_inputs, get_outputs=get_outputs,
                                      animate=animate)
+=======
+                # Receive data
+                await self.listen_while_not_done(loop=loop, sender=client, data_dict=self.data_dict[client_id], client_id=client_id)
+
+        data = {}
+        # Checkin input data size
+        if get_inputs:
+            data['input'] = self.data_dict[client_id]['input']
+
+        # Checkin output data size
+        if get_outputs:
+            data['output'] = self.data_dict[client_id]['output']
+
+        if 'loss' in self.data_dict[client_id]:
+            data['loss'] = self.data_dict[client_id]['loss']
+
+        data['ID'] = client_id
+        self.data_fifo.put(data)
+>>>>>>> Server and client handle multiple object types and dictionaries
 
     def setDatasetBatch(self, batch):
         """
@@ -279,8 +278,14 @@ class TcpIpServer(TcpIpObject):
         :return:
         """
         if len(batch['input']) != self.batch_size:
+<<<<<<< HEAD
             raise ValueError(f"[{self.name}] The size of batch from Dataset is {len(batch['input'])} while the batch "
                              f"size was set to {self.batch_size}.")
+=======
+            return ValueError(
+                f"[TcpIpServer] The size of batch from Dataset is {len(batch['input'])} while the batch size"
+                f"was set to {self.batch_size}.")
+>>>>>>> Server and client handle multiple object types and dictionaries
         self.batch_from_dataset = copy(batch)
 
     def applyPrediction(self, prediction):
@@ -346,6 +351,7 @@ class TcpIpServer(TcpIpObject):
         if data != b'exit':
             raise ValueError(f"[{self.name}] Client {idx} was supposed to exit.")
 
+<<<<<<< HEAD
     async def listen_while_not_done(self, loop, sender, data_dict, client_id=None):
         """
         Listening to data until command 'done' is received.
@@ -373,6 +379,8 @@ class TcpIpServer(TcpIpObject):
                 if cmd == self.command_dict['prediction']:
                     await self.compute_and_send_prediction(network_input=data_dict[label], receiver=sender)
 
+=======
+>>>>>>> Server and client handle multiple object types and dictionaries
     async def compute_and_send_prediction(self, network_input, receiver):
         """
         Compute and send back the network prediction.
@@ -388,11 +396,18 @@ class TcpIpServer(TcpIpObject):
             raise ValueError("Cannot request prediction if Manager does not exist")
         elif self.environment_manager.data_manager.manager.network_manager is None:
             raise ValueError("Cannot request prediction if NetworkManager does not exist")
+<<<<<<< HEAD
         # Get the prediction of the network
         prediction = self.environment_manager.requestPrediction(network_input=network_input[None, ])
         # Send the prediction back to the TcpIpClient
         await self.send_labeled_data(data_to_send=prediction, label="prediction", receiver=receiver,
                                      send_read_command=False)
+=======
+        else:
+            prediction = self.environment_manager.data_manager.manager.network_manager.computeOnlinePrediction(
+                network_input=network_input[None,])
+            await self.send_labeled_data(data_to_send=prediction, label="prediction", receiver=receiver, send_read_command=False)
+>>>>>>> Server and client handle multiple object types and dictionaries
 
     async def update_visualizer(self, visualization_data, client_id):
         """
@@ -403,3 +418,7 @@ class TcpIpServer(TcpIpObject):
         :return:
         """
         self.environment_manager.updateVisualizer(visualization_data, client_id)
+
+    async def action_on_prediction(self, data, client_id, sender=None, loop=None):
+        label, param = await self.receive_labeled_data(loop=loop, sender=sender)
+        await self.compute_and_send_prediction(network_input=param, receiver=sender)

@@ -54,7 +54,7 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
 
         recv_param_dict = {}
         # Receive parameters
-        await self.listen_while_not_done(loop=loop, sender=self.sock, data_dict=recv_param_dict)
+        await self.receive_dict(recv_to=recv_param_dict, sender=self.sock, loop=loop)
 
         # Use received parameters
         self.recv_parameters(recv_param_dict)
@@ -64,13 +64,13 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
         self.init()
 
         # Send visualization
+        print("CLIENT __initialize VISU")
         visu_dict = self.send_visualization()
-        for key in visu_dict:
-            await self.send_labeled_data(data_to_send=visu_dict[key], label=key, loop=loop, receiver=self.sock)
-        await self.send_command_done(loop=loop, receiver=self.sock)
+        await self.send_visualization_data(visualization_data=visu_dict, loop=loop, receiver=self.sock)
 
         # Send parameters
         param_dict = self.send_parameters()
+<<<<<<< HEAD
         for key in param_dict:
             # Send the parameter (label + data)
             await self.send_labeled_data(data_to_send=param_dict[key], label=key, loop=loop, receiver=self.sock)
@@ -88,6 +88,12 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
                                  receiver=self.sock)
             await self.send_data(data_to_send=array(self.output_size, dtype=float), loop=loop,
                                  receiver=self.sock)
+=======
+        print("CLIENT __initialize PARAM")
+        await self.send_dict(name="parameters", dict_to_send=param_dict, loop=loop, receiver=self.sock)
+
+        await self.send_command_done(loop=loop, receiver=self.sock)
+>>>>>>> Server and client handle multiple object types and dictionaries
 
     def launch(self):
         """
@@ -121,6 +127,7 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
         :return:
         """
         loop = get_event_loop()
+<<<<<<< HEAD
 
         # Receive and check command
         command = await self.receive_data(loop, server)
@@ -160,6 +167,9 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
             if await self.receive_data(loop=loop, sender=server):
                 additional_out = await self.receive_dict_data(loop=loop, sender=server)
             self.setDatasetSample(sample_in, sample_out, additional_in, additional_out)
+=======
+        await self.listen_while_not_done(loop=loop, sender=server, data_dict={}, client_id=None)
+>>>>>>> Server and client handle multiple object types and dictionaries
 
     async def __close(self):
         """
@@ -225,6 +235,7 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
         """
         loop = get_event_loop() if loop is None else loop
         receiver = self.sock if receiver is None else receiver
+<<<<<<< HEAD
         # Check the validity of the computed sample
         check = self.checkSample()
         await self.send_labeled_data(data_to_send=check, label="check", loop=loop, receiver=receiver)
@@ -243,6 +254,12 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
             for key in self.additional_outputs.keys():
                 await self.send_labeled_data(data_to_send=self.additional_outputs[key], label='dataset_out'+key,
                                              loop=loop, receiver=receiver)
+=======
+        if network_input is not None:
+            await self.send_labeled_data(data_to_send=network_input, label="input", loop=loop, receiver=receiver)
+        if network_output is not None:
+            await self.send_labeled_data(data_to_send=network_output, label="output", loop=loop, receiver=receiver)
+>>>>>>> Server and client handle multiple object types and dictionaries
 
     def sync_send_training_data(self, network_input=None, network_output=None, receiver=None):
         """
@@ -254,6 +271,7 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
         :return:
         """
         receiver = self.sock if receiver is None else receiver
+<<<<<<< HEAD
         # Check the validity of the computed sample
         check = self.checkSample()
         self.sync_send_labeled_data(data_to_send=check, label="check", receiver=receiver)
@@ -272,6 +290,14 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
             for key in self.additional_outputs.keys():
                 self.sync_send_labeled_data(data_to_send=self.additional_outputs[key], label='dataset_out'+key,
                                             receiver=receiver)
+=======
+        if network_input is not None:
+            self.sync_send_command_read()
+            self.sync_send_labeled_data(data_to_send=network_input, label="input", receiver=receiver)
+        if network_output is not None:
+            self.sync_send_command_read()
+            self.sync_send_labeled_data(data_to_send=network_output, label="output", receiver=receiver)
+>>>>>>> Server and client handle multiple object types and dictionaries
 
     def sync_send_prediction_request(self, network_input=None, receiver=None):
         """
@@ -292,6 +318,7 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
             return pred
 
     def sync_send_visualization_data(self, visualization_data=None, receiver=None):
+<<<<<<< HEAD
         """
         Send the visualization data to the TcpIpServer.
 
@@ -308,3 +335,36 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
                 self.sync_send_labeled_data(data_to_send=visualization_data[key], label=key, receiver=receiver)
             # Done sending visualization data
             self.sync_send_command_done(receiver=self.sock)
+=======
+        self.sync_send_dict(name="visualisation", dict_to_send=visualization_data)
+
+    async def send_visualization_data(self, visualization_data=None, loop=None, receiver=None):
+        loop = get_event_loop() if loop is None else loop
+        receiver = self.sock if receiver is None else receiver
+        await self.send_dict(name="visualisation", dict_to_send=visualization_data, receiver=receiver, loop=loop)
+
+    async def action_on_exit(self, data, client_id, sender=None, loop=None):
+        self.close_client = True
+
+    async def action_on_step(self, data, client_id, sender=None, loop=None):
+        self.compute_essential_data = False
+        await self.step()
+        self.sync_send_command_done()
+
+    async def action_on_done(self, data, client_id, sender=None, loop=None):
+        pass
+
+    async def action_on_prediction(self, data, client_id, sender=None, loop=None):
+        prediction = await self.receive_data(loop=loop, sender=sender)
+        self.applyPrediction(prediction.reshape(self.output_size))
+
+    async def action_on_compute(self, data,  client_id, sender=None, loop=None):
+        self.compute_essential_data = True
+        await self.step()
+        self.sync_send_command_done()
+
+    async def action_on_sample(self, data, client_id, sender=None, loop=None):
+        sample_in = await self.receive_data(loop=loop, sender=sender)
+        sample_out = await self.receive_data(loop=loop, sender=sender)
+        self.setDatasetSample(sample_in, sample_out)
+>>>>>>> Server and client handle multiple object types and dictionaries
