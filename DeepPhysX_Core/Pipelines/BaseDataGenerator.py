@@ -2,7 +2,7 @@ from os.path import join as osPathJoin
 from os.path import basename
 
 from DeepPhysX_Core.Manager.DataManager import DataManager
-from DeepPhysX_Core.utils.pathUtils import createDir, getFirstCaller
+from DeepPhysX_Core.Utils.pathUtils import createDir, getFirstCaller
 
 
 class BaseDataGenerator:

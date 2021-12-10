@@ -26,9 +26,9 @@
 # # #     elif isfile(object) and ".py" in object and not "__init__.py" == object:
 # # #         exec(f"import {object}")
 #
-# from DeepPhysX_Core.utils.mathUtils import *
-# from DeepPhysX_Core.utils.pathUtils import *
-# from DeepPhysX_Core.utils.tensor_transform_utils import *
+# from DeepPhysX_Core.Utils.mathUtils import *
+# from DeepPhysX_Core.Utils.pathUtils import *
+# from DeepPhysX_Core.Utils.tensor_transform_utils import *
 #
 # __all__ = ["nextPowerOf2",
 #            "fibonacci3DSphereSampling",
