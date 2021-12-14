@@ -17,9 +17,9 @@ class BaseDataset:
         self.name = self.__class__.__name__
 
         # Data fields containers
+        self.data_type = ndarray
         self.data = {'input': array([]), 'output': array([])}
         self.shape = {'input': None, 'output': None}
-        self.flat = {'input': None, 'output': None}
         self.fields = {'IN': ['input'], 'OUT': ['output']}
 
         # Indexing
@@ -27,7 +27,11 @@ class BaseDataset:
         self.current_sample = 0
         self.max_size = config.max_size
         self.batch_per_field = {field: 0 for field in ['input', 'output']}
-        self.empty = True
+        self.__empty = True
+
+    @property
+    def nb_samples(self):
+        return max([len(self.data[field]) for field in self.fields['IN'] + self.fields['OUT']])
 
     def is_empty(self):
         """
@@ -35,14 +39,14 @@ class BaseDataset:
 
         :return:
         """
-        # The empty flag is set to False once th Dataset is considered as non empty
-        if not self.empty:
+        # The empty flag is set to False once the Dataset is considered as non empty
+        if not self.__empty:
             return False
         # Check each registered data field
         for field in self.fields['IN'] + self.fields['OUT']:
             # Dataset is considered as non empty if a field is fed another time
             if self.batch_per_field[field] > 1:
-                self.empty = False
+                self.__empty = False
                 return False
         # If all field are considered as non empty then the Dataset is empty
         return True
@@ -58,8 +62,10 @@ class BaseDataset:
         :return:
         """
         self.shape[field] = shape
-        self.flat[field] = functools.reduce(lambda x, y: x * y, shape, 1)
-        self.data[field] = array([]).reshape((0, self.flat[field]))
+        self.data[field] = array([]).reshape((0, *shape))
+
+    def get_data_shape(self, field):
+        return tuple(self.shape[field])
 
     def init_additional_field(self, field, shape):
         """
@@ -76,15 +82,18 @@ class BaseDataset:
         # Init the field shape
         self.init_data_size(field, shape)
 
-    def reset(self):
+    def empty(self):
         """
         Empty the dataset.
 
         :return:
         """
         for field in self.fields['IN'] + self.fields['OUT']:
-            self.data[field] = array([]).reshape((0, self.flat[field])) if self.flat[field] is not None else array([])
+            self.data[field] = array([]).reshape((0, *self.shape[field])) if self.shape[field] is not None else array([])
+        self.shuffle_pattern = None
         self.current_sample = 0
+        self.batch_per_field = {field: 0 for field in self.fields['IN'] + self.fields['OUT']}
+        self.__empty = True
 
     def memory_size(self, field=None):
         """
@@ -129,16 +138,35 @@ class BaseDataset:
                                  f"will lead to a different number of sample for each field of the dataset.")
             self.init_additional_field(field, data[0].shape)
         # Check data size initialization
-        if self.flat[field] is None:
+        if self.shape[field] is None:
             self.init_data_size(field, data[0].shape)
         # Add each sample
-        for sample in data:
-            self.data[field] = concatenate((self.data[field], sample.flatten()[None, :]))
-            if partition_file is not None:
-                save(partition_file, sample.flatten())
+        self.data[field] = concatenate((self.data[field], data))
+        if partition_file is not None:
+            self.save(field, partition_file)
         # Update sample indexing in dataset
         self.batch_per_field[field] += 1
         self.current_sample = max([len(self.data[f]) for f in self.fields['IN'] + self.fields['OUT']])
+
+    def save(self, field, file):
+        """
+        Save the actual Dataset.
+
+        :param str field: Data field
+        :param str file: Path to the file in which to write the data
+        :return:
+        """
+        save(file, self.data[field])
+
+    def set(self, field, data):
+        """
+        Set a full field of the dataset.
+
+        :param field:
+        :param data:
+        :return:
+        """
+        self.data[field] = data
 
     def get(self, field, idx_begin, idx_end):
         """
@@ -150,7 +178,7 @@ class BaseDataset:
         :return:
         """
         indices = slice(idx_begin, idx_end) if self.shuffle_pattern is None else self.shuffle_pattern[idx_begin:idx_end]
-        return self.data[field][indices].reshape((-1, *self.shape[field]))
+        return self.data[field][indices]
 
     def shuffle(self):
         """
@@ -174,5 +202,5 @@ class BaseDataset:
         for side in ['IN', 'OUT']:
             description += f"    {'in' if side == 'IN' else 'Out'}put data fields: {self.fields[side]}"
             for field in self.fields[side]:
-                description += f"      {field} shape: {self.shape[field]} // {field} flat shape: {self.flat[field]}"
+                description += f"      {field} shape: {self.shape[field]}"
         return description

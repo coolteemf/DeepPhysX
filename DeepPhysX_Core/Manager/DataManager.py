@@ -59,7 +59,7 @@ class DataManager:
                                                   train=self.is_training, record_data=record_data)
         # Create environment if required
         if create_environment is None:  # If None then the dataset_manager exists
-            create_environment = self.dataset_manager.requireEnvironment()
+            create_environment = self.dataset_manager.new_dataset
         if create_environment:
             self.environment_manager = EnvironmentManager(data_manager=self, environment_config=environment_config,
                                                           session_dir=session_dir, batch_size=batch_size,
@@ -98,8 +98,8 @@ class DataManager:
                 self.allow_dataset_fetch = False
                 data = self.environment_manager.getData(animate=animate, get_inputs=True, get_outputs=True)
                 # We create a partition to write down the data in the case it's not already existing.
-                if self.dataset_manager.current_partition_file['input'] is None:
-                    self.dataset_manager.createNewPartitions()
+                # if self.dataset_manager.current_partition_path['input'] is None:
+                #     self.dataset_manager.createNewPartitions()
                 self.dataset_manager.addData(data)
             # Force data from the dataset
             else:

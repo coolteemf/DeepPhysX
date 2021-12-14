@@ -47,7 +47,8 @@ class DummyOptimizer(BaseOptimization):
         pass
 
     def computeLoss(self, prediction, ground_truth, data):
-        print(prediction, ground_truth)
+        print(prediction.tolist())
+        # print(ground_truth.tolist())
         return {'loss': 0.}
 
     def transformLoss(self, data):
