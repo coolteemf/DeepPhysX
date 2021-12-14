@@ -2,7 +2,8 @@ class VisualizerManager:
 
     def __init__(self,
                  data_manager=None,
-                 visualizer=None):
+                 visualizer=None,
+                 screenshot_rate=0):
         """
         Handle the 3D representation of the data from a visualizer.
         Allows easy access to basic functionalities of the visualizer
@@ -12,6 +13,9 @@ class VisualizerManager:
         """
         self.data_manager = data_manager
         self.visualizer = visualizer()
+
+        self.screenshot_rate = screenshot_rate
+        self.screenshot_counter = 0
 
     def getDataManager(self):
         """
@@ -33,6 +37,10 @@ class VisualizerManager:
 
     def updateVisualizer(self, sample):
         self.visualizer.updateVisualizer(sample)
+        self.screenshot_counter += 1
+        if self.screenshot_counter == self.screenshot_rate:
+            self.visualizer.save_screenshot(session_dir=self.data_manager.environment_manager.session_dir)
+            self.screenshot_counter = 0
 
     def render(self):
         """

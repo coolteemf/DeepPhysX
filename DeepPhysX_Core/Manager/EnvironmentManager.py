@@ -37,7 +37,9 @@ class EnvironmentManager:
         if environment_config.visualizer is None:
             self.visualizer_manager = None
         else:
-            self.visualizer_manager = VisualizerManager(data_manager=data_manager, visualizer=environment_config.visualizer)
+            self.visualizer_manager = VisualizerManager(data_manager=data_manager,
+                                                        visualizer=environment_config.visualizer,
+                                                        screenshot_rate=environment_config.screenshot_sample_rate)
             self.initVisualizer()
 
         self.always_create_data = environment_config.always_create_data
