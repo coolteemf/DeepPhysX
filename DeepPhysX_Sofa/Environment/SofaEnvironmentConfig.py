@@ -14,6 +14,7 @@ class SofaEnvironmentConfig(BaseEnvironmentConfig):
                  environment_class=SofaEnvironment,
                  visualizer=None,
                  simulations_per_step=1,
+                 screenshot_sample_rate=0,
                  max_wrong_samples_per_step=10,
                  always_create_data=False,
                  use_prediction_in_environment=False,
@@ -31,6 +32,7 @@ class SofaEnvironmentConfig(BaseEnvironmentConfig):
         :type environment_class: type[SofaEnvironment]
         :param visual_object: Class of the visual object which template visual data
         :param int simulations_per_step: Number of iterations to compute in the Environment at each time step
+        :param int screenshot_sample_rate: A screenshot of the viewer will be done every x sample
         :param int max_wrong_samples_per_step: Maximum number of wrong samples to produce in a step
         :param bool always_create_data: If True, data will always be created from environment. If False, data will be
                                         created from the environment during the first epoch and then re-used from the
@@ -49,6 +51,7 @@ class SofaEnvironmentConfig(BaseEnvironmentConfig):
                                        environment_class=environment_class,
                                        visualizer=visualizer,
                                        simulations_per_step=simulations_per_step,
+                                       screenshot_sample_rate=screenshot_sample_rate,
                                        max_wrong_samples_per_step=max_wrong_samples_per_step,
                                        always_create_data=always_create_data,
                                        use_prediction_in_environment=use_prediction_in_environment,

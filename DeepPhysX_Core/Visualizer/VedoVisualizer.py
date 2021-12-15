@@ -21,6 +21,7 @@ class VedoVisualizer:
         # Wrong samples parameters
         self.folder = None
         self.nb_saved = 0
+        self.nb_screenshots = 0
 
     def initView(self, data_dict):
         """
@@ -134,7 +135,7 @@ class VedoVisualizer:
         :return:
         """
         if self.folder is None:
-            self.folder = osPathJoin(session_dir, 'stats/wrong_samples')
+            self.folder = osPathJoin(session_dir, 'dataset', 'wrong_samples')
             makedirs(self.folder)
             from DeepPhysX_Core.Utils import wrong_samples
             import shutil
@@ -142,3 +143,22 @@ class VedoVisualizer:
         filename = osPathJoin(self.folder, f'wrong_sample_{self.nb_saved}.npz')
         self.nb_saved += 1
         self.viewers[viewer_id]['plotter'].export(filename=filename)
+
+    def save_screenshot(self, session_dir):
+        """
+        Save a screenshot of each viewer in the dataset folder of the session.
+
+        :param str session_dir: Session directory.
+        :return:
+        """
+
+        # Check folder existence
+        if self.folder is None:
+            self.folder = osPathJoin(session_dir, 'dataset', 'samples')
+            makedirs(self.folder)
+
+        # Save a screenshot for each viewer
+        for viewer_id in self.viewers.keys():
+            filename = osPathJoin(self.folder, f'screenshot_{self.nb_screenshots}.png')
+            self.nb_screenshots += 1
+            self.viewers[viewer_id]['plotter'].screenshot(filename=filename)

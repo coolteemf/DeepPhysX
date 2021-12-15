@@ -17,6 +17,7 @@ class BaseEnvironmentConfig:
                  max_wrong_samples_per_step=10,
                  always_create_data=False,
                  record_wrong_samples=False,
+                 screenshot_sample_rate=0,
                  use_prediction_in_environment=False,
                  param_dict={},
                  as_tcpip_client=True,
@@ -35,6 +36,7 @@ class BaseEnvironmentConfig:
         :param visual_object: Class of the visual object which template visual data
         :param int simulations_per_step: Number of iterations to compute in the Environment at each time step
         :param int max_wrong_samples_per_step: Maximum number of wrong samples to produce in a step
+        :param int screenshot_sample_rate: A screenshot of the viewer will be done every x sample
         :param bool always_create_data: If True, data will always be created from environment. If False, data will be
                                         created from the environment during the first epoch and then re-used from the
                                         Dataset.
@@ -83,6 +85,7 @@ class BaseEnvironmentConfig:
         self.received_parameters = {}
         self.always_create_data = always_create_data
         self.record_wrong_samples = record_wrong_samples
+        self.screenshot_sample_rate = screenshot_sample_rate
         self.use_prediction_in_environment = use_prediction_in_environment
         self.simulations_per_step = simulations_per_step
         self.max_wrong_samples_per_step = max_wrong_samples_per_step
