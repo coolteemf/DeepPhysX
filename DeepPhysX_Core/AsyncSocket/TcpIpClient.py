@@ -178,7 +178,7 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
         """
         receiver = self.sock if receiver is None else receiver
         # Check the validity of the computed sample
-        check = self.checkSample()
+        check = self.check_sample()
         self.sync_send_labeled_data(data_to_send=check, label="check", receiver=receiver)
         # Send training data if sample is valid
         if check:
@@ -249,4 +249,13 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
     async def action_on_sample(self, data, client_id, sender=None, loop=None):
         sample_in = await self.receive_data(loop=loop, sender=sender)
         sample_out = await self.receive_data(loop=loop, sender=sender)
-        self.setDatasetSample(sample_in, sample_out)
+        additional_in, additional_out = None, None
+        # Is there other in fields ?
+        if await self.receive_data(loop=loop, sender=sender):
+            additional_in = {}
+            await self.receive_dict(recv_to=additional_in, loop=loop, sender=sender)
+        # Is there other out fields ?
+        if await self.receive_data(loop=loop, sender=sender):
+            additional_out = {}
+            await self.receive_dict(recv_to=additional_out, loop=loop, sender=sender)
+        self.setDatasetSample(sample_in, sample_out, additional_in, additional_out)

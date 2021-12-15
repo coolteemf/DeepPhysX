@@ -38,6 +38,9 @@ class AbstractEnvironment:
     def step(self):
         raise NotImplementedError
 
+    def check_sample(self, check_input=True, check_output=True):
+        raise NotImplementedError
+
     def recv_parameters(self, param_dict):
         raise NotImplementedError
 

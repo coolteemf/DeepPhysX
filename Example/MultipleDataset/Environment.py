@@ -14,7 +14,6 @@ class Environment(BaseEnvironment):
                  as_tcpip_client=True,
                  ip_address='localhost',
                  port=10000,
-                 visual_object=None,
                  environment_manager=None):
 
         BaseEnvironment.__init__(self,
@@ -23,7 +22,6 @@ class Environment(BaseEnvironment):
                                  as_tcpip_client=as_tcpip_client,
                                  ip_address=ip_address,
                                  port=port,
-                                 visual_object=visual_object,
                                  environment_manager=environment_manager)
         self.input = np.array([0., 0.])
         self.output = np.array([0., 0.])

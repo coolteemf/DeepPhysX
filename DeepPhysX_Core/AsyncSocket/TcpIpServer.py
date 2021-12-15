@@ -193,7 +193,7 @@ class TcpIpServer(TcpIpObject):
                         for key in self.batch_from_dataset[field]:
                             sample[key] = self.batch_from_dataset[field][key][0]
                             self.batch_from_dataset[field][key] = self.batch_from_dataset[field][key][1:]
-                        await self.send_dict_data(dict_data=sample, loop=loop, receiver=client)
+                        await self.send_dict(name="additional_data", dict_to_send=sample, loop=loop, receiver=client)
 
             visu_dict = {}
             # 1.2) Execute n steps, the last one send data computation signal
