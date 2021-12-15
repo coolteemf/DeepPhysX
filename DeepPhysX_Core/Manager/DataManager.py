@@ -22,7 +22,7 @@ class DataManager:
         :param BaseEnvironmentConfig environment_config: Specialisation containing the parameters of the environment manager
         :param Manager manager: Manager that handle The DataManager
         :param str session_name: Name of the newly created directory if session_dir is not defined
-        :param str session_dir: Name of the directory in which to write all of the neccesary data
+        :param str session_dir: Name of the directory in which to write all the necessary data
         :param bool new_session: Define the creation of new directories to store data
         :param bool training: True if this session is a network training
         :param dict record_data: Format {\'in\': bool, \'out\': bool} save the tensor when bool is True
@@ -59,7 +59,7 @@ class DataManager:
                                                   train=self.is_training, record_data=record_data)
         # Create environment if required
         if create_environment is None:  # If None then the dataset_manager exists
-            create_environment = self.dataset_manager.requireEnvironment()
+            create_environment = self.dataset_manager.new_dataset()
         if create_environment:
             self.environment_manager = EnvironmentManager(data_manager=self, environment_config=environment_config,
                                                           session_dir=session_dir, batch_size=batch_size,
@@ -83,27 +83,18 @@ class DataManager:
 
         :return:
         """
+
         # Training
         if self.is_training:
             data = None
-            # Try to fetch data from the dataset
-            # if self.allow_dataset_fetch:
-            #     data = self.dataset_manager.getData(batch_size=batch_size, get_inputs=True, get_outputs=True)
-            #
-            #     if data is not None and self.environment_manager is not None and self.environment_manager.use_prediction_in_environment:
-            #         data = self.environment_manager.dispatchBatch(batch=data, get_inputs=True, get_outputs=True)
-            # If data could not be fetch, try to generate them from the environment
             # Get data from environment if used and if the data should be created at this epoch
             if data is None and self.environment_manager is not None and (epoch == 0 or self.environment_manager.always_create_data):
                 self.allow_dataset_fetch = False
                 data = self.environment_manager.getData(animate=animate, get_inputs=True, get_outputs=True)
-                # We create a partition to write down the data in the case it's not already existing.
-                if self.dataset_manager.current_partition_file['input'] is None:
-                    self.dataset_manager.createNewPartitions()
                 self.dataset_manager.addData(data)
             # Force data from the dataset
             else:
-                data = self.dataset_manager.getData(batch_size=batch_size, get_inputs=True, get_outputs=True, force_partition_reload=True)
+                data = self.dataset_manager.getData(batch_size=batch_size, get_inputs=True, get_outputs=True)
                 if self.environment_manager is not None and self.environment_manager.use_prediction_in_environment:
                     new_data = self.environment_manager.dispatchBatch(batch=data)
                     if len(new_data['input']) != 0:

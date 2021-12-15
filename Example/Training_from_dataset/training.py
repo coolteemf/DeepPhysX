@@ -50,18 +50,20 @@ def main(nb_batch, batch_size):
                           environment_config=None,
                           dataset_config=dataset_config,
                           network_config=net_config,
-                          nb_epochs=1,
+                          nb_epochs=2,
                           nb_batches=nb_batch,
                           batch_size=batch_size)
     trainer.execute()
 
 
 if __name__ == '__main__':
-    if not os.path.exists(os.getcwd() + '/generation'):
-        print("GENERATING DATASET...")
-        generate_dataset(5, 10)
+
+    if os.path.exists(os.getcwd() + '/generation'):
+        shutil.rmtree(os.getcwd() + '/generation')
+    print("GENERATING DATASET...")
+    generate_dataset(5, 10)
+
     if os.path.exists(os.getcwd() + '/training'):
-        print("REMOVE PREVIOUS TRAINING SESSION...")
         shutil.rmtree(os.getcwd() + '/training')
     print("TRAINING FROM EXISTING DATASET...")
-    main(10, 10)
+    main(5, 10)
