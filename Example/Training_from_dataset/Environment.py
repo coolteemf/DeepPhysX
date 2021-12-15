@@ -9,11 +9,11 @@ from DeepPhysX_Core.Environment.BaseEnvironment import BaseEnvironment
 class Environment(BaseEnvironment):
 
     def __init__(self, instance_id=1, number_of_instances=1, as_tcpip_client=True, ip_address='localhost', port=10000,
-                 visual_object=None, environment_manager=None):
+                 environment_manager=None):
 
         BaseEnvironment.__init__(self, instance_id=instance_id, number_of_instances=number_of_instances,
                                  as_tcpip_client=as_tcpip_client, ip_address=ip_address, port=port,
-                                 visual_object=visual_object, environment_manager=environment_manager)
+                                 environment_manager=environment_manager)
 
         self.input = array([[0.], [0.]])
         self.input_size = self.input.shape

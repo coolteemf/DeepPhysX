@@ -105,7 +105,6 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
         :return:
         """
         loop = get_event_loop()
-
         await self.listen_while_not_done(loop=loop, sender=server, data_dict={})
 
     async def __close(self):
@@ -232,7 +231,6 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
         self.compute_essential_data = False
         await self.step()
         await self.send_command_done()
-
 
     async def action_on_done(self, data, client_id, sender=None, loop=None):
         pass

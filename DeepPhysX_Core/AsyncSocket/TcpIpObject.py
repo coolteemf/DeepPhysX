@@ -169,7 +169,7 @@ class TcpIpObject:
         return label, data
 
     async def listen_while_not_done(self, loop, sender, data_dict, client_id=None):
-        while (cmd :=await self.receive_data(loop=loop, sender=sender)) != self.command_dict['done']:
+        while (cmd := await self.receive_data(loop=loop, sender=sender)) != self.command_dict['done']:
             if cmd in self.command_dict.values():
                 await self.action_on_command[cmd](data_dict, client_id, sender, loop)
         return data_dict

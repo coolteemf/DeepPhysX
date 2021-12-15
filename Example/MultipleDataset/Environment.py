@@ -57,4 +57,7 @@ class Environment(BaseEnvironment):
             print("Output sample")
             print(self.sample_out, self.additional_outputs)
 
+    def close(self):
+        print("CLOSED")
+
 

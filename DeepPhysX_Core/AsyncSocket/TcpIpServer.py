@@ -275,6 +275,7 @@ class TcpIpServer(TcpIpObject):
         loop = get_event_loop()
         print("Sending exit command to", idx)
         await self.send_command_exit(loop=loop, receiver=client)
+        await self.send_command_done(loop=loop, receiver=client)
         # Wait for exit confirmation
         data = await self.receive_data(loop=loop, sender=client)
         if data != b'exit':
