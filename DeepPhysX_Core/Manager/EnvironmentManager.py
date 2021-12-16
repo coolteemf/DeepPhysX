@@ -80,12 +80,8 @@ class EnvironmentManager:
         :param bool get_inputs: If True, compute and return input
         :param bool get_outputs: If True, compute and return output
         :param bool animate: If True, triggers an environment step
-<<<<<<< HEAD
         :return: Dictionary containing all labeled data sent by the clients in their own dictionary + in and out key
         corresponding to the batch
-=======
-        :return: dictionary containing all labeled data sent by the clients in their own dictionnary + in and out key corresponding to the batch
->>>>>>> updated manager to remove useless server functionallities, changed function name too
         """
         if self.server is not None:
             return self.getDataFromServer(get_inputs, get_outputs, animate)
