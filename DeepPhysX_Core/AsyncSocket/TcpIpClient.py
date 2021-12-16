@@ -247,7 +247,7 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
     async def action_on_sample(self, data, client_id, sender=None, loop=None):
         sample_in = await self.receive_data(loop=loop, sender=sender)
         sample_out = await self.receive_data(loop=loop, sender=sender)
-        additional_in, additional_out = None, None
+        additional_in, additional_out = {}, {}
         # Is there other in fields ?
         if await self.receive_data(loop=loop, sender=sender):
             additional_in = {}

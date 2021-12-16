@@ -109,7 +109,7 @@ class BaseEnvironment(TcpIpClient):
         """
         pass
 
-    def setDatasetSample(self, sample_in, sample_out, additional_in=None, additional_out=None):
+    def setDatasetSample(self, sample_in, sample_out, additional_in={}, additional_out={}):
         """
         Set the sample received from Dataset.
 
@@ -121,8 +121,8 @@ class BaseEnvironment(TcpIpClient):
         """
         self.sample_in = sample_in
         self.sample_out = sample_out
-        self.additional_inputs = additional_in
-        self.additional_outputs = additional_out
+        self.additional_inputs = additional_in['additional_data']
+        self.additional_outputs = additional_out['additional_data']
 
     def setTrainingData(self, input_array, output_array):
         """

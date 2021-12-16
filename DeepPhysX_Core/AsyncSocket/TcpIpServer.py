@@ -182,6 +182,7 @@ class TcpIpServer(TcpIpObject):
                     sample = np.array([])
                     if field in self.batch_from_dataset:
                         sample = self.batch_from_dataset[field][0]
+                        self.data_dict[client_id][field] = sample
                         self.batch_from_dataset[field] = self.batch_from_dataset[field][1:]
                     await self.send_data(data_to_send=sample, loop=loop, receiver=client)
                 # Pop the first sample of the numpy batch for each additional in / out
@@ -193,6 +194,7 @@ class TcpIpServer(TcpIpObject):
                         for key in self.batch_from_dataset[field]:
                             sample[key] = self.batch_from_dataset[field][key][0]
                             self.batch_from_dataset[field][key] = self.batch_from_dataset[field][key][1:]
+                            self.data_dict[client_id][field+key] = sample[key]
                         await self.send_dict(name="additional_data", dict_to_send=sample, loop=loop, receiver=client)
 
             visu_dict = {}
