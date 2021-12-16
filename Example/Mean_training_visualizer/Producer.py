@@ -18,14 +18,12 @@ class MeanEnvironment(BaseEnvironment):
                  ip_address='localhost',
                  port=10000,
                  instance_id=1,
-                 number_of_instances=1,
-                 visualizer_class=None):
+                 number_of_instances=1):
         BaseEnvironment.__init__(self,
                                  ip_address=ip_address,
                                  port=port,
                                  instance_id=instance_id,
-                                 number_of_instances=number_of_instances,
-                                 visualizer_class=visualizer_class)
+                                 number_of_instances=number_of_instances)
         self.factory = VedoObjectFactory()
 
     def send_visualization(self):

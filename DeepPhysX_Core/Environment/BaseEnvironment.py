@@ -11,7 +11,6 @@ class BaseEnvironment(TcpIpClient):
                  instance_id=1,
                  number_of_instances=1,
                  as_tcpip_client=True,
-                 visualizer_class=None,
                  environment_manager=None):
         """
         BaseEnvironment is an environment class to compute simulated data for the network and its optimization process.
@@ -21,7 +20,6 @@ class BaseEnvironment(TcpIpClient):
         :param as_tcpip_client: Environment is own by a TcpIpClient if True, by an EnvironmentManager if False
         :param ip_address: IP address of the TcpIpObject
         :param port: Port number of the TcpIpObject
-        :param visual_object: VedoObject class to template visual data
         :param environment_manager: EnvironmentManager that handles the Environment if as_tcpip_client is False
         """
 
@@ -32,9 +30,7 @@ class BaseEnvironment(TcpIpClient):
                              ip_address=ip_address,
                              port=port)
 
-
         self.input, self.output = array([]), array([])
-        self.visual_object = visualizer_class(visualizer=None) if visualizer_class is not None else None
         self.environment_manager = environment_manager
         self.sample_in, self.sample_out = None, None
         self.loss_data = None

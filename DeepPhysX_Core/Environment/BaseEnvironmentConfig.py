@@ -74,10 +74,10 @@ class BaseEnvironmentConfig:
             raise TypeError(f"[{self.name}] The number_of_thread number must be a positive integer.")
         self.max_client_connections = max_client_connection
 
-
         # TcpIpClients parameterization
         self.environment_class = environment_class
-        self.environment_file = environment_file if environment_file is not None else modules[self.environment_class.__module__].__file__
+        self.environment_file = environment_file if environment_file is not None else modules[
+            self.environment_class.__module__].__file__
         self.param_dict = param_dict
         self.as_tcpip_client = as_tcpip_client
 
@@ -109,7 +109,6 @@ class BaseEnvironmentConfig:
         server = TcpIpServer(max_client_count=self.max_client_connections, batch_size=batch_size,
                              nb_client=self.number_of_thread, manager=environment_manager,
                              ip_address=self.ip_address, port=self.port)
-
 
         server_thread = Thread(target=self.start_server, args=(server,))
         server_thread.start()
@@ -148,17 +147,16 @@ class BaseEnvironmentConfig:
         :param int idx: Index of client
         :return:
         """
-        script = join(dirname(modules[BaseEnvironment.__module__].__file__),
-                              'launcherBaseEnvironment.py')
+        script = join(dirname(modules[BaseEnvironment.__module__].__file__), 'launcherBaseEnvironment.py')
         # Usage: python3 script.py <file_path> <environment_class> <ip_address> <port> <idx> <nb_threads>"
         subprocessRun(['python3',
-                        script,
-                        self.environment_file,
-                        self.environment_class.__name__,
-                        self.ip_address,
-                        str(self.port),
-                        str(idx),
-                        str(self.number_of_thread)])
+                       script,
+                       self.environment_file,
+                       self.environment_class.__name__,
+                       self.ip_address,
+                       str(self.port),
+                       str(idx),
+                       str(self.number_of_thread)])
 
     def createEnvironment(self, environment_manager):
         """
@@ -168,8 +166,7 @@ class BaseEnvironmentConfig:
         :return: Environment
         """
         # Create instance
-        environment = self.environment_class(environment_manager=environment_manager, as_tcpip_client=False,
-                                             visualizer_class=self.visualizer)
+        environment = self.environment_class(environment_manager=environment_manager, as_tcpip_client=False)
         environment.create()
         environment.init()
         return environment

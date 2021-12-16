@@ -90,8 +90,7 @@ class SofaEnvironmentConfig(BaseEnvironmentConfig):
         root_node = Sofa.Core.Node()
         environment = root_node.addObject(self.environment_class(environment_manager=environment_manager,
                                                                  root_node=root_node,
-                                                                 as_tcpip_client=False,
-                                                                 visualizer_class=self.visualizer))
+                                                                 as_tcpip_client=False))
         environment.create()
         environment.init()
         return environment
