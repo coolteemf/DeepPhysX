@@ -117,8 +117,8 @@ class BaseEnvironment(TcpIpClient):
         """
         self.sample_in = sample_in
         self.sample_out = sample_out
-        self.additional_inputs = additional_in['additional_data']
-        self.additional_outputs = additional_out['additional_data']
+        self.additional_inputs = additional_in
+        self.additional_outputs = additional_out
 
     def setTrainingData(self, input_array, output_array):
         """
