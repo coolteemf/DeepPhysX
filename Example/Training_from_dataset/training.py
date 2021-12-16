@@ -28,6 +28,10 @@ def generate_dataset(nb_batch, batch_size):
 
 
 def main(nb_batch, batch_size):
+    env_config = BaseEnvironmentConfig(environment_class=Environment,
+                                       environment_file=sys.modules[Environment.__module__].__file__,
+                                       as_tcpip_client=True,
+                                       use_prediction_in_environment=True)
     # Network config
     net_config = BaseNetworkConfig(network_class=DummyNetwork,
                                    optimization_class=DummyOptimizer,
@@ -47,7 +51,7 @@ def main(nb_batch, batch_size):
 
     # Trainer
     trainer = BaseTrainer(session_name="training",
-                          environment_config=None,
+                          environment_config=env_config,
                           dataset_config=dataset_config,
                           network_config=net_config,
                           nb_epochs=2,

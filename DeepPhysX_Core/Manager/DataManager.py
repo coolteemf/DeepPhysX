@@ -88,7 +88,8 @@ class DataManager:
         if self.is_training:
             data = None
             # Get data from environment if used and if the data should be created at this epoch
-            if data is None and self.environment_manager is not None and (epoch == 0 or self.environment_manager.always_create_data):
+            if data is None and self.environment_manager is not None and \
+                    (epoch == 0 or self.environment_manager.always_create_data) and self.dataset_manager.new_dataset():
                 self.allow_dataset_fetch = False
                 data = self.environment_manager.getData(animate=animate, get_inputs=True, get_outputs=True)
                 self.dataset_manager.addData(data)

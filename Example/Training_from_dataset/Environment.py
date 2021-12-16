@@ -26,13 +26,19 @@ class Environment(BaseEnvironment):
         pass
 
     async def step(self):
-        # Compute network in / out data
-        self.input = array([[self.nb_step], [self.nb_step]])
-        self.output = array([[2 * self.nb_step], [2 * self.nb_step]])
-        # Setting (and sending) training data
-        # TODO: if inverted, last additional sample is not sent
-        self.additionalInDataset(label="custom", data_array=self.input)
-        self.additionalOutDataset(label="custom", data_array=self.output)
-        self.setTrainingData(input_array=self.input, output_array=self.output)
-        # Increment iteration counter
-        self.nb_step += 1
+        if self.sample_in is None or self.sample_out is None:
+            # Compute network in / out data
+            self.input = array([[self.nb_step], [self.nb_step]])
+            self.output = array([[2 * self.nb_step], [2 * self.nb_step]])
+            # Setting (and sending) training data
+            # TODO: if inverted, last additional sample is not sent
+            self.additionalInDataset(label="custom", data_array=self.input)
+            self.additionalOutDataset(label="custom", data_array=self.output)
+            self.setTrainingData(input_array=self.input, output_array=self.output)
+            # Increment iteration counter
+            self.nb_step += 1
+        else:
+            # Add 0.5 to existing dataset
+            self.input = array([self.sample_in[0], self.sample_in[1] + 0.5])
+            self.output = array([self.sample_out[0], self.sample_out[1] + 0.5])
+            self.setTrainingData(input_array=self.input, output_array=self.output)
