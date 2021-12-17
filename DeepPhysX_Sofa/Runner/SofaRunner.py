@@ -43,17 +43,18 @@ class SofaRunner(Sofa.Core.Controller, BaseRunner):
         self.root = self.manager.data_manager.environment_manager.environment.root
         self.root.addObject(self)
 
-    def onAnimateEndEvent(self, event):
-        """
-        Called within the Sofa pipeline at the end of the time step.
-
-        :param event: Sofa Event
-        :return: None
-        """
-        if self.runningCondition():
-            self.sampleBegin()
-            prediction, loss = self.predict(animate=False)
-            self.manager.data_manager.environment_manager.applyPrediction(prediction)
-            self.sampleEnd()
-        else:
-            self.runEnd()
+    # def onAnimateEndEvent(self, event):
+    #     """
+    #     Called within the Sofa pipeline at the end of the time step.
+    #
+    #     :param event: Sofa Event
+    #     :return: None
+    #     """
+    #     print("Runner")
+    #     if self.runningCondition():
+    #         self.sampleBegin()
+    #         prediction, loss = self.predict(animate=False)
+    #         self.manager.data_manager.environment_manager.applyPrediction(prediction)
+    #         self.sampleEnd()
+    #     else:
+    #         self.runEnd()
