@@ -179,7 +179,7 @@ class DatasetManager:
         # 4. Update json file
         self.update_json(update_nb_samples=True)
         if self.first_add:
-            self.update_json(update_shapes=True)
+            self.update_json(update_partitions_lists=True, update_shapes=True)
             self.first_add = False
 
         # 5. Check the size of the dataset
@@ -497,7 +497,7 @@ class DatasetManager:
 
         for field in self.fields['IN'] + self.fields['OUT']:
             self.current_partition_path[field] = self.dataset_dir + self.list_partitions[field][self.mode][-1]
-            data = load(self.current_partition_path[field], mmap_mode='r')
+            data = load(self.current_partition_path[field])
             self.dataset.set(field, data)
 
     def load_multiple_partitions(self, modes):
@@ -559,6 +559,7 @@ class DatasetManager:
         self.dataset.current_sample = 0
 
     def update_json(self, update_shapes=False, update_nb_samples=False, update_partitions_lists=False):
+        print(f"{self.json_dict=}")
         """
         Update the json info file with the current Dataset repository information.
 
