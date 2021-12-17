@@ -559,7 +559,6 @@ class DatasetManager:
         self.dataset.current_sample = 0
 
     def update_json(self, update_shapes=False, update_nb_samples=False, update_partitions_lists=False):
-        print(f"{self.json_dict=}")
         """
         Update the json info file with the current Dataset repository information.
 
