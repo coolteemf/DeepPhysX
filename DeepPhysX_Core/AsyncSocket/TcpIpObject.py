@@ -337,7 +337,7 @@ class TcpIpObject:
         """
         self.sock.setblocking(True)
         # Receive the number of fields to receive
-        nb_bytes_fields = self.data_converter.size_from_bytes(self.sock.recv(1))
+        nb_bytes_fields = self.data_converter.size_from_bytes(self.sock.recv(self.data_converter.int_size))
         # Receive the sizes in bytes of all the relevant fields
         sizes = [self.data_converter.size_from_bytes(self.sock.recv(4)) for _ in range(nb_bytes_fields)]
         # Receive each bytes field
@@ -389,8 +389,9 @@ class TcpIpObject:
         :param receiver: TcpIpObject receiver
         :return:
         """
+        receiver = self.sock if receiver is None else receiver
         if send_read_command:
-            self.sync_send_command_read()
+            self.sync_send_command_read(receiver=receiver)
         self.sync_send_data(data_to_send=label, receiver=receiver)
         self.sync_send_data(data_to_send=data_to_send, receiver=receiver)
 
@@ -412,30 +413,32 @@ class TcpIpObject:
         receiver = self.sock if receiver is None else receiver
 
         if dict_to_send is None or dict_to_send == {}:
-            self.sync_send_command_done(receiver=receiver)
+            self.sync_send_command_finished(receiver=receiver)
             return
 
         # Sending this so the listener start the receive_dict routine
         self.sync_send_command_read()
-        self.sync_send_labeled_data(data_to_send="::dict::", label=name, receiver=receiver, send_read_command=True)
+        self.sync_send_labeled_data(data_to_send=name, label="::dict::", receiver=receiver, send_read_command=True)
         for key in dict_to_send:
             if type(dict_to_send[key]) == dict:
                 self.sync_send_labeled_data(data_to_send=key, label="dict_id", receiver=receiver, send_read_command=True)
                 self.__sync_send_unnamed_dict(dict_to_send=dict_to_send[key], receiver=receiver)
             else:
                 self.sync_send_labeled_data(data_to_send=dict_to_send[key], label=key, receiver=receiver, send_read_command=True)
-        self.sync_send_command_done()
+        self.sync_send_command_finished(receiver=receiver)
+        self.sync_send_command_finished(receiver=receiver)
 
-    def __sync_send_unnamed_dict(self, dict_to_send, receiver=None):
+    def __sync_send_unnamed_dict(self, dict_to_send, receiver=None, blank=''):
+        blank += '  '
         receiver = self.sock if receiver is None else receiver
         # Sending this so the listener start the receive_dict routine
         for key in dict_to_send:
             if type(dict_to_send[key]) == dict:
                 self.sync_send_labeled_data(data_to_send=key, label="dict_id", receiver=receiver, send_read_command=True)
-                self.__sync_send_unnamed_dict(dict_to_send=dict_to_send[key], receiver=receiver)
+                self.__sync_send_unnamed_dict(dict_to_send=dict_to_send[key], receiver=receiver, blank=blank)
             else:
                 self.sync_send_labeled_data(data_to_send=dict_to_send[key], label=key, receiver=receiver, send_read_command=True)
-        self.sync_send_command_done()
+        self.sync_send_command_finished(receiver=receiver)
 
     def sync_receive_dict(self, recv_to, sender=None):
         sender = self.sock if sender is None else sender

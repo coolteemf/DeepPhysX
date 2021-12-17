@@ -215,8 +215,9 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
             return pred
 
     def sync_send_visualization_data(self, visualization_data=None, receiver=None):
+        receiver = self.sock if receiver is None else receiver
         self.sync_send_command_visualisation()
-        self.sync_send_dict(name="visualisation", dict_to_send=visualization_data)
+        self.sync_send_dict(name="visualisation", dict_to_send=visualization_data, receiver=receiver)
 
     async def send_visualization_data(self, visualization_data=None, loop=None, receiver=None):
         loop = get_event_loop() if loop is None else loop
