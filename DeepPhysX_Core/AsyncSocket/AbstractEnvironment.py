@@ -5,11 +5,12 @@ class AbstractEnvironment:
                  number_of_instances=1,
                  as_tcpip_client=True):
         """
-        AbstractEnvironment gathers the environment API for TcpIpClient.
+        AbstractEnvironment gathers the Environment API for TcpIpClient. Do not use AbstractEnvironment to implement
+        your own Environment, use BaseEnvironment instead.
 
         :param int instance_id: ID of the instance
         :param int number_of_instances: Number of simultaneously launched instances
-        :param as_tcpip_client: Environment is a TcpIpObject if True, is owned by an EnvironmentManager if False
+        :param bool as_tcpip_client: Environment is a TcpIpObject if True, is owned by an EnvironmentManager if False
         """
 
         self.name = self.__class__.__name__ + f"n°{instance_id}"
