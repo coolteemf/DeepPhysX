@@ -16,18 +16,20 @@ class SofaEnvironment(Sofa.Core.Controller, BaseEnvironment):
                  environment_manager=None,
                  *args, **kwargs):
         """
-        SofaEnvironment is an environment class to compute simulated data for the network and its optimization process.
+        SofaEnvironment is an environment class base on SOFA to compute simulated data for the network and its
+        optimization process.
 
         :param root_node: Sofa.Core.Node used to create the scene graph
+        :param str ip_address: IP address of the TcpIpObject
+        :param int port: Port number of the TcpIpObject
         :param int instance_id: ID of the instance
         :param int number_of_instances: Number of simultaneously launched instances
-        :param as_tcpip_client: Environment is own by a TcpIpClient if True, by an EnvironmentManager if False
-        :param ip_address: IP address of the TcpIpObject
-        :param port: Port number of the TcpIpObject
-        :param environment_manager: EnvironmentManager that handles the Environment if as_tcpip_client is False
+        :param bool as_tcpip_client: Environment is owned by a TcpIpClient if True, by an EnvironmentManager if False
+        :param environment_manager: EnvironmentManager that handles the Environment if 'as_tcpip_client' is False
         """
 
         Sofa.Core.Controller.__init__(self, *args, **kwargs)
+        # Warning: Define root node before init Environment
         self.root = root_node
         BaseEnvironment.__init__(self, ip_address=ip_address, port=port, instance_id=instance_id,
                                  number_of_instances=number_of_instances, as_tcpip_client=as_tcpip_client,
@@ -35,7 +37,8 @@ class SofaEnvironment(Sofa.Core.Controller, BaseEnvironment):
 
     def create(self):
         """
-        Create the environment given the configuration. Must be implemented by user.
+        Create the environment given the configuration.
+        Must be implemented by user.
 
         :return:
         """
@@ -43,19 +46,11 @@ class SofaEnvironment(Sofa.Core.Controller, BaseEnvironment):
 
     def init(self):
         """
-        Initialize environment.
+        Initialize the root node.
 
         :return:
         """
         Sofa.Simulation.init(self.root)
-
-    async def animate(self):
-        """
-        Trigger an Animation step.
-
-        :return:
-        """
-        Sofa.Simulation.animate(self.root, self.root.dt.value)
 
     async def step(self):
         """
@@ -65,6 +60,14 @@ class SofaEnvironment(Sofa.Core.Controller, BaseEnvironment):
         """
         await self.animate()
         await self.onStep()
+
+    async def animate(self):
+        """
+        Trigger an Animation step.
+
+        :return:
+        """
+        Sofa.Simulation.animate(self.root, self.root.dt.value)
 
     async def onStep(self):
         """
@@ -76,19 +79,21 @@ class SofaEnvironment(Sofa.Core.Controller, BaseEnvironment):
 
     def checkSample(self, check_input=True, check_output=True):
         """
-        Check if the current sample is an outlier.
+        Check if the current produced sample is usable for training.
+        Not mandatory.
 
-        :param bool check_input: True if input tensor need to be checked
-        :param bool check_output: True if output tensor need to be checked
-        :return: Current data can be used or not.
+        :param bool check_input: If True, input tensors need to be checked
+        :param bool check_output: If True, output tensors need to be checked
+        :return: bool - Current data can be used or not
         """
         return True
 
     def applyPrediction(self, prediction):
         """
         Apply network prediction in environment.
+        Not mandatory.
 
-        :param prediction: Prediction data
+        :param ndarray prediction: Prediction data
         :return:
         """
         pass

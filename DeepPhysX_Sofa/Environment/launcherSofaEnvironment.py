@@ -2,6 +2,8 @@ from os import sep
 from os.path import dirname
 from sys import argv, path
 
+from DeepPhysX_Sofa.Environment.SofaEnvironment import SofaEnvironment as Environment
+
 import Sofa
 
 if __name__ == '__main__':
@@ -26,4 +28,5 @@ if __name__ == '__main__':
     client.initialize()
     client.launch()
 
+    # Client is closed at this point
     print(f"[launcherBaseEnvironment] Shutting down client {argv[3]}")
