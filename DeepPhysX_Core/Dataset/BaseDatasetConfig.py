@@ -52,8 +52,11 @@ class BaseDatasetConfig:
 
     def createDataset(self):
         """
-        :return: BaseDataset object from dataset_class and its parameters
+        Create an instance of dataset_class with given parameters.
+
+        :return: BaseDataset object
         """
+
         try:
             dataset = self.dataset_class(config=self.dataset_config)
         except:

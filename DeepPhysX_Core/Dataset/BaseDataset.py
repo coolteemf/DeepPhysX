@@ -1,6 +1,5 @@
 from numpy import array, ndarray, concatenate, save, arange
 from numpy.random import shuffle
-import functools
 
 
 class BaseDataset:
@@ -11,73 +10,93 @@ class BaseDataset:
         Given data is split into input data and output data.
         Saving data results in multiple partitions of input and output data.
 
-        :param BaseDatasetConfig.BaseDatasetProperties config:  Contains BaseDataset parameters
+        :param config: BaseDatasetConfig which contains BaseDataset parameters
         """
 
         self.name = self.__class__.__name__
 
         # Data fields containers
         self.data_type = ndarray
+        self.fields = {'IN': ['input'], 'OUT': ['output']}
         self.data = {'input': array([]), 'output': array([])}
         self.shape = {'input': None, 'output': None}
-        self.fields = {'IN': ['input'], 'OUT': ['output']}
 
         # Indexing
         self.shuffle_pattern = None
         self.current_sample = 0
+
+        # Dataset memory
         self.max_size = config.max_size
         self.batch_per_field = {field: 0 for field in ['input', 'output']}
         self.__empty = True
 
     @property
     def nb_samples(self):
+        """
+        Property returning the current number of samples
+
+        :return:
+        """
+
         return max([len(self.data[field]) for field in self.fields['IN'] + self.fields['OUT']])
 
     def is_empty(self):
         """
-        Check if the fields of the dataset are empty. A field is considered as non empty if it is filled another time.
+        Check if the fields of the dataset are empty. A field is considered as non-empty if it is filled with another
+        sample.
 
         :return:
         """
-        # The empty flag is set to False once the Dataset is considered as non empty
+
+        # The empty flag is set to False once the Dataset is considered as non-empty
         if not self.__empty:
             return False
         # Check each registered data field
         for field in self.fields['IN'] + self.fields['OUT']:
-            # Dataset is considered as non empty if a field is fed another time
+            # Dataset is considered as non-empty if a field is filled with another sample
             if self.batch_per_field[field] > 1:
                 self.__empty = False
                 return False
-        # If all field are considered as non empty then the Dataset is empty
+        # If all field are considered as non-empty then the Dataset is empty
         return True
 
     def init_data_size(self, field, shape):
         """
-        Keep in the original shape of data and its flat shape.
-        Init data_in and data_out as arrays containing each flat sample.
+        Store the original shape of data. Reshape data containers.
 
-        :param str field: Values at 'input' or anything else. Define if the associated shape is correspond to input
-        shape or output one.
-        :param numpy.ndarray shape: Shape of the corresponding tensor
+        :param str field: Data field name
+        :param tuple shape: Shape of the corresponding tensor
         :return:
         """
+
+        # Store the original data shape
         self.shape[field] = shape
+        # Reshape the data container
         self.data[field] = array([]).reshape((0, *shape))
 
     def get_data_shape(self, field):
+        """
+        Returns the data shape of field.
+
+        :param str field: Data field name
+        :return: tuple - Data shape for field
+        """
+
         return tuple(self.shape[field])
 
     def init_additional_field(self, field, shape):
         """
         Register a new data field.
 
-        :param field:
-        :param shape:
+        :param str field: Name of the data field
+        :param tuple shape: Data shape
         :return:
         """
+
         # Register the data field
         side = 'IN' if field[:3] == 'IN_' else 'OUT'
         self.fields[side].append(field)
+        # Init the number of adds in the field
         self.batch_per_field[field] = 0
         # Init the field shape
         self.init_data_size(field, shape)
@@ -88,8 +107,11 @@ class BaseDataset:
 
         :return:
         """
+
+        # Reinit each data container
         for field in self.fields['IN'] + self.fields['OUT']:
             self.data[field] = array([]).reshape((0, *self.shape[field])) if self.shape[field] is not None else array([])
+        # Reinit indexing variables
         self.shuffle_pattern = None
         self.current_sample = 0
         self.batch_per_field = {field: 0 for field in self.fields['IN'] + self.fields['OUT']}
@@ -103,8 +125,11 @@ class BaseDataset:
         :param str field: Name of the data field
         :return: Size in bytes of the current dataset.
         """
+
+        # Return the total memory size
         if field is None:
             return sum([self.data[field].nbytes for field in self.fields['IN'] + self.fields['OUT']])
+        # Return the memory size for the specified field
         return self.data[field].nbytes
 
     def check_data(self, field, data):
@@ -113,79 +138,92 @@ class BaseDataset:
 
         :param str field: Values at 'input' or anything else. Define if the associated shape is correspond to input
         shape or output one.
-        :param numpy.ndarray data: Corresponding tensor
+        :param ndarray data: New data
         :return:
         """
-        if type(data) != ndarray:
+
+        if type(data) != self.data_type:
             raise TypeError(f"[{self.name}] Wrong data type in field '{field}': numpy array required, got {type(data)}")
 
     def add(self, field, data, partition_file=None):
         """
-        Add new data to the dataset.
+        Add data to the dataset.
 
-        :param str field: Values at 'input' or anything else. Define if the associated shape is correspond to input
-        shape or output one.
-        :param numpy.ndarray data: Corresponding tensor
-        :param str partition_file: Path or string to the file in which to write the data
+        :param str field: Name of the data field
+        :param ndarray data: New data as batch of samples
+        :param str partition_file: Path to the file in which to write the data
         :return:
         """
+
         # Check data type
         self.check_data(field, data)
+
         # Check if field is registered
         if field not in self.fields['IN'] + self.fields['OUT']:
+            # Fields can be register only if Dataset is empty
             if not self.is_empty():
                 raise ValueError(f"[{self.name}] A new field {field} tries to be created as Dataset is non empty. This "
                                  f"will lead to a different number of sample for each field of the dataset.")
+            # Add new field if not registered
             self.init_additional_field(field, data[0].shape)
+
         # Check data size initialization
         if self.shape[field] is None:
             self.init_data_size(field, data[0].shape)
-        # Add each sample
+
+        # Add batched samples
         self.data[field] = concatenate((self.data[field], data))
+        # Save in partition
         if partition_file is not None:
             self.save(field, partition_file)
+
         # Update sample indexing in dataset
         self.batch_per_field[field] += 1
         self.current_sample = max([len(self.data[f]) for f in self.fields['IN'] + self.fields['OUT']])
 
     def save(self, field, file):
         """
-        Save the actual Dataset.
+        Save the corresponding field of the Dataset.
 
-        :param str field: Data field
+        :param str field: Name of the data field
         :param str file: Path to the file in which to write the data
         :return:
         """
+
         save(file, self.data[field])
 
     def set(self, field, data):
         """
         Set a full field of the dataset.
 
-        :param field:
-        :param data:
+        :param str field: Name of the data field
+        :param ndarray data: New data as batch of samples
         :return:
         """
+        # Todo: might require the same init when loading existing repo ?
         self.data[field] = data
 
     def get(self, field, idx_begin, idx_end):
         """
-        Get a batch of data 'field'.
+        Get a batch of data in 'field' container.
 
-        :param str field: Data field
+        :param str field: Name of the data field
         :param int idx_begin: Index of the first sample
         :param int idx_end: Index of the last sample
         :return:
         """
+
         indices = slice(idx_begin, idx_end) if self.shuffle_pattern is None else self.shuffle_pattern[idx_begin:idx_end]
         return self.data[field][indices]
 
     def shuffle(self):
         """
-        Shuffle the current dataset.
+        Define a random shuffle pattern.
 
         :return:
         """
+
+        # Nothing to shuffle if Dataset is empty
         if self.is_empty():
             return
         # Generate a shuffle pattern
