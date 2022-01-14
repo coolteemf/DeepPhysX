@@ -1,4 +1,4 @@
-from DeepPhysX_Core.Network.BaseNetworkConfig import BaseNetworkConfig
+from DeepPhysX_Core.Network.BaseNetworkConfig import *
 from DeepPhysX_Core.Network.DataTransformation import DataTransformation
 from DeepPhysX_PyTorch.Network.TorchNetwork import TorchNetwork
 from DeepPhysX_PyTorch.Network.TorchOptimization import TorchOptimization
@@ -12,7 +12,7 @@ class TorchNetworkConfig(BaseNetworkConfig):
         pass
 
     @dataclass
-    class TorchOptimizationProperties(BaseNetworkConfig.BaseOptimizationProperties):
+    class TorchOptimizationProperties(BaseOptimization.BaseOptimizationProperties):
         pass
 
     def __init__(self,
