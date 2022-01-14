@@ -1,9 +1,20 @@
+from typing import Dict, Optional
+
 from DeepPhysX_Core.Network.BaseNetworkConfig import BaseNetworkConfig
 from DeepPhysX_Core.Dataset.BaseDatasetConfig import BaseDatasetConfig
 from DeepPhysX_Core.Environment.BaseEnvironmentConfig import BaseEnvironmentConfig
+from DeepPhysX_Core.Manager.Manager import Manager
 
 
 class BasePipeline:
+
+    type: str
+    new_session: bool
+    record_data: Optional[Dict[str, bool]]
+    dataset_config: BaseDatasetConfig
+    network_config: BaseNetworkConfig
+    environment_config: BaseEnvironmentConfig
+    manager: Optional[Manager]
 
     def __init__(self,
                  network_config,
@@ -49,37 +60,37 @@ class BasePipeline:
 
         self.manager = None
 
-    def getNetworkManager(self):
+    def get_network_manager(self):
         """
         :return: The NetworkManager associated with the pipeline
         """
         return self.manager.network_manager
 
-    def getDataManager(self):
+    def get_data_manager(self):
         """
         :return: The DataManager associated with the pipeline
         """
         return self.manager.data_manager
 
-    def getStatsManager(self):
+    def get_stats_manager(self):
         """
         :return: The StatsManager associated with the pipeline
         """
         return self.manager.stats_manager
 
-    def getDatasetManager(self):
+    def get_dataset_manager(self):
         """
         :return: The DatasetManager associated with the pipeline
         """
         return self.manager.data_manager.dataset_manager
 
-    def getEnvironmentManager(self):
+    def get_environment_manager(self):
         """
         :return: The EnvironmentManager associated with the pipeline
         """
         return self.manager.data_manager.environment_manager
 
-    def getVisualizerManager(self):
+    def get_visualizer_manager(self):
         """
         :return: The VisualizerManager associated with the pipeline
         """

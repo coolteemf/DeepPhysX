@@ -6,7 +6,7 @@ from DeepPhysX_Core.Manager.DataManager import DataManager
 from DeepPhysX_Core.Manager.NetworkManager import NetworkManager
 from DeepPhysX_Core.Manager.StatsManager import StatsManager
 
-from DeepPhysX_Core.Utils.pathUtils import getFirstCaller, createDir
+from DeepPhysX_Core.Utils.pathUtils import get_first_caller, create_dir
 
 
 class Manager:
@@ -38,10 +38,10 @@ class Manager:
         if pipeline.type == 'training':
             train = True
             # Create manager directory from the session name
-            self.session_dir = osPathJoin(getFirstCaller(), session_name)
+            self.session_dir = osPathJoin(get_first_caller(), session_name)
             # Avoid unwanted overwritten data
             if new_session:
-                self.session_dir = createDir(self.session_dir, dir_name=session_name)
+                self.session_dir = create_dir(self.session_dir, dir_name=session_name)
         # Prediction: work in an existing session
         elif pipeline.type == 'prediction':
             train = False
@@ -49,7 +49,7 @@ class Manager:
             if session_dir is None:
                 if session_name is None:
                     raise ValueError("[Manager] Prediction needs at least the session directory or the session name.")
-                self.session_dir = osPathJoin(getFirstCaller(), session_name)
+                self.session_dir = osPathJoin(get_first_caller(), session_name)
             # Find the session name with the directory
             else:
                 self.session_dir = session_dir

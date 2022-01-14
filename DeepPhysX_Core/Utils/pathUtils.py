@@ -5,7 +5,7 @@ from inspect import getmodule, stack
 from shutil import copytree
 
 
-def createDir(dir_path, dir_name):
+def create_dir(dir_path: str, dir_name: str) -> str:
     """
     Create a directory of the given name. If it already exist and specified, add a unique identifier at the end.
 
@@ -36,7 +36,7 @@ def createDir(dir_path, dir_name):
     return dir_path
 
 
-def copyDir(src_dir, dest_parent_dir, dest_dir):
+def copy_dir(src_dir: str, dest_parent_dir: str, dest_dir: str) -> str:
     """
     Copy source directory to destination directory at the end of destination parent directory
 
@@ -62,10 +62,9 @@ def copyDir(src_dir, dest_parent_dir, dest_dir):
     return dest_dir
 
 
-def getFirstCaller():
+def get_first_caller() -> str:
     """
-
-    :return: The repertory in which the main script is
+    Return the repertory in which the main script is
     """
     # Get the stack of called scripts
     scripts_list = stack()[-1]
@@ -73,3 +72,4 @@ def getFirstCaller():
     module = getmodule(scripts_list[0])
     # Return the path of this script
     return dirname(abspath(module.__file__))
+

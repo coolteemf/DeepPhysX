@@ -1,9 +1,17 @@
 import json
+from typing import Iterable, Any, Dict, List
 
 
 class CustomJSONEncoder(json.JSONEncoder):
+    """
+    JSON encoder class.
+        Description:
+            Transform description dictionary into a json file
+    """
 
-    def __init__(self, *args, **kwargs):
+    indentation_level: int
+
+    def __init__(self, *args: List[Any], **kwargs: Dict[str, Any]):
         """
         Custom JSON encoder with readable indentation.
 
@@ -14,24 +22,25 @@ class CustomJSONEncoder(json.JSONEncoder):
         self.indentation_level = 0
 
     @property
-    def indent_str(self):
+    def indent_str(self) -> str:
+        """Generate an indentation string"""
         return " " * self.indentation_level * self.indent
 
-    def iterencode(self, o, **kwargs):
+    def iterencode(self, o: Iterable, **kwargs: Dict[str, Any]) -> str:
         """
         Encode JSON object *o* in a file. Called with json.dump().
 
         :param o: Serializable object.
-        :return:
+        :return: Return the object "o" encoded with JSON style
         """
         return self.encode(o)[1:]
 
-    def encode(self, o):
+    def encode(self, o: Iterable) -> str:
         """
         Encode JSON object *o*. Called with json.dumps().
 
         :param o: Serializable object.
-        :return:
+        :return: Return the object "o" encoded with JSON style
         """
 
         # How to encode lists and tuples

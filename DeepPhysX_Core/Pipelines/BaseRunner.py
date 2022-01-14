@@ -1,3 +1,7 @@
+from typing import Tuple
+
+import torch
+
 from DeepPhysX_Core.Pipelines.BasePipeline import BasePipeline
 from DeepPhysX_Core.Manager.Manager import Manager
 
@@ -45,23 +49,21 @@ class BaseRunner(BasePipeline):
         # Tell if data is recording while predicting (output is recorded only if input too)
         self.record_data = {'input': record_inputs, 'output': record_outputs and record_inputs}
 
-    def execute(self):
+    def execute(self) -> None:
         """
         Main function of the running process \"execute\" call the functions associated with the learning process.
         Each of the called functions are already implemented so one can start a basic run session.
         Each of the called function can also be rewritten via inheritance to provide more specific / complex running process.
-
-        :return:
         """
-        self.runBegin()
-        while self.runningCondition():
-            self.sampleBegin()
+        self.run_begin()
+        while self.running_condition():
+            self.sample_begin()
             prediction, loss_value = self.predict()
             self.manager.data_manager.environment_manager.environment.applyPrediction(prediction)
-            self.sampleEnd()
-        self.runEnd()
+            self.sample_end()
+        self.run_end()
 
-    def predict(self, animate=True):
+    def predict(self, animate: bool = True) -> Tuple[torch.Tensor, float]:
         """
         Pull the data from the manager and return the prediction
 
@@ -71,25 +73,21 @@ class BaseRunner(BasePipeline):
         self.manager.getData(animate=animate)
         return self.manager.getPrediction()
 
-    def runBegin(self):
+    def run_begin(self) -> None:
         """
         Called once at the very beginning of the Run process.
         Allows the user to run some pre-computations.
-
-        :return:
         """
         pass
 
-    def runEnd(self):
+    def run_end(self) -> None:
         """
         Called once at the very end of the Run process.
         Allows the user to run some post-computations.
-
-        :return:
         """
         pass
 
-    def runningCondition(self):
+    def running_condition(self) -> bool:
         """
         Condition that characterize the end of the runnning process
 
@@ -99,35 +97,28 @@ class BaseRunner(BasePipeline):
         self.idx_step += 1
         return running
 
-    def sampleBegin(self):
+    def sample_begin(self) -> None:
         """
         Called one at the start of each step.
         Allows the user to run some pre-step computations.
-
-        :return:
         """
         pass
 
-    def sampleEnd(self):
+    def sample_end(self) -> None:
         """
         Called one at the end of each step.
         Allows the user to run some post-step computations.
-
-        :return:
         """
         pass
 
-    def close(self):
+    def close(self) -> None:
         """
         End the running process and close all the managers
-
-        :return:
         """
         self.manager.close()
 
-    def __str__(self):
+    def __str__(self) -> str:
         """
-
         :return: str Contains running informations about the running process
         """
         description = ""

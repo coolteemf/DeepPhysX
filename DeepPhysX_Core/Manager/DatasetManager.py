@@ -9,7 +9,7 @@ import numpy as np
 from numpy import load, squeeze
 
 from DeepPhysX_Core.Dataset.BaseDatasetConfig import BaseDatasetConfig
-from DeepPhysX_Core.Utils.pathUtils import getFirstCaller, createDir
+from DeepPhysX_Core.Utils.pathUtils import get_first_caller, create_dir
 from DeepPhysX_Core.Utils.jsonUtils import CustomJSONEncoder
 
 
@@ -95,7 +95,7 @@ class DatasetManager:
         self.json_found = False
 
         # Dataset repository
-        self.session_dir = session_dir if session_dir is not None else osPathJoin(getFirstCaller(), session_name)
+        self.session_dir = session_dir if session_dir is not None else osPathJoin(get_first_caller(), session_name)
         dataset_dir = dataset_config.dataset_dir
         self.new_session = new_session
         self.__new_dataset = False
@@ -106,7 +106,7 @@ class DatasetManager:
             if new_session:
                 # New training session with new dataset
                 if dataset_dir is None:
-                    self.dataset_dir = createDir(dir_path=osPathJoin(self.session_dir, 'dataset/'),
+                    self.dataset_dir = create_dir(dir_path=osPathJoin(self.session_dir, 'dataset/'),
                                                  dir_name='dataset')
                     self.__new_dataset = True
                 # New training session with existing dataset
