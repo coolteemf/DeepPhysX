@@ -18,8 +18,8 @@ class BasePipeline:
 
     def __init__(self,
                  network_config,
-                 dataset_config=None,
-                 environment_config=None,
+                 dataset_config,
+                 environment_config,
                  session_name='default',
                  session_dir=None,
                  pipeline=None):

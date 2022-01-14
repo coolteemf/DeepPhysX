@@ -1,13 +1,13 @@
 import numpy
 from vedo import utils, Mesh, Glyph, Marker, Points
 import numpy as np
-from typing import List, Dict, Any, Callable, TypeVar, Union
+from typing import Union, Optional, Dict, Any, Callable, TypeVar, List
 
-ObjectDescription = Dict[str, Union[Any, Dict[str, Any]]]
 VisualInstance = Union[Mesh, Glyph, Marker, Points]
+ObjectDescription = Dict[str, Union[Any, Dict[str, Any]]]
+
 ParseParameters = TypeVar("ParseParameters", Callable[..., Any], Any)  # ParamSpec('ParseParameters')
 UpdateParameters = TypeVar("UpdateParameters", Callable[..., Any], Any)  # ParamSpec('UpdateParameters')
-
 
 class parse_wrapper:
     """
@@ -160,7 +160,7 @@ class BaseObjectFactory:
         :param new_data: Dict[str, Any] Dictionary containing the data to update
         :return: A Dict[str, Any] that represent the updated parsed_data member
         """
-        self.dirty_fields = [*new_data.keys()]
+        #self.dirty_fields = [*new_data.keys()]
         return self.parse(new_data)
 
     def get_data(self) -> ObjectDescription:
@@ -180,7 +180,7 @@ class BaseObjectFactory:
         raise NotImplementedError
 
     @staticmethod
-    def parse_position(data_dict: ObjectDescription, wrap: bool = True) -> numpy.ndarray:
+    def parse_position(data_dict: ObjectDescription, wrap: bool = True) -> Optional[numpy.ndarray]:
         """
         Helper function (static method) that parses the positions field
 
@@ -191,12 +191,14 @@ class BaseObjectFactory:
         :return: A numpy.ndarray that contains the parsed position and an additional dimension if wrap is True
         """
         # Look for position.s and cell.s to make inputobj
-        pos = None
+        pos: Optional[numpy.ndarray, List[numpy.ndarray]] = None
 
         # Either positions and cells have been passed as independant array or are inexistant
         if 'position' in data_dict:
             data_dict["positions"] = data_dict['position']
             del data_dict["position"]
+        if 'positions' not in data_dict:
+            return None
         pos = data_dict['positions']
 
         if utils.isSequence(pos):  # passing point coords

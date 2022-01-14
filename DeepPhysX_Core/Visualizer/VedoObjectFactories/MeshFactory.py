@@ -24,9 +24,11 @@ class MeshFactory(BaseObjectFactory):
     def parse(self, data_dict: ObjectDescription) -> None:
         pos = self.parse_position(data_dict=data_dict, wrap=True)
         if pos is not None:
+            self.dirty_fields.append(self.grammar_plug[0])
             self.parsed_data[self.grammar_plug[0]] = pos
 
         if 'cell' in data_dict or 'cells' in data_dict:
+            self.dirty_fields.append(self.grammar_plug[1])
             self.parsed_data[self.grammar_plug[1]] = np.array(data_dict['cell'] if 'cell' in data_dict else data_dict['cells'], dtype=int)
 
     @update_wrapper()

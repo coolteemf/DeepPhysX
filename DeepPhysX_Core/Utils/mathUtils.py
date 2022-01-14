@@ -4,7 +4,7 @@ import numpy
 import torch
 from numpy import array, concatenate, ndarray, append, empty
 from numpy import cos, sin, sqrt, exp, pi, linspace
-from typing import Union, Iterable, Callable
+from typing import Union, Iterable, Callable, List
 
 MathValue = Union[int, numpy.ndarray, float]
 
@@ -42,7 +42,7 @@ def fibonacci_3D_sphere_sampling(number_of_points: int, step: int = 1, shift_phi
     for i in range(0, number_of_points, step):
         i2 = 2.0 * i - (number_of_points - 1.0)
         theta = append(theta, 2.0 * pi * ((i2 + shift_theta) % number_of_points) / phi)
-        sphi = append(sphi, float(i2 + shift_phi) / float(number_of_points))
+        sphi = append(sphi, i2 + shift_phi / number_of_points)
         cphi = append(cphi, sqrt((number_of_points + i2 + shift_phi) * (number_of_points - i2)) / number_of_points)
 
     valid_position = list(filter(lambda x: x[0] >= 0.0, [[cphi[i] * sin(theta[i]), cphi[i] * cos(theta[i]), sphi[i]] for i in range(len(sphi))]))
@@ -79,40 +79,26 @@ def ndim_interpolation(val_min: MathValue, val_max: MathValue, count: Union[int,
 
     Exemple: All the "o" in the output graph are vertices in the output vector
             Input :
-            count = [4, 3]
             val_min o-------------------------------
                     |                              |
                     |                              |
                     -------------------------------o val_max
 
-            Output :
+
+            Output : count = [4, 3]
             val_min o---------o---------o----------o
                     |                              |
                     o---------o---------o----------o
                     |                              |
                     o---------o---------o----------o val_max
 
-            Input :
-            count = [4, 1]
-            val_min o-------------------------------
-                    |                              |
-                    |                              |
-                    -------------------------------o val_max
-
-            Output :
+            Output : count = [4, 1]
             val_min o---------o---------o----------o
                     |                              |
                     |                              |
                     -------------------------------- val_max
 
-            Input :
-            count = [1, 3]
-            val_min o-------------------------------
-                    |                              |
-                    |                              |
-                    -------------------------------o val_max
-
-            Output :
+            Output :  count = [1, 3]
             val_min o------------------------------o
                     |                              |
                     o------------------------------o
@@ -136,7 +122,7 @@ def ndim_interpolation(val_min: MathValue, val_max: MathValue, count: Union[int,
         #  Ex : count = 10 , val_min = [14,-8,1] -> count = [10, 10, 10]
         if isinstance(count, int):
             count = [count]*val_min.shape[0]
-        # Coefficient is a list of array with the correspondinumber_of_points subdivision
+        # Coefficient is a list of array with the corresponding subdivision
         coefficients = []
         for i in range(val_min.shape[0]):
             if count[i] <= 0:
@@ -155,9 +141,7 @@ def ndim_interpolation(val_min: MathValue, val_max: MathValue, count: Union[int,
         interp_idx = numpy.zeros(val_min.shape[0], dtype=int)
         values = empty((0, *val_min.shape))
         while interp_idx[valid_idx[-1]] < count[-1]:
-            coeff = []
-            for i in range(val_min.shape[0]):
-                coeff.append(coefficients[i][interp_idx[i]])
+            coeff = numpy.array([coefficients[i][interp_idx[i]] for i in range(val_min.shape[0])])
             values = concatenate((values, [technic(val_min, val_max, coeff)]), axis=0)
             interp_idx[valid_idx[0]] += 1
             # Check if we reached the number of subdivision for the dimension

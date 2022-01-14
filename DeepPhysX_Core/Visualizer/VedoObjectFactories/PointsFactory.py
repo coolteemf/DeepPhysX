@@ -23,6 +23,7 @@ class PointsFactory(BaseObjectFactory):
     def parse(self, data_dict: ObjectDescription) -> None:
         pos = self.parse_position(data_dict=data_dict, wrap=True)
         if pos is not None:
+            self.dirty_fields.append(self.grammar_plug[0])
             self.parsed_data[self.grammar_plug[0]] = pos
 
     @update_wrapper()

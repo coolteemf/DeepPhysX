@@ -1,7 +1,9 @@
 from DeepPhysX_Core.Pipelines.BasePipeline import BasePipeline
 from DeepPhysX_Core.Manager.Manager import Manager
 
-from vedo import ProgressBar
+from DeepPhysX_Core.Network.BaseNetworkConfig import BaseNetworkConfig
+from DeepPhysX_Core.Dataset.BaseDatasetConfig import BaseDatasetConfig
+from DeepPhysX_Core.Environment.BaseEnvironmentConfig import BaseEnvironmentConfig
 
 
 class BaseTrainer(BasePipeline):
@@ -56,7 +58,6 @@ class BaseTrainer(BasePipeline):
         # Tell if data is recording while predicting (output is recorded only if input too)
         self.record_data = {'input': True, 'output': True}
 
-        self.training_progress_bar = ProgressBar(start=0, stop=self.nb_samples, c='orange', title="Training")
         self.manager.saveInfoFile()
 
         self.manager.saveInfoFile()
@@ -107,7 +108,6 @@ class BaseTrainer(BasePipeline):
         Called once at the very end of the training process.
         Allows the user to run some post-computations.
         """
-        self.training_progress_bar.print(counts=self.nb_samples)
         self.manager.close()
 
     def epoch_begin(self) -> None:
@@ -150,9 +150,6 @@ class BaseTrainer(BasePipeline):
         Called one at the start of each batch.
         Allows the user to run some post-batch computations.
         """
-        self.training_progress_bar.print(txt=f'Epoch n°{self.id_epoch + 1}/{self.nb_epochs} - ' +
-                                             f'Batch n°{self.id_batch + 1}/{self.nb_batches}',
-                                         counts=self.nb_batches * self.id_epoch + self.id_batch)
         self.manager.stats_manager.add_trainBatchLoss(self.loss_dict['loss'],
                                                       self.id_epoch * self.nb_batches + self.id_batch)
         for key in self.loss_dict.keys():

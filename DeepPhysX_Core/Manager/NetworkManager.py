@@ -84,22 +84,22 @@ class NetworkManager:
         :return:
         """
         # Init network
-        self.network = self.network_config.createNetwork()
-        self.network.setDevice()
+        self.network = self.network_config.create_network()
+        self.network.set_device()
         # Init optimization
-        self.optimization = self.network_config.createOptimization()
+        self.optimization = self.network_config.create_optimization()
         self.optimization.manager = self
         if self.optimization.loss_class is not None:
-            self.optimization.setLoss()
+            self.optimization.set_loss()
 
         # Init DataTransformation
-        self.data_transformation = self.network_config.createDataTransformation()
+        self.data_transformation = self.network_config.create_data_transformation()
 
         # Training
         if self.training:
             # Configure as training
-            self.network.setTrain()
-            self.optimization.setOptimizer(self.network)
+            self.network.set_train()
+            self.optimization.set_optimizer(self.network)
             # Setting network directory
             if self.new_session and self.network_config.network_dir is not None and isdir(self.network_config.network_dir):
                 self.network_dir = self.network_config.network_dir
@@ -111,7 +111,7 @@ class NetworkManager:
         # Prediction
         else:
             # Configure as prediction
-            self.network.setEval()
+            self.network.set_eval()
             # Need an existing network
             self.network_dir = osPathJoin(self.session_dir, 'network/')
             # Get eventual epoch saved networks
@@ -136,7 +136,7 @@ class NetworkManager:
                 print("The selected network doesn't exist (index is too big), loading the most trained by default.")
                 which_network = -1
             print("NetworkManager: Loading network from {}.".format(networks_list[which_network]))
-            self.network.loadParameters(networks_list[which_network])
+            self.network.load_parameters(networks_list[which_network])
 
     def computePredictionAndLoss(self, batch, optimize):
         """
@@ -149,23 +149,23 @@ class NetworkManager:
         :return:
         """
         # Getting data from the data manager
-        data_in = self.network.transformFromNumpy(batch['input'], grad=optimize)
-        data_gt = self.network.transformFromNumpy(batch['output'], grad=optimize)
-        loss_data = self.network.transformFromNumpy(batch['loss'], grad=False) if 'loss' in batch.keys() else None
+        data_in = self.network.transform_from_numpy(batch['input'], grad=optimize)
+        data_gt = self.network.transform_from_numpy(batch['output'], grad=optimize)
+        loss_data = self.network.transform_from_numpy(batch['loss'], grad=False) if 'loss' in batch.keys() else None
 
         # Compute prediction
-        data_in = self.data_transformation.transformBeforePrediction(data_in)
+        data_in = self.data_transformation.transform_before_prediction(data_in)
         data_out = self.network.predict(data_in)
 
         # Compute loss
-        data_out, data_gt = self.data_transformation.transformBeforeLoss(data_out, data_gt)
-        loss_dict = self.optimization.computeLoss(data_out.reshape(data_gt.shape), data_gt, loss_data)
+        data_out, data_gt = self.data_transformation.transform_before_loss(data_out, data_gt)
+        loss_dict = self.optimization.compute_loss(data_out.reshape(data_gt.shape), data_gt, loss_data)
         # Optimizing network if training
         if optimize:
             self.optimization.optimize()
         # Transform prediction to be compatible with environment
-        data_out = self.data_transformation.transformBeforeApply(data_out)
-        prediction = self.network.transformToNumpy(data_out)
+        data_out = self.data_transformation.transform_before_apply(data_out)
+        prediction = self.network.transform_to_numpy(data_out)
         return prediction, loss_dict
 
     def computeOnlinePrediction(self, network_input):
@@ -177,14 +177,14 @@ class NetworkManager:
         :return:
         """
         # Getting data from the data manager
-        data_in = self.network.transformFromNumpy(copy(network_input), grad=False)
+        data_in = self.network.transform_from_numpy(copy(network_input), grad=False)
 
         # Compute prediction
-        data_in = self.data_transformation.transformBeforePrediction(data_in)
+        data_in = self.data_transformation.transform_before_prediction(data_in)
         pred = self.network.predict(data_in)
-        pred, _ = self.data_transformation.transformBeforeLoss(pred)
-        pred = self.data_transformation.transformBeforeApply(pred)
-        pred = self.network.transformToNumpy(pred)
+        pred, _ = self.data_transformation.transform_before_loss(pred)
+        pred = self.data_transformation.transform_before_apply(pred)
+        pred = self.network.transform_to_numpy(pred)
         pred = array(pred, dtype=float)
         return pred.reshape(-1)
 
@@ -199,12 +199,12 @@ class NetworkManager:
         if last_save:
             path = self.network_dir + "network"
             print(f"Saving network at {path}.")
-            self.network.saveParameters(path)
+            self.network.save_parameters(path)
         elif self.save_each_epoch:
             path = self.network_dir + self.network_template_name.format(self.saved_counter)
             self.saved_counter += 1
             print(f"Saving network at {path}.")
-            self.network.saveParameters(path)
+            self.network.save_parameters(path)
 
     def close(self):
         """
@@ -221,12 +221,12 @@ class NetworkManager:
         :return: String containing information about the BaseNetwork object
         """
         description = "\n"
-        description += f"# {self.name}\n"
+        description += f"# {self.__class__.__name__}\n"
         description += f"    Network Directory: {self.network_dir}\n"
         description += f"    Save each Epoch: {self.save_each_epoch}\n"
-        description += f"    Managed objects: Network: {self.network.name}\n"
-        description += f"                     Optimization: {self.optimization.name}\n"
-        description += f"                     Data Transformation: {self.data_transformation.name}\n"
+        description += f"    Managed objects: Network: {self.network.__class__.__name__}\n"
+        description += f"                     Optimization: {self.optimization.__class__.__name__}\n"
+        description += f"                     Data Transformation: {self.data_transformation.__class__.__name__}\n"
         description += str(self.network)
         description += str(self.optimization)
         description += str(self.data_transformation)

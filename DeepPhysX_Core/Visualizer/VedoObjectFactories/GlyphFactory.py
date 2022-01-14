@@ -36,20 +36,28 @@ class GlyphFactory(BaseObjectFactory):
 
         pos = self.parse_position(data_dict=data_dict, wrap=True)
         if pos is not None:
+            self.dirty_fields.append(self.grammar_plug[0])
             self.parsed_data[self.grammar_plug[0]] = pos
 
         self.marker_factory = MarkerFactory()
         if 'Marker' in data_dict:
+            self.dirty_fields.append(self.grammar_plug[1])
             self.marker_factory.parse(data_dict=data_dict['Marker'])
         elif "marker" in data_dict:
+            self.dirty_fields.append(self.grammar_plug[1])
             self.marker_factory.parse(data_dict=data_dict['marker'])
         elif 'Markers' in data_dict:
+            self.dirty_fields.append(self.grammar_plug[1])
             self.marker_factory.parse(data_dict=data_dict['Markers'])
         elif "markers" in data_dict:
+            self.dirty_fields.append(self.grammar_plug[1])
             self.marker_factory.parse(data_dict=data_dict['markers'])
         elif self.grammar_plug[1] in data_dict:
+            self.dirty_fields.append(self.grammar_plug[1])
             self.marker_factory.parse(data_dict=data_dict[self.grammar_plug[1]])
-        self.parsed_data[self.grammar_plug[1]] = self.marker_factory.get_data()
+
+        if self.grammar_plug[1] in self.dirty_fields:
+            self.parsed_data[self.grammar_plug[1]] = self.marker_factory.get_data()
 
     @update_wrapper()
     def update_instance(self, instance: VisualInstance) -> None:

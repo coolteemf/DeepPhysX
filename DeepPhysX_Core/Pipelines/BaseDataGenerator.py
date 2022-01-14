@@ -4,6 +4,9 @@ from os.path import basename
 from DeepPhysX_Core.Manager.DataManager import DataManager
 from DeepPhysX_Core.Utils.pathUtils import create_dir, get_first_caller
 
+from DeepPhysX_Core.Dataset.BaseDatasetConfig import BaseDatasetConfig
+from DeepPhysX_Core.Environment.BaseEnvironmentConfig import BaseEnvironmentConfig
+
 
 class BaseDataGenerator:
     """

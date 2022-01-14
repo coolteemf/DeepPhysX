@@ -23,6 +23,7 @@ class WindowFactory(BaseObjectFactory):
     def parse(self, data_dict: ObjectDescription) -> None:
         for word in self.grammar_plug:
             if word in data_dict:
+                self.dirty_fields.append(word)
                 self.parsed_data[word] = data_dict[word]
 
     @update_wrapper()

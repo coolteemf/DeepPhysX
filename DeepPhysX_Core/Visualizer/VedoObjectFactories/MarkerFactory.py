@@ -23,10 +23,12 @@ class MarkerFactory(BaseObjectFactory):
     def parse(self, data_dict: ObjectDescription) -> None:
         pos = self.parse_position(data_dict=data_dict, wrap=True)
         if pos is not None:
+            self.dirty_fields.append(self.grammar_plug[0])
             self.parsed_data[self.grammar_plug[0]] = pos
 
         for word in self.grammar_plug[1:]:
             if word in data_dict:
+                self.dirty_fields.append(word)
                 self.parsed_data[word] = data_dict[word]
 
         pass
