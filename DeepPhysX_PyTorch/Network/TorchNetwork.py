@@ -1,64 +1,65 @@
-from torch import device, set_num_threads, load, save, as_tensor
-from torch import float as tfloat
-from torch.cuda import is_available, empty_cache
-from torch.nn import Module
-from torchsummary import summary
-from gc import collect
-from psutil import cpu_count
+from typing import Union, Dict
+import torch
+import numpy
+import gc
+import psutil
+from torch import Tensor
 
 from DeepPhysX_Core.Network.BaseNetwork import BaseNetwork
 
+DataContainer = Union[numpy.ndarray, torch.Tensor]
 
-class TorchNetwork(Module, BaseNetwork):
+
+class TorchNetwork(torch.nn.Module, BaseNetwork):
 
     def __init__(self, config):
-        Module.__init__(self)
+        torch.nn.Module.__init__(self)
         BaseNetwork.__init__(self, config)
 
-    def forward(self, x):
+    def forward(self, x: DataContainer) -> DataContainer:
         raise NotImplementedError
 
-    def setTrain(self):
+    def set_train(self) -> None:
         self.train()
 
-    def setEval(self):
+    def set_eval(self) -> None:
         self.eval()
 
-    def setDevice(self):
-        if is_available():
-            self.device = device('cuda')
+    def set_device(self) -> None:
+        if torch.cuda.is_available():
+            self.device = torch.device('cuda')
             # Garbage collector run
-            collect()
-            empty_cache()
+            gc.collect()
+            torch.cuda.empty_cache()
         else:
-            self.device = device('cpu')
-            set_num_threads(cpu_count(logical=True) - 1)
+            self.device = torch.device('cpu')
+            torch.set_num_threads(psutil.cpu_count(logical=True) - 1)
         self.to(self.device)
-        print("[{}]: Device is {}".format(self.name, self.device))
+        print("[{}]: Device is {}".format(self.__class__.__name__, self.device))
 
-    def loadParameters(self, path):
-        self.load_state_dict(load(path, map_location=self.device))
+    def load_parameters(self, path: str) -> None:
+        self.load_state_dict(torch.load(path, map_location=self.device))
 
-    def getParameters(self):
+    def get_parameters(self) -> Dict[str, Tensor]:
         return self.state_dict()
 
-    def saveParameters(self, path):
+    def save_parameters(self, path: str) -> None:
         path = path + '.pth'
-        save(self.state_dict(), path)
+        torch.save(self.state_dict(), path)
 
-    def nbParameters(self):
+    def nb_parameters(self) -> None:
         return sum(p.numel() for p in self.parameters())
 
-    def transformFromNumpy(self, x, grad=True):
-        x = as_tensor(x, dtype=tfloat, device=self.device)
+    def transform_from_numpy(self, x: DataContainer, grad: bool = True) -> DataContainer:
+        x = torch.as_tensor(x, dtype=torch.float, device=self.device)
         if grad:
             x.requires_grad_()
         return x
 
-    def transformToNumpy(self, x):
+    def transform_to_numpy(self, x: DataContainer) -> DataContainer:
         return x.cpu().detach().numpy()
 
-    def printArchitecture(self, architecture):
+    def print_architecture(self, architecture) -> str:
         lines = architecture.splitlines()
         architecture = ''
         for line in lines:
