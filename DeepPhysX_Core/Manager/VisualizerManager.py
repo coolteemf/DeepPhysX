@@ -33,10 +33,10 @@ class VisualizerManager:
         :return:
         """
 
-        self.visualizer.initView(data_dict)
+        self.visualizer.init_view(data_dict)
 
     def updateVisualizer(self, sample):
-        self.visualizer.updateVisualizer(sample)
+        self.visualizer.update_visualizer(sample)
         self.screenshot_counter += 1
         if self.screenshot_counter == self.screenshot_rate:
             self.visualizer.save_screenshot(session_dir=self.data_manager.environment_manager.session_dir)
@@ -58,5 +58,5 @@ class VisualizerManager:
 
         :return:
         """
-        self.visualizer.saveSample(session_dir=session_dir)
+        self.visualizer.save_sample(session_dir=session_dir)
 
