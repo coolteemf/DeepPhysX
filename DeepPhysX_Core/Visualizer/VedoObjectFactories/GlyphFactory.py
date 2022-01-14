@@ -1,11 +1,19 @@
 from DeepPhysX_Core.Visualizer.VedoObjectFactories.BaseObjectFactory import *
-from DeepPhysX_Core.Visualizer.VedoObjectFactories.MarkerFactory import *
-from vedo import utils
-import numpy as np
+from DeepPhysX_Core.Visualizer.VedoObjectFactories.MarkerFactory import MarkerFactory
+
 
 class GlyphFactory(BaseObjectFactory):
+    """
+    GlyphFactory is a class that represent the data of a Glyph visual object
+        Description:
+            GlyphFactory defines the parse and update procedures of Glyph object according to Vedo.
+    """
+    marker_factory: MarkerFactory
 
     def __init__(self):
+        """
+        Automatically set the attributes of a glyph according to Vedo
+        """
         BaseObjectFactory.__init__(self)
 
         self.type = "Glyph"
@@ -20,12 +28,13 @@ class GlyphFactory(BaseObjectFactory):
                                     self.grammar_plug[4]: False, self.grammar_plug[5]: False,
                                     self.grammar_plug[6]: False, self.grammar_plug[7]: False,
                                     self.grammar_plug[8]: 0})
-        self.marker_factory = None
+
+        self.marker_factory = MarkerFactory()
 
     @parse_wrapper()
-    def parse(self, data_dict: dict):
+    def parse(self, data_dict: ObjectDescription) -> None:
 
-        pos = parse_position(data_dict=data_dict, wrap=True)
+        pos = self.parse_position(data_dict=data_dict, wrap=True)
         if pos is not None:
             self.parsed_data[self.grammar_plug[0]] = pos
 
@@ -43,6 +52,5 @@ class GlyphFactory(BaseObjectFactory):
         self.parsed_data[self.grammar_plug[1]] = self.marker_factory.get_data()
 
     @update_wrapper()
-    def update_instance(self, instance):
-        # update_position(instance, self.parsed_data, self.dirty_fields, self.grammar_plug[0])
+    def update_instance(self, instance: VisualInstance) -> None:
         pass
