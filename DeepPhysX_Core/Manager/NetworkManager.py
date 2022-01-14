@@ -4,7 +4,7 @@ from os.path import isdir, isfile
 from numpy import copy, array
 
 from DeepPhysX_Core.Network.BaseNetworkConfig import BaseNetworkConfig
-from DeepPhysX_Core.Utils.pathUtils import copyDir, createDir, getFirstCaller
+from DeepPhysX_Core.Utils.pathUtils import copy_dir, create_dir, get_first_caller
 
 
 class NetworkManager:
@@ -51,7 +51,7 @@ class NetworkManager:
             raise TypeError(f"[{self.name}] Wrong 'train' type: bool required, get {type(train)}")
 
         # Storage management
-        self.session_dir = session_dir if session_dir is not None else osPathJoin(getFirstCaller(), session_name)
+        self.session_dir = session_dir if session_dir is not None else osPathJoin(get_first_caller(), session_name)
         self.new_session = new_session
         self.network_dir = None
         self.network_template_name = session_name + '_network_{}'
@@ -103,10 +103,10 @@ class NetworkManager:
             # Setting network directory
             if self.new_session and self.network_config.network_dir is not None and isdir(self.network_config.network_dir):
                 self.network_dir = self.network_config.network_dir
-                self.network_dir = copyDir(self.network_dir, self.session_dir, dest_dir='network')
+                self.network_dir = copy_dir(self.network_dir, self.session_dir, dest_dir='network')
             else:
                 self.network_dir = osPathJoin(self.session_dir, 'network/')
-                self.network_dir = createDir(self.network_dir, dir_name='network')
+                self.network_dir = create_dir(self.network_dir, dir_name='network')
 
         # Prediction
         else:

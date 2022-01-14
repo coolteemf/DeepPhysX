@@ -39,14 +39,14 @@ class VedoVisualizer:
         OBJECT DESCRIPTION DICTIONARY is usually obtained using the corresponding factory (VedoObjectFactory)
             data_dict example:
 
-                {SCENE_1_ID: {OBJECT_1.1_ID: OBJECT_1.1 DESCRIPTION DICTIONARY,\n
+                {SCENE_1_ID: {OBJECT_1.1_ID: {CONTENT OF OBJECT_1.1 DESCRIPTION DICTIONARY},\n
                              ...\n
-                             OBJECT_1.N_ID:  OBJECT_1.N DESCRIPTION DICTIONARY\n
+                             OBJECT_1.N_ID:  {CONTENT OF OBJECT_1.N DESCRIPTION DICTIONARY}\n
                              },\n
                 ...\n
-                SCENE_M_ID: OBJECT_M.1_ID: OBJECT_K.1 DESCRIPTION DICTIONARY,\n
+                SCENE_M_ID: OBJECT_M.1_ID: {CONTENT OF OBJECT_K.1 DESCRIPTION DICTIONARY},\n
                             ...\n
-                            OBJECT_M.K_ID:  OBJECT_K.P DESCRIPTION DICTIONARY\n
+                            OBJECT_M.K_ID:  {CONTENT OF OBJECT_K.P DESCRIPTION DICTIONARY}\n
                             }\n
                 }
 
