@@ -16,37 +16,48 @@ class BaseNetwork:
         self.device = None
         self.config = config
 
-    def predict(self, x: DataContainer) -> DataContainer:
-        return self.forward(x)
+    def predict(self, input_data: DataContainer) -> DataContainer:
+        """Call forward"""
+        return self.forward(input_data)
 
-    def forward(self, x: DataContainer) -> DataContainer:
+    def forward(self, input_data: DataContainer) -> DataContainer:
+        """Gives input_data as raw input to the neural network"""
         raise NotImplementedError
 
     def set_train(self) -> None:
+        """Network is now in train mode (compute gradient)"""
         raise NotImplementedError
 
     def set_eval(self) -> None:
+        """Network is now in eval mode (does not compute gradient)"""
         raise NotImplementedError
 
     def set_device(self) -> None:
+        """Update default device"""
         raise NotImplementedError
 
     def load_parameters(self, path: str) -> None:
+        """Load network parameter from path"""
         raise NotImplementedError
 
     def get_parameters(self) -> Dict[str, torch.Tensor]:
+        """Return network parameter"""
         raise NotImplementedError
 
     def save_parameters(self, path) -> None:
+        """Saves the network parameter to the path location"""
         raise NotImplementedError
 
     def nb_parameters(self) -> None:
+        """Return the number of parameters of the network"""
         raise NotImplementedError
 
-    def transform_from_numpy(self, x: DataContainer, grad: bool = True) -> DataContainer:
+    def transform_from_numpy(self, data: numpy.ndarray, grad: bool = True) -> DataContainer:
+        """Transform and cast data data from numpy to the desired tensor type"""
         raise NotImplementedError
 
-    def transform_to_numpy(self, x: DataContainer) -> DataContainer:
+    def transform_to_numpy(self, data: DataContainer) -> numpy.ndarray:
+        """Transform and cast data from tensor type to numpy"""
         raise NotImplementedError
 
     def __str__(self) -> str:

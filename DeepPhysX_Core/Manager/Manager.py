@@ -1,6 +1,9 @@
 from os.path import join as osPathJoin
 from os.path import isfile, basename, exists
 from datetime import datetime
+from typing import Any, Dict, Tuple
+
+import numpy
 
 from DeepPhysX_Core.Manager.DataManager import DataManager
 from DeepPhysX_Core.Manager.NetworkManager import NetworkManager
@@ -16,10 +19,10 @@ class Manager:
                  network_config=None,
                  dataset_config=None,
                  environment_config=None,
-                 session_name='default',
-                 session_dir=None,
-                 new_session=True,
-                 batch_size=1):
+                 session_name: str = 'default',
+                 session_dir: str = None,
+                 new_session: bool = True,
+                 batch_size: int = 1):
         """
         Collection of all the specialized managers. Allows for some basic functions call. More specific behaviour have to
         be directly call from the corresponding manager
@@ -31,7 +34,7 @@ class Manager:
         :param str session_name: Name of the newly created directory if session_dir is not defined
         :param str session_dir: Name of the directory in which to write all of the necessary data
         :param bool new_session: Define the creation of new directories to store data
-        :param int batch_size: umber of samples in a batch
+        :param int batch_size: Number of samples in a batch
         """
         self.pipeline = pipeline
         # Trainer: must create a new session to avoid overwriting
@@ -72,7 +75,7 @@ class Manager:
         # Create the stats manager for training
         self.stats_manager = StatsManager(manager=self, log_dir=osPathJoin(self.session_dir, 'stats/')) if train else None
 
-    def getPipeline(self):
+    def get_pipeline(self) -> Any:
         """
         Return the pipeline that is using the Manager.
 
@@ -80,7 +83,7 @@ class Manager:
         """
         return self.pipeline
 
-    def getData(self, epoch=0, batch_size=1, animate=True):
+    def get_data(self, epoch: int = 0, batch_size: int = 1, animate: bool = True) -> numpy.ndarray:
         """
         Fetch data from the DataManager
 
@@ -92,33 +95,33 @@ class Manager:
         """
         self.data_manager.getData(epoch=epoch, batch_size=batch_size, animate=animate)
 
-    def optimizeNetwork(self):
+    def optimize_network(self) -> Tuple[numpy.ndarray, Dict[str, float]]:
         """
         Compute a prediction and run a back propagation with the current batch
 
         :return: tuple (numpy.ndarray, float)
         """
-        prediction, loss_dict = self.network_manager.computePredictionAndLoss(self.data_manager.data, optimize=True)
+        prediction, loss_dict = self.network_manager.compute_prediction_and_loss(self.data_manager.data, optimize=True)
         return prediction, loss_dict
 
-    def getPrediction(self):
+    def get_prediction(self) -> Tuple[numpy.ndarray, Dict[str, float]]:
         """
         Compute a prediction with the current batch
 
         :return: tuple (numpy.ndarray, float)
         """
-        prediction, loss_dict = self.network_manager.computePredictionAndLoss(self.data_manager.data, optimize=False)
+        prediction, loss_dict = self.network_manager.compute_prediction_and_loss(self.data_manager.data, optimize=False)
         return prediction, loss_dict
 
-    def saveNetwork(self):
+    def save_network(self) -> None:
         """
         Save network weights as a pth file
 
         :return:
         """
-        self.network_manager.saveNetwork()
+        self.network_manager.save_network()
 
-    def close(self):
+    def close(self) -> None:
         """
         Call all managers close procedure
 
@@ -131,7 +134,7 @@ class Manager:
         if self.data_manager is not None:
             self.data_manager.close()
 
-    def saveInfoFile(self):
+    def save_info_file(self) -> None:
         """
         Called by the Trainer to save a .txt file which provides a quick description template to the user and lists
         the description of all the components.
@@ -152,7 +155,7 @@ class Manager:
             f.write(str(self))
             f.close()
 
-    def __str__(self):
+    def __str__(self) -> str:
         """
         :return: A string containing valuable information about the Managers
         """

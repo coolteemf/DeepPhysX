@@ -33,18 +33,23 @@ class BaseOptimization:
         self.lr = config.lr
 
     def set_loss(self) -> None:
+        """Initialize the loss function"""
         raise NotImplementedError
 
-    def compute_loss(self, prediction, ground_truth, data) -> Dict[str, float]:
+    def compute_loss(self, prediction, ground_truth, data: Any = None) -> Dict[str, float]:
+        """Compute loss from prediction / ground truth"""
         raise NotImplementedError
 
-    def transform_loss(self, data) -> Dict[str, float]:
+    def transform_loss(self, data: Any = None) -> Dict[str, float]:
+        """Apply a transformation on the loss value using the potential additional data"""
         raise NotImplementedError
 
     def set_optimizer(self, net) -> None:
+        """Define an optimization process"""
         raise NotImplementedError
 
     def optimize(self) -> None:
+        """Run an optimization step"""
         raise NotImplementedError
 
     def __str__(self) -> str:

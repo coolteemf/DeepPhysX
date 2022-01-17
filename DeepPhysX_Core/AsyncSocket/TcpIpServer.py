@@ -257,7 +257,7 @@ class TcpIpServer(TcpIpObject):
         # Add data to the Queue
         self.data_fifo.put(data)
 
-    def setDatasetBatch(self, batch):
+    def set_dataset_batch(self, batch):
         """
         Receive a batch of data from the Dataset. Samples will be dispatched between clients.
 

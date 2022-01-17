@@ -1,6 +1,9 @@
 from os import listdir
 from os.path import join as osPathJoin
 from os.path import isdir, isfile
+from typing import Any, Dict, Tuple
+
+import numpy
 from numpy import copy, array
 
 from DeepPhysX_Core.Network.BaseNetworkConfig import BaseNetworkConfig
@@ -10,12 +13,12 @@ from DeepPhysX_Core.Utils.pathUtils import copy_dir, create_dir, get_first_calle
 class NetworkManager:
 
     def __init__(self,
-                 network_config=None,
+                 network_config: BaseNetworkConfig = None,
                  manager=None,
-                 session_name='default',
-                 session_dir=None,
-                 new_session=True,
-                 train=True):
+                 session_name: str = 'default',
+                 session_dir: str = None,
+                 new_session: bool = True,
+                 train: bool = True):
         """
         Deals with all the interactions with the neural network. Predictions, saves, initialisation, loading,
         back-propagation, etc...
@@ -69,15 +72,15 @@ class NetworkManager:
         self.optimization = None
         self.data_transformation = None
         self.network_config = network_config
-        self.setNetwork()
+        self.set_network()
 
-    def getManager(self):
+    def get_manager(self) -> Any:
         """
         :return: Manager that handles the NetworkManager
         """
         return self.manager
 
-    def setNetwork(self):
+    def set_network(self) -> None:
         """
         Set the network to the corresponding weight from a given file
 
@@ -138,7 +141,7 @@ class NetworkManager:
             print("NetworkManager: Loading network from {}.".format(networks_list[which_network]))
             self.network.load_parameters(networks_list[which_network])
 
-    def computePredictionAndLoss(self, batch, optimize):
+    def compute_prediction_and_loss(self, batch: Dict[str, numpy.ndarray], optimize: bool) -> Tuple[numpy.ndarray, Dict[str, float]]:
         """
         Make a prediction with the data passe as argument, optimize or not the network
 
@@ -168,7 +171,7 @@ class NetworkManager:
         prediction = self.network.transform_to_numpy(data_out)
         return prediction, loss_dict
 
-    def computeOnlinePrediction(self, network_input):
+    def compute_online_prediction(self, network_input: numpy.ndarray) -> numpy.ndarray:
         """
         Make a prediction with the data passe as argument, optimize or not the network
 
@@ -188,7 +191,7 @@ class NetworkManager:
         pred = array(pred, dtype=float)
         return pred.reshape(-1)
 
-    def saveNetwork(self, last_save=False):
+    def save_network(self, last_save: bool = False) -> None:
         """
         Save the network with the corresponding suffix so they do not erase the last save.
 
@@ -206,17 +209,17 @@ class NetworkManager:
             print(f"Saving network at {path}.")
             self.network.save_parameters(path)
 
-    def close(self):
+    def close(self) -> None:
         """
         Closing procedure.
         :return:
         """
         if self.training:
-            self.saveNetwork(last_save=True)
+            self.save_network(last_save=True)
         del self.network
         del self.network_config
 
-    def __str__(self):
+    def __str__(self) -> str:
         """
         :return: String containing information about the BaseNetwork object
         """

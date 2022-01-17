@@ -1,4 +1,7 @@
-from numpy import array, empty, concatenate
+from typing import Any, Dict
+
+import numpy
+from numpy import array
 from asyncio import run
 from DeepPhysX_Core.Manager.VisualizerManager import VisualizerManager
 
@@ -8,9 +11,9 @@ class EnvironmentManager:
     def __init__(self,
                  environment_config=None,
                  data_manager=None,
-                 session_dir=None,
-                 batch_size=1,
-                 train=True):
+                 session_dir: str = None,
+                 batch_size: int = 1,
+                 train: bool = True):
 
         """
         Deals with the online generation of data for both training and running of the neural networks
@@ -50,7 +53,7 @@ class EnvironmentManager:
         self.prediction_requested = False
         self.dataset_batch = None
 
-    def getDataManager(self):
+    def get_data_manager(self) -> Any:
         """
         Return the Manager of the EnvironmentManager.
 
@@ -58,22 +61,22 @@ class EnvironmentManager:
         """
         return self.data_manager
 
-    def initVisualizer(self):
+    def init_visualizer(self) -> None:
         if self.visualizer_manager is not None:
             if self.server is not None:
                 data_dict = {}
                 for client_id in self.server.data_dict:
                     data_dict[client_id] = self.server.data_dict[client_id]['visualisation']
-                self.visualizer_manager.initView(data_dict)
+                self.visualizer_manager.init_view(data_dict)
 
-    def step(self):
+    def step(self) -> None:
         """
         Trigger a step in Environments.
         :return:
         """
         self.getData(get_inputs=False, get_outputs=False, animate=True)
 
-    def getData(self, get_inputs=True, get_outputs=True, animate=True):
+    def get_data(self, get_inputs: bool = True, get_outputs: bool = True, animate: bool = True) -> Dict[str, numpy.ndarray]:
         """
         Compute a batch of data from Environments.
 
@@ -84,12 +87,12 @@ class EnvironmentManager:
         corresponding to the batch
         """
         if self.server is not None:
-            return self.getDataFromServer(get_inputs, get_outputs, animate)
+            return self.get_data_from_server(get_inputs, get_outputs, animate)
         if self.environment is not None:
             return self.getDataFromEnvironment(get_inputs, get_outputs, animate)
         raise ValueError("[EnvironmentManager] There is no way to produce data.")
 
-    def getDataFromServer(self, get_inputs, get_outputs, animate):
+    def get_data_from_server(self, get_inputs: bool = True, get_outputs: bool = True, animate: bool = True) -> Dict[str, numpy.ndarray]:
         """
         Compute a batch of data from Environments requested through TcpIpServer.
 
@@ -113,7 +116,7 @@ class EnvironmentManager:
             training_data['loss'] = data_dict['loss']
         return training_data
 
-    def getDataFromEnvironment(self, get_inputs, get_outputs, animate):
+    def get_data_from_environment(self, get_inputs: bool = True, get_outputs: bool = True, animate: bool = True) -> Dict[str, numpy.ndarray]:
         """
         Compute a batch of data directly from Environment.
 
@@ -200,11 +203,11 @@ class EnvironmentManager:
             training_data['loss'] = data_dict['loss']
         return training_data
 
-    def updateVisualizer(self, visualization_data,):
-        self.visualizer_manager.updateVisualizer(visualization_data)
+    def update_visualizer(self, data_dict: Dict[int, Dict[int, Dict[str, Dict[str, Any]]]]) -> None:
+        self.visualizer_manager.update_visualizer(data_dict)
         self.visualizer_manager.render()
 
-    def dispatchBatch(self, batch):
+    def dispatch_batch(self, batch: numpy.ndarray) -> Dict[str, numpy.ndarray]:
         """
         Send samples from dataset to the Environments. Get back the training data.
 
@@ -212,12 +215,12 @@ class EnvironmentManager:
         :return: Batch of training data.
         """
         if self.server:
-            self.server.setDatasetBatch(batch)
+            self.server.set_dataset_batch(batch)
         if self.environment:
             self.dataset_batch = batch
-        return self.getData(animate=True)
+        return self.get_data(animate=True)
 
-    def close(self):
+    def close(self) -> None:
         """
         Close the environment
 
@@ -228,7 +231,7 @@ class EnvironmentManager:
         if self.environment:
             self.environment.close()
 
-    def __str__(self):
+    def __str__(self) -> str:
         """
         :return: A string containing valuable information about the EnvironmentManager
         """
