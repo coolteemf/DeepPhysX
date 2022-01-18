@@ -58,9 +58,7 @@ class BaseTrainer(BasePipeline):
         # Tell if data is recording while predicting (output is recorded only if input too)
         self.record_data = {'input': True, 'output': True}
 
-        self.manager.saveInfoFile()
-
-        self.manager.saveInfoFile()
+        self.manager.save_info_file()
 
     def execute(self) -> None:
         """
@@ -86,15 +84,15 @@ class BaseTrainer(BasePipeline):
         Pulls data from the manager and run a prediction and optimizer step.
 
         """
-        self.manager.getData(self.id_epoch, self.batch_size)
-        prediction, self.loss_dict = self.manager.optimizeNetwork()
+        self.manager.get_data(self.id_epoch, self.batch_size)
+        prediction, self.loss_dict = self.manager.optimize_network()
         print(f"Current loss : {self.loss_dict['loss']}")
 
     def save_network(self) -> None:
         """
         Registers the network weights and biases in the corresponding directory (session_name/network or session_dir/network)
         """
-        self.manager.saveNetwork()
+        self.manager.save_network()
 
     def train_begin(self) -> None:
         """
@@ -122,7 +120,7 @@ class BaseTrainer(BasePipeline):
         Called one at the end of each epoch.
         Allows the user to run some post-epoch computations.
         """
-        self.manager.stats_manager.add_trainEpochLoss(self.loss_dict['loss'], self.id_epoch)
+        self.manager.stats_manager.add_train_epoch_loss(self.loss_dict['loss'], self.id_epoch)
 
     def epoch_condition(self) -> bool:
         """
@@ -150,11 +148,11 @@ class BaseTrainer(BasePipeline):
         Called one at the start of each batch.
         Allows the user to run some post-batch computations.
         """
-        self.manager.stats_manager.add_trainBatchLoss(self.loss_dict['loss'],
+        self.manager.stats_manager.add_train_batch_loss(self.loss_dict['loss'],
                                                       self.id_epoch * self.nb_batches + self.id_batch)
         for key in self.loss_dict.keys():
             if key != 'loss':
-                self.manager.stats_manager.add_customScalar(tag=key, value=self.loss_dict[key],
+                self.manager.stats_manager.add_custom_scalar(tag=key, value=self.loss_dict[key],
                                                             count=self.id_epoch * self.nb_batches + self.id_batch)
 
     def batch_condition(self) -> bool:

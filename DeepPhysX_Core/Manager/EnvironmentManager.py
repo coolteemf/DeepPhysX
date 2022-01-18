@@ -43,7 +43,7 @@ class EnvironmentManager:
             self.visualizer_manager = VisualizerManager(data_manager=data_manager,
                                                         visualizer=environment_config.visualizer,
                                                         screenshot_rate=environment_config.screenshot_sample_rate)
-            self.initVisualizer()
+            self.init_visualizer()
 
         self.always_create_data = environment_config.always_create_data
         self.use_prediction_in_environment = environment_config.use_prediction_in_environment
@@ -74,7 +74,7 @@ class EnvironmentManager:
         Trigger a step in Environments.
         :return:
         """
-        self.getData(get_inputs=False, get_outputs=False, animate=True)
+        self.get_data(get_inputs=False, get_outputs=False, animate=True)
 
     def get_data(self, get_inputs: bool = True, get_outputs: bool = True, animate: bool = True) -> Dict[str, numpy.ndarray]:
         """
@@ -89,7 +89,7 @@ class EnvironmentManager:
         if self.server is not None:
             return self.get_data_from_server(get_inputs, get_outputs, animate)
         if self.environment is not None:
-            return self.getDataFromEnvironment(get_inputs, get_outputs, animate)
+            return self.get_data_from_environment(get_inputs, get_outputs, animate)
         raise ValueError("[EnvironmentManager] There is no way to produce data.")
 
     def get_data_from_server(self, get_inputs: bool = True, get_outputs: bool = True, animate: bool = True) -> Dict[str, numpy.ndarray]:
@@ -207,7 +207,7 @@ class EnvironmentManager:
         self.visualizer_manager.update_visualizer(data_dict)
         self.visualizer_manager.render()
 
-    def dispatch_batch(self, batch: numpy.ndarray) -> Dict[str, numpy.ndarray]:
+    def dispatch_batch(self, batch: Dict[str, numpy.ndarray]) -> Dict[str, numpy.ndarray]:
         """
         Send samples from dataset to the Environments. Get back the training data.
 

@@ -35,7 +35,7 @@ def createScene():
                           dataset_config=dataset_config,                                                # Previously defined dataset configuration
                           environment_config=env_config,                                                # Previously defined environment configuration
                           network_config=network_config,                                                # Previously defined network configuration
-                          nb_epochs=40, nb_batches=1500, batch_size=10)                                 # Training settings
+                          nb_epochs=3, nb_batches=10, batch_size=1)                                     # Training settings
 
     ##############################################################################
     #                                                                            #

@@ -1,3 +1,7 @@
+from typing import Any, Optional, Dict
+
+import numpy
+
 from DeepPhysX_Core.Manager.DatasetManager import DatasetManager
 from DeepPhysX_Core.Manager.EnvironmentManager import EnvironmentManager
 
@@ -5,17 +9,17 @@ from DeepPhysX_Core.Manager.EnvironmentManager import EnvironmentManager
 class DataManager:
 
     def __init__(self,
-                 dataset_config=None,
-                 environment_config=None,
-                 manager=None,
-                 session_name='default',
-                 session_dir=None,
-                 new_session=True,
-                 training=True,
-                 record_data=None,
-                 batch_size=1):
+                 dataset_config: Any = None,
+                 environment_config: Any = None,
+                 manager: Any = None,
+                 session_name: str = 'default',
+                 session_dir: str = None,
+                 new_session: bool = True,
+                 training: bool = True,
+                 record_data: Dict[str, bool] = None,
+                 batch_size: int = 1):
         """
-        DataManager deals with the generation of input / output tensors. His job is to call getData on either the
+        DataManager deals with the generation of input / output tensors. His job is to call get_data on either the
         DatasetManager or the EnvironmentManager according to the context.
 
         :param BaseDatasetConfig dataset_config: Specialisation containing the parameters of the dataset manager
@@ -29,14 +33,14 @@ class DataManager:
         :param int batch_size: Number of samples in a batch
         """
 
-        self.name = self.__class__.__name__
+        self.name: str = self.__class__.__name__
 
-        self.manager = manager
-        self.is_training = training
-        self.dataset_manager = None
-        self.environment_manager = None
-        self.allow_dataset_fetch = True
-        self.data = None
+        self.manager: Any = manager
+        self.is_training: bool = training
+        self.dataset_manager: Optional[DatasetManager] = None
+        self.environment_manager: Optional[EnvironmentManager] = None
+        self.allow_dataset_fetch: bool = True
+        self.data: Optional[Dict[str, numpy.ndarray]] = None
         # Training
         if self.is_training:
             # Always create a dataset_manager for training
@@ -65,7 +69,7 @@ class DataManager:
                                                           session_dir=session_dir, batch_size=batch_size,
                                                           train=self.is_training)
 
-    def getManager(self):
+    def get_manager(self) -> None:
         """
         Return the manager of DataManager.
 
@@ -73,7 +77,7 @@ class DataManager:
         """
         return self.manager
 
-    def getData(self, epoch=0, batch_size=1, animate=True):
+    def get_data(self, epoch: int = 0, batch_size: int = 1, animate: bool = True) -> Dict[str, numpy.ndarray]:
         """
         Fetch data from EnvironmentManager or DatasetManager according to the context
 
@@ -81,7 +85,7 @@ class DataManager:
         :param int batch_size: Size of the desired batch
         :param bool animate: Allow EnvironmentManager to generate a new sample
 
-        :return:
+        :return: the newly computed data
         """
 
         # Training
@@ -91,13 +95,13 @@ class DataManager:
             if data is None and self.environment_manager is not None and \
                     (epoch == 0 or self.environment_manager.always_create_data) and self.dataset_manager.new_dataset():
                 self.allow_dataset_fetch = False
-                data = self.environment_manager.getData(animate=animate, get_inputs=True, get_outputs=True)
-                self.dataset_manager.addData(data)
+                data = self.environment_manager.get_data(animate=animate, get_inputs=True, get_outputs=True)
+                self.dataset_manager.add_data(data)
             # Force data from the dataset
             else:
-                data = self.dataset_manager.getData(batch_size=batch_size, get_inputs=True, get_outputs=True)
+                data = self.dataset_manager.get_data(batch_size=batch_size, get_inputs=True, get_outputs=True)
                 if self.environment_manager is not None and self.environment_manager.use_prediction_in_environment:
-                    new_data = self.environment_manager.dispatchBatch(batch=data)
+                    new_data = self.environment_manager.dispatch_batch(batch=data)
                     if len(new_data['input']) != 0:
                         data['input'] = new_data['input']
                     if len(new_data['output']) != 0:
@@ -108,14 +112,15 @@ class DataManager:
         # Prediction
         else:
             # Get data from environment
-            data = self.environment_manager.getData(animate=animate, get_inputs=True, get_outputs=True)
+            data = self.environment_manager.get_data(animate=animate, get_inputs=True, get_outputs=True)
             # Record data
             if self.dataset_manager is not None:
-                self.dataset_manager.addData(data)
+                self.dataset_manager.add_data(data)
 
         self.data = data
+        return data
 
-    def close(self):
+    def close(self) -> None:
         """
         Launch the closing procedure on its managers
 
@@ -126,7 +131,7 @@ class DataManager:
         if self.dataset_manager is not None:
             self.dataset_manager.close()
 
-    def __str__(self):
+    def __str__(self) -> str:
         """
         :return: A string containing valuable information about the DataManager
         """

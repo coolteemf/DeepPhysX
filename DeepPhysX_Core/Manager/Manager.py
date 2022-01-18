@@ -36,15 +36,15 @@ class Manager:
         :param bool new_session: Define the creation of new directories to store data
         :param int batch_size: Number of samples in a batch
         """
-        self.pipeline = pipeline
+        self.pipeline: Any = pipeline
         # Trainer: must create a new session to avoid overwriting
         if pipeline.type == 'training':
             train = True
             # Create manager directory from the session name
-            self.session_dir = osPathJoin(get_first_caller(), session_name)
+            self.session_dir: str = osPathJoin(get_first_caller(), session_name)
             # Avoid unwanted overwritten data
             if new_session:
-                self.session_dir = create_dir(self.session_dir, dir_name=session_name)
+                self.session_dir: str = create_dir(self.session_dir, dir_name=session_name)
         # Prediction: work in an existing session
         elif pipeline.type == 'prediction':
             train = False
@@ -52,28 +52,28 @@ class Manager:
             if session_dir is None:
                 if session_name is None:
                     raise ValueError("[Manager] Prediction needs at least the session directory or the session name.")
-                self.session_dir = osPathJoin(get_first_caller(), session_name)
+                self.session_dir: str = osPathJoin(get_first_caller(), session_name)
             # Find the session name with the directory
             else:
-                self.session_dir = session_dir
+                self.session_dir: str = session_dir
             if not exists(self.session_dir):
                 raise ValueError("[Manager] The session directory {} does not exists.".format(self.session_dir))
 
         else:
             raise ValueError("[Manager] The pipeline must be either training or prediction.")
 
-        self.session_name = (session_name if session_name is not None else basename(session_dir)).split("/")[-1]
+        self.session_name: str = (session_name if session_name is not None else basename(session_dir)).split("/")[-1]
         # Always create the network manager (man it's DEEP physics here...)
-        self.network_manager = NetworkManager(manager=self, network_config=network_config, session_name=self.session_name,
+        self.network_manager: NetworkManager = NetworkManager(manager=self, network_config=network_config, session_name=self.session_name,
                                               session_dir=self.session_dir, new_session=new_session, train=train)
 
         # Always create the data manager for same reason
-        self.data_manager = DataManager(manager=self, dataset_config=dataset_config, environment_config=environment_config,
+        self.data_manager: DataManager = DataManager(manager=self, dataset_config=dataset_config, environment_config=environment_config,
                                         session_name=self.session_name, session_dir=self.session_dir, new_session=new_session,
                                         training=train, record_data=pipeline.record_data, batch_size=batch_size)
 
         # Create the stats manager for training
-        self.stats_manager = StatsManager(manager=self, log_dir=osPathJoin(self.session_dir, 'stats/')) if train else None
+        self.stats_manager: StatsManager = StatsManager(manager=self, log_dir=osPathJoin(self.session_dir, 'stats/')) if train else None
 
     def get_pipeline(self) -> Any:
         """
@@ -83,7 +83,7 @@ class Manager:
         """
         return self.pipeline
 
-    def get_data(self, epoch: int = 0, batch_size: int = 1, animate: bool = True) -> numpy.ndarray:
+    def get_data(self, epoch: int = 0, batch_size: int = 1, animate: bool = True) -> None:
         """
         Fetch data from the DataManager
 
@@ -93,7 +93,7 @@ class Manager:
 
         :return:
         """
-        self.data_manager.getData(epoch=epoch, batch_size=batch_size, animate=animate)
+        self.data_manager.get_data(epoch=epoch, batch_size=batch_size, animate=animate)
 
     def optimize_network(self) -> Tuple[numpy.ndarray, Dict[str, float]]:
         """
