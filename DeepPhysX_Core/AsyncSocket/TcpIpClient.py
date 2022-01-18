@@ -11,7 +11,7 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
                  port=10000,
                  instance_id=1,
                  number_of_instances=1,
-                 as_tcpip_client=True):
+                 as_tcp_ip_client=True):
         """
         TcpIpClient is both a TcpIpObject which communicate with a TcpIpServer and an AbstractEnvironment to compute
         simulated data.
@@ -26,10 +26,10 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
         AbstractEnvironment.__init__(self,
                                      instance_id=instance_id,
                                      number_of_instances=number_of_instances,
-                                     as_tcpip_client=as_tcpip_client)
+                                     as_tcp_ip_client=as_tcp_ip_client)
 
         # Bind to client address
-        if self.as_tcpip_client:
+        if self.as_tcp_ip_client:
             TcpIpObject.__init__(self,
                                  ip_address=ip_address,
                                  port=port)
