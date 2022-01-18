@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 import numpy
 from numpy import array
@@ -9,8 +9,8 @@ from DeepPhysX_Core.Manager.VisualizerManager import VisualizerManager
 class EnvironmentManager:
 
     def __init__(self,
-                 environment_config=None,
-                 data_manager=None,
+                 environment_config: Any =None,
+                 data_manager: Any =None,
                  session_dir: str = None,
                  batch_size: int = 1,
                  train: bool = True):
@@ -25,16 +25,16 @@ class EnvironmentManager:
         :param bool train: True if this session is a network training
         """
 
-        self.name = self.__class__.__name__
+        self.name: str = self.__class__.__name__
 
-        self.data_manager = data_manager
-        self.session_dir = session_dir
-        self.number_of_thread = environment_config.number_of_thread
+        self.data_manager: Any = data_manager
+        self.session_dir: str = session_dir
+        self.number_of_thread: int = environment_config.number_of_thread
         # Create single or multiple environments according to multiprocessing value
-        self.server = environment_config.createServer(environment_manager=self, batch_size=batch_size) if environment_config.as_tcpip_client else None
-        self.environment = environment_config.createEnvironment(environment_manager=self) if not environment_config.as_tcpip_client else None
-        self.batch_size = batch_size
-        self.train = train
+        self.server = environment_config.create_server(environment_manager=self, batch_size=batch_size) if environment_config.as_tcpip_client else None
+        self.environment = environment_config.create_environment(environment_manager=self) if not environment_config.as_tcpip_client else None
+        self.batch_size: int = batch_size
+        self.train: bool = train
 
         # Init visualizer
         if environment_config.visualizer is None:
@@ -43,15 +43,15 @@ class EnvironmentManager:
             self.visualizer_manager = VisualizerManager(data_manager=data_manager,
                                                         visualizer=environment_config.visualizer,
                                                         screenshot_rate=environment_config.screenshot_sample_rate)
-            self.initVisualizer()
+            self.init_visualizer()
 
-        self.always_create_data = environment_config.always_create_data
-        self.use_prediction_in_environment = environment_config.use_prediction_in_environment
-        self.simulations_per_step = environment_config.simulations_per_step
-        self.max_wrong_samples_per_step = environment_config.max_wrong_samples_per_step
+        self.always_create_data: bool = environment_config.always_create_data
+        self.use_prediction_in_environment: bool = environment_config.use_prediction_in_environment
+        self.simulations_per_step: int = environment_config.simulations_per_step
+        self.max_wrong_samples_per_step: int = environment_config.max_wrong_samples_per_step
 
-        self.prediction_requested = False
-        self.dataset_batch = None
+        self.prediction_requested: bool = False
+        self.dataset_batch: Optional[Dict[str, Dict[int, Any]]] = None
 
     def get_data_manager(self) -> Any:
         """
@@ -74,7 +74,7 @@ class EnvironmentManager:
         Trigger a step in Environments.
         :return:
         """
-        self.getData(get_inputs=False, get_outputs=False, animate=True)
+        self.get_data(get_inputs=False, get_outputs=False, animate=True)
 
     def get_data(self, get_inputs: bool = True, get_outputs: bool = True, animate: bool = True) -> Dict[str, numpy.ndarray]:
         """
@@ -89,7 +89,7 @@ class EnvironmentManager:
         if self.server is not None:
             return self.get_data_from_server(get_inputs, get_outputs, animate)
         if self.environment is not None:
-            return self.getDataFromEnvironment(get_inputs, get_outputs, animate)
+            return self.get_data_from_environment(get_inputs, get_outputs, animate)
         raise ValueError("[EnvironmentManager] There is no way to produce data.")
 
     def get_data_from_server(self, get_inputs: bool = True, get_outputs: bool = True, animate: bool = True) -> Dict[str, numpy.ndarray]:
@@ -207,7 +207,7 @@ class EnvironmentManager:
         self.visualizer_manager.update_visualizer(data_dict)
         self.visualizer_manager.render()
 
-    def dispatch_batch(self, batch: numpy.ndarray) -> Dict[str, numpy.ndarray]:
+    def dispatch_batch(self, batch: Dict[str, numpy.ndarray]) -> Dict[str, numpy.ndarray]:
         """
         Send samples from dataset to the Environments. Get back the training data.
 

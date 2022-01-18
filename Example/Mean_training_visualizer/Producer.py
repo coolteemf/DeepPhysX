@@ -29,11 +29,11 @@ class MeanEnvironment(BaseEnvironment):
     def send_visualization(self):
         pos = pi * random((25, 2))
         # Point cloud
-        self.factory.addObject(object_type="Points", data_dict={"positions": pos, "c": "blue", "at": self.instance_id, "r": 8})
+        self.factory.add_object(object_type="Points", data_dict={"positions": pos, "c": "blue", "at": self.instance_id, "r": 8})
         # Ground truth value
-        self.factory.addObject(object_type="Points", data_dict={"positions": mean(pos, axis=0)[None, :], "c": "red", "at": self.instance_id, "r": 12})
+        self.factory.add_object(object_type="Points", data_dict={"positions": mean(pos, axis=0)[None, :], "c": "red", "at": self.instance_id, "r": 12})
         # Prediction value
-        self.factory.addObject(object_type="Points", data_dict={"positions": mean(pos, axis=0)[None, :], "c": "green", "at": self.instance_id, "r": 12})
+        self.factory.add_object(object_type="Points", data_dict={"positions": mean(pos, axis=0)[None, :], "c": "green", "at": self.instance_id, "r": 12})
         return self.factory.objects_dict
 
     def send_parameters(self):
@@ -58,11 +58,11 @@ class MeanEnvironment(BaseEnvironment):
     def apply_prediction(self, prediction):
         # In our case the prediction is only used to update the visual data
         # Point cloud
-        self.factory.updateObject_dict(object_id=0, new_data_dict={'positions': self.input})
+        self.factory.update_object_dict(object_id=0, new_data_dict={'positions': self.input})
         # Ground truth value
-        self.factory.updateObject_dict(object_id=1, new_data_dict={'position': self.output})
+        self.factory.update_object_dict(object_id=1, new_data_dict={'position': self.output})
         # Prediction value
-        self.factory.updateObject_dict(object_id=2, new_data_dict={'position': prediction})
+        self.factory.update_object_dict(object_id=2, new_data_dict={'position': prediction})
 
     async def onStep(self):
         # Send visualisation data to update

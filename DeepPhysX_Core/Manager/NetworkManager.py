@@ -1,7 +1,7 @@
 from os import listdir
 from os.path import join as osPathJoin
 from os.path import isdir, isfile
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, Tuple, Optional
 
 import numpy
 from numpy import copy, array
@@ -31,7 +31,7 @@ class NetworkManager:
         :param bool train: If True prediction will cause tensors gradient creation
         """
 
-        self.name = self.__class__.__name__
+        self.name: str = self.__class__.__name__
 
         # Check network_config type
         if not isinstance(network_config, BaseNetworkConfig):
@@ -54,24 +54,24 @@ class NetworkManager:
             raise TypeError(f"[{self.name}] Wrong 'train' type: bool required, get {type(train)}")
 
         # Storage management
-        self.session_dir = session_dir if session_dir is not None else osPathJoin(get_first_caller(), session_name)
-        self.new_session = new_session
-        self.network_dir = None
-        self.network_template_name = session_name + '_network_{}'
+        self.session_dir: str = session_dir if session_dir is not None else osPathJoin(get_first_caller(), session_name)
+        self.new_session: bool = new_session
+        self.network_dir: Optional[str] = None
+        self.network_template_name: str = session_name + '_network_{}'
 
         # Network management
-        self.manager = manager
+        self.manager: Any = manager
         if train and not network_config.training_stuff:
             raise ValueError(f"[{self.name}] Training requires a loss and an optimizer in your NetworkConfig")
-        self.training = train
-        self.save_each_epoch = network_config.save_each_epoch
-        self.saved_counter = 0
+        self.training: bool = train
+        self.save_each_epoch: bool = network_config.save_each_epoch
+        self.saved_counter: int = 0
 
         # Init network objects: Network, Optimization, DataTransformation
-        self.network = None
-        self.optimization = None
-        self.data_transformation = None
-        self.network_config = network_config
+        self.network: Any = None
+        self.optimization: Any = None
+        self.data_transformation: Any = None
+        self.network_config: BaseNetworkConfig = network_config
         self.set_network()
 
     def get_manager(self) -> Any:
