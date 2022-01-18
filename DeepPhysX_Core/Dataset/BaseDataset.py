@@ -1,3 +1,6 @@
+from typing import Dict, List, Optional, Tuple
+
+import numpy
 from numpy import array, ndarray, concatenate, save, arange
 from numpy.random import shuffle
 
@@ -13,25 +16,25 @@ class BaseDataset:
         :param config: BaseDatasetConfig which contains BaseDataset parameters
         """
 
-        self.name = self.__class__.__name__
+        self.name: str = self.__class__.__name__
 
         # Data fields containers
         self.data_type = ndarray
-        self.fields = {'IN': ['input'], 'OUT': ['output']}
-        self.data = {'input': array([]), 'output': array([])}
-        self.shape = {'input': None, 'output': None}
+        self.fields: Dict[str, List[str]] = {'IN': ['input'], 'OUT': ['output']}
+        self.data: Dict[str, numpy.ndarray] = {'input': array([]), 'output': array([])}
+        self.shape: Dict[str, Optional[List[int]]] = {'input': None, 'output': None}
 
         # Indexing
-        self.shuffle_pattern = None
-        self.current_sample = 0
+        self.shuffle_pattern: Optional[List[int]] = None
+        self.current_sample: int = 0
 
         # Dataset memory
-        self.max_size = config.max_size
-        self.batch_per_field = {field: 0 for field in ['input', 'output']}
-        self.__empty = True
+        self.max_size: int = config.max_size
+        self.batch_per_field: Dict[str, int] = {field: 0 for field in ['input', 'output']}
+        self.__empty: bool = True
 
     @property
-    def nb_samples(self):
+    def nb_samples(self) -> int:
         """
         Property returning the current number of samples
 
@@ -40,7 +43,7 @@ class BaseDataset:
 
         return max([len(self.data[field]) for field in self.fields['IN'] + self.fields['OUT']])
 
-    def is_empty(self):
+    def is_empty(self) -> bool:
         """
         Check if the fields of the dataset are empty. A field is considered as non-empty if it is filled with another
         sample.
@@ -60,7 +63,7 @@ class BaseDataset:
         # If all field are considered as non-empty then the Dataset is empty
         return True
 
-    def init_data_size(self, field, shape):
+    def init_data_size(self, field: str, shape: List[int]) -> None:
         """
         Store the original shape of data. Reshape data containers.
 
@@ -74,7 +77,7 @@ class BaseDataset:
         # Reshape the data container
         self.data[field] = array([]).reshape((0, *shape))
 
-    def get_data_shape(self, field):
+    def get_data_shape(self, field: str) -> Tuple[int]:
         """
         Returns the data shape of field.
 
@@ -84,7 +87,7 @@ class BaseDataset:
 
         return tuple(self.shape[field])
 
-    def init_additional_field(self, field, shape):
+    def init_additional_field(self, field: str, shape: List[int]) -> None:
         """
         Register a new data field.
 
@@ -101,7 +104,7 @@ class BaseDataset:
         # Init the field shape
         self.init_data_size(field, shape)
 
-    def empty(self):
+    def empty(self) -> None:
         """
         Empty the dataset.
 
@@ -117,7 +120,7 @@ class BaseDataset:
         self.batch_per_field = {field: 0 for field in self.fields['IN'] + self.fields['OUT']}
         self.__empty = True
 
-    def memory_size(self, field=None):
+    def memory_size(self, field: Optional[str] = None) -> int:
         """
         Return the actual memory size of the dataset if field is None. Otherwise, return the actual memory size of the
         field.
@@ -132,7 +135,7 @@ class BaseDataset:
         # Return the memory size for the specified field
         return self.data[field].nbytes
 
-    def check_data(self, field, data):
+    def check_data(self, field: str, data: numpy.ndarray) -> None:
         """
         Check if the data is a numpy array.
 
@@ -145,7 +148,7 @@ class BaseDataset:
         if type(data) != self.data_type:
             raise TypeError(f"[{self.name}] Wrong data type in field '{field}': numpy array required, got {type(data)}")
 
-    def add(self, field, data, partition_file=None):
+    def add(self, field: str, data: numpy.ndarray, partition_file: str = None) -> None:
         """
         Add data to the dataset.
 
@@ -181,7 +184,7 @@ class BaseDataset:
         self.batch_per_field[field] += 1
         self.current_sample = max([len(self.data[f]) for f in self.fields['IN'] + self.fields['OUT']])
 
-    def save(self, field, file):
+    def save(self, field, file) -> None:
         """
         Save the corresponding field of the Dataset.
 
@@ -192,7 +195,7 @@ class BaseDataset:
 
         save(file, self.data[field])
 
-    def set(self, field, data):
+    def set(self, field: str, data: numpy.ndarray) -> None:
         """
         Set a full field of the dataset.
 
@@ -203,7 +206,7 @@ class BaseDataset:
         # Todo: might require the same init when loading existing repo ?
         self.data[field] = data
 
-    def get(self, field, idx_begin, idx_end):
+    def get(self, field: str, idx_begin: int, idx_end: int) -> numpy.ndarray:
         """
         Get a batch of data in 'field' container.
 
@@ -216,7 +219,7 @@ class BaseDataset:
         indices = slice(idx_begin, idx_end) if self.shuffle_pattern is None else self.shuffle_pattern[idx_begin:idx_end]
         return self.data[field][indices]
 
-    def shuffle(self):
+    def shuffle(self) -> None:
         """
         Define a random shuffle pattern.
 
@@ -230,7 +233,7 @@ class BaseDataset:
         self.shuffle_pattern = arange(self.current_sample)
         shuffle(self.shuffle_pattern)
 
-    def __str__(self):
+    def __str__(self) -> str:
         """
         :return: String containing information about the BaseDatasetConfig object
         """

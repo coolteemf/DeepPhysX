@@ -60,7 +60,7 @@ class DatasetManager:
 
         # Create the Dataset object (default if no config specified)
         dataset_config = BaseDatasetConfig() if dataset_config is None else dataset_config
-        self.dataset = dataset_config.createDataset()
+        self.dataset = dataset_config.create_dataset()
 
         # Dataset parameters
         self.max_size: int = self.dataset.max_size
