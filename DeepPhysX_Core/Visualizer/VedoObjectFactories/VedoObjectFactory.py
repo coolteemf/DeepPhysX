@@ -6,7 +6,7 @@ from DeepPhysX_Core.Visualizer.VedoObjectFactories.WindowFactory import WindowFa
 from vedo import Mesh, Glyph, Marker, Points
 from typing import List, Dict, Union, Tuple, Any
 
-ObjectDescription = Dict[str, Union[Any, Dict[str, Any]]]
+ObjectDescription = Dict[str, Union[Dict[str, Any], Any]]
 VisualInstance = Union[Mesh, Glyph, Marker, Points]
 Factory = Union[MeshFactory, PointsFactory, GlyphFactory, MarkerFactory, WindowFactory]
 

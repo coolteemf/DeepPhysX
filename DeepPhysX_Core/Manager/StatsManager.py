@@ -1,3 +1,7 @@
+from typing import Dict, Union, Any
+import torch
+import numpy
+DataContainer = Union[numpy.ndarray, torch.Tensor]
 from tensorboardX import SummaryWriter
 from numpy import full, inf, array, append, concatenate
 
@@ -14,7 +18,7 @@ def generateDefaultMaterial():
 
 
 class StatsManager:
-    def __init__(self, log_dir, manager=None, keep_losses=False):
+    def __init__(self, log_dir: str, manager=None, keep_losses: bool=False):
         """
         Record all given values using the tensorboard framework. Open an tab in the navigator to inspect these values
         during the training
@@ -24,29 +28,28 @@ class StatsManager:
         :param keep_losses: If True Allow to save loss to .csv file
         """
 
-        self.name = self.__class__.__name__
-
+        self.name: str = self.__class__.__name__
         self.manager = manager
-        self.log_dir = log_dir
-        self.writer = SummaryWriter(log_dir)
+        self.log_dir: str = log_dir
+        self.writer: SummaryWriter = SummaryWriter(log_dir)
         # import os
         # os.popen(f'tensorboard --logdir={log_dir} &')
         # import webbrowser
         # # TODO Inspect previous command string to get the good ip adress
         # webbrowser.open('http://localhost:6006/')
-        self.mean = full(4, inf)  # Contain in the first dimension the mean, and second the variance of the mean
-        self.train_loss = array([])
-        self.keep_losses = keep_losses
-        self.tag_dict = {}
+        self.mean: numpy.ndarray = full(4, inf)  # Contain in the first dimension the mean, and second the variance of the mean
+        self.train_loss: numpy.ndarray = array([])
+        self.keep_losses: bool = keep_losses
+        self.tag_dict: Dict[str, int] = {}
 
-    def getManager(self):
+    def get_manager(self):
         """
 
         :return: Manager that handles the StatsManager
         """
         return self.manager
 
-    def add_trainBatchLoss(self, value, count):
+    def add_train_batch_loss(self, value: float, count: int) -> None:
         """
         Add batch loss to tensorboard framework. Also compute mean and variance.
 
@@ -55,7 +58,7 @@ class StatsManager:
 
         :return:
         """
-        var = self.updateMeanGetVar(value, 0, count + 1)
+        var = self.update_mean_get_var(0, value, count + 1)
         self.writer.add_scalar("Train/Batch/Loss", value, count)
         self.writer.add_scalar("Train/Batch/Mean", self.mean[0], count)
         if var is not None:
@@ -63,7 +66,7 @@ class StatsManager:
         if self.keep_losses is True:
             self.train_loss = append(self.train_loss, value)
 
-    def add_trainEpochLoss(self, value, count):
+    def add_train_epoch_loss(self, value: float, count: int) -> None:
         """
         Add epoch loss to tensorboard framework. Also compute mean and variance.
 
@@ -72,13 +75,13 @@ class StatsManager:
 
         :return:
         """
-        var = self.updateMeanGetVar(value, 1, count + 1)
+        var = self.update_mean_get_var(1, value, count + 1)
         self.writer.add_scalar("Train/Epoch/Loss", value, count)
         self.writer.add_scalar("Train/Epoch/Mean", self.mean[1], count)
         if var is not None:
             self.writer.add_scalar("Train/Epoch/Variance", var, count)
 
-    def add_trainTestBatchLoss(self, trainValue, testValue, count):
+    def add_train_test_batch_loss(self, trainValue: float, testValue: float, count: int) -> None:
         """
         Add train and test batch loss to tensorboard framework.
 
@@ -93,7 +96,7 @@ class StatsManager:
         if testValue is not None:
             self.writer.add_scalars("Combined/Batch/Loss", {'Test': testValue}, count)
 
-    def add_valuesMultiPlot(self, graphName, tags, values, counts):
+    def add_values_multi_plot(self, graphName: str, tags: str, values: float, counts: int) -> None:
         """
         Plot multiples value on the same graph
 
@@ -107,7 +110,7 @@ class StatsManager:
         for t, v, c in zip(tags, values, counts):
             self.writer.add_scalars(graphName, {t: v}, c)
 
-    def add_testLoss(self, value, count):
+    def add_test_loss(self, value: float, count: int) -> None:
         """
         Add test loss to tensorboard framework. Also compute mean and variance.
 
@@ -116,13 +119,13 @@ class StatsManager:
 
         :return:
         """
-        var = self.updateMeanGetVar(value, 2, count + 1)
+        var = self.update_mean_get_var(2, value, count + 1)
         self.writer.add_scalar("Test/Valid/Loss", value, count)
         self.writer.add_scalar("Test/Valid/Mean", self.mean[2], count)
         if var is not None:
             self.writer.add_scalar("Test/Valid/Variance", var, count)
 
-    def add_testLossOOB(self, value, count):
+    def add_test_loss_OOB(self, value: float, count: int) -> None:
         """
         Add out of bound test loss to tensorboard framework. Also compute mean and variance.
 
@@ -131,13 +134,13 @@ class StatsManager:
 
         :return:
         """
-        var = self.updateMeanGetVar(value, 3, count + 1)
+        var = self.update_mean_get_var(3, value, count + 1)
         self.writer.add_scalar("Test/Out-of-boundaries/Loss", value, count)
         self.writer.add_scalar("Test/Out-of-boundaries/Mean", self.mean[3], count)
         if var is not None:
             self.writer.add_scalar("Test/Out-of-boundaries/Variance", var, count)
 
-    def add_customScalar(self, tag, value, count):
+    def add_custom_scalar(self, tag: str, value: float, count: int) -> None:
         """
         Add a custom scalar to tensorboard framework.
 
@@ -149,7 +152,7 @@ class StatsManager:
         """
         self.writer.add_scalar(tag, value, count)
 
-    def add_customScalarFull(self, tag, value, count):
+    def add_custom_scalar_full(self, tag: str, value: float, count: int) -> None:
         """
         Add a custom scalar to tensorboard framework. Also compute mean and variance.
 
@@ -163,13 +166,13 @@ class StatsManager:
             self.tag_dict[tag]
         except KeyError:
             self.tag_dict[tag] = len(self.tag_dict) + 4  # Size of self.mean at the initialization
-        var = self.updateMeanGetVar(value, self.tag_dict[tag], count + 1)
+        var = self.update_mean_get_var(self.tag_dict[tag], value, count + 1)
         self.writer.add_scalar(tag + "/Value", value, count)
         self.writer.add_scalar(tag + "/Mean", self.mean[self.tag_dict[tag]], count)
         if var is not None:
             self.writer.add_scalar(tag + "/Variance", var, count)
 
-    def updateMeanGetVar(self, value, index, count):
+    def update_mean_get_var(self, index: int, value: float,  count: int) -> None:
         """
         Update mean and return the variance of the selected value
 
@@ -191,13 +194,13 @@ class StatsManager:
             self.mean[index] = self.mean[index] + (value - self.mean[index]) / n
             return variance - self.mean[index]
 
-    def add_3DPointCloud(self, tag, vertices, colors=None, BN3=False, config_dict=None):
+    def add_3D_point_cloud(self, tag: str, vertices: DataContainer, colors: DataContainer = None, BN3: bool = False, config_dict: Dict[Any, Any] = None) -> None:
         """
         Add 3D point cloud to tensorboard framework
 
         :param str tag: Data identifier
-        :param torch.Tensor vertices: List of the 3D coordinates of vertices.
-        :param torch.Tensor colors: Colors for each vertex
+        :param DataContainer vertices: List of the 3D coordinates of vertices.
+        :param DataContainer colors: Colors for each vertex
         :param bool BN3: Data is in the format [batch_size, number_of_nodes, 3]
         :param dict config_dict: Dictionary with ThreeJS classes names and configuration.
 
@@ -216,14 +219,14 @@ class StatsManager:
 
         self.writer.add_mesh(tag=tag, vertices=v, colors=c, config_dict=config_dict)
 
-    def add_3DMesh(self, tag, vertices, colors=None, faces=None, BN3=False, config_dict=None):
+    def add_3D_mesh(self, tag: str, vertices: DataContainer, colors: DataContainer = None, faces: DataContainer = None, BN3: bool = False, config_dict: Dict[Any, Any] = None) -> None:
         """
         Add 3D Mesh cloud to tensorboard framework
 
         :param str tag: Data identifier
-        :param torch.Tensor vertices: List of the 3D coordinates of vertices.
-        :param torch.Tensor colors: Colors for each vertex
-        :param torch.Tensor faces: Indices of vertices within each triangle.
+        :param DataContainer vertices: List of the 3D coordinates of vertices.
+        :param DataContainer colors: Colors for each vertex
+        :param DataContainer faces: Indices of vertices within each triangle.
         :param bool BN3: Data is in the format [batch_size, number_of_nodes, 3]
         :param dict config_dict: Dictionary with ThreeJS classes names and configuration.
 
@@ -244,7 +247,7 @@ class StatsManager:
             f = faces
         self.writer.add_mesh(tag=tag, vertices=v, colors=c, faces=f, config_dict=config_dict)
 
-    def add_network_weight_grad(self, network, count, save_weights=False, save_gradients=True):
+    def add_network_weight_grad(self, network: Any, count: int, save_weights: bool = False, save_gradients: bool = True) -> None:
         """
         Add network weigths and gradiant if specified to tensorboard framework
 
@@ -262,21 +265,7 @@ class StatsManager:
             if save_gradients:
                 self.writer.add_histogram('grads/' + tag, value.grad.data.cpu().numpy(), count)
 
-    def saveLossToCSV(self):
-        """
-        Save collected loss value to a CSV file
-
-        :return:
-        """
-        if self.keep_losses is False:
-            return
-        save_path = self.log_dir + "/Losses.csv"
-        file = open(save_path, "w+")
-        file.write(str(self.train_loss))
-        file.close()
-        print("Batch losses saved at : " + save_path)
-
-    def close(self):
+    def close(self) -> None:
         """
         Closing procedure
 
@@ -285,7 +274,7 @@ class StatsManager:
         self.writer.close()
         del self.train_loss
 
-    def __str__(self):
+    def __str__(self) -> str:
         """
         :return: A string containing valuable information about the StatsManager
         """
