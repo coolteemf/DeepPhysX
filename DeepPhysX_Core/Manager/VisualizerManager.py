@@ -1,12 +1,11 @@
 from typing import Dict, Union, Any
 ObjectDescription = Dict[str, Union[Dict[str, Any], Any]]
-from DeepPhysX_Core.Manager.DataManager import DataManager
 
 
 class VisualizerManager:
 
     def __init__(self,
-                 data_manager: DataManager = None,
+                 data_manager: Any = None,
                  visualizer=None,  # Visualizer class
                  screenshot_rate: int = 0):
         """
@@ -16,13 +15,13 @@ class VisualizerManager:
         :param DataManager data_manager: DataManager that handles the VisualizerManager
         :param visual_object: The class of the desired vedo object
         """
-        self.data_manager = data_manager
-        self.visualizer = visualizer()
+        self.data_manager: Any = data_manager
+        self.visualizer: Any = visualizer()
 
-        self.screenshot_rate = screenshot_rate
+        self.screenshot_rate: int = screenshot_rate
         self.screenshot_counter: int = 0
 
-    def get_data_manager(self) -> DataManager:
+    def get_data_manager(self) -> Any:
         """
         Return the manager that handles the VisualizerManager.
 
