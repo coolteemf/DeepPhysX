@@ -235,7 +235,7 @@ class TcpIpServer(TcpIpObject):
                     visu_dict[client_id] = self.data_dict[client_id]['visualisation']
             # Update visualization
             if visu_dict != {}:
-                self.environment_manager.updateVisualizer(visu_dict)
+                self.environment_manager.update_visualizer(visu_dict)
 
         # 3) Add received data to queue
         data = {}
@@ -322,7 +322,7 @@ class TcpIpServer(TcpIpObject):
         :return:
         """
 
-        self.environment_manager.updateVisualizer(visualization_data, client_id)
+        self.environment_manager.update_visualizer(visualization_data, client_id)
 
     async def action_on_prediction(self, data, client_id, loop=None, sender=None):
         """
@@ -347,7 +347,7 @@ class TcpIpServer(TcpIpObject):
             raise ValueError("Cannot request prediction if NetworkManager does not exist")
 
         # Get the prediction from NetworkPrediction
-        prediction = self.environment_manager.data_manager.manager.network_manager.computeOnlinePrediction(
+        prediction = self.environment_manager.data_manager.manager.network_manager.compute_online_prediction(
             network_input=network_input[None, ])
         # Send back the prediction to the Client
         await self.send_labeled_data(data_to_send=prediction, label="prediction", receiver=sender,

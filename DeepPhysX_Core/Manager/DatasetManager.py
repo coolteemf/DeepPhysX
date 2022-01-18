@@ -4,7 +4,9 @@ from os import listdir
 
 from json import dump as json_dump
 from json import load as json_load
+from typing import Any, Dict, Tuple, List, Optional, Union
 
+import numpy
 import numpy as np
 from numpy import load, squeeze
 
@@ -17,12 +19,12 @@ class DatasetManager:
 
     def __init__(self,
                  dataset_config: BaseDatasetConfig,
-                 data_manager=None,
-                 session_name='default',
-                 session_dir=None,
-                 new_session=True,
-                 train=True,
-                 record_data=None):
+                 data_manager: Any = None,
+                 session_name: str = 'default',
+                 session_dir: str = None,
+                 new_session: bool = True,
+                 train: bool = True,
+                 record_data: Optional[Dict[str, bool]] = None):
 
         """
         DatasetManager handle all operations with input / output files. Allows saving and read tensors from files.
@@ -36,8 +38,8 @@ class DatasetManager:
         :param dict record_data: Format {\'in\': bool, \'out\': bool} save the tensor when bool is True
         """
 
-        self.name = self.__class__.__name__
-        self.data_manager = data_manager
+        self.name: str = self.__class__.__name__
+        self.data_manager: Any = data_manager
 
         # Checking arguments
         if dataset_config is not None and not isinstance(dataset_config, BaseDatasetConfig):
@@ -61,44 +63,47 @@ class DatasetManager:
         self.dataset = dataset_config.createDataset()
 
         # Dataset parameters
-        self.max_size = self.dataset.max_size
-        self.shuffle_dataset = dataset_config.shuffle_dataset
-        self.record_data = record_data if record_data is not None else {'input': True, 'output': True}
-        self.first_add = True
+        self.max_size: int = self.dataset.max_size
+        self.shuffle_dataset: bool = dataset_config.shuffle_dataset
+        self.record_data: Dict[str, bool] = record_data if record_data is not None else {'input': True, 'output': True}
+        self.first_add: bool = True
 
         # Dataset modes
-        self.modes = {'Training': 0, 'Validation': 1, 'Running': 2}
-        self.mode = self.modes['Training'] if train else self.modes['Running']
-        self.last_loaded_dataset_mode = self.mode
+        self.modes: Dict[str, int] = {'Training': 0, 'Validation': 1, 'Running': 2}
+        self.mode: int = self.modes['Training'] if train else self.modes['Running']
+        self.last_loaded_dataset_mode: int = self.mode
 
         # Dataset partitions
-        self.partitions_templates = (session_name + '_training_{}_{}.npy',
-                                     session_name + '_validation_{}_{}.npy',
-                                     session_name + '_running_{}_{}.npy')
-        self.fields = {'IN': ['input'], 'OUT': ['output']}
-        self.list_partitions = {'input': [[], [], []] if self.record_data['input'] else None,
-                                'output': [[], [], []] if self.record_data['output'] else None}
-        self.idx_partitions = [0, 0, 0]
-        self.current_partition_path = {'input': None, 'output': None}
+        self.partitions_templates: Tuple[str, str, str] = (session_name + '_training_{}_{}.npy',
+                                                           session_name + '_validation_{}_{}.npy',
+                                                           session_name + '_running_{}_{}.npy')
+        self.fields: Dict[str, List[str]] = {'IN': ['input'], 'OUT': ['output']}
+        self.list_partitions: Dict[str, Optional[List[List[numpy.ndarray]]]] = {
+            'input': [[], [], []] if self.record_data['input'] else None,
+            'output': [[], [], []] if self.record_data['output'] else None}
+        self.idx_partitions: List[int] = [0, 0, 0]
+        self.current_partition_path: Dict[str, Optional[str]] = {'input': None, 'output': None}
 
         # Dataset loading with multiple partitions variables
-        self.mul_part_list_path = None
-        self.mul_part_slices = None
-        self.mul_part_idx = None
+        self.mul_part_list_path: Optional[Dict[int, Dict[str, List[str]]]] = None
+        self.mul_part_slices: Optional[List[List[int]]] = None
+        self.mul_part_idx: Optional[int] = None
 
         # Dataset Json file
-        self.json_filename = 'dataset.json'
-        self.json_empty = {'data_shape': {},
-                           'nb_samples': {mode: [] for mode in self.modes},
-                           'partitions': {mode: {} for mode in self.modes}}
-        self.json_dict = self.json_empty.copy()
-        self.json_found = False
+        self.json_filename: str = 'dataset.json'
+        self.json_empty: Dict[str, Dict[str, Union[List[int], Dict[Any, Any]]]] = {'data_shape': {},
+                                                                                   'nb_samples': {mode: [] for mode in
+                                                                                                  self.modes},
+                                                                                   'partitions': {mode: {} for mode in
+                                                                                                  self.modes}}
+        self.json_dict: Dict[str, Dict[str, Union[List[int], Dict[Any, Any]]]] = self.json_empty.copy()
+        self.json_found: bool = False
 
         # Dataset repository
-        self.session_dir = session_dir if session_dir is not None else osPathJoin(get_first_caller(), session_name)
-        dataset_dir = dataset_config.dataset_dir
-        self.new_session = new_session
-        self.__new_dataset = False
+        self.session_dir: str = session_dir if session_dir is not None else osPathJoin(get_first_caller(), session_name)
+        dataset_dir: str = dataset_config.dataset_dir
+        self.new_session: bool = new_session
+        self.__new_dataset: bool = False
 
         # Training
         if train:
@@ -106,8 +111,8 @@ class DatasetManager:
             if new_session:
                 # New training session with new dataset
                 if dataset_dir is None:
-                    self.dataset_dir = create_dir(dir_path=osPathJoin(self.session_dir, 'dataset/'),
-                                                 dir_name='dataset')
+                    self.dataset_dir: str = create_dir(dir_path=osPathJoin(self.session_dir, 'dataset/'),
+                                                  dir_name='dataset')
                     self.__new_dataset = True
                 # New training session with existing dataset
                 else:
@@ -127,7 +132,7 @@ class DatasetManager:
             self.__new_dataset = True
             self.create_running_partitions()
 
-    def getDataManager(self):
+    def get_data_manager(self) -> Any:
         """
         Return the Manager of the DataManager.
 
@@ -135,7 +140,7 @@ class DatasetManager:
         """
         return self.data_manager
 
-    def addData(self, data):
+    def add_data(self, data: Dict[str, Union[numpy.ndarray, Dict[str, numpy.ndarray]]]) -> None:
         """
         Push the data in the dataset. If max size is reached generate a new partition and write into it.
 
@@ -189,7 +194,7 @@ class DatasetManager:
             self.update_json(update_partitions_lists=True, update_nb_samples=True)
             self.dataset.empty()
 
-    def getData(self, get_inputs, get_outputs, batch_size=1, batched=True):
+    def get_data(self, get_inputs: bool, get_outputs: bool, batch_size: int = 1, batched: bool = True) -> Dict[str, numpy.ndarray]:
         """
         Fetch tensors from the dataset or reload partitions if dataset is empty or specified.
 
@@ -254,7 +259,7 @@ class DatasetManager:
             self.dataset.current_sample = 0
             # Get the remaining samples
             missing_samples = batch_size - data['input'].shape[0]
-            missing_data = self.getData(get_inputs=get_inputs, get_outputs=get_outputs, batch_size=missing_samples)
+            missing_data = self.get_data(get_inputs=get_inputs, get_outputs=get_outputs, batch_size=missing_samples)
             # Merge fields
             for field in ['input', 'output']:
                 data[field] = np.concatenate((data[field], missing_data[field]))
@@ -263,7 +268,7 @@ class DatasetManager:
                     data[side][field] = np.concatenate((data[side][field], missing_data[side][field]))
         return data
 
-    def register_new_fields(self, new_fields):
+    def register_new_fields(self, new_fields: Dict[str, str]) -> None:
         """
         Add new data fields in the dataset.
 
@@ -275,7 +280,7 @@ class DatasetManager:
             for field in new_fields[side]:
                 self.register_new_field(side, field)
 
-    def register_new_field(self, side, new_field):
+    def register_new_field(self, side: str, new_field: str) -> None:
         """
         Add a new data field in the dataset.
 
@@ -289,7 +294,7 @@ class DatasetManager:
             self.list_partitions[new_field] = [[], [], []]
             self.record_data[new_field] = True
 
-    def create_partitions(self):
+    def create_partitions(self) -> None:
         """
         Create a new partition for current mode and for each registered fields.
 
@@ -307,7 +312,7 @@ class DatasetManager:
                     self.current_partition_path[field] = self.dataset_dir + partition_path
         self.idx_partitions[self.mode] += 1
 
-    def create_running_partitions(self):
+    def create_running_partitions(self) -> None:
         """
         Run specific function. Handle partitions creation when not training.
 
@@ -326,7 +331,7 @@ class DatasetManager:
         self.idx_partitions[self.mode] = nb_running_partitions
         self.create_partitions()
 
-    def load_directory(self, load_data=True):
+    def load_directory(self, load_data: bool = True) -> None:
         """
         Load the desired directory. Try to find partition list and upload it.
         No data loading here.
@@ -375,11 +380,11 @@ class DatasetManager:
             self.idx_partitions = [len(partitions_list) for partitions_list in self.list_partitions['input']]
             self.load_partitions(force_reload=True)
 
-    def search_partitions(self, mode):
+    def search_partitions(self, mode: str) -> Dict[str, List[str]]:
         """
         If loading a directory without JSON info file, search for existing partitions manually.
 
-        :param mode: Mode of the partitions to find.
+        :param str mode: Mode of the partitions to find.
         :return:
         """
 
@@ -412,7 +417,7 @@ class DatasetManager:
 
         return partitions_dict
 
-    def search_partitions_info(self):
+    def search_partitions_info(self) -> None:
         """
         If loading a directory without JSON info file
 
@@ -454,7 +459,7 @@ class DatasetManager:
         # Store the data shapes
         self.json_dict['data_shape'] = data_shape
 
-    def load_partitions(self, force_reload=False):
+    def load_partitions(self, force_reload: bool = False) -> None:
         """
         Load data from partitions.
 
@@ -488,7 +493,7 @@ class DatasetManager:
                 self.load_multiple_partitions([self.mode])
             self.read_multiple_partitions()
 
-    def read_last_partitions(self):
+    def read_last_partitions(self) -> None:
         """
         Load the last partitions for each data field.
 
@@ -500,11 +505,11 @@ class DatasetManager:
             data = load(self.current_partition_path[field])
             self.dataset.set(field, data)
 
-    def load_multiple_partitions(self, modes):
+    def load_multiple_partitions(self, modes: List[int]) -> None:
         """
         Specialisation of the load_partitions() function. It can load a list of partitions
 
-        :param list modes: Recommended to use datasetManager_modes['name_of_desired_mode'] in order to correctly load
+        :param list modes: Recommended to use datasetManager.modes['name_of_desired_mode'] in order to correctly load
         the dataset
         :return:
         """
@@ -540,7 +545,7 @@ class DatasetManager:
             idx_slicing.append(idx)
             self.mul_part_slices.append(idx_slicing)
 
-    def read_multiple_partitions(self):
+    def read_multiple_partitions(self) -> None:
         """
         Read data in a list of partitions.
 
@@ -558,7 +563,7 @@ class DatasetManager:
         self.current_partition_path['input'] = self.mul_part_list_path[0][self.fields['IN'][0]]
         self.dataset.current_sample = 0
 
-    def update_json(self, update_shapes=False, update_nb_samples=False, update_partitions_lists=False):
+    def update_json(self, update_shapes: bool = False, update_nb_samples: bool = False, update_partitions_lists: bool = False) -> None:
         """
         Update the json info file with the current Dataset repository information.
 
@@ -591,7 +596,7 @@ class DatasetManager:
         with open(self.dataset_dir + self.json_filename, 'w') as json_file:
             json_dump(self.json_dict, json_file, indent=3, cls=CustomJSONEncoder)
 
-    def empty_json_fields(self):
+    def empty_json_fields(self) -> bool:
         """
         Check if the json info file contains empty fields.
 
@@ -602,7 +607,7 @@ class DatasetManager:
                 return True
         return False
 
-    def save_data(self):
+    def save_data(self) -> None:
         """
         Close all open files
 
@@ -612,7 +617,7 @@ class DatasetManager:
             for field in self.current_partition_path.keys():
                 self.dataset.save(field, self.current_partition_path[field])
 
-    def set_mode(self, mode):
+    def set_mode(self, mode) -> None:
         """
         Set the DatasetManager working mode.
 
@@ -639,35 +644,35 @@ class DatasetManager:
                 print(f"[{self.name}] Change to {self.mode} mode, load last partition")
                 self.read_last_partitions()
 
-    def new_dataset(self):
+    def new_dataset(self) -> bool:
         return self.__new_dataset
 
-    def getNextBatch(self, batch_size):
+    def getNextBatch(self, batch_size: int) -> Dict[str, numpy.ndarray]:
         """
         :param int batch_size: Size of the batch
         :return: dict of format {'input': numpy.ndarray, 'output': numpy.ndarray} filled with a batch of data
         """
-        return self.getData(get_inputs=True, get_outputs=True, batch_size=batch_size, batched=True)
+        return self.get_data(get_inputs=True, get_outputs=True, batch_size=batch_size, batched=True)
 
-    def getNextSample(self, batched=True):
+    def getNextSample(self, batched: bool = True) -> Dict[str, numpy.ndarray]:
         """
         :return: dict of format {'input': numpy.ndarray, 'output': numpy.ndarray} filled with a sample of data
         """
-        return self.getData(get_inputs=True, get_outputs=True, batched=batched)
+        return self.get_data(get_inputs=True, get_outputs=True, batched=batched)
 
-    def getNextInput(self, batched=False):
+    def getNextInput(self, batched: bool = False) -> Dict[str, numpy.ndarray]:
         """
         :return: dict of format {'input': numpy.ndarray, 'output': numpy.ndarray} where only the input field is filled
         """
-        return self.getData(get_inputs=True, get_outputs=False, batched=batched)
+        return self.get_data(get_inputs=True, get_outputs=False, batched=batched)
 
-    def getNextOutput(self, batched=False):
+    def getNextOutput(self, batched: bool = False) -> Dict[str, numpy.ndarray]:
         """
         :return: dict of format {'input': numpy.ndarray, 'output': numpy.ndarray} where only the output field is filled
         """
-        return self.getData(get_inputs=False, get_outputs=True, batched=batched)
+        return self.get_data(get_inputs=False, get_outputs=True, batched=batched)
 
-    def close(self):
+    def close(self) -> None:
         """
         Launch the close procedure of the dataset manager
 
@@ -675,7 +680,7 @@ class DatasetManager:
         """
         self.save_data()
 
-    def __str__(self):
+    def __str__(self) -> str:
         """
         :return: A string containing valuable information about the DatasetManager
         """
