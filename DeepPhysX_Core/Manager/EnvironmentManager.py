@@ -31,8 +31,8 @@ class EnvironmentManager:
         self.session_dir: str = session_dir
         self.number_of_thread: int = environment_config.number_of_thread
         # Create single or multiple environments according to multiprocessing value
-        self.server = environment_config.create_server(environment_manager=self, batch_size=batch_size) if environment_config.as_tcpip_client else None
-        self.environment = environment_config.create_environment(environment_manager=self) if not environment_config.as_tcpip_client else None
+        self.server = environment_config.create_server(environment_manager=self, batch_size=batch_size) if environment_config.as_tcp_ip_client else None
+        self.environment = environment_config.create_environment(environment_manager=self) if not environment_config.as_tcp_ip_client else None
         self.batch_size: int = batch_size
         self.train: bool = train
 
