@@ -1,8 +1,9 @@
 from DeepPhysX_Core.Pipelines.BasePipeline import BasePipeline
 from DeepPhysX_Core.Manager.Manager import Manager
 
-from vedo import ProgressBar
-from sys import stdout
+from DeepPhysX_Core.Network.BaseNetworkConfig import BaseNetworkConfig
+from DeepPhysX_Core.Dataset.BaseDatasetConfig import BaseDatasetConfig
+from DeepPhysX_Core.Environment.BaseEnvironmentConfig import BaseEnvironmentConfig
 
 
 class BaseTrainer(BasePipeline):
@@ -31,7 +32,6 @@ class BaseTrainer(BasePipeline):
         :param int nb_batches: Number of batches
         :param int batch_size: Size of a batch
         """
-        self.name = self.__class__.__name__
 
         if environment_config is None and dataset_config.dataset_dir is None:
             print("BaseTrainer: You have to give me a dataset source (existing dataset directory or simulation to "
@@ -58,90 +58,71 @@ class BaseTrainer(BasePipeline):
         # Tell if data is recording while predicting (output is recorded only if input too)
         self.record_data = {'input': True, 'output': True}
 
-        self.training_progress_bar = ProgressBar(start=0, stop=self.nb_samples, c='orange', title="Training")
-        self.manager.saveInfoFile()
+        self.manager.save_info_file()
 
-        self.manager.saveInfoFile()
-
-    def execute(self):
+    def execute(self) -> None:
         """
         Main function of the training process \"execute\" call the functions associated with the learning process.
         Each of the called functions are already implemented so one can start a basic training.
         Each of the called function can also be rewritten via inheritance to provide more specific / complex training process.
-        
-        :return:
         """
-        self.trainBegin()
-        while self.epochCondition():
-            self.epochBegin()
-            while self.batchCondition():
-                self.batchBegin()
+        self.train_begin()
+        while self.epoch_condition():
+            self.epoch_begin()
+            while self.batch_condition():
+                self.batch_begin()
                 self.optimize()
-                self.batchCount()
-                self.batchEnd()
-            self.epochCount()
-            self.epochEnd()
-            self.saveNetwork()
-        self.trainEnd()
+                self.batch_count()
+                self.batch_end()
+            self.epoch_count()
+            self.epoch_end()
+            self.save_network()
+        self.train_end()
 
-    def optimize(self):
+    def optimize(self) -> None:
         """
         Pulls data from the manager and run a prediction and optimizer step.
-        
-        :return:
+
         """
-        self.manager.getData(self.id_epoch, self.batch_size)
-        prediction, self.loss_dict = self.manager.optimizeNetwork()
+        self.manager.get_data(self.id_epoch, self.batch_size)
+        prediction, self.loss_dict = self.manager.optimize_network()
         print(f"Current loss : {self.loss_dict['loss']}")
 
-    def saveNetwork(self):
+    def save_network(self) -> None:
         """
         Registers the network weights and biases in the corresponding directory (session_name/network or session_dir/network)
-        
-        :return:
         """
-        self.manager.saveNetwork()
+        self.manager.save_network()
 
-    def trainBegin(self):
+    def train_begin(self) -> None:
         """
         Called once at the very beginning of the training process.
         Allows the user to run some pre-computations.
-        
-        :return:
         """
         pass
 
-    def trainEnd(self):
+    def train_end(self) -> None:
         """
         Called once at the very end of the training process.
         Allows the user to run some post-computations.
-        
-        :return:
         """
-        stdout.write("\033[K")
-        self.training_progress_bar.print(counts=self.nb_samples)
         self.manager.close()
 
-    def epochBegin(self):
+    def epoch_begin(self) -> None:
         """
         Called one at the start of each epoch.
         Allows the user to run some pre-epoch computations.
-        
-        :return:
         """
         self.id_batch = 0
 
-    def epochEnd(self):
+    def epoch_end(self) -> None:
         """
         Called one at the end of each epoch.
         Allows the user to run some post-epoch computations.
-        
-        :return:
         """
-        self.manager.stats_manager.add_trainEpochLoss(self.loss_dict['loss'], self.id_epoch)
-        pass
+        self.manager.stats_manager.add_train_epoch_loss(self.loss_dict['loss'], self.id_epoch)
 
-    def epochCondition(self):
+    def epoch_condition(self) -> bool:
         """
         Condition that characterize the end of the training process
         
@@ -149,43 +130,32 @@ class BaseTrainer(BasePipeline):
         """
         return self.id_epoch < self.nb_epochs
 
-    def epochCount(self):
+    def epoch_count(self) -> None:
         """
         Allows user for custom update of epochs count
-        
-        :return:
         """
         self.id_epoch += 1
 
-    def batchBegin(self):
+    def batch_begin(self) -> None:
         """
         Called one at the start of each batch.
         Allows the user to run some pre-batch computations.
-        
-        :return:
         """
         print(f'Epoch n°{self.id_epoch + 1}/{self.nb_epochs} - Batch n°{self.id_batch + 1}/{self.nb_batches}')
-        pass
 
-    def batchEnd(self):
+    def batch_end(self) -> None:
         """
         Called one at the start of each batch.
         Allows the user to run some post-batch computations.
-        
-        :return:
         """
-        stdout.write("\033[K")
-        self.training_progress_bar.print(txt=f'Epoch n°{self.id_epoch + 1}/{self.nb_epochs} - ' +
-                                             f'Batch n°{self.id_batch + 1}/{self.nb_batches}',
-                                         counts=self.nb_batches * self.id_epoch + self.id_batch)
-        self.manager.stats_manager.add_trainBatchLoss(self.loss_dict['loss'],
+        self.manager.stats_manager.add_train_batch_loss(self.loss_dict['loss'],
                                                       self.id_epoch * self.nb_batches + self.id_batch)
         for key in self.loss_dict.keys():
             if key != 'loss':
-                self.manager.stats_manager.add_customScalar(tag=key, value=self.loss_dict[key],
+                self.manager.stats_manager.add_custom_scalar(tag=key, value=self.loss_dict[key],
                                                             count=self.id_epoch * self.nb_batches + self.id_batch)
 
-    def batchCondition(self):
+    def batch_condition(self) -> bool:
         """
         Condition that characterize the end of the epoch
         
@@ -193,7 +163,7 @@ class BaseTrainer(BasePipeline):
         """
         return self.id_batch < self.nb_batches
 
-    def batchCount(self):
+    def batch_count(self):
         """
         Allows user for custom update of batches count
         
@@ -201,13 +171,13 @@ class BaseTrainer(BasePipeline):
         """
         self.id_batch += 1
 
-    def __str__(self):
+    def __str__(self) -> str:
         """
         
         :return: str Contains training informations about the training process
         """
         description = "\n"
-        description += f"# {self.name}\n"
+        description += f"# {self.__class__.__name__}\n"
         description += f"    Session directory: {self.manager.session_dir}\n"
         description += f"    Number of epochs: {self.nb_epochs}\n"
         description += f"    Number of batches per epoch: {self.nb_batches}\n"

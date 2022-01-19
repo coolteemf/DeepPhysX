@@ -1,9 +1,13 @@
+from typing import Optional, Dict, Any
+import numpy
+
+
 class AbstractEnvironment:
 
     def __init__(self,
-                 instance_id=1,
-                 number_of_instances=1,
-                 as_tcpip_client=True):
+                 instance_id: int = 1,
+                 number_of_instances: int = 1,
+                 as_tcp_ip_client: bool = True):
         """
         AbstractEnvironment gathers the Environment API for TcpIpClient. Do not use AbstractEnvironment to implement
         your own Environment, use BaseEnvironment instead.
@@ -13,46 +17,116 @@ class AbstractEnvironment:
         :param bool as_tcpip_client: Environment is a TcpIpObject if True, is owned by an EnvironmentManager if False
         """
 
-        self.name = self.__class__.__name__ + f"n°{instance_id}"
+        self.name: str = self.__class__.__name__ + f"n°{instance_id}"
 
         if instance_id > number_of_instances:
             raise ValueError(f"[{self.name}] Instance ID ({instance_id}) is bigger than max instances "
                              f"({number_of_instances})")
-        self.instance_id = instance_id
-        self.number_of_instances = number_of_instances
-        self.as_tcpip_client = as_tcpip_client
+        self.instance_id: int = instance_id
+        self.number_of_instances: int = number_of_instances
+        self.as_tcp_ip_client: bool = as_tcp_ip_client
 
-        self.input, self.output = None, None
-        self.input_size, self.output_size = None, None
-        self.additional_inputs, self.additional_outputs = {}, {}
-        self.compute_essential_data = True
+        # Input and output to give to the network
+        self.input: numpy.ndarray = numpy.array([])
+        self.output: numpy.ndarray = numpy.array([])
+        # Variables to store samples from Dataset
+        self.sample_in: Optional[numpy.ndarray] = None
+        self.sample_out: Optional[numpy.ndarray] = None
+        self.additional_inputs: Dict[str, Any] = {}
+        self.additional_outputs: Dict[str, Any] = {}
+        self.compute_essential_data: bool = True
 
-    def create(self):
+    def create(self) -> None:
+        """
+        Create the Environment.
+        Must be implemented by user.
+
+        :return:
+        """
         raise NotImplementedError
 
-    def init(self):
+    def init(self) -> None:
+        """
+        Initialize the Environment.
+        Not mandatory.
+
+        :return:
+        """
+        pass
+
+    def close(self) -> None:
+        """
+        Close the Environment.
+        Not mandatory.
+
+        :return:
+        """
+        pass
+
+    def step(self) -> None:
+        """
+        Compute the number of steps in the Environment specified by simulations_per_step in EnvironmentConfig.
+        Must be implemented by user.
+
+        :return:
+        """
         raise NotImplementedError
 
-    def close(self):
+    def check_sample(self, check_input: bool = True, check_output: bool = True) -> bool:
+        """
+        Check if the current produced sample is usable for training.
+        Not mandatory.
+
+        :param bool check_input: If True, input tensors need to be checked
+        :param bool check_output: If True, output tensors need to be checked
+        :return: bool - Current data can be used or not
+        """
         raise NotImplementedError
 
-    def step(self):
+    def recv_parameters(self, param_dict: Dict[Any, Any]) -> None:
+        """
+        Called before create and init, receive simulation parameters from the server
+
+        :param param_dict: Dictionary of parameters
+        """
         raise NotImplementedError
 
-    def check_sample(self, check_input=True, check_output=True):
+    def send_visualization(self) -> None:
+        """
+        Define the visualization objects to send to the Visualizer.
+        Not mandatory.
+
+        :return:
+        """
         raise NotImplementedError
 
-    def recv_parameters(self, param_dict):
+    def send_parameters(self) -> None:
+        """
+        Create a dictionary of parameters to send to the manager.
+        Not mandatory.
+
+        :return:
+        """
         raise NotImplementedError
 
-    def send_visualization(self):
+    def apply_prediction(self, prediction: numpy.ndarray) -> None:
+        """
+        Apply network prediction in environment.
+        Not mandatory.
+
+        :param ndarray prediction: Prediction data
+        :return:
+        """
         raise NotImplementedError
 
-    def send_parameters(self):
-        raise NotImplementedError
+    def set_dataset_sample(self, sample_in: numpy.ndarray, sample_out: numpy.ndarray, additional_in: Dict[str, Dict[str, Any]] = {}, additional_out: Dict[str, Dict[str, Any]] = {}) -> None:
+        """
+        Set the sample received from Dataset.
 
-    def applyPrediction(self, prediction):
-        raise NotImplementedError
-
-    def setDatasetSample(self, sample_in, sample_out, additional_in=None, additional_out=None):
+        :param ndarray sample_in: Input sample
+        :param ndarray sample_out: Output sample
+        :param dict additional_in: Contains each additional input data samples
+        :param dict additional_out: Contains each additional output data samples
+        :return:
+        """
         raise NotImplementedError

@@ -1,13 +1,13 @@
 import numpy
 from vedo import utils, Mesh, Glyph, Marker, Points
 import numpy as np
-from typing import List, Dict, Any, Callable, TypeAlias, ParamSpec, Union
+from typing import Union, Optional, Dict, Any, Callable, TypeVar, List
 
-ObjectDescription: TypeAlias = Dict[str, Any]
-VisualInstance: TypeAlias = Union[Mesh, Glyph, Marker, Points]
-ParseParameters = ParamSpec('ParseParameters')
-UpdateParameters = ParamSpec('UpdateParameters')
+VisualInstance = Union[Mesh, Glyph, Marker, Points]
+ObjectDescription = Dict[str, Union[Any, Dict[str, Any]]]
 
+ParseParameters = TypeVar("ParseParameters", Callable[..., Any], Any)  # ParamSpec('ParseParameters')
+UpdateParameters = TypeVar("UpdateParameters", Callable[..., Any], Any)  # ParamSpec('UpdateParameters')
 
 class parse_wrapper:
     """
@@ -20,7 +20,7 @@ class parse_wrapper:
 
             This class only implements __call__
     """
-    def __call__(self, specialized_parse: Callable[[ParseParameters], None]) -> Callable[[ParseParameters.args, ParseParameters.kwargs], ObjectDescription]:
+    def __call__(self, specialized_parse: Callable[[ParseParameters], None]) -> Callable[[Any, Any], ObjectDescription]:
         """
         Function That wraps the parse call.
         Parses all the attributes shared between subclasses of BaseObjectFactory
@@ -29,7 +29,7 @@ class parse_wrapper:
 
         :return: general_update: Callable[[ParseParameters.args, ParseParameters.kwargs], ObjectDescription] The general parse function
         """
-        def general_parse(*args: ParseParameters.args, **kwargs: ParseParameters.kwargs) -> ObjectDescription:
+        def general_parse(*args: Any, **kwargs: Any) -> ObjectDescription:
             """
             Run the general parse procedure and also launch the one defined in the calling subclass of BaseObjectFactory
 
@@ -71,7 +71,7 @@ class update_wrapper:
 
             This class only implements __call__
     """
-    def __call__(self, specialized_update: Callable[[UpdateParameters], None]) -> Callable[[UpdateParameters.args, UpdateParameters.kwargs], VisualInstance]:
+    def __call__(self, specialized_update: Callable[[UpdateParameters], None]) -> Callable[[Any, Any], VisualInstance]:
         """
         Function That wraps the update_instance call.
         Updates all of the attributes shared between subclasses of BaseObjectFactory
@@ -80,7 +80,7 @@ class update_wrapper:
 
         :return: general_update: Callable[[UpdateParameters.args, UpdateParameters.kwargs], Any] The general update function
         """
-        def general_update(*args: UpdateParameters.args, **kwargs: UpdateParameters.kwargs) -> VisualInstance:
+        def general_update(*args: Any, **kwargs: Any) -> VisualInstance:
             if len(args) + len(kwargs) != 2:  # self, instance
                 return
             # First object is always self, it is passed implicitly
@@ -90,17 +90,21 @@ class update_wrapper:
                 instance = kwargs["instance"]
             else:
                 instance = args[-1]
+
             if "colormap" in object_factory.dirty_fields:
                 instance.c(object_factory.parsed_data["colormap"])
                 object_factory.dirty_fields.remove("colormap")
+
             if "scalar_field" in object_factory.dirty_fields:
                 instance.addPointArray(input_array=object_factory.parsed_data["scalar_field"],
                                        name=object_factory.parsed_data["scalar_field_name"])
                 object_factory.dirty_fields.remove("scalar_field")
                 object_factory.dirty_fields.remove("scalar_field_name")
+
             if "alpha" in object_factory.dirty_fields:
                 instance.alpha(object_factory.parsed_data["alpha"])
                 object_factory.dirty_fields.remove("alpha")
+
             if "c" in object_factory.dirty_fields:
                 instance.c(object_factory.parsed_data["c"])
                 object_factory.dirty_fields.remove("c")
@@ -156,7 +160,7 @@ class BaseObjectFactory:
         :param new_data: Dict[str, Any] Dictionary containing the data to update
         :return: A Dict[str, Any] that represent the updated parsed_data member
         """
-        self.dirty_fields = [*new_data.keys()]
+        #self.dirty_fields = [*new_data.keys()]
         return self.parse(new_data)
 
     def get_data(self) -> ObjectDescription:
@@ -176,7 +180,7 @@ class BaseObjectFactory:
         raise NotImplementedError
 
     @staticmethod
-    def parse_position(data_dict: ObjectDescription, wrap: bool = True) -> numpy.ndarray:
+    def parse_position(data_dict: ObjectDescription, wrap: bool = True) -> Optional[numpy.ndarray]:
         """
         Helper function (static method) that parses the positions field
 
@@ -187,13 +191,15 @@ class BaseObjectFactory:
         :return: A numpy.ndarray that contains the parsed position and an additional dimension if wrap is True
         """
         # Look for position.s and cell.s to make inputobj
-        pos = None
+        pos: Optional[numpy.ndarray, List[numpy.ndarray]] = None
 
         # Either positions and cells have been passed as independant array or are inexistant
         if 'position' in data_dict:
-            pos = data_dict['position']
-        elif 'positions' in data_dict:
-            pos = data_dict['positions']
+            data_dict["positions"] = data_dict['position']
+            del data_dict["position"]
+        if 'positions' not in data_dict:
+            return None
+        pos = data_dict['positions']
 
         if utils.isSequence(pos):  # passing point coords
             if not utils.isSequence(pos[0]) and wrap:
@@ -221,10 +227,12 @@ class BaseObjectFactory:
         :param instance: VisualInstance Vedo object to update with its current parsed_data values
         :return: None
         """
-        def test_update_function(field_name: str):
-            if field_name in self.dirty_fields and field_name in self.parsed_data:
-                instance.points(self.parsed_data[field_name])
-                self.dirty_fields.remove(field_name)
-        test_update_function('position')
-        test_update_function('positions')
+
+        if 'position' in self.dirty_fields and 'position' in self.parsed_data:
+            instance.points(self.parsed_data['position'])
+            self.dirty_fields.remove('position')
+
+        if 'positions' in self.dirty_fields and 'positions' in self.parsed_data:
+            instance.points(self.parsed_data['positions'])
+            self.dirty_fields.remove('positions')
 

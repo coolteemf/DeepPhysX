@@ -1,5 +1,6 @@
 from os.path import isdir
 from dataclasses import dataclass
+from typing import Any
 
 from DeepPhysX_Core.Dataset.BaseDataset import BaseDataset
 
@@ -12,20 +13,20 @@ class BaseDatasetConfig:
 
     def __init__(self,
                  dataset_class=BaseDataset,
-                 dataset_dir=None,
-                 partition_size=1.,
-                 shuffle_dataset=True):
+                 dataset_dir: str = None,
+                 partition_size: float = 1.,
+                 shuffle_dataset: bool = True):
         """
         BaseDatasetConfig is a configuration class to parameterize and create a BaseDataset for the DatasetManager.
 
         :param dataset_class: BaseDataset class from which an instance will be created
-        :type dataset_class: type[BaseDataset]
+        :type dataset_class: BaseDataset
         :param str dataset_dir: Name of an existing dataset repository
         :param float partition_size: Maximum size in Gb of a single dataset partition
         :param bool shuffle_dataset: Specify if existing dataset should be shuffled
         """
 
-        self.name = self.__class__.__name__
+        self.name: str = self.__class__.__name__
 
         # Check dataset_dir type and existence
         if dataset_dir is not None:
@@ -43,14 +44,14 @@ class BaseDatasetConfig:
             raise TypeError(f"[{self.name}] Wrong shuffle_dataset type: bool required, get {type(shuffle_dataset)}")
 
         # BaseDataset parameterization
-        self.dataset_class = dataset_class
-        self.dataset_config = self.BaseDatasetProperties(max_size=int(partition_size * 1e9))
+        self.dataset_class: BaseDataset = dataset_class
+        self.dataset_config: Any = self.BaseDatasetProperties(max_size=int(partition_size * 1e9))
 
         # DatasetManager parameterization
-        self.dataset_dir = dataset_dir
-        self.shuffle_dataset = shuffle_dataset
+        self.dataset_dir: str = dataset_dir
+        self.shuffle_dataset: bool = shuffle_dataset
 
-    def createDataset(self):
+    def create_dataset(self) -> BaseDataset:
         """
         Create an instance of dataset_class with given parameters.
 
@@ -65,7 +66,7 @@ class BaseDatasetConfig:
             raise TypeError(f"[{self.name}] Wrong dataset_class type: BaseDataset required, get {self.dataset_class}")
         return dataset
 
-    def __str__(self):
+    def __str__(self) -> str:
         """
         :return: String containing information about the BaseDatasetConfig object
         """

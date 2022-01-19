@@ -1,26 +1,32 @@
+from typing import Callable, Any, Union, Tuple
+import numpy
+import torch
+
+DataContainer = Union[numpy.ndarray, torch.Tensor]
+
+
 class DataTransformation:
 
     def __init__(self, network_config):
         """
         DataTransformation is dedicated to data operations before and after network predictions.
 
-        :param network_config: BaseNetworkConfig class
+        :param BaseNetworkConfig network_config: Specialisation containing the parameters of the network manager
         """
-        self.name = self.__class__.__name__
 
-        self.network_config = network_config
-        self.data_type = any
+        self.network_config: Any = network_config  # BaseNetworkConfig
 
     @staticmethod
-    def check_type(func):
+    def check_type(func: Callable[[Any, Any], Any]):
         def inner(self, *args):
             for data in args:
                 if data is not None and type(data) != self.data_type:
                     raise TypeError(f"[{self.name}] Wrong data type: {self.data_type} required, get {type(data)}")
             return func(self, *args)
+
         return inner
 
-    def transformBeforePrediction(self, data_in):
+    def transform_before_prediction(self, data_in: DataContainer) -> DataContainer:
         """
         Apply data operations before network's prediction.
 
@@ -29,7 +35,7 @@ class DataTransformation:
         """
         return data_in
 
-    def transformBeforeLoss(self, data_out, data_gt=None):
+    def transform_before_loss(self, data_out: DataContainer, data_gt: DataContainer = None) -> Tuple[DataContainer, DataContainer]:
         """
         Apply data operations between network's prediction and loss computation.
 
@@ -39,7 +45,7 @@ class DataTransformation:
         """
         return data_out, data_gt
 
-    def transformBeforeApply(self, data_out):
+    def transform_before_apply(self, data_out: DataContainer) -> DataContainer:
         """
         Apply data operations between loss computation and prediction apply in environment.
 
@@ -48,12 +54,11 @@ class DataTransformation:
         """
         return data_out
 
-    def __str__(self):
+    def __str__(self) -> str:
         description = "\n"
-        description += f"  {self.name}\n"
-        description += f"    Data type: {self.data_type}\n"
+        description += f"  {self.__class__.__name__}\n"
+        description += f"    Data type: {DataContainer.__repr__()}\n"
         description += f"    Transformation before prediction: Identity\n"
         description += f"    Transformation before loss: Identity\n"
         description += f"    Transformation before apply: Identity\n"
         return description
-

@@ -1,21 +1,24 @@
 from os import listdir
 from os.path import join as osPathJoin
 from os.path import isdir, isfile
+from typing import Any, Dict, Tuple, Optional
+
+import numpy
 from numpy import copy, array
 
 from DeepPhysX_Core.Network.BaseNetworkConfig import BaseNetworkConfig
-from DeepPhysX_Core.Utils.pathUtils import copyDir, createDir, getFirstCaller
+from DeepPhysX_Core.Utils.pathUtils import copy_dir, create_dir, get_first_caller
 
 
 class NetworkManager:
 
     def __init__(self,
-                 network_config=None,
+                 network_config: BaseNetworkConfig = None,
                  manager=None,
-                 session_name='default',
-                 session_dir=None,
-                 new_session=True,
-                 train=True):
+                 session_name: str = 'default',
+                 session_dir: str = None,
+                 new_session: bool = True,
+                 train: bool = True):
         """
         Deals with all the interactions with the neural network. Predictions, saves, initialisation, loading,
         back-propagation, etc...
@@ -28,7 +31,7 @@ class NetworkManager:
         :param bool train: If True prediction will cause tensors gradient creation
         """
 
-        self.name = self.__class__.__name__
+        self.name: str = self.__class__.__name__
 
         # Check network_config type
         if not isinstance(network_config, BaseNetworkConfig):
@@ -51,67 +54,67 @@ class NetworkManager:
             raise TypeError(f"[{self.name}] Wrong 'train' type: bool required, get {type(train)}")
 
         # Storage management
-        self.session_dir = session_dir if session_dir is not None else osPathJoin(getFirstCaller(), session_name)
-        self.new_session = new_session
-        self.network_dir = None
-        self.network_template_name = session_name + '_network_{}'
+        self.session_dir: str = session_dir if session_dir is not None else osPathJoin(get_first_caller(), session_name)
+        self.new_session: bool = new_session
+        self.network_dir: Optional[str] = None
+        self.network_template_name: str = session_name + '_network_{}'
 
         # Network management
-        self.manager = manager
+        self.manager: Any = manager
         if train and not network_config.training_stuff:
             raise ValueError(f"[{self.name}] Training requires a loss and an optimizer in your NetworkConfig")
-        self.training = train
-        self.save_each_epoch = network_config.save_each_epoch
-        self.saved_counter = 0
+        self.training: bool = train
+        self.save_each_epoch: bool = network_config.save_each_epoch
+        self.saved_counter: int = 0
 
         # Init network objects: Network, Optimization, DataTransformation
-        self.network = None
-        self.optimization = None
-        self.data_transformation = None
-        self.network_config = network_config
-        self.setNetwork()
+        self.network: Any = None
+        self.optimization: Any = None
+        self.data_transformation: Any = None
+        self.network_config: BaseNetworkConfig = network_config
+        self.set_network()
 
-    def getManager(self):
+    def get_manager(self) -> Any:
         """
         :return: Manager that handles the NetworkManager
         """
         return self.manager
 
-    def setNetwork(self):
+    def set_network(self) -> None:
         """
         Set the network to the corresponding weight from a given file
 
         :return:
         """
         # Init network
-        self.network = self.network_config.createNetwork()
-        self.network.setDevice()
+        self.network = self.network_config.create_network()
+        self.network.set_device()
         # Init optimization
-        self.optimization = self.network_config.createOptimization()
+        self.optimization = self.network_config.create_optimization()
         self.optimization.manager = self
         if self.optimization.loss_class is not None:
-            self.optimization.setLoss()
+            self.optimization.set_loss()
 
         # Init DataTransformation
-        self.data_transformation = self.network_config.createDataTransformation()
+        self.data_transformation = self.network_config.create_data_transformation()
 
         # Training
         if self.training:
             # Configure as training
-            self.network.setTrain()
-            self.optimization.setOptimizer(self.network)
+            self.network.set_train()
+            self.optimization.set_optimizer(self.network)
             # Setting network directory
             if self.new_session and self.network_config.network_dir is not None and isdir(self.network_config.network_dir):
                 self.network_dir = self.network_config.network_dir
-                self.network_dir = copyDir(self.network_dir, self.session_dir, dest_dir='network')
+                self.network_dir = copy_dir(self.network_dir, self.session_dir, dest_dir='network')
             else:
                 self.network_dir = osPathJoin(self.session_dir, 'network/')
-                self.network_dir = createDir(self.network_dir, dir_name='network')
+                self.network_dir = create_dir(self.network_dir, dir_name='network')
 
         # Prediction
         else:
             # Configure as prediction
-            self.network.setEval()
+            self.network.set_eval()
             # Need an existing network
             self.network_dir = osPathJoin(self.session_dir, 'network/')
             # Get eventual epoch saved networks
@@ -136,9 +139,9 @@ class NetworkManager:
                 print("The selected network doesn't exist (index is too big), loading the most trained by default.")
                 which_network = -1
             print("NetworkManager: Loading network from {}.".format(networks_list[which_network]))
-            self.network.loadParameters(networks_list[which_network])
+            self.network.load_parameters(networks_list[which_network])
 
-    def computePredictionAndLoss(self, batch, optimize):
+    def compute_prediction_and_loss(self, batch: Dict[str, numpy.ndarray], optimize: bool) -> Tuple[numpy.ndarray, Dict[str, float]]:
         """
         Make a prediction with the data passe as argument, optimize or not the network
 
@@ -149,26 +152,26 @@ class NetworkManager:
         :return:
         """
         # Getting data from the data manager
-        data_in = self.network.transformFromNumpy(batch['input'], grad=optimize)
-        data_gt = self.network.transformFromNumpy(batch['output'], grad=optimize)
-        loss_data = self.network.transformFromNumpy(batch['loss'], grad=False) if 'loss' in batch.keys() else None
+        data_in = self.network.transform_from_numpy(batch['input'], grad=optimize)
+        data_gt = self.network.transform_from_numpy(batch['output'], grad=optimize)
+        loss_data = self.network.transform_from_numpy(batch['loss'], grad=False) if 'loss' in batch.keys() else None
 
         # Compute prediction
-        data_in = self.data_transformation.transformBeforePrediction(data_in)
+        data_in = self.data_transformation.transform_before_prediction(data_in)
         data_out = self.network.predict(data_in)
 
         # Compute loss
-        data_out, data_gt = self.data_transformation.transformBeforeLoss(data_out, data_gt)
-        loss_dict = self.optimization.computeLoss(data_out.reshape(data_gt.shape), data_gt, loss_data)
+        data_out, data_gt = self.data_transformation.transform_before_loss(data_out, data_gt)
+        loss_dict = self.optimization.compute_loss(data_out.reshape(data_gt.shape), data_gt, loss_data)
         # Optimizing network if training
         if optimize:
             self.optimization.optimize()
         # Transform prediction to be compatible with environment
-        data_out = self.data_transformation.transformBeforeApply(data_out)
-        prediction = self.network.transformToNumpy(data_out)
+        data_out = self.data_transformation.transform_before_apply(data_out)
+        prediction = self.network.transform_to_numpy(data_out)
         return prediction, loss_dict
 
-    def computeOnlinePrediction(self, network_input):
+    def compute_online_prediction(self, network_input: numpy.ndarray) -> numpy.ndarray:
         """
         Make a prediction with the data passe as argument, optimize or not the network
 
@@ -177,18 +180,18 @@ class NetworkManager:
         :return:
         """
         # Getting data from the data manager
-        data_in = self.network.transformFromNumpy(copy(network_input), grad=False)
+        data_in = self.network.transform_from_numpy(copy(network_input), grad=False)
 
         # Compute prediction
-        data_in = self.data_transformation.transformBeforePrediction(data_in)
+        data_in = self.data_transformation.transform_before_prediction(data_in)
         pred = self.network.predict(data_in)
-        pred, _ = self.data_transformation.transformBeforeLoss(pred)
-        pred = self.data_transformation.transformBeforeApply(pred)
-        pred = self.network.transformToNumpy(pred)
+        pred, _ = self.data_transformation.transform_before_loss(pred)
+        pred = self.data_transformation.transform_before_apply(pred)
+        pred = self.network.transform_to_numpy(pred)
         pred = array(pred, dtype=float)
         return pred.reshape(-1)
 
-    def saveNetwork(self, last_save=False):
+    def save_network(self, last_save: bool = False) -> None:
         """
         Save the network with the corresponding suffix so they do not erase the last save.
 
@@ -199,34 +202,34 @@ class NetworkManager:
         if last_save:
             path = self.network_dir + "network"
             print(f"Saving network at {path}.")
-            self.network.saveParameters(path)
+            self.network.save_parameters(path)
         elif self.save_each_epoch:
             path = self.network_dir + self.network_template_name.format(self.saved_counter)
             self.saved_counter += 1
             print(f"Saving network at {path}.")
-            self.network.saveParameters(path)
+            self.network.save_parameters(path)
 
-    def close(self):
+    def close(self) -> None:
         """
         Closing procedure.
         :return:
         """
         if self.training:
-            self.saveNetwork(last_save=True)
+            self.save_network(last_save=True)
         del self.network
         del self.network_config
 
-    def __str__(self):
+    def __str__(self) -> str:
         """
         :return: String containing information about the BaseNetwork object
         """
         description = "\n"
-        description += f"# {self.name}\n"
+        description += f"# {self.__class__.__name__}\n"
         description += f"    Network Directory: {self.network_dir}\n"
         description += f"    Save each Epoch: {self.save_each_epoch}\n"
-        description += f"    Managed objects: Network: {self.network.name}\n"
-        description += f"                     Optimization: {self.optimization.name}\n"
-        description += f"                     Data Transformation: {self.data_transformation.name}\n"
+        description += f"    Managed objects: Network: {self.network.__class__.__name__}\n"
+        description += f"                     Optimization: {self.optimization.__class__.__name__}\n"
+        description += f"                     Data Transformation: {self.data_transformation.__class__.__name__}\n"
         description += str(self.network)
         description += str(self.optimization)
         description += str(self.data_transformation)
