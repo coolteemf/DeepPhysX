@@ -1,4 +1,8 @@
 from asyncio import get_event_loop, run, gather
+from socket import socket
+from typing import Any, Dict, List, Optional, Tuple
+
+import numpy
 import numpy as np
 from queue import SimpleQueue
 
@@ -8,12 +12,12 @@ from DeepPhysX_Core.AsyncSocket.TcpIpObject import TcpIpObject
 class TcpIpServer(TcpIpObject):
 
     def __init__(self,
-                 ip_address='localhost',
-                 port=10000,
-                 nb_client=5,
-                 max_client_count=10,
-                 batch_size=5,
-                 manager=None):
+                 ip_address: str = 'localhost',
+                 port: int = 10000,
+                 nb_client: int = 5,
+                 max_client_count: int = 10,
+                 batch_size: int = 5,
+                 manager: Any = None):
         """
         TcpIpServer is used to communicate with clients associated with Environment to produce batches for the
         EnvironmentManager.
@@ -37,21 +41,21 @@ class TcpIpServer(TcpIpObject):
         self.sock.setblocking(False)
 
         # Expect a defined number of clients
-        self.clients = []
-        self.nb_client = min(nb_client, max_client_count)
+        self.clients: List[socket] = []
+        self.nb_client: int = min(nb_client, max_client_count)
 
         # Init data to communicate with EnvironmentManager and Clients
-        self.batch_size = batch_size
-        self.data_fifo = SimpleQueue()
-        self.data_dict = {}
-        self.sample_to_client_id = []
-        self.batch_from_dataset = None
-        self.first_time = True
+        self.batch_size: int = batch_size
+        self.data_fifo: SimpleQueue = SimpleQueue()
+        self.data_dict: Dict[Any, Any] = {}
+        self.sample_to_client_id: List[int] = []
+        self.batch_from_dataset: Optional[Dict[str,numpy.ndarray]] = None
+        self.first_time: bool = True
 
         # Reference to EnvironmentManager
-        self.environment_manager = manager
+        self.environment_manager: Any = manager
 
-    def connect(self):
+    def connect(self) -> None:
         """
         Run __connect method with asyncio.
 
@@ -61,7 +65,7 @@ class TcpIpServer(TcpIpObject):
         print(f"[{self.name}] Waiting for clients...")
         run(self.__connect())
 
-    async def __connect(self):
+    async def __connect(self) -> None:
         """
         Accept connections from clients.
 
@@ -76,7 +80,7 @@ class TcpIpServer(TcpIpObject):
             print(f"[{self.name}] Client n°{client_id} connected: {client}")
             self.clients.append([client_id, client])
 
-    def initialize(self, param_dict):
+    def initialize(self, param_dict: Dict[Any, Any]) -> None:
         """
         Run __initialize method with asyncio.
 
@@ -87,7 +91,7 @@ class TcpIpServer(TcpIpObject):
         print(f"[{self.name}] Initializing clients...")
         run(self.__initialize(param_dict))
 
-    async def __initialize(self, param_dict):
+    async def __initialize(self, param_dict: Dict[Any, Any]) -> None:
         """
         Send parameters to the clients to create their environments, receive parameters from clients in exchange.
 
@@ -106,7 +110,7 @@ class TcpIpServer(TcpIpObject):
             await self.listen_while_not_done(loop=loop, sender=client, data_dict=self.data_dict, client_id=client_id)
             print(f"[{self.name}] Client n°{client_id} initialisation done")
 
-    def getBatch(self, get_inputs=True, get_outputs=True, animate=True):
+    def getBatch(self, get_inputs: bool = True, get_outputs: bool = True, animate: bool = True) -> Tuple[List[numpy.ndarray], Dict[Any, Any]]:
         """
         Build a batch from clients samples.
 
@@ -149,7 +153,7 @@ class TcpIpServer(TcpIpObject):
         self.data_dict['dataset_out'] = data_sorter['dataset_out']
         return [data_sorter['input'], data_sorter['output']], self.data_dict
 
-    async def __request_data_from_client(self, get_inputs=True, get_outputs=True, animate=True):
+    async def __request_data_from_client(self, get_inputs: bool = True, get_outputs: bool = True, animate: bool = True) -> None:
         """
         Trigger a communication protocol for each client. Wait for all clients before to launch another communication
         protocol while the batch is not full.
@@ -169,7 +173,7 @@ class TcpIpServer(TcpIpObject):
                            for client_id, client in self.clients])
             client_launched += len(self.clients)
 
-    async def __communicate(self, client=None, client_id=None, get_inputs=True, get_outputs=True, animate=True):
+    async def __communicate(self, client: socket = None, client_id: int = None, get_inputs: bool = True, get_outputs: bool = True, animate: bool = True):
         """
         Communication protocol with a client. It goes through different steps:
         1) Eventually send samples to Client
@@ -257,7 +261,7 @@ class TcpIpServer(TcpIpObject):
         # Add data to the Queue
         self.data_fifo.put(data)
 
-    def set_dataset_batch(self, batch):
+    def set_dataset_batch(self, batch: numpy.ndarray) -> None:
         """
         Receive a batch of data from the Dataset. Samples will be dispatched between clients.
 
@@ -272,7 +276,7 @@ class TcpIpServer(TcpIpObject):
         # Define batch from dataset
         self.batch_from_dataset = batch.copy()
 
-    def close(self):
+    def close(self) -> None:
         """
         Run __close method with asyncio
 
@@ -282,7 +286,7 @@ class TcpIpServer(TcpIpObject):
         print(f"[{self.name}] Closing clients...")
         run(self.__close())
 
-    async def __close(self):
+    async def __close(self) -> None:
         """
         Run server shutdown protocol.
 
@@ -294,7 +298,7 @@ class TcpIpServer(TcpIpObject):
         # Close socket
         self.sock.close()
 
-    async def __shutdown(self, client=None, idx=None):
+    async def __shutdown(self, client: socket, idx: int) -> None:
         """
         Send exit command to all clients
 
@@ -313,20 +317,9 @@ class TcpIpServer(TcpIpObject):
         if data != b'exit':
             raise ValueError(f"Client {idx} was supposed to exit.")
 
-    async def update_visualizer(self, visualization_data, client_id):
+    async def action_on_prediction(self, data: numpy.ndarray, client_id: int, sender: socket, loop: Any) -> None:
         """
-        Update Visualizer with visualization data.
-
-        :param dict visualization_data: Dictionary containing visualization data.
-        :param int client_id: ID of the TcpIpClient
-        :return:
-        """
-
-        self.environment_manager.update_visualizer(visualization_data, client_id)
-
-    async def action_on_prediction(self, data, client_id, loop=None, sender=None):
-        """
-        Define actions to take on a 'prediction' command.
+        Action to run when receiving the 'prediction' command
 
         :param dict data: Dict storing data
         :param int client_id: ID of the TcpIpClient
@@ -334,7 +327,6 @@ class TcpIpServer(TcpIpObject):
         :param sender: TcpIpObject sender
         :return:
         """
-
         # Receive network input
         label, network_input = await self.receive_labeled_data(loop=loop, sender=sender)
 
@@ -353,9 +345,9 @@ class TcpIpServer(TcpIpObject):
         await self.send_labeled_data(data_to_send=prediction, label="prediction", receiver=sender,
                                      send_read_command=False)
 
-    async def action_on_visualisation(self, data, client_id, sender, loop):
+    async def action_on_visualisation(self, data: numpy.ndarray, client_id: int, sender: socket, loop: Any) -> None:
         """
-        Define actions to take on a 'visualization' command.
+        Action to run when receiving the 'visualisation' command
 
         :param dict data: Dict storing data
         :param int client_id: ID of the TcpIpClient
