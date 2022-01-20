@@ -6,7 +6,6 @@ from dataclasses import dataclass
 
 
 class TorchNetworkConfig(BaseNetworkConfig):
-
     @dataclass
     class TorchNetworkProperties(BaseNetworkConfig.BaseNetworkProperties):
         pass
@@ -16,18 +15,17 @@ class TorchNetworkConfig(BaseNetworkConfig):
         pass
 
     def __init__(self,
-                 network_class=TorchNetwork,
-                 optimization_class=TorchOptimization,
-                 data_transformation_class=DataTransformation,
-                 network_dir=None,
-                 network_name='TorchNetwork',
-                 network_type='TorchNetwork',
-                 which_network=0,
-                 save_each_epoch=False,
-                 loss=None,
-                 lr=None,
-                 optimizer=None):
-
+                 network_class: TorchNetwork = TorchNetwork,
+                 optimization_class: TorchOptimization = TorchOptimization,
+                 data_transformation_class: DataTransformation = DataTransformation,
+                 network_dir: str = None,
+                 network_name: str = 'TorchNetwork',
+                 network_type: str = 'TorchNetwork',
+                 which_network: int = 0,
+                 save_each_epoch: bool = False,
+                 loss: Any = None,
+                 lr: Optional[float] = None,
+                 optimizer: Any = None):
         BaseNetworkConfig.__init__(self,
                                    network_class=network_class,
                                    optimization_class=optimization_class,
@@ -41,5 +39,5 @@ class TorchNetworkConfig(BaseNetworkConfig):
                                    lr=lr,
                                    optimizer=optimizer)
 
-        self.network_config = self.TorchNetworkProperties(network_name=network_name, network_type=network_type)
-        self.optimization_config = self.TorchOptimizationProperties(loss=loss, lr=lr, optimizer=optimizer)
+        self.network_config: Any = self.TorchNetworkProperties(network_name=network_name, network_type=network_type)
+        self.optimization_config: Any = self.TorchOptimizationProperties(loss=loss, lr=lr, optimizer=optimizer)

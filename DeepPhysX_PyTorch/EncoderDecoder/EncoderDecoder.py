@@ -1,16 +1,18 @@
+from typing import Any
+
 from torch.nn import Sequential
 
 
 class EncoderDecoder:
 
     def __init__(self,
-                 layers=[],
-                 nb_encoding_layers=0,
-                 nb_decoding_layers=0):
+                 layers: Any = None,
+                 nb_encoding_layers: int = 0,
+                 nb_decoding_layers: int = 0):
 
         self.layers = layers
-        self.nb_encoding_layers = nb_encoding_layers
-        self.nb_decoding_layers = nb_decoding_layers if nb_decoding_layers > 0 else nb_encoding_layers
+        self.nb_encoding_layers: int = nb_encoding_layers
+        self.nb_decoding_layers: int = nb_decoding_layers if nb_decoding_layers > 0 else nb_encoding_layers
 
         # Rectangle network (Each layer of the encoder and decoder has the same amount of neurones)
         if len(self.layers) == 1:
@@ -32,11 +34,11 @@ class EncoderDecoder:
         else:
             raise ValueError(f"[EncoderDecoder] Layers count {len(self.layers)} does not match any known pattern.")
 
-    def setupEncoder(self):
+    def setupEncoder(self) -> Sequential:
         return Sequential(*self.encoder)
 
-    def setupDecoder(self):
+    def setupDecoder(self) -> Sequential:
         return Sequential(*self.decoder)
 
-    def executeSequential(self):
-        return
+    def executeSequential(self) -> Sequential:
+        return Sequential(*[*self.encoder, *self.decoder])
