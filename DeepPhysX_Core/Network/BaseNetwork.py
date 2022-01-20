@@ -17,7 +17,7 @@ class BaseNetwork:
         self.config = config
 
     def predict(self, input_data: DataContainer) -> DataContainer:
-        """Call forward"""
+        """Calls forward"""
         return self.forward(input_data)
 
     def forward(self, input_data: DataContainer) -> DataContainer:
@@ -48,7 +48,7 @@ class BaseNetwork:
         """Saves the network parameter to the path location"""
         raise NotImplementedError
 
-    def nb_parameters(self) -> None:
+    def nb_parameters(self) -> int:
         """Return the number of parameters of the network"""
         raise NotImplementedError
 

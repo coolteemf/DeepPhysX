@@ -1,4 +1,4 @@
-from typing import Callable, Any, Union, Tuple
+from typing import Callable, Any, Optional, Union, Tuple
 import numpy
 import torch
 
@@ -35,7 +35,7 @@ class DataTransformation:
         """
         return data_in
 
-    def transform_before_loss(self, data_out: DataContainer, data_gt: DataContainer = None) -> Tuple[DataContainer, DataContainer]:
+    def transform_before_loss(self, data_out: DataContainer, data_gt: DataContainer = None) -> Tuple[Any, Optional[Any]]:
         """
         Apply data operations between network's prediction and loss computation.
 

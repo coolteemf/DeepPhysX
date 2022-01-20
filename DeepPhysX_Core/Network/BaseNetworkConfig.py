@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Any, Union, Callable
+from typing import Any, Optional, Union, Callable
 import numpy
 import torch
 from os.path import isdir
@@ -24,14 +24,14 @@ class BaseNetworkConfig:
                  network_class: BaseNetwork,
                  optimization_class: BaseOptimization,
                  data_transformation_class: DataTransformation,
-                 network_dir=None,
-                 network_name='Network',
-                 network_type='BaseNetwork',
-                 which_network=0,
-                 save_each_epoch=False,
-                 loss=None,
-                 lr=None,
-                 optimizer=None):
+                 network_dir: str = None,
+                 network_name: str = 'Network',
+                 network_type: str = 'BaseNetwork',
+                 which_network: int = 0,
+                 save_each_epoch: bool = False,
+                 loss: Any = None,
+                 lr: Optional[float] = None,
+                 optimizer: Any = None):
         """
         BaseNetworkConfig is a configuration class to parameterize and create BaseNetwork, BaseOptimization and
         DataTransformation for the NetworkManager.
@@ -56,38 +56,43 @@ class BaseNetworkConfig:
         # Check network_dir type and existence
         if network_dir is not None:
             if type(network_dir) != str:
-                raise TypeError(f"[{self.__class__.__name__}] Wrong 'network_dir' type: str required, get{type(network_dir)}")
+                raise TypeError(
+                    f"[{self.__class__.__name__}] Wrong 'network_dir' type: str required, get{type(network_dir)}")
             if not isdir(network_dir):
                 raise ValueError(f"[{self.__class__.__name__}] Given 'network_dir' does not exists: {network_dir}")
         # Check network_name type
         if type(network_name) != str:
-            raise TypeError(f"[{self.__class__.__name__}] Wrong 'network_name' type: str required, get {type(network_name)}")
+            raise TypeError(
+                f"[{self.__class__.__name__}] Wrong 'network_name' type: str required, get {type(network_name)}")
         # Check network_tpe type
         if type(network_type) != str:
-            raise TypeError(f"[{self.__class__.__name__}] Wrong 'network_type' type: str required, get {type(network_type)}")
+            raise TypeError(
+                f"[{self.__class__.__name__}] Wrong 'network_type' type: str required, get {type(network_type)}")
         # Check which_network type and value
         if type(which_network) != int:
-            raise TypeError(f"[{self.__class__.__name__}] Wrong 'which_network' type: int required, get {type(which_network)}")
+            raise TypeError(
+                f"[{self.__class__.__name__}] Wrong 'which_network' type: int required, get {type(which_network)}")
         if which_network < 0:
             raise ValueError(f"[{self.__class__.__name__}] Given 'which_network' value is negative")
         # Check save_each_epoch type
         if type(save_each_epoch) != bool:
-            raise TypeError(f"[{self.__class__.__name__}] Wrong 'save each epoch' type: bool required, get {type(save_each_epoch)}")
+            raise TypeError(
+                f"[{self.__class__.__name__}] Wrong 'save each epoch' type: bool required, get {type(save_each_epoch)}")
 
         # BaseNetwork parameterization
-        self.network_class = network_class
-        self.network_config = self.BaseNetworkProperties(network_name=network_name, network_type=network_type)
+        self.network_class: BaseNetwork = network_class
+        self.network_config: Any = self.BaseNetworkProperties(network_name=network_name, network_type=network_type)
 
         # BaseOptimization parameterization
-        self.optimization_class = optimization_class
-        self.optimization_config = BaseOptimization.BaseOptimizationProperties(loss=loss, lr=lr, optimizer=optimizer)
-        self.training_stuff = (loss is not None) and (optimizer is not None)
+        self.optimization_class: Any = optimization_class
+        self.optimization_config: Any = BaseOptimization.BaseOptimizationProperties(loss=loss, lr=lr, optimizer=optimizer)
+        self.training_stuff: bool = (loss is not None) and (optimizer is not None)
 
         # NetworkManager parameterization
-        self.data_transformation_class = data_transformation_class
-        self.network_dir = network_dir
-        self.which_network = which_network
-        self.save_each_epoch = save_each_epoch and self.training_stuff
+        self.data_transformation_class: Any = data_transformation_class
+        self.network_dir: str = network_dir
+        self.which_network: int = which_network
+        self.save_each_epoch: bool = save_each_epoch and self.training_stuff
 
     def create_network(self) -> BaseNetwork:
         """
@@ -96,9 +101,11 @@ class BaseNetworkConfig:
         try:
             network = self.network_class(config=self.network_config)
         except:
-            raise ValueError(f"[{self.__class__.__name__}] Given 'network_class' cannot be created in {self.__class__.__name__}")
+            raise ValueError(
+                f"[{self.__class__.__name__}] Given 'network_class' cannot be created in {self.__class__.__name__}")
         if not isinstance(network, BaseNetwork):
-            raise TypeError(f"[{self.__class__.__name__}] Wrong 'network_class' type: BaseNetwork required, get {self.network_class}")
+            raise TypeError(
+                f"[{self.__class__.__name__}] Wrong 'network_class' type: BaseNetwork required, get {self.network_class}")
         return network
 
     def create_optimization(self) -> BaseOptimization:
@@ -108,7 +115,8 @@ class BaseNetworkConfig:
         try:
             optimization = self.optimization_class(config=self.optimization_config)
         except:
-            raise ValueError(f"[{self.__class__.__name__}] Given 'optimization_class' got an unexpected keyword argument 'config'")
+            raise ValueError(
+                f"[{self.__class__.__name__}] Given 'optimization_class' got an unexpected keyword argument 'config'")
         if not isinstance(optimization, BaseOptimization):
             raise TypeError(f"[{self.__class__.__name__}] Wrong 'optimization_class' type: BaseOptimization required, "
                             f"get {self.optimization_class}")
@@ -121,11 +129,13 @@ class BaseNetworkConfig:
         try:
             data_transformation = self.data_transformation_class(network_config=self)
         except:
-            raise ValueError(f"[{self.__class__.__name__}] Given 'data_transformation_class' got an unexpected keyword argument "
-                             f"'config'")
+            raise ValueError(
+                f"[{self.__class__.__name__}] Given 'data_transformation_class' got an unexpected keyword argument "
+                f"'config'")
         if not isinstance(data_transformation, DataTransformation):
-            raise TypeError(f"[{self.__class__.__name__}] Wrong 'data_transformation_class' type: DataTransformation required, "
-                            f"get {self.data_transformation_class}")
+            raise TypeError(
+                f"[{self.__class__.__name__}] Wrong 'data_transformation_class' type: DataTransformation required, "
+                f"get {self.data_transformation_class}")
         return data_transformation
 
     def __str__(self) -> str:

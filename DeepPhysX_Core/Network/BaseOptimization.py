@@ -1,4 +1,4 @@
-from typing import Optional, Dict, Union, Callable, Any
+from typing import Dict, Union, Callable, Any
 
 from dataclasses import dataclass
 # from DeepPhysX_Core.Manager.Manager import Manager
@@ -36,11 +36,11 @@ class BaseOptimization:
         """Initialize the loss function"""
         raise NotImplementedError
 
-    def compute_loss(self, prediction, ground_truth, data: Any = None) -> Dict[str, float]:
+    def compute_loss(self, prediction, ground_truth, data: Any) -> Dict[str, float]:
         """Compute loss from prediction / ground truth"""
         raise NotImplementedError
 
-    def transform_loss(self, data: Any = None) -> Dict[str, float]:
+    def transform_loss(self, data: Any) -> Dict[str, float]:
         """Apply a transformation on the loss value using the potential additional data"""
         raise NotImplementedError
 

@@ -1,3 +1,4 @@
+from typing import Any, List, Optional
 
 from DeepPhysX_PyTorch.Network.TorchNetworkConfig import TorchNetworkConfig
 from DeepPhysX_PyTorch.Network.TorchOptimization import TorchOptimization
@@ -9,7 +10,7 @@ from dataclasses import dataclass
 class UNetConfig(TorchNetworkConfig):
     @dataclass
     class UNetProperties(TorchNetworkConfig.TorchNetworkProperties):
-        input_size: list
+        input_size: List[int]
         nb_dims: int
         nb_input_channels: int
         nb_first_layer_channels: int
@@ -21,25 +22,25 @@ class UNetConfig(TorchNetworkConfig):
         data_scale: float
 
     def __init__(self,
-                 optimization_class=TorchOptimization,
-                 data_transformation_class=UnetDataTransformation,
-                 network_dir=None,
-                 network_name="UNetName",
-                 which_network=0,
-                 save_each_epoch=False,
-                 loss=None,
-                 lr=None,
-                 optimizer=None,
-                 input_size=None,
-                 nb_dims=3,
-                 nb_input_channels=1,
-                 nb_first_layer_channels=64,
-                 nb_output_channels=3,
-                 nb_steps=3,
-                 two_sublayers=True,
-                 border_mode='valid',
-                 skip_merge=False,
-                 data_scale=1.):
+                 optimization_class: TorchOptimization = TorchOptimization,
+                 data_transformation_class: UnetDataTransformation = UnetDataTransformation,
+                 network_dir: str = None,
+                 network_name: str = "UNetName",
+                 which_network: int = 0,
+                 save_each_epoch: bool = False,
+                 loss: Any = None,
+                 lr: Optional[float] = None,
+                 optimizer: Any = None,
+                 input_size: List[int] = None,
+                 nb_dims: int = 3,
+                 nb_input_channels: int = 1,
+                 nb_first_layer_channels: int = 64,
+                 nb_output_channels: int = 3,
+                 nb_steps: int = 3,
+                 two_sublayers: bool = True,
+                 border_mode: str = 'valid',
+                 skip_merge: bool = False,
+                 data_scale: float = 1.):
 
         TorchNetworkConfig.__init__(self,
                                     network_class=UNet,
@@ -56,7 +57,7 @@ class UNetConfig(TorchNetworkConfig):
 
         if border_mode not in ['valid', 'same']:
             raise ValueError(
-                "[UNET_CONFIG] Border mode not in ['valid', 'same'], unknown value {}.".format(border_mode))
+                    "[UNET_CONFIG] Border mode not in ['valid', 'same'], unknown value {}.".format(border_mode))
         if nb_dims not in [2, 3]:
             raise ValueError("[UNET_CONFIG] Nb of dimensions must be 2 or 3.")
 
