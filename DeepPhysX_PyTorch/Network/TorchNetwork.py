@@ -44,7 +44,7 @@ class TorchNetwork(torch.nn.Module, BaseNetwork):
             self.device = torch.device('cpu')
             torch.set_num_threads(psutil.cpu_count(logical=True) - 1)
         self.to(self.device)
-        print("[{}]: Device is {}".format(self.__class__.__name__, self.device))
+        print(f"[{self.__class__.__name__}]: Device is {self.device}")
 
     def load_parameters(self, path: str) -> None:
         """Load network parameter from path"""
@@ -73,6 +73,13 @@ class TorchNetwork(torch.nn.Module, BaseNetwork):
     def transform_to_numpy(self, x: DataContainer) -> DataContainer:
         """Transform and cast data from tensor type to numpy"""
         return x.cpu().detach().numpy()
+
+    def print_architecture(self, architecture):
+        lines = architecture.splitlines()
+        architecture = ''
+        for line in lines:
+            architecture += '\n      ' + line
+        return architecture
 
     def __str__(self):
         """

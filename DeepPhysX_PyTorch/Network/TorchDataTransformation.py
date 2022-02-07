@@ -1,6 +1,7 @@
 from typing import Union, Tuple
 import numpy
 import torch
+from torch import Tensor
 
 from DeepPhysX_Core.Network.DataTransformation import DataTransformation
 
@@ -9,13 +10,14 @@ DataContainer = Union[numpy.ndarray, torch.Tensor]
 
 class TorchDataTransformation(DataTransformation):
 
-    def __init__(self, network_config):
+    def __init__(self, config):
         """
         TorchDataTransformation is dedicated to data operations before and after network predictions.
 
-        :param BaseNetworkConfig network_config: Specialisation containing the parameters of the network manager
+        :param config: namedtuple containing the parameters of the network manager
         """
-        super().__init__(network_config)
+        super().__init__(config)
+        self.data_type = Tensor
 
     @DataTransformation.check_type
     def transform_before_prediction(self, data_in: DataContainer) -> DataContainer:
@@ -28,7 +30,7 @@ class TorchDataTransformation(DataTransformation):
         return data_in
 
     @DataTransformation.check_type
-    def transform_before_loss(self, data_out: DataContainer, data_gt: DataContainer) -> Tuple[DataContainer, DataContainer]:
+    def transform_before_loss(self, data_out: DataContainer, data_gt: DataContainer = None) -> Tuple[DataContainer, DataContainer]:
         """
         Apply data operations between network's prediction and loss computation.
 
@@ -51,7 +53,7 @@ class TorchDataTransformation(DataTransformation):
     def __str__(self) -> str:
         description = "\n"
         description += f"  {self.__class__.__name__}\n"
-        description += f"    Data type: {DataContainer.__repr__()}\n"
+        description += f"    Data type: {self.data_type}\n"
         description += f"    Transformation before prediction: Identity\n"
         description += f"    Transformation before loss: Identity\n"
         description += f"    Transformation before apply: Identity\n"

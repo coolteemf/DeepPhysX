@@ -7,7 +7,6 @@ from torch import zeros_like
 
 from DeepPhysX_PyTorch.Network.TorchNetwork import TorchNetwork
 from DeepPhysX_PyTorch.EncoderDecoder.EncoderDecoder import EncoderDecoder
-from DeepPhysX_PyTorch.UNet.UNetConfig import UNetConfig
 from .utils import crop_and_merge
 
 
@@ -54,7 +53,7 @@ class UNetLayer(Module):
 
 class UNet(TorchNetwork):
 
-    def __init__(self, config: UNetConfig.UNetProperties):
+    def __init__(self, config):
         """Creates the UNet architecture"""
         TorchNetwork.__init__(self, config)
 
@@ -123,7 +122,7 @@ class UNet(TorchNetwork):
         description += f"    Two sublayers in a step: {self.config.two_sublayers}\n"
         description += f"    Border mode: {self.config.border_mode}\n"
         description += f"    Merge on same level: {not self.config.skip_merge}\n"
-        description += f"    Down layers: {self.printArchitecture(str(self.down))}\n"
-        description += f"    Middle layers: {self.printArchitecture(str(self.middle))}\n"
-        description += f"    Up layers: {self.printArchitecture(str(self.up))}\n"
+        description += f"    Down layers: {self.print_architecture(str(self.down))}\n"
+        description += f"    Middle layers: {self.print_architecture(str(self.middle))}\n"
+        description += f"    Up layers: {self.print_architecture(str(self.up))}\n"
         return description

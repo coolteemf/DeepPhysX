@@ -4,7 +4,6 @@ import torch
 from torch.nn import Sequential, PReLU, Module, Linear
 
 from DeepPhysX_PyTorch.Network.TorchNetwork import TorchNetwork
-from DeepPhysX_PyTorch.FC.FCConfig import FCConfig
 
 
 class FCLayer(Module):
@@ -26,7 +25,7 @@ class FCLayer(Module):
 
 class FC(TorchNetwork):
 
-    def __init__(self, config: FCConfig):
+    def __init__(self, config):
         """Creates a simple fully connected layers neural network"""
         TorchNetwork.__init__(self, config)
 

@@ -1,23 +1,17 @@
-from DeepPhysX_Core.Network.BaseNetworkConfig import *
-from DeepPhysX_Core.Network.DataTransformation import DataTransformation
+from typing import Any, Optional, Type
+
+from DeepPhysX_Core.Network.BaseNetworkConfig import BaseNetworkConfig
+from DeepPhysX_PyTorch.Network.TorchDataTransformation import TorchDataTransformation
 from DeepPhysX_PyTorch.Network.TorchNetwork import TorchNetwork
 from DeepPhysX_PyTorch.Network.TorchOptimization import TorchOptimization
-from dataclasses import dataclass
 
 
 class TorchNetworkConfig(BaseNetworkConfig):
-    @dataclass
-    class TorchNetworkProperties(BaseNetworkConfig.BaseNetworkProperties):
-        pass
-
-    @dataclass
-    class TorchOptimizationProperties(BaseOptimization.BaseOptimizationProperties):
-        pass
 
     def __init__(self,
-                 network_class: TorchNetwork = TorchNetwork,
-                 optimization_class: TorchOptimization = TorchOptimization,
-                 data_transformation_class: DataTransformation = DataTransformation,
+                 network_class: Type[TorchNetwork] = TorchNetwork,
+                 optimization_class: Type[TorchOptimization] = TorchOptimization,
+                 data_transformation_class: Type[TorchDataTransformation] = TorchDataTransformation,
                  network_dir: str = None,
                  network_name: str = 'TorchNetwork',
                  network_type: str = 'TorchNetwork',
@@ -26,6 +20,7 @@ class TorchNetworkConfig(BaseNetworkConfig):
                  loss: Any = None,
                  lr: Optional[float] = None,
                  optimizer: Any = None):
+
         BaseNetworkConfig.__init__(self,
                                    network_class=network_class,
                                    optimization_class=optimization_class,
@@ -39,5 +34,7 @@ class TorchNetworkConfig(BaseNetworkConfig):
                                    lr=lr,
                                    optimizer=optimizer)
 
-        self.network_config: Any = self.TorchNetworkProperties(network_name=network_name, network_type=network_type)
-        self.optimization_config: Any = self.TorchOptimizationProperties(loss=loss, lr=lr, optimizer=optimizer)
+        # Change default config values for network only (configs for optimization and data_transformation are the same)
+        self.network_config = self.make_config(config_name='network_config',
+                                               network_name=network_name,
+                                               network_type=network_type)

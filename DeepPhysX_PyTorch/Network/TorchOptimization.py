@@ -10,7 +10,7 @@ class TorchOptimization(BaseOptimization):
         TorchOptimization is dedicated to network optimization: compute loss between prediction and target, update
         network parameters.
 
-        :param BaseNetworkConfig.BaseOptimizationProperties config: BaseOptimizationProperties class containing BaseOptimization parameters
+        :param config: namedtuple containing TorchOptimization parameters
         """
         BaseOptimization.__init__(self, config)
 
