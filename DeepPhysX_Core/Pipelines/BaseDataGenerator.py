@@ -38,6 +38,7 @@ class BaseDataGenerator:
         :param record_input: True if the input must be stored
         :param record_output: True if the output must be stored
         """
+        # todo: inherit from Pipeline
 
         session_dir = create_dir(osPathJoin(get_first_caller(), session_name), dir_name=session_name)
         session_name = (session_name if session_name is not None else basename(session_dir)).split("/")[-1]
@@ -55,5 +56,5 @@ class BaseDataGenerator:
         """Run the data generation and recording process"""
         for i in range(self.nb_batch):
             print("Batch", i)
-            self.data_manager.getData()
+            self.data_manager.get_data()
         self.data_manager.close()

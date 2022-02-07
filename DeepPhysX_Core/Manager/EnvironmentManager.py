@@ -161,6 +161,7 @@ class EnvironmentManager:
                         self.environment.compute_essential_data = True
                         run(self.environment.step())
 
+            # Todo : this check sample differs from Server comportment
             if self.environment.checkSample() or not self.train:
                 # Network's input
                 if get_inputs:

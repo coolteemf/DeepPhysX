@@ -17,7 +17,7 @@ def main():
     env_config = BaseEnvironmentConfig(environment_class=Environment,
                                        environment_file=sys.modules[Environment.__module__].__file__,
                                        number_of_thread=1,
-                                       as_tcpip_client=True,
+                                       as_tcp_ip_client=True,
                                        use_prediction_in_environment=True,
                                        port=10002)
 

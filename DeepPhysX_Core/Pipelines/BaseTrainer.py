@@ -42,10 +42,6 @@ class BaseTrainer(BasePipeline):
                               environment_config=environment_config,
                               session_name=session_name, session_dir=session_dir, pipeline='training')
 
-        self.manager = Manager(pipeline=self, network_config=self.network_config, dataset_config=dataset_config,
-                               environment_config=self.environment_config,
-                               session_name=session_name,
-                               session_dir=session_dir, new_session=new_session, batch_size=batch_size)
         # Training variables
         self.nb_epochs = nb_epochs
         self.id_epoch = 0
@@ -57,6 +53,13 @@ class BaseTrainer(BasePipeline):
 
         # Tell if data is recording while predicting (output is recorded only if input too)
         self.record_data = {'input': True, 'output': True}
+
+        # self.training_progress_bar = vedo.ProgressBar(start=0, stop=self.nb_samples, c='orange', title="Training")
+
+        self.manager = Manager(pipeline=self, network_config=self.network_config, dataset_config=dataset_config,
+                               environment_config=self.environment_config,
+                               session_name=session_name,
+                               session_dir=session_dir, new_session=new_session, batch_size=batch_size)
 
         self.manager.save_info_file()
 

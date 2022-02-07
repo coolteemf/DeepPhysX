@@ -36,10 +36,6 @@ class BaseRunner(BasePipeline):
         BasePipeline.__init__(self, network_config=network_config, dataset_config=dataset_config, environment_config=environment_config,
                               session_name=session_name, session_dir=session_dir, pipeline='prediction')
 
-        self.manager = Manager(pipeline=self, network_config=self.network_config, dataset_config=dataset_config,
-                               environment_config=self.environment_config, session_name=session_name,
-                               session_dir=session_dir, new_session=True)
-
         self.name = self.__class__.__name__
 
         if type(nb_steps) != int or nb_steps < 0:
@@ -51,6 +47,10 @@ class BaseRunner(BasePipeline):
         # Tell if data is recording while predicting (output is recorded only if input too)
         self.record_data = {'input': record_inputs, 'output': record_outputs and record_inputs}
 
+        self.manager = Manager(pipeline=self, network_config=self.network_config, dataset_config=dataset_config,
+                               environment_config=self.environment_config, session_name=session_name,
+                               session_dir=session_dir, new_session=True)
+
     def execute(self) -> None:
         """
         Main function of the running process \"execute\" call the functions associated with the learning process.
@@ -61,7 +61,7 @@ class BaseRunner(BasePipeline):
         while self.running_condition():
             self.sample_begin()
             prediction, loss_value = self.predict()
-            self.manager.data_manager.environment_manager.environment.applyPrediction(prediction)
+            self.manager.data_manager.environment_manager.environment.apply_prediction(prediction)
             self.sample_end()
         self.run_end()
 
@@ -72,8 +72,8 @@ class BaseRunner(BasePipeline):
         :param bool animate: True if getData fetch from the environment
         :return: tuple (numpy.ndarray, float)
         """
-        self.manager.getData(animate=animate)
-        return self.manager.getPrediction()
+        self.manager.get_data(animate=animate)
+        return self.manager.get_prediction()
 
     def run_begin(self) -> None:
         """

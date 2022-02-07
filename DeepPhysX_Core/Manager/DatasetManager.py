@@ -154,7 +154,8 @@ class DatasetManager:
         if self.first_add:
             new_fields = {}
             for side, key in zip(['IN', 'OUT'], ['dataset_in', 'dataset_out']):
-                new_fields[side] = [f'{side}_{field}' for field in data[key].keys()]
+                if key in data:
+                    new_fields[side] = [f'{side}_{field}' for field in data[key].keys()]
             self.register_new_fields(new_fields)
             self.create_partitions()
 
@@ -167,7 +168,9 @@ class DatasetManager:
         # 3.1 If there is additional data, convert field names then add each field
         if 'dataset_in' in data.keys() or 'dataset_out' in data.keys():
             for side, key in zip(['IN', 'OUT'], ['dataset_in', 'dataset_out']):
-                additional_data = {f'{side}_{field}': data[key][field] for field in data[key].keys()}
+                additional_data = {}
+                if key in data:
+                    additional_data = {f'{side}_{field}': data[key][field] for field in data[key].keys()}
                 # Check all registered fields are in additional data
                 for field in self.fields[side][1:]:
                     if field not in additional_data:
@@ -264,8 +267,9 @@ class DatasetManager:
             for field in ['input', 'output']:
                 data[field] = np.concatenate((data[field], missing_data[field]))
             for side in ['dataset_in', 'dataset_out']:
-                for field in data[side].keys():
-                    data[side][field] = np.concatenate((data[side][field], missing_data[side][field]))
+                if side in data.keys():
+                    for field in data[side].keys():
+                        data[side][field] = np.concatenate((data[side][field], missing_data[side][field]))
         return data
 
     def register_new_fields(self, new_fields: Dict[str, str]) -> None:
@@ -277,8 +281,9 @@ class DatasetManager:
         """
 
         for side in ['IN', 'OUT']:
-            for field in new_fields[side]:
-                self.register_new_field(side, field)
+            if side in new_fields:
+                for field in new_fields[side]:
+                    self.register_new_field(side, field)
 
     def register_new_field(self, side: str, new_field: str) -> None:
         """
@@ -479,12 +484,11 @@ class DatasetManager:
         # 3. Load new data in dataset
         self.dataset.empty()
         # Training mode with mixed dataset: read multiple partitions per field
-        if self.mode == self.modes['Training']:
-            if self.idx_partitions[self.modes['Running']] > 0:
-                if self.mul_part_idx is None:
-                    self.load_multiple_partitions([self.modes['Training'], self.modes['Running']])
-                self.read_multiple_partitions()
-                return
+        if self.mode == self.modes['Training'] and self.idx_partitions[self.modes['Running']] > 0:
+            if self.mul_part_idx is None:
+                self.load_multiple_partitions([self.modes['Training'], self.modes['Running']])
+            self.read_multiple_partitions()
+            return
         # Training mode without mixed dataset or other modes: check the number of partitions per field to read
         if self.idx_partitions[self.mode] == 1:
             self.read_last_partitions()

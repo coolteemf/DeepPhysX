@@ -10,31 +10,31 @@ class DummyNetwork(BaseNetwork):
     def forward(self, x):
         return x
 
-    def setTrain(self):
+    def set_train(self):
         pass
 
-    def setEval(self):
+    def set_eval(self):
         pass
 
-    def setDevice(self):
+    def set_device(self):
         pass
 
-    def loadParameters(self, path):
+    def load_parameters(self, path):
         pass
 
-    def getParameters(self):
+    def get_parameters(self):
         pass
 
-    def saveParameters(self, path):
+    def save_parameters(self, path):
         pass
 
-    def nbParameters(self):
+    def nb_parameters(self):
         return 0
 
-    def transformFromNumpy(self, x, grad=True):
+    def transform_from_numpy(self, x, grad=True):
         return x
 
-    def transformToNumpy(self, x):
+    def transform_to_numpy(self, x):
         return x
 
 
@@ -43,16 +43,16 @@ class DummyOptimizer(BaseOptimization):
     def __init__(self, config):
         BaseOptimization.__init__(self, config)
 
-    def setLoss(self):
+    def set_loss(self):
         pass
 
-    def computeLoss(self, prediction, ground_truth, data):
+    def compute_loss(self, prediction, ground_truth, data):
         return {'loss': 0.}
 
-    def transformLoss(self, data):
+    def transform_loss(self, data):
         pass
 
-    def setOptimizer(self, net):
+    def set_optimizer(self, net):
         pass
 
     def optimize(self):

@@ -1,6 +1,6 @@
 from os.path import isdir
 from collections import namedtuple
-from typing import Any
+from typing import Type
 
 from DeepPhysX_Core.Dataset.BaseDataset import BaseDataset
 
@@ -8,7 +8,7 @@ from DeepPhysX_Core.Dataset.BaseDataset import BaseDataset
 class BaseDatasetConfig:
 
     def __init__(self,
-                 dataset_class=BaseDataset,
+                 dataset_class: Type[BaseDataset] = BaseDataset,
                  dataset_dir: str = None,
                  partition_size: float = 1.,
                  shuffle_dataset: bool = True):
@@ -40,7 +40,7 @@ class BaseDatasetConfig:
             raise TypeError(f"[{self.name}] Wrong shuffle_dataset type: bool required, get {type(shuffle_dataset)}")
 
         # BaseDataset parameterization
-        self.dataset_class: BaseDataset = dataset_class
+        self.dataset_class: Type[BaseDataset] = dataset_class
         self.dataset_config: namedtuple = self.make_config(max_size=int(partition_size * 1e9))
 
         # DatasetManager parameterization

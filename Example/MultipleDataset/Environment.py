@@ -11,7 +11,7 @@ class Environment(BaseEnvironment):
     def __init__(self,
                  instance_id=1,
                  number_of_instances=1,
-                 as_tcpip_client=True,
+                 as_tcp_ip_client=True,
                  ip_address='localhost',
                  port=10000,
                  environment_manager=None):
@@ -19,7 +19,7 @@ class Environment(BaseEnvironment):
         BaseEnvironment.__init__(self,
                                  instance_id=instance_id,
                                  number_of_instances=number_of_instances,
-                                 as_tcpip_client=as_tcpip_client,
+                                 as_tcp_ip_client=as_tcp_ip_client,
                                  ip_address=ip_address,
                                  port=port,
                                  environment_manager=environment_manager)
@@ -44,13 +44,13 @@ class Environment(BaseEnvironment):
             duplicated_input = self.input.copy()
             duplicated_output = self.output.copy()
             # Additional data must be set before setting training data
-            self.additionalInDataset(label="duplicated", data_array=duplicated_input)
-            self.additionalOutDataset(label="duplicated", data_array=duplicated_output)
+            self.additional_in_dataset(label="duplicated", data=duplicated_input)
+            self.additional_out_dataset(label="duplicated", data=duplicated_output)
             # Setting (and sending) training data
-            self.setTrainingData(input_array=self.input, output_array=self.output)
+            self.set_training_data(input_array=self.input, output_array=self.output)
             # Increment iteration counter
             self.nb_iterations += 1
-        # Other epochs case: data is sent to the Environment if use_dataset_in_environment flag for Config is True
+        # Other epochs case: data is sent to the Environment when use_dataset_in_environment flag for Config is True
         else:
             print("Input sample")
             print(self.sample_in, self.additional_inputs)

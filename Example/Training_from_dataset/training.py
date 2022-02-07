@@ -30,7 +30,7 @@ def generate_dataset(nb_batch, batch_size):
 def main(nb_batch, batch_size):
     env_config = BaseEnvironmentConfig(environment_class=Environment,
                                        environment_file=sys.modules[Environment.__module__].__file__,
-                                       as_tcpip_client=True,
+                                       as_tcp_ip_client=True,
                                        use_prediction_in_environment=True)
     # Network config
     net_config = BaseNetworkConfig(network_class=DummyNetwork,
@@ -45,9 +45,7 @@ def main(nb_batch, batch_size):
 
     # Dataset config
     dataset_config = BaseDatasetConfig(dataset_dir=os.getcwd()+'/generation/dataset',
-                                       shuffle_dataset=False,
-                                       input_shape=(2, 1),
-                                       output_shape=(2, 1))
+                                       shuffle_dataset=False)
 
     # Trainer
     trainer = BaseTrainer(session_name="training",

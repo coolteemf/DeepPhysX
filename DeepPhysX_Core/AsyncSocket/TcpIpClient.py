@@ -24,7 +24,7 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
         :param int port: Port number of the TcpIpObject
         :param int instance_id: ID of the instance
         :param int number_of_instances: Number of simultaneously launched instances
-        :param as_tcpip_client: Environment is a TcpIpObject if True, is owned by an EnvironmentManager if False
+        :param as_tcp_ip_client: Environment is a TcpIpObject if True, is owned by an EnvironmentManager if False
         """
 
         AbstractEnvironment.__init__(self,
@@ -39,7 +39,8 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
                                  port=port)
             self.sock.connect((ip_address, port))
             # Send ID
-            self.sync_send_labeled_data(data_to_send=instance_id, label="instance_ID", receiver=self.sock, send_read_command=False)
+            self.sync_send_labeled_data(data_to_send=instance_id, label="instance_ID", receiver=self.sock,
+                                        send_read_command=False)
         # Flag to trigger client's shutdown
         self.close_client: bool = False
 

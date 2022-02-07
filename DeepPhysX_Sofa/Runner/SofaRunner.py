@@ -23,7 +23,7 @@ class SofaRunner(Sofa.Core.Controller, BaseRunner):
         :param dataset_config: Specialisation containing the parameters of the dataset manager
         :param environment_config: Specialisation containing the parameters of the environment manager
         :param str session_name: Name of the newly created directory if session_dir is not defined
-        :param str session_dir: Name of the directory in which to write all of the neccesary data
+        :param str session_dir: Name of the directory in which to write all the necessary data
         :param int nb_steps: Number of simulation step to play
         :param bool record_inputs: Save or not the input in a numpy file
         :param bool record_outputs: Save or not the output in a numpy file
@@ -43,18 +43,18 @@ class SofaRunner(Sofa.Core.Controller, BaseRunner):
         self.root = self.manager.data_manager.environment_manager.environment.root
         self.root.addObject(self)
 
-    # def onAnimateEndEvent(self, event):
-    #     """
-    #     Called within the Sofa pipeline at the end of the time step.
-    #
-    #     :param event: Sofa Event
-    #     :return: None
-    #     """
-    #     print("Runner")
-    #     if self.runningCondition():
-    #         self.sampleBegin()
-    #         prediction, loss = self.predict(animate=False)
-    #         self.manager.data_manager.environment_manager.applyPrediction(prediction)
-    #         self.sampleEnd()
-    #     else:
-    #         self.runEnd()
+    def onAnimateEndEvent(self, event):
+        """
+        Called within the Sofa pipeline at the end of the time step.
+
+        :param event: Sofa Event
+        :return: None
+        """
+
+        if self.runningCondition():
+            self.sampleBegin()
+            prediction, loss = self.predict(animate=False)
+            self.manager.data_manager.environment_manager.environment.apply_prediction(prediction)
+            self.sampleEnd()
+        else:
+            self.runEnd()

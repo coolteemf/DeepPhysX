@@ -24,10 +24,7 @@ pipeline.execute()
 dataset = []
 for filename in [f for f in os.listdir(os.getcwd() + '/example/dataset') if f.__contains__('.npy')]:
     filename = os.getcwd() + '/example/dataset/' + filename
-    dataset.append([])
-    with open(filename, 'rb') as file:
-        for _ in range(nb_batch * batch_size):
-            dataset[-1].append(np.load(file).tolist())
+    dataset.append(np.load(filename).tolist())
 expected = [[[i, i] for i in range(nb_batch * batch_size)],
             [[2*i, 2*i] for i in range(nb_batch * batch_size)]]
 if len(dataset) == 2 and dataset == expected:
