@@ -67,16 +67,16 @@ class BaseEnvironmentConfig:
         if type(max_wrong_samples_per_step) != int:
             raise TypeError(f"[{self.name}] Wrong max_wrong_samples_per_step type: int required, get "
                             f"{type(max_wrong_samples_per_step)}")
-        if simulations_per_step < 1:
+        if max_wrong_samples_per_step < 1:
             raise ValueError(f"[{self.name}] Given max_wrong_simulations_per_step value is negative or null")
         # Check always_create_data type
         if type(always_create_data) != bool:
             raise TypeError(f"[{self.name}] Wrong always_create_data type: bool required, get "
                             f"{type(always_create_data)}")
-
-        if type(number_of_thread) != int and number_of_thread < 0:
+        if type(number_of_thread) != int:
             raise TypeError(f"[{self.name}] The number_of_thread number must be a positive integer.")
-        self.max_client_connections: int = max_client_connection
+        if number_of_thread < 0:
+            raise ValueError(f"[{self.name}] The number_of_thread number must be a positive integer.")
 
         # TcpIpClients parameterization
         self.environment_class: Any = environment_class
@@ -100,6 +100,7 @@ class BaseEnvironmentConfig:
         self.port: int = port
         self.server_is_ready: bool = False
         self.number_of_thread: int = min(max(number_of_thread, 1), cpu_count())  # Assert nb is between 1 and cpu_count
+        self.max_client_connections = max_client_connection
 
     def create_server(self, environment_manager: Any = None, batch_size: int = 1) -> TcpIpServer:
         """
@@ -143,7 +144,7 @@ class BaseEnvironmentConfig:
         # Send and receive parameters with clients
         self.received_parameters = server.initialize(self.param_dict)
         # Server is ready
-        self.server_is_ready : bool = True
+        self.server_is_ready: bool = True
 
     def start_client(self, idx: int = 1) -> None:
         """
@@ -164,7 +165,7 @@ class BaseEnvironmentConfig:
                        str(idx),
                        str(self.number_of_thread)])
 
-    def create_environment(self, environment_manager: Any) -> None:
+    def create_environment(self, environment_manager: Any) -> BaseEnvironment:
         """
         Create an Environment that will not be a TcpIpObject.
 
@@ -173,7 +174,13 @@ class BaseEnvironmentConfig:
         """
 
         # Create instance
-        environment = self.environment_class(environment_manager=environment_manager, as_tcp_ip_client=False)
+        try:
+            environment = self.environment_class(environment_manager=environment_manager, as_tcp_ip_client=False)
+        except:
+            raise ValueError(f"[{self.name}] Given 'environment_class' cannot be created in {self.name}")
+        if not isinstance(environment, BaseEnvironment):
+            raise TypeError(f"[{self.name}] Wrong 'environment_class' type: BaseEnvironment required, get "
+                            f"{self.environment_class}")
         # Create & Init Environment
         environment.create()
         environment.init()

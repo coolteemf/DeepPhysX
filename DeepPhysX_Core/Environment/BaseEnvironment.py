@@ -143,9 +143,9 @@ class BaseEnvironment(TcpIpClient):
         # Network in / out samples
         self.sample_in = sample_in
         self.sample_out = sample_out
-        # Additional in / out samples
-        self.additional_inputs = additional_in.get('additional_data', default={})
-        self.additional_outputs = additional_out.get('additional_data', default={})
+        # Additional in / out samples (default value is {})
+        self.additional_inputs = additional_in.get('additional_data', {})
+        self.additional_outputs = additional_out.get('additional_data', {})
 
     def set_training_data(self, input_array: numpy.ndarray, output_array: numpy.ndarray) -> None:
         """
@@ -205,7 +205,7 @@ class BaseEnvironment(TcpIpClient):
 
         self.additional_outputs[label] = data
 
-    def sync_get_prediction(self, input_array: numpy.ndarray) -> None:
+    def sync_get_prediction(self, input_array: numpy.ndarray) -> numpy.ndarray:
         """
         Request a prediction from Network.
 
@@ -283,12 +283,12 @@ class BaseEnvironment(TcpIpClient):
 
     def __str__(self) -> str:
         """
-        :return: String containing information about the BaseEnvironmentConfig object
+        :return: String containing information about the BaseEnvironment object
         """
         description = "\n"
         description += f"  {self.name}\n"
         description += f"    Name: {self.name} n°{self.instance_id}\n"
         description += f"    Comments:\n"
-        description += f"    Input size: {self.input_size}\n"
-        description += f"    Output size: {self.output_size}\n"
+        description += f"    Input size:\n"
+        description += f"    Output size:\n"
         return description
