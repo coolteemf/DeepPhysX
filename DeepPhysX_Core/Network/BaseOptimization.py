@@ -6,22 +6,14 @@ from dataclasses import dataclass
 
 class BaseOptimization:
 
-    @dataclass
-    class BaseOptimizationProperties:
-        """
-        Class containing data to create BaseOptimization objects.
-        """
-        loss: Union[Callable[[Any, Any], Any], Callable[[Any], Any]]
-        lr: float
-        optimizer: Any
-
-    def __init__(self, config: BaseOptimizationProperties):
+    def __init__(self, config):
         """
         BaseOptimization is dedicated to network optimization: compute loss between prediction and target, update
         network parameters.
 
-        :param BaseNetworkConfig.BaseOptimizationProperties config: BaseOptimizationProperties class containing BaseOptimization parameters
+        :param config: namedtuple containing BaseOptimization parameters
         """
+
         self.manager: Any = None  # Manager
         # Loss
         self.loss_class = config.loss

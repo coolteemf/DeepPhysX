@@ -7,14 +7,17 @@ DataContainer = Union[numpy.ndarray, torch.Tensor]
 
 class DataTransformation:
 
-    def __init__(self, network_config):
+    def __init__(self, config):
         """
         DataTransformation is dedicated to data operations before and after network predictions.
 
-        :param BaseNetworkConfig network_config: Specialisation containing the parameters of the network manager
+        :param BaseNetworkConfig config: Specialisation containing the parameters of the network manager
         """
 
-        self.network_config: Any = network_config  # BaseNetworkConfig
+        self.name = self.__class__.__name__
+
+        self.config: Any = config
+        self.data_type = any
 
     @staticmethod
     def check_type(func: Callable[[Any, Any], Any]):
@@ -57,7 +60,7 @@ class DataTransformation:
     def __str__(self) -> str:
         description = "\n"
         description += f"  {self.__class__.__name__}\n"
-        description += f"    Data type: {DataContainer.__repr__()}\n"
+        description += f"    Data type: {self.data_type}\n"
         description += f"    Transformation before prediction: Identity\n"
         description += f"    Transformation before loss: Identity\n"
         description += f"    Transformation before apply: Identity\n"

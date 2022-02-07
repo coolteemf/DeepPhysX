@@ -1,5 +1,5 @@
-from dataclasses import dataclass
-from typing import Any, Optional, Union, Callable
+from collections import namedtuple
+from typing import Any, Optional, Union, Callable, Type
 import numpy
 import torch
 from os.path import isdir
@@ -12,18 +12,11 @@ DataContainer = Union[numpy.ndarray, torch.Tensor]
 
 
 class BaseNetworkConfig:
-    @dataclass
-    class BaseNetworkProperties:
-        """
-        Class containing data to create BaseNetwork objects.
-        """
-        network_name: str
-        network_type: str
 
     def __init__(self,
-                 network_class: BaseNetwork,
-                 optimization_class: BaseOptimization,
-                 data_transformation_class: DataTransformation,
+                 network_class: Type[BaseNetwork] = BaseNetwork,
+                 optimization_class: Type[BaseOptimization] = BaseOptimization,
+                 data_transformation_class: Type[DataTransformation] = DataTransformation,
                  network_dir: str = None,
                  network_name: str = 'Network',
                  network_type: str = 'BaseNetwork',
@@ -57,7 +50,7 @@ class BaseNetworkConfig:
         if network_dir is not None:
             if type(network_dir) != str:
                 raise TypeError(
-                    f"[{self.__class__.__name__}] Wrong 'network_dir' type: str required, get{type(network_dir)}")
+                    f"[{self.__class__.__name__}] Wrong 'network_dir' type: str required, get {type(network_dir)}")
             if not isdir(network_dir):
                 raise ValueError(f"[{self.__class__.__name__}] Given 'network_dir' does not exists: {network_dir}")
         # Check network_name type
@@ -80,19 +73,46 @@ class BaseNetworkConfig:
                 f"[{self.__class__.__name__}] Wrong 'save each epoch' type: bool required, get {type(save_each_epoch)}")
 
         # BaseNetwork parameterization
-        self.network_class: BaseNetwork = network_class
-        self.network_config: Any = self.BaseNetworkProperties(network_name=network_name, network_type=network_type)
+        self.network_class: Type[BaseNetwork] = network_class
+        self.network_config: namedtuple = self.make_config(config_name='network_config', network_name=network_name,
+                                                           network_type=network_type)
 
         # BaseOptimization parameterization
-        self.optimization_class: Any = optimization_class
-        self.optimization_config: Any = BaseOptimization.BaseOptimizationProperties(loss=loss, lr=lr, optimizer=optimizer)
+        self.optimization_class: Type[BaseOptimization] = optimization_class
+        self.optimization_config: namedtuple = self.make_config(config_name='optimization_config', loss=loss, lr=lr,
+                                                                optimizer=optimizer)
         self.training_stuff: bool = (loss is not None) and (optimizer is not None)
 
         # NetworkManager parameterization
-        self.data_transformation_class: Any = data_transformation_class
+        self.data_transformation_class: Type[DataTransformation] = data_transformation_class
+        self.data_transformation_config: namedtuple = self.make_config(config_name='data_transformation_config')
         self.network_dir: str = network_dir
         self.which_network: int = which_network
         self.save_each_epoch: bool = save_each_epoch and self.training_stuff
+
+    def make_config(self, config_name, **kwargs) -> namedtuple:
+        """
+        Create a namedtuple which gathers all the parameters for an Object configuration (Network or Optimization).
+        For a child config class, only new items are required since parent's items will be added by default.
+
+        :param config_name: Name of the configuration to fill
+        :param kwargs: Items to add to the Object configuration
+        :return:
+        """
+
+        # Get items set as keyword arguments
+        fields = tuple(kwargs.keys())
+        args = tuple(kwargs.values())
+        # Check if a config already exists with the same name (child class will have the parent's config by default)
+        if config_name in self.__dict__:
+            config = self.__getattribute__(config_name)
+            for key, value in config._asdict().items():
+                # Only new items are required for children, check if the parent's items are set again anyway
+                if key not in fields:
+                    fields += (key,)
+                    args += (value,)
+        # Create namedtuple with collected items
+        return namedtuple(config_name, fields)._make(args)
 
     def create_network(self) -> BaseNetwork:
         """
@@ -127,7 +147,7 @@ class BaseNetworkConfig:
         :return: DataTransformation object from data_transformation_class and its parameters.
         """
         try:
-            data_transformation = self.data_transformation_class(network_config=self)
+            data_transformation = self.data_transformation_class(config=self.data_transformation_config)
         except:
             raise ValueError(
                 f"[{self.__class__.__name__}] Given 'data_transformation_class' got an unexpected keyword argument "

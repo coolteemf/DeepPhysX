@@ -10,7 +10,7 @@ class BaseNetwork:
         """
         BaseNetwork is a network class to compute predictions from input data according to actual state.
 
-        :param config: BaseNetworkConfig.BaseNetwork.Properties class containing BaseNetwork parameters
+        :param config: namedtuple containing BaseNetwork parameters
         """
         # Config
         self.device = None
