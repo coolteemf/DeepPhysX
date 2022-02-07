@@ -65,7 +65,8 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
         recv_param_dict = {}
         await self.receive_dict(recv_to=recv_param_dict, sender=self.sock, loop=loop)
         # Use received parameters
-        self.recv_parameters(recv_param_dict)
+        if 'parameters' in recv_param_dict:
+            self.recv_parameters(recv_param_dict['parameters'])
 
         # Create the environment
         self.create()
@@ -128,7 +129,10 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
         """
 
         # Close environment
-        self.close()
+        try:
+            self.close()
+        except NotImplementedError:
+            pass
         # Confirm exit command to the server
         loop = get_event_loop()
         await self.send_command_exit(loop=loop, receiver=self.sock)
@@ -157,11 +161,11 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
             await self.send_labeled_data(data_to_send=network_output, label="output", loop=loop, receiver=receiver)
         # Send additional input data
         for key in self.additional_inputs.keys():
-            await self.send_labeled_data(data_to_send=self.additional_inputs[key], label='dataset_in'+key,
+            await self.send_labeled_data(data_to_send=self.additional_inputs[key], label='dataset_in' + key,
                                          loop=loop, receiver=receiver)
         # Send additional output data
         for key in self.additional_outputs.keys():
-            await self.send_labeled_data(data_to_send=self.additional_outputs[key], label='dataset_out'+key,
+            await self.send_labeled_data(data_to_send=self.additional_outputs[key], label='dataset_out' + key,
                                          loop=loop, receiver=receiver)
 
     def sync_send_training_data(self, network_input: Optional[numpy.ndarray] = None, network_output: Optional[numpy.ndarray] = None, receiver: socket = None) -> None:
@@ -187,10 +191,10 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
             self.sync_send_labeled_data(data_to_send=network_output, label="output", receiver=receiver)
         # Send additional input data
         for key in self.additional_inputs.keys():
-            self.sync_send_labeled_data(data_to_send=self.additional_inputs[key], label='dataset_in'+key,
+            self.sync_send_labeled_data(data_to_send=self.additional_inputs[key], label='dataset_in' + key,
                                         receiver=receiver)
         for key in self.additional_outputs.keys():
-            self.sync_send_labeled_data(data_to_send=self.additional_outputs[key], label='dataset_out'+key,
+            self.sync_send_labeled_data(data_to_send=self.additional_outputs[key], label='dataset_out' + key,
                                         receiver=receiver)
 
     async def send_prediction_request(self, network_input: Optional[numpy.ndarray], loop: Any = None, receiver: socket = None) -> numpy.ndarray:

@@ -14,10 +14,10 @@ class AbstractEnvironment:
 
         :param int instance_id: ID of the instance
         :param int number_of_instances: Number of simultaneously launched instances
-        :param bool as_tcpip_client: Environment is a TcpIpObject if True, is owned by an EnvironmentManager if False
+        :param bool as_tcp_ip_client: Environment is a TcpIpObject if True, is owned by an EnvironmentManager if False
         """
 
-        self.name: str = self.__class__.__name__ + f"n°{instance_id}"
+        self.name: str = self.__class__.__name__ + f" n°{instance_id}"
 
         if instance_id > number_of_instances:
             raise ValueError(f"[{self.name}] Instance ID ({instance_id}) is bigger than max instances "

@@ -801,9 +801,9 @@ class TcpIpObject:
         # Receive labeled data
         label, param = await self.receive_labeled_data(loop=loop, sender=sender)
         # If data to receive appears to be a dict, receive dict
-        if param == "::dict::":
-            data[client_id][label] = {}
-            await self.receive_dict(recv_to=data[client_id][label], sender=sender, loop=loop)
+        if label == "::dict::":
+            data[client_id][param] = {}
+            await self.receive_dict(recv_to=data[client_id][param], sender=sender, loop=loop)
         # Otherwise add labeled data to data dict
         else:
             data[client_id][label] = param

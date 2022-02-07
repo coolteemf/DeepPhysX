@@ -80,23 +80,29 @@ class TcpIpServer(TcpIpObject):
             print(f"[{self.name}] Client n°{client_id} connected: {client}")
             self.clients.append([client_id, client])
 
-    def initialize(self, param_dict: Dict[Any, Any]) -> None:
+    def initialize(self, param_dict: Dict[Any, Any]) -> dict:
         """
         Run __initialize method with asyncio.
 
         :param dict param_dict: Dictionary of parameters to send to the client's environment
-        :return:
+        :return: Dictionary of parameters for each environment to send the manager
         """
 
         print(f"[{self.name}] Initializing clients...")
         run(self.__initialize(param_dict))
+        # Return param dict
+        param_dict = {}
+        for client_id in self.data_dict:
+            if 'parameters' in self.data_dict[client_id]:
+                param_dict[client_id] = self.data_dict[client_id]['parameters']
+        return param_dict
 
     async def __initialize(self, param_dict: Dict[Any, Any]) -> None:
         """
         Send parameters to the clients to create their environments, receive parameters from clients in exchange.
 
         :param dict param_dict: Dictionary of parameters to send to the client's environment
-        :return: Dictionary of parameters for each environment to send the manager
+        :return:
         """
 
         loop = get_event_loop()
