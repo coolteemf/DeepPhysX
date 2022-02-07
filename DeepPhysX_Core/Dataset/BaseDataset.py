@@ -13,7 +13,7 @@ class BaseDataset:
         Given data is split into input data and output data.
         Saving data results in multiple partitions of input and output data.
 
-        :param config: BaseDatasetConfig which contains BaseDataset parameters
+        :param config: namedtuple which contains BaseDataset parameters
         """
 
         self.name: str = self.__class__.__name__
@@ -203,8 +203,25 @@ class BaseDataset:
         :param ndarray data: New data as batch of samples
         :return:
         """
-        # Todo: might require the same init when loading existing repo ?
+
+        # Check data type
+        self.check_data(field, data)
+
+        # Check if field is registered
+        if field not in self.fields['IN'] + self.fields['OUT']:
+            # Add new field if not registered
+            self.init_additional_field(field, data[0].shape)
+
+        # Check data size initialization
+        if self.shape[field] is None:
+            self.init_data_size(field, data[0].shape)
+
+        # Set the full field
         self.data[field] = data
+
+        # Update sample indexing in dataset
+        self.__empty = False
+        self.current_sample = 0
 
     def get(self, field: str, idx_begin: int, idx_end: int) -> numpy.ndarray:
         """
@@ -230,7 +247,7 @@ class BaseDataset:
         if self.is_empty():
             return
         # Generate a shuffle pattern
-        self.shuffle_pattern = arange(self.current_sample)
+        self.shuffle_pattern = arange(self.nb_samples)
         shuffle(self.shuffle_pattern)
 
     def __str__(self) -> str:

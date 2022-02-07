@@ -1,15 +1,11 @@
 from os.path import isdir
-from dataclasses import dataclass
+from collections import namedtuple
 from typing import Any
 
 from DeepPhysX_Core.Dataset.BaseDataset import BaseDataset
 
 
 class BaseDatasetConfig:
-
-    @dataclass
-    class BaseDatasetProperties:
-        max_size: int
 
     def __init__(self,
                  dataset_class=BaseDataset,
@@ -45,11 +41,34 @@ class BaseDatasetConfig:
 
         # BaseDataset parameterization
         self.dataset_class: BaseDataset = dataset_class
-        self.dataset_config: Any = self.BaseDatasetProperties(max_size=int(partition_size * 1e9))
+        self.dataset_config: namedtuple = self.make_config(max_size=int(partition_size * 1e9))
 
         # DatasetManager parameterization
         self.dataset_dir: str = dataset_dir
         self.shuffle_dataset: bool = shuffle_dataset
+
+    def make_config(self, **kwargs):
+        """
+        Create a namedtuple which gathers all the parameters for the Dataset configuration.
+        For a child config class, only new items are required since parent's items will be added by default.
+
+        :param kwargs: Items to add to the Dataset configuration.
+        :return:
+        """
+
+        # Get items set as keyword arguments
+        fields = tuple(kwargs.keys())
+        args = tuple(kwargs.values())
+        # Check if a dataset_config already exists (child class will have the parent's config by default)
+        if 'dataset_config' in self.__dict__:
+            # Get items set in the existing config
+            for key, value in self.dataset_config._asdict().items():
+                # Only new items are required for children, check if the parent's items are set again anyway
+                if key not in fields:
+                    fields += (key,)
+                    args += (value,)
+        # Create namedtuple with collected items
+        return namedtuple('dataset_config', fields)._make(args)
 
     def create_dataset(self) -> BaseDataset:
         """
