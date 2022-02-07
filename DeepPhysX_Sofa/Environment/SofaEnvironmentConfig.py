@@ -20,7 +20,7 @@ class SofaEnvironmentConfig(BaseEnvironmentConfig):
                  screenshot_sample_rate=0,
                  use_prediction_in_environment=False,
                  param_dict={},
-                 as_tcpip_client=True,
+                 as_tcp_ip_client=True,
                  max_client_connection=1000,
                  number_of_thread=1,
                  environment_file=None,
@@ -43,7 +43,7 @@ class SofaEnvironmentConfig(BaseEnvironmentConfig):
         :param int screenshot_sample_rate: A screenshot of the viewer will be done every x sample
         :param bool use_prediction_in_environment: If True, the prediction will always be used in the environment
         :param dict param_dict: Dictionary containing specific environment parameters
-        :param bool as_tcpip_client: Environment is owned by a TcpIpClient if True, by an EnvironmentManager if False
+        :param bool as_tcp_ip_client: Environment is owned by a TcpIpClient if True, by an EnvironmentManager if False
         :param int number_of_thread: Number of thread to run
         :param int max_client_connection: Maximum number of handled instances
         :param str environment_file: Path of the file containing the Environment class
@@ -61,7 +61,7 @@ class SofaEnvironmentConfig(BaseEnvironmentConfig):
                                        screenshot_sample_rate=screenshot_sample_rate,
                                        use_prediction_in_environment=use_prediction_in_environment,
                                        param_dict=param_dict,
-                                       as_tcpip_client=as_tcpip_client,
+                                       as_tcp_ip_client=as_tcp_ip_client,
                                        number_of_thread=number_of_thread,
                                        max_client_connection=max_client_connection,
                                        environment_file=environment_file,
@@ -87,7 +87,7 @@ class SofaEnvironmentConfig(BaseEnvironmentConfig):
                         str(idx),
                         str(self.number_of_thread)])
 
-    def createEnvironment(self, environment_manager):
+    def create_environment(self, environment_manager):
         """
         Create an Environment that will not be a TcpIpObject.
 
@@ -97,9 +97,14 @@ class SofaEnvironmentConfig(BaseEnvironmentConfig):
 
         # Create instance
         root_node = Sofa.Core.Node()
-        environment = root_node.addObject(self.environment_class(environment_manager=environment_manager,
-                                                                 root_node=root_node,
-                                                                 as_tcpip_client=False))
+        try:
+            environment = root_node.addObject(self.environment_class(environment_manager=environment_manager,
+                                                                     root_node=root_node, as_tcp_ip_client=False))
+        except:
+            raise ValueError(f"[{self.name}] Given 'environment_class' cannot be created in {self.name}")
+        if not isinstance(environment, SofaEnvironment):
+            raise TypeError(f"[{self.name}] Wrong 'environment_class' type: SofaEnvironment required, get "
+                            f"{self.environment_class}")
         # Create & Init Environment
         environment.create()
         environment.init()

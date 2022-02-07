@@ -1,3 +1,5 @@
+from numpy import ndarray
+
 from DeepPhysX_Core.Environment.BaseEnvironment import BaseEnvironment
 
 import Sofa
@@ -12,7 +14,7 @@ class SofaEnvironment(Sofa.Core.Controller, BaseEnvironment):
                  port=10000,
                  instance_id=1,
                  number_of_instances=1,
-                 as_tcpip_client=True,
+                 as_tcp_ip_client=True,
                  environment_manager=None,
                  *args, **kwargs):
         """
@@ -24,7 +26,7 @@ class SofaEnvironment(Sofa.Core.Controller, BaseEnvironment):
         :param int port: Port number of the TcpIpObject
         :param int instance_id: ID of the instance
         :param int number_of_instances: Number of simultaneously launched instances
-        :param bool as_tcpip_client: Environment is owned by a TcpIpClient if True, by an EnvironmentManager if False
+        :param bool as_tcp_ip_client: Environment is owned by a TcpIpClient if True, by an EnvironmentManager if False
         :param environment_manager: EnvironmentManager that handles the Environment if 'as_tcpip_client' is False
         """
 
@@ -32,7 +34,7 @@ class SofaEnvironment(Sofa.Core.Controller, BaseEnvironment):
         # Warning: Define root node before init Environment
         self.root = root_node
         BaseEnvironment.__init__(self, ip_address=ip_address, port=port, instance_id=instance_id,
-                                 number_of_instances=number_of_instances, as_tcpip_client=as_tcpip_client,
+                                 number_of_instances=number_of_instances, as_tcp_ip_client=as_tcp_ip_client,
                                  environment_manager=environment_manager)
 
     def create(self):
@@ -59,7 +61,7 @@ class SofaEnvironment(Sofa.Core.Controller, BaseEnvironment):
         :return:
         """
         await self.animate()
-        await self.onStep()
+        await self.on_step()
 
     async def animate(self):
         """
@@ -69,7 +71,7 @@ class SofaEnvironment(Sofa.Core.Controller, BaseEnvironment):
         """
         Sofa.Simulation.animate(self.root, self.root.dt.value)
 
-    async def onStep(self):
+    async def on_step(self):
         """
         Executed after an animation step.
 
@@ -77,7 +79,7 @@ class SofaEnvironment(Sofa.Core.Controller, BaseEnvironment):
         """
         pass
 
-    def checkSample(self, check_input=True, check_output=True):
+    def check_sample(self, check_input: bool = True, check_output: bool = True) -> bool:
         """
         Check if the current produced sample is usable for training.
         Not mandatory.
@@ -88,7 +90,7 @@ class SofaEnvironment(Sofa.Core.Controller, BaseEnvironment):
         """
         return True
 
-    def applyPrediction(self, prediction):
+    def apply_prediction(self, prediction: ndarray) -> None:
         """
         Apply network prediction in environment.
         Not mandatory.
@@ -98,7 +100,7 @@ class SofaEnvironment(Sofa.Core.Controller, BaseEnvironment):
         """
         pass
 
-    def initVisualizer(self):
+    def init_visualizer(self):
         """
         Init visualization data.
 
