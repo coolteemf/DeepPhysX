@@ -1,10 +1,10 @@
 from typing import List, Optional, Tuple
 
 from torch.nn.functional import pad
-from torch import reshape
+from torch import reshape, Tensor
 from numpy import asarray
 
-from DeepPhysX_PyTorch.Network.TorchDataTransformation import TorchDataTransformation, DataContainer
+from DeepPhysX_PyTorch.Network.TorchDataTransformation import TorchDataTransformation
 
 
 class UnetDataTransformation(TorchDataTransformation):
@@ -14,23 +14,23 @@ class UnetDataTransformation(TorchDataTransformation):
         super().__init__(config)
 
         # Configure the transformation parameters
-        self.input_size: List[int] = self.config.network_config.input_size
-        self.nb_steps: int = self.config.network_config.nb_steps
-        self.nb_output_channels: int = self.config.network_config.nb_output_channels
-        self.nb_input_channels: int = self.config.network_config.nb_input_channels
-        self.data_scale: float = self.config.network_config.data_scale
+        self.input_size: List[int] = self.config.input_size
+        self.nb_steps: int = self.config.nb_steps
+        self.nb_output_channels: int = self.config.nb_output_channels
+        self.nb_input_channels: int = self.config.nb_input_channels
+        self.data_scale: float = self.config.data_scale
         self.pad_widths: Optional[List[int]] = None
         self.inverse_pad_widths: Optional[List[int]] = None
 
         # Define shape transformations
-        border = 4 if self.config.network_config.two_sublayers else 2
-        border = 0 if self.config.network_config.border_mode == 'same' else border
+        border = 4 if self.config.two_sublayers else 2
+        border = 0 if self.config.border_mode == 'same' else border
         self.reverse_first_step = lambda x: x + border
         self.reverse_down_step = lambda x: (x + border) * 2
         self.reverse_up_step = lambda x: (x + border - 1) // 2 + 1
 
     @TorchDataTransformation.check_type
-    def transform_before_prediction(self, data_in: DataContainer) -> DataContainer:
+    def transform_before_prediction(self, data_in: Tensor) -> Tensor:
         """
         Apply data operations before network's prediction.
 
@@ -51,7 +51,7 @@ class UnetDataTransformation(TorchDataTransformation):
         return data_in
 
     @TorchDataTransformation.check_type
-    def transform_before_loss(self, data_out: DataContainer, data_gt: DataContainer) -> Tuple[DataContainer, DataContainer]:
+    def transform_before_loss(self, data_out: Tensor, data_gt: Tensor = None) -> Tuple[Tensor, Optional[Tensor]]:
         """
         Apply data operations between network's prediction and loss computation.
 
@@ -74,7 +74,7 @@ class UnetDataTransformation(TorchDataTransformation):
         return data_out, data_gt
 
     @TorchDataTransformation.check_type
-    def transform_before_apply(self, data_out: DataContainer) -> DataContainer:
+    def transform_before_apply(self, data_out: Tensor) -> Tensor:
         """
         Apply data operations between loss computation and prediction apply in environment.
 

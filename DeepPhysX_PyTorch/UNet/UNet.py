@@ -87,12 +87,11 @@ class UNet(TorchNetwork):
 
         # Set encoder - decoder architecture
         layers = down_layers + up_layers
-        self.architecture: EncoderDecoder = EncoderDecoder(layers=layers, nb_encoding_layers=config.nb_steps + 1)
+        architecture: EncoderDecoder = EncoderDecoder(layers=layers, nb_encoding_layers=config.nb_steps + 1)
 
         # Set the parts of the UNet
-        self.down: Sequential = self.architecture.setupEncoder()
-        self.middle: Sequential = self.architecture.executeSequential()
-        self.up: Sequential = self.architecture.setupDecoder()
+        self.down: Sequential = architecture.setupEncoder()
+        self.up: Sequential = architecture.setupDecoder()
         self.finalLayer: Union[Conv2d, Conv3d] = last_convolution_layer(in_channels=channels,
                                                                         out_channels=config.nb_output_channels,
                                                                         kernel_size=final_kernel_size)
@@ -123,6 +122,6 @@ class UNet(TorchNetwork):
         description += f"    Border mode: {self.config.border_mode}\n"
         description += f"    Merge on same level: {not self.config.skip_merge}\n"
         description += f"    Down layers: {self.print_architecture(str(self.down))}\n"
-        description += f"    Middle layers: {self.print_architecture(str(self.middle))}\n"
         description += f"    Up layers: {self.print_architecture(str(self.up))}\n"
+        description += f"    Final layer: {self.print_architecture(str(self.finalLayer))}"
         return description

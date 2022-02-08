@@ -1,9 +1,14 @@
-from typing import Any, List, Optional, Type
+from typing import Any, List, Optional, Type, Union
 
 from DeepPhysX_PyTorch.Network.TorchNetworkConfig import TorchNetworkConfig
 from DeepPhysX_PyTorch.Network.TorchOptimization import TorchOptimization
 from DeepPhysX_PyTorch.UNet.UnetDataTransformation import UnetDataTransformation
 from DeepPhysX_PyTorch.UNet.UNet import UNet
+
+from DeepPhysX_PyTorch.Network.TorchNetworkConfig import NetworkType, DataTransformationType
+
+NetworkType = Union[NetworkType, UNet]
+DataTransformationType = Union[DataTransformationType, UnetDataTransformation]
 
 
 class UNetConfig(TorchNetworkConfig):
@@ -12,7 +17,7 @@ class UNetConfig(TorchNetworkConfig):
                  optimization_class: Type[TorchOptimization] = TorchOptimization,
                  data_transformation_class: Type[UnetDataTransformation] = UnetDataTransformation,
                  network_dir: str = None,
-                 network_name: str = "UNetName",
+                 network_name: str = "UNetNetwork",
                  which_network: int = 0,
                  save_each_epoch: bool = False,
                  loss: Any = None,
@@ -44,6 +49,7 @@ class UNetConfig(TorchNetworkConfig):
 
         name = self.__class__.__name__
         # Check the input size type
+        input_size = input_size if input_size else [0, 0, 0]
         if type(input_size) not in [list, tuple]:
             raise TypeError(f"[{name}] Wrong 'input_size' type: list or tuple required, get {type(input_size)}")
         # Check the number of dimensions type and value
@@ -94,3 +100,9 @@ class UNetConfig(TorchNetworkConfig):
                                                            two_sublayers=two_sublayers,
                                                            border_mode=border_mode,
                                                            data_scale=data_scale)
+
+    def create_network(self) -> NetworkType:
+        return TorchNetworkConfig.create_network(self)
+
+    def create_data_transformation(self) -> DataTransformationType:
+        return TorchNetworkConfig.create_data_transformation(self)

@@ -1,9 +1,15 @@
-from typing import Any, Optional, Type
+from typing import Any, Optional, Type, Union
 
 from DeepPhysX_Core.Network.BaseNetworkConfig import BaseNetworkConfig
 from DeepPhysX_PyTorch.Network.TorchDataTransformation import TorchDataTransformation
 from DeepPhysX_PyTorch.Network.TorchNetwork import TorchNetwork
 from DeepPhysX_PyTorch.Network.TorchOptimization import TorchOptimization
+
+from DeepPhysX_Core.Network.BaseNetworkConfig import NetworkType, OptimizationType, DataTransformationType
+
+NetworkType = Union[NetworkType, TorchNetwork]
+OptimizationType = Union[OptimizationType, TorchOptimization]
+DataTransformationType = Union[DataTransformationType, TorchDataTransformation]
 
 
 class TorchNetworkConfig(BaseNetworkConfig):
@@ -38,3 +44,12 @@ class TorchNetworkConfig(BaseNetworkConfig):
         self.network_config = self.make_config(config_name='network_config',
                                                network_name=network_name,
                                                network_type=network_type)
+
+    def create_network(self) -> NetworkType:
+        return BaseNetworkConfig.create_network(self)
+
+    def create_optimization(self) -> OptimizationType:
+        return BaseNetworkConfig.create_optimization(self)
+
+    def create_data_transformation(self) -> DataTransformationType:
+        return BaseNetworkConfig.create_data_transformation(self)

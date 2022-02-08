@@ -1,14 +1,15 @@
 from collections import namedtuple
 from typing import Any, Optional, Union, Callable, Type
 import numpy
-import torch
 from os.path import isdir
 
 from DeepPhysX_Core.Network.BaseNetwork import BaseNetwork
 from DeepPhysX_Core.Network.BaseOptimization import BaseOptimization
 from DeepPhysX_Core.Network.DataTransformation import DataTransformation
 
-DataContainer = Union[numpy.ndarray, torch.Tensor]
+NetworkType = Union[BaseNetwork]
+OptimizationType = Union[BaseOptimization]
+DataTransformationType = Union[DataTransformation]
 
 
 class BaseNetworkConfig:
@@ -114,7 +115,7 @@ class BaseNetworkConfig:
         # Create namedtuple with collected items
         return namedtuple(config_name, fields)._make(args)
 
-    def create_network(self) -> BaseNetwork:
+    def create_network(self) -> NetworkType:
         """
         :return: BaseNetwork object from network_class and its parameters.
         """
@@ -128,7 +129,7 @@ class BaseNetworkConfig:
                 f"[{self.__class__.__name__}] Wrong 'network_class' type: BaseNetwork required, get {self.network_class}")
         return network
 
-    def create_optimization(self) -> BaseOptimization:
+    def create_optimization(self) -> OptimizationType:
         """
         :return: BaseOptimization object from optimization_class and its parameters.
         """
@@ -142,7 +143,7 @@ class BaseNetworkConfig:
                             f"get {self.optimization_class}")
         return optimization
 
-    def create_data_transformation(self) -> DataTransformation:
+    def create_data_transformation(self) -> DataTransformationType:
         """
         :return: DataTransformation object from data_transformation_class and its parameters.
         """

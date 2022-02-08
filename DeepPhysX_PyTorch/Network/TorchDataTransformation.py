@@ -1,11 +1,7 @@
-from typing import Union, Tuple
-import numpy
-import torch
+from typing import Tuple, Optional
 from torch import Tensor
 
 from DeepPhysX_Core.Network.DataTransformation import DataTransformation
-
-DataContainer = Union[numpy.ndarray, torch.Tensor]
 
 
 class TorchDataTransformation(DataTransformation):
@@ -20,7 +16,7 @@ class TorchDataTransformation(DataTransformation):
         self.data_type = Tensor
 
     @DataTransformation.check_type
-    def transform_before_prediction(self, data_in: DataContainer) -> DataContainer:
+    def transform_before_prediction(self, data_in: Tensor) -> Tensor:
         """
         Apply data operations before network's prediction.
 
@@ -30,7 +26,7 @@ class TorchDataTransformation(DataTransformation):
         return data_in
 
     @DataTransformation.check_type
-    def transform_before_loss(self, data_out: DataContainer, data_gt: DataContainer = None) -> Tuple[DataContainer, DataContainer]:
+    def transform_before_loss(self, data_out: Tensor, data_gt: Tensor = None) -> Tuple[Tensor, Optional[Tensor]]:
         """
         Apply data operations between network's prediction and loss computation.
 
@@ -41,7 +37,7 @@ class TorchDataTransformation(DataTransformation):
         return data_out, data_gt
 
     @DataTransformation.check_type
-    def transform_before_apply(self, data_out: DataContainer) -> DataContainer:
+    def transform_before_apply(self, data_out: Tensor) -> Tensor:
         """
         Apply data operations between loss computation and prediction apply in environment.
 

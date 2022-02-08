@@ -1,8 +1,5 @@
-from typing import Callable, Any, Optional, Union, Tuple
-import numpy
-import torch
-
-DataContainer = Union[numpy.ndarray, torch.Tensor]
+from typing import Callable, Any, Optional, Tuple
+from numpy import ndarray
 
 
 class DataTransformation:
@@ -29,7 +26,7 @@ class DataTransformation:
 
         return inner
 
-    def transform_before_prediction(self, data_in: DataContainer) -> DataContainer:
+    def transform_before_prediction(self, data_in: ndarray) -> ndarray:
         """
         Apply data operations before network's prediction.
 
@@ -38,7 +35,7 @@ class DataTransformation:
         """
         return data_in
 
-    def transform_before_loss(self, data_out: DataContainer, data_gt: DataContainer = None) -> Tuple[Any, Optional[Any]]:
+    def transform_before_loss(self, data_out: ndarray, data_gt: ndarray = None) -> Tuple[ndarray, Optional[ndarray]]:
         """
         Apply data operations between network's prediction and loss computation.
 
@@ -48,7 +45,7 @@ class DataTransformation:
         """
         return data_out, data_gt
 
-    def transform_before_apply(self, data_out: DataContainer) -> DataContainer:
+    def transform_before_apply(self, data_out: ndarray) -> ndarray:
         """
         Apply data operations between loss computation and prediction apply in environment.
 
