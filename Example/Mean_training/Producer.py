@@ -39,4 +39,4 @@ class MeanEnvironment(BaseEnvironment):
 
     async def onStep(self):
         # Send the training data
-        await self.send_training_data(network_input=self.input, network_output=self.output)
+        await self.__send_training_data(network_input=self.input, network_output=self.output)

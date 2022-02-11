@@ -26,18 +26,21 @@ class TestBaseEnvironment(TestCase):
             self.env.create()
             self.env.step()
 
-    def test_set_dataset_sample(self):
-        # Create random samples
-        sample_in, sample_out = np.random.random((3, 1)), np.random.random((3, 3))
-        additional_in, additional_out = np.random.random((3, 1)), np.random.random((3, 3))
-        # Set as dataset samples
-        self.env.set_dataset_sample(sample_in, sample_out, {'additional_data': additional_in},
-                                    {'additional_data': additional_out})
-        # Check samples are well-defined in environment
-        for data, env_data in zip([sample_in, sample_out, additional_in, additional_out],
-                                  [self.env.sample_in, self.env.sample_out,
-                                   self.env.additional_inputs, self.env.additional_outputs]):
-            self.assertTrue(np.equal(data, env_data).all())
+    # def test_set_dataset_sample(self):
+    #     # Create random samples
+    #     sample_in, sample_out = np.random.random((3, 1)), np.random.random((3, 3))
+    #     additional_in, additional_out = np.random.random((3, 1)), np.random.random((3, 3))
+    #     # Set as dataset samples
+    #     self.env.set_dataset_sample(sample_in, sample_out, {'additional_data': additional_in},
+    #                                 {'additional_data': additional_out})
+    #     # Check samples are well-defined in environment
+    #     for data, env_data in zip([sample_in, sample_out],
+    #                               [self.env.sample_in, self.env.sample_out]):
+    #         self.assertTrue(np.equal(data, env_data).all())
+    #     # Check additional samples are well defined too
+    #     for data, env_data in zip([additional_in, additional_out],
+    #                               [self.env.additional_inputs, self.env.additional_outputs]):
+    #         self.assertTrue('additional_data' in env_data and (data == env_data['additional_data']).all())
 
     def test_set_training_data(self):
         # Create random samples
@@ -63,8 +66,8 @@ class TestBaseEnvironment(TestCase):
         # Create random samples
         additional_in, additional_out = np.random.random((3, 1)), np.random.random((3, 3))
         # Set as additional inputs and outputs
-        self.env.additional_in_dataset('input', additional_in)
-        self.env.additional_out_dataset('output', additional_out)
+        self.env.set_additional_in_dataset('input', additional_in)
+        self.env.set_additional_out_dataset('output', additional_out)
         # Check additional data are well-defined in environment
         for label, value, additional_dict in zip(['input', 'output'], [additional_in, additional_out],
                                                  [self.env.additional_inputs, self.env.additional_outputs]):

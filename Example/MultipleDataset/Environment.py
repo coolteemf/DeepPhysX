@@ -44,8 +44,8 @@ class Environment(BaseEnvironment):
             duplicated_input = self.input.copy()
             duplicated_output = self.output.copy()
             # Additional data must be set before setting training data
-            self.additional_in_dataset(label="duplicated", data=duplicated_input)
-            self.additional_out_dataset(label="duplicated", data=duplicated_output)
+            self.set_additional_in_dataset(label="duplicated", data=duplicated_input)
+            self.set_additional_out_dataset(label="duplicated", data=duplicated_output)
             # Setting (and sending) training data
             self.set_training_data(input_array=self.input, output_array=self.output)
             # Increment iteration counter

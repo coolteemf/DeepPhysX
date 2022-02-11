@@ -60,7 +60,7 @@ class VisualizerManager:
         self.visualizer.update_visualizer(data_dict)
         self.screenshot_counter += 1
         if self.screenshot_counter == self.screenshot_rate:
-            self.visualizer.save_screenshot(session_dir=self.data_manager.environment_manager.session_dir)
+            self.visualizer.save_screenshot(session_dir=self.data_manager.get_manager().session_dir)
             self.screenshot_counter = 0
 
     def render(self):

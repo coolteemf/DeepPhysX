@@ -111,8 +111,8 @@ class update_wrapper:
 
             specialized_update(self=object_factory, instance=instance)
 
-            if object_factory.dirty_fields:  # Check for emptyness
-                print(f"Update successful ! Unused field(s) : {object_factory.dirty_fields}")
+            # if object_factory.dirty_fields:  # Check for emptyness
+            #     print(f"Update successful ! Unused field(s) : {object_factory.dirty_fields}")
 
             return instance
 

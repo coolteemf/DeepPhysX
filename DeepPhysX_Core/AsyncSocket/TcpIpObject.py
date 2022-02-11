@@ -1,7 +1,5 @@
-import asyncio
 from socket import socket, AF_INET, SOCK_STREAM, SOL_SOCKET, SO_REUSEADDR
 from asyncio import get_event_loop
-import threading
 from typing import Dict, Any, List, Union, Tuple
 import numpy
 
@@ -34,8 +32,7 @@ class TcpIpObject:
         self.data_converter: BytesConverter = BytesConverter()
         # Available commands
         self.command_dict: Dict[str, bytes] = {'exit': b'exit', 'step': b'step', 'done': b'done', 'finished': b'fini',
-                                               'prediction': b'pred', 'compute': b'cmpt', 'read': b'read',
-                                               'sample': b'samp',
+                                               'prediction': b'pred', 'read': b'read', 'sample': b'samp',
                                                'visualisation': b'visu'}
         self.action_on_command: Dict[bytes, Any] = {
             self.command_dict["exit"]: self.action_on_exit,
@@ -43,7 +40,6 @@ class TcpIpObject:
             self.command_dict["done"]: self.action_on_done,
             self.command_dict["finished"]: self.action_on_finished,
             self.command_dict["prediction"]: self.action_on_prediction,
-            self.command_dict["compute"]: self.action_on_compute,
             self.command_dict["read"]: self.action_on_read,
             self.command_dict["sample"]: self.action_on_sample,
             self.command_dict["visualisation"]: self.action_on_visualisation,

@@ -1,7 +1,6 @@
 from typing import Any, Optional, Dict
 
-import numpy
-from numpy import array
+from numpy import array, ndarray
 
 from DeepPhysX_Core.AsyncSocket.TcpIpClient import TcpIpClient
 
@@ -22,7 +21,7 @@ class BaseEnvironment(TcpIpClient):
         :param int port: Port number of the TcpIpObject
         :param int instance_id: ID of the instance
         :param int number_of_instances: Number of simultaneously launched instances
-        :param bool as_tcpip_client: Environment is owned by a TcpIpClient if True, by an EnvironmentManager if False
+        :param bool as_tcp_ip_client: Environment is owned by a TcpIpClient if True, by an EnvironmentManager if False
         :param environment_manager: EnvironmentManager that handles the Environment if 'as_tcpip_client' is False
         """
 
@@ -34,15 +33,31 @@ class BaseEnvironment(TcpIpClient):
                              port=port)
 
         # Input and output to give to the network
-        self.input: numpy.ndarray = array([])
-        self.output: numpy.ndarray = array([])
+        self.input: ndarray = array([])
+        self.output: ndarray = array([])
         # Variables to store samples from Dataset
-        self.sample_in: Optional[numpy.ndarray] = None
-        self.sample_out: Optional[numpy.ndarray] = None
+        self.sample_in: Optional[ndarray] = None
+        self.sample_out: Optional[ndarray] = None
         # Loss data
         self.loss_data: Any = None
         # Manager if the Environment is not a TcpIpClient
         self.environment_manager: Any = environment_manager
+
+    ##########################################################################################
+    ##########################################################################################
+    #                                 Initializing Environment                               #
+    ##########################################################################################
+    ##########################################################################################
+
+    def recv_parameters(self, param_dict: Dict[Any, Any]) -> None:
+        """
+        Exploit received parameters before scene creation.
+        Not mandatory.
+
+        :param dict param_dict: Dictionary of parameters
+        :return:
+        """
+        pass
 
     def create(self) -> None:
         """
@@ -58,45 +73,6 @@ class BaseEnvironment(TcpIpClient):
         Initialize the Environment.
         Not mandatory.
 
-        :return:
-        """
-        pass
-
-    def step(self) -> None:
-        """
-        Compute the number of steps in the Environment specified by simulations_per_step in EnvironmentConfig.
-        Must be implemented by user.
-
-        :return:
-        """
-        raise NotImplementedError
-
-    def check_sample(self, check_input: bool = True, check_output: bool = True) -> bool:
-        """
-        Check if the current produced sample is usable for training.
-        Not mandatory.
-
-        :param bool check_input: If True, input tensors need to be checked
-        :param bool check_output: If True, output tensors need to be checked
-        :return: bool - Current data can be used or not
-        """
-        return True
-
-    def close(self) -> None:
-        """
-        Close the Environment.
-        Not mandatory.
-
-        :return:
-        """
-        pass
-
-    def recv_parameters(self, param_dict: Dict[Any, Any]) -> None:
-        """
-        Exploit received parameters before scene creation.
-        Not mandatory.
-
-        :param dict param_dict: Dictionary of parameters
         :return:
         """
         pass
@@ -119,7 +95,33 @@ class BaseEnvironment(TcpIpClient):
         """
         return
 
-    def apply_prediction(self, prediction: numpy.ndarray) -> None:
+    ##########################################################################################
+    ##########################################################################################
+    #                                 Environment behavior                                   #
+    ##########################################################################################
+    ##########################################################################################
+
+    async def step(self) -> None:
+        """
+        Compute the number of steps in the Environment specified by simulations_per_step in EnvironmentConfig.
+        Must be implemented by user.
+
+        :return:
+        """
+        raise NotImplementedError
+
+    def check_sample(self, check_input: bool = True, check_output: bool = True) -> bool:
+        """
+        Check if the current produced sample is usable for training.
+        Not mandatory.
+
+        :param bool check_input: If True, input tensors need to be checked
+        :param bool check_output: If True, output tensors need to be checked
+        :return: bool - Current data can be used or not
+        """
+        return True
+
+    def apply_prediction(self, prediction: ndarray) -> None:
         """
         Apply network prediction in environment.
         Not mandatory.
@@ -129,25 +131,22 @@ class BaseEnvironment(TcpIpClient):
         """
         pass
 
-    def set_dataset_sample(self, sample_in: numpy.ndarray, sample_out: numpy.ndarray, additional_in: Dict[str, Dict[str, Any]] = {}, additional_out: Dict[str, Dict[str, Any]] = {}) -> None:
+    def close(self) -> None:
         """
-        Set the sample received from Dataset.
+        Close the Environment.
+        Not mandatory.
 
-        :param ndarray sample_in: Input sample
-        :param ndarray sample_out: Output sample
-        :param dict additional_in: Contains each additional input data samples
-        :param dict additional_out: Contains each additional output data samples
         :return:
         """
+        pass
 
-        # Network in / out samples
-        self.sample_in = sample_in
-        self.sample_out = sample_out
-        # Additional in / out samples (default value is {})
-        self.additional_inputs = additional_in.get('additional_data', {})
-        self.additional_outputs = additional_out.get('additional_data', {})
+    ##########################################################################################
+    ##########################################################################################
+    #                                   Defining a sample                                    #
+    ##########################################################################################
+    ##########################################################################################
 
-    def set_training_data(self, input_array: numpy.ndarray, output_array: numpy.ndarray) -> None:
+    def set_training_data(self, input_array: ndarray, output_array: ndarray) -> None:
         """
         Set the training data to send to the TcpIpServer or the EnvironmentManager.
 
@@ -158,13 +157,8 @@ class BaseEnvironment(TcpIpClient):
 
         # Training data is set if the Environment can compute data
         if self.compute_essential_data:
-            # Through TcpIp sending
-            if self.as_tcp_ip_client:
-                self.sync_send_training_data(network_input=input_array, network_output=output_array)
-            # Directly get by EnvironmentManager
-            else:
-                self.input = input_array
-                self.output = output_array
+            self.input = input_array
+            self.output = output_array
 
     def set_loss_data(self, loss_data: Any) -> None:
         """
@@ -176,14 +170,9 @@ class BaseEnvironment(TcpIpClient):
 
         # Training data is set if the Environment can compute data
         if self.compute_essential_data:
-            # Through TcpIp sending
-            if self.as_tcp_ip_client:
-                self.sync_send_labeled_data(loss_data, 'loss')
-            # Directly get by EnvironmentManager
-            else:
-                self.loss_data = loss_data
+            self.loss_data = loss_data if type(loss_data) in [list, ndarray] else array([loss_data])
 
-    def additional_in_dataset(self, label: str, data: Any) -> None:
+    def set_additional_in_dataset(self, label: str, data: Any) -> None:
         """
         Set additional input data fields to store in the dataset.
 
@@ -192,9 +181,11 @@ class BaseEnvironment(TcpIpClient):
         :return:
         """
 
-        self.additional_inputs[label] = data
+        # Training data is set if the Environment can compute data
+        if self.compute_essential_data:
+            self.additional_inputs[label] = data if type(data) in [list, ndarray] else array([data])
 
-    def additional_out_dataset(self, label: str, data: Any) -> None:
+    def set_additional_out_dataset(self, label: str, data: Any) -> None:
         """
         Set additional output data fields to store in the dataset.
 
@@ -203,9 +194,27 @@ class BaseEnvironment(TcpIpClient):
         :return:
         """
 
-        self.additional_outputs[label] = data
+        # Training data is set if the Environment can compute data
+        if self.compute_essential_data:
+            self.additional_outputs[label] = data if type(data) in [list, ndarray] else array([data])
 
-    def sync_get_prediction(self, input_array: numpy.ndarray) -> numpy.ndarray:
+    def reset_additional_datasets(self) -> None:
+        """
+        Reset the additional dataset dictionaries.
+
+        :return:
+        """
+
+        self.additional_inputs = {}
+        self.additional_outputs = {}
+
+    ##########################################################################################
+    ##########################################################################################
+    #                                   Available requests                                   #
+    ##########################################################################################
+    ##########################################################################################
+
+    def get_prediction(self, input_array: ndarray) -> ndarray:
         """
         Request a prediction from Network.
 
@@ -215,7 +224,7 @@ class BaseEnvironment(TcpIpClient):
 
         # If Environment is a TcpIpClient, send request to the Server
         if self.as_tcp_ip_client:
-            return self.sync_send_prediction_request(network_input=input_array)
+            return TcpIpClient.request_get_prediction(self, input_array=input_array)
 
         # Otherwise, check the hierarchy of managers
         if self.environment_manager.data_manager is None:
@@ -225,33 +234,10 @@ class BaseEnvironment(TcpIpClient):
         elif self.environment_manager.data_manager.manager.network_manager is None:
             raise ValueError("Cannot request prediction if NetworkManager does not exist")
         # Get a prediction
-        return self.environment_manager.data_manager.manager.network_manager.computeOnlinePrediction(
+        return self.environment_manager.data_manager.manager.network_manager.compute_online_prediction(
             network_input=input_array[None, ])
 
-    async def get_prediction(self, input_array: numpy.ndarray) -> numpy.ndarray:
-        """
-        Request a prediction from Network.
-
-        :param ndarray input_array: Network input
-        :return:
-        """
-
-        # If Environment is a TcpIpClient, send request to the Server
-        if self.as_tcp_ip_client:
-            return await self.send_prediction_request(network_input=input_array)
-
-        # Otherwise, check the hierarchy of managers
-        if self.environment_manager.data_manager is None:
-            raise ValueError("Cannot request prediction if DataManager does not exist")
-        elif self.environment_manager.data_manager.manager is None:
-            raise ValueError("Cannot request prediction if Manager does not exist")
-        elif self.environment_manager.data_manager.manager.network_manager is None:
-            raise ValueError("Cannot request prediction if NetworkManager does not exist")
-        # Get a prediction
-        return self.environment_manager.data_manager.manager.network_manager.computeOnlinePrediction(
-            network_input=input_array[None, ])
-
-    async def update_visualisation(self, visu_dict: Dict[int, Dict[str, Any]]) -> None:
+    def update_visualisation(self, visu_dict: Dict[int, Dict[str, Any]]) -> None:
         """
         Triggers the Visualizer update.
 
@@ -261,25 +247,10 @@ class BaseEnvironment(TcpIpClient):
 
         # If Environment is a TcpIpClient, request to the Server
         if self.as_tcp_ip_client:
-            await self.send_visualization_data(visualization_data=visu_dict)
+            TcpIpClient.request_update_visualization(self, visu_dict=visu_dict)
         # Otherwise, request to the EnvironmentManager
         else:
-            self.environment_manager.visualizer.updateFromSample(visu_dict, self.instance_id)
-
-    def sync_update_visualisation(self, visu_dict: Dict[int, Dict[str, Any]]) -> None:
-        """
-        Triggers the Visualizer update.
-
-        :param dict visu_dict: Updated visualization data.
-        :return:
-        """
-
-        # If Environment is a TcpIpClient, request to the Server
-        if self.as_tcp_ip_client:
-            self.sync_send_visualization_data(visualization_data=visu_dict)
-        # Otherwise, request to the EnvironmentManager
-        else:
-            self.environment_manager.visualizer.updateFromSample(visu_dict, self.instance_id)
+            self.environment_manager.update_visualizer({self.instance_id: visu_dict})
 
     def __str__(self) -> str:
         """

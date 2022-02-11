@@ -1,9 +1,9 @@
-from asyncio import get_event_loop, run, gather
+from asyncio import get_event_loop, gather
+from asyncio import run as async_run
 from socket import socket
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Union
 
-import numpy
-import numpy as np
+from numpy import ndarray
 from queue import SimpleQueue
 
 from DeepPhysX_Core.AsyncSocket.TcpIpObject import TcpIpObject
@@ -41,7 +41,7 @@ class TcpIpServer(TcpIpObject):
         self.sock.setblocking(False)
 
         # Expect a defined number of clients
-        self.clients: List[socket] = []
+        self.clients: List[List[int, socket]] = []
         self.nb_client: int = min(nb_client, max_client_count)
 
         # Init data to communicate with EnvironmentManager and Clients
@@ -49,11 +49,17 @@ class TcpIpServer(TcpIpObject):
         self.data_fifo: SimpleQueue = SimpleQueue()
         self.data_dict: Dict[Any, Any] = {}
         self.sample_to_client_id: List[int] = []
-        self.batch_from_dataset: Optional[Dict[str,numpy.ndarray]] = None
+        self.batch_from_dataset: Optional[Dict[str, ndarray]] = None
         self.first_time: bool = True
 
         # Reference to EnvironmentManager
         self.environment_manager: Any = manager
+
+    ##########################################################################################
+    ##########################################################################################
+    #                                     Connect Clients                                    #
+    ##########################################################################################
+    ##########################################################################################
 
     def connect(self) -> None:
         """
@@ -63,7 +69,7 @@ class TcpIpServer(TcpIpObject):
         """
 
         print(f"[{self.name}] Waiting for clients...")
-        run(self.__connect())
+        async_run(self.__connect())
 
     async def __connect(self) -> None:
         """
@@ -75,10 +81,18 @@ class TcpIpServer(TcpIpObject):
         loop = get_event_loop()
         # Accept clients connections one by one
         for _ in range(self.nb_client):
+            # Accept connection
             client, _ = await loop.sock_accept(self.sock)
+            # Get the instance ID
             label, client_id = await self.receive_labeled_data(loop=loop, sender=client)
             print(f"[{self.name}] Client n°{client_id} connected: {client}")
             self.clients.append([client_id, client])
+
+    ##########################################################################################
+    ##########################################################################################
+    #                                 Initialize Environment                                 #
+    ##########################################################################################
+    ##########################################################################################
 
     def initialize(self, param_dict: Dict[Any, Any]) -> dict:
         """
@@ -89,7 +103,7 @@ class TcpIpServer(TcpIpObject):
         """
 
         print(f"[{self.name}] Initializing clients...")
-        run(self.__initialize(param_dict))
+        async_run(self.__initialize(param_dict))
         # Return param dict
         param_dict = {}
         for client_id in self.data_dict:
@@ -110,13 +124,23 @@ class TcpIpServer(TcpIpObject):
         self.data_dict = {client_ID: {} for client_ID in range(len(self.clients))}
         # Initialisation process for each client
         for client_id, client in self.clients:
+            # Send number of sub-steps
+            nb_steps = self.environment_manager.simulations_per_step if self.environment_manager else 1
+            await self.send_data(data_to_send=nb_steps, loop=loop, receiver=client)
             # Send parameters to client
             await self.send_dict(name="parameters", dict_to_send=param_dict, loop=loop, receiver=client)
             # Receive visualization data and parameters
             await self.listen_while_not_done(loop=loop, sender=client, data_dict=self.data_dict, client_id=client_id)
             print(f"[{self.name}] Client n°{client_id} initialisation done")
 
-    def getBatch(self, get_inputs: bool = True, get_outputs: bool = True, animate: bool = True) -> Tuple[List[numpy.ndarray], Dict[Any, Any]]:
+    ##########################################################################################
+    ##########################################################################################
+    #                          Data: produce batch & dispatch batch                          #
+    ##########################################################################################
+    ##########################################################################################
+
+    def get_batch(self, get_inputs: bool = True, get_outputs: bool = True, animate: bool = True) -> \
+            Dict[str, Union[ndarray, dict]]:
         """
         Build a batch from clients samples.
 
@@ -127,7 +151,7 @@ class TcpIpServer(TcpIpObject):
         """
 
         # Trigger communication protocol
-        run(self.__request_data_from_client(get_inputs=get_inputs, get_outputs=get_outputs, animate=animate))
+        async_run(self.__request_data_to_clients(get_inputs=get_inputs, get_outputs=get_outputs, animate=animate))
 
         # Sort stored data between following fields
         data_sorter = {'input': [], 'dataset_in': {}, 'output': [], 'dataset_out': {}, 'loss': []}
@@ -153,13 +177,10 @@ class TcpIpServer(TcpIpObject):
             if 'ID' in data:
                 self.sample_to_client_id.append(data['ID'])
 
-        # Reformat data dict
-        self.data_dict['loss'] = data_sorter['loss']
-        self.data_dict['dataset_in'] = data_sorter['dataset_in']
-        self.data_dict['dataset_out'] = data_sorter['dataset_out']
-        return [data_sorter['input'], data_sorter['output']], self.data_dict
+        return data_sorter
 
-    async def __request_data_from_client(self, get_inputs: bool = True, get_outputs: bool = True, animate: bool = True) -> None:
+    async def __request_data_to_clients(self, get_inputs: bool = True, get_outputs: bool = True, animate: bool = True) \
+            -> None:
         """
         Trigger a communication protocol for each client. Wait for all clients before to launch another communication
         protocol while the batch is not full.
@@ -179,7 +200,8 @@ class TcpIpServer(TcpIpObject):
                            for client_id, client in self.clients])
             client_launched += len(self.clients)
 
-    async def __communicate(self, client: socket = None, client_id: int = None, get_inputs: bool = True, get_outputs: bool = True, animate: bool = True):
+    async def __communicate(self, client: socket = None, client_id: int = None, get_inputs: bool = True,
+                            get_outputs: bool = True, animate: bool = True) -> None:
         """
         Communication protocol with a client. It goes through different steps:
         1) Eventually send samples to Client
@@ -195,59 +217,50 @@ class TcpIpServer(TcpIpObject):
         """
 
         loop = get_event_loop()
-        if animate:
 
-            # 1) If a sample from Dataset is given, sent it to the TcpIpClient
-            if self.batch_from_dataset is not None:
-                # Send the sample to the TcpIpClient
-                await self.send_command_sample(loop=loop, receiver=client)
-                # Pop the first sample of the numpy batch for network in / out
-                for field in ['input', 'output']:
-                    sample = np.array([])
-                    if field in self.batch_from_dataset:
-                        # Pop sample from array
-                        sample = self.batch_from_dataset[field][0]
-                        self.batch_from_dataset[field] = self.batch_from_dataset[field][1:]
-                        # Keep the sample in memory
-                        self.data_dict[client_id][field] = sample
+        # 1) If a sample from Dataset is given, sent it to the TcpIpClient
+        if self.batch_from_dataset is not None:
+            # Check if there is remaining samples, otherwise client is not used
+            if len(self.batch_from_dataset['input']) == 0 or len(self.batch_from_dataset['output']) == 0:
+                return
+            # Send the sample to the TcpIpClient
+            await self.send_command_sample(loop=loop, receiver=client)
+            # Pop the first sample of the numpy batch for network in / out
+            for field in ['input', 'output']:
+                # Tell if there is something to read
+                await self.send_data(data_to_send=field in self.batch_from_dataset, loop=loop, receiver=client)
+                if field in self.batch_from_dataset:
+                    # Pop sample from array if there are some
+                    sample = self.batch_from_dataset[field][0]
+                    self.batch_from_dataset[field] = self.batch_from_dataset[field][1:]
+                    # Keep the sample in memory
+                    self.data_dict[client_id][field] = sample
                     # Send network in / out sample
                     await self.send_data(data_to_send=sample, loop=loop, receiver=client)
-                # Pop the first sample of the numpy batch for each additional in / out
-                for field in ['dataset_in', 'dataset_out']:
-                    # Tell TcpClient if there is additional data for this field
-                    await self.send_data(data_to_send=field in self.batch_from_dataset, loop=loop, receiver=client)
-                    if field in self.batch_from_dataset:
-                        sample = {}
-                        # Get each additional data field
-                        for key in self.batch_from_dataset[field]:
-                            # Pop sample from array
-                            sample[key] = self.batch_from_dataset[field][key][0]
-                            self.batch_from_dataset[field][key] = self.batch_from_dataset[field][key][1:]
-                            # Keep the sample in memory
-                            self.data_dict[client_id][field + key] = sample[key]
-                        # Send additional in / out sample
-                        await self.send_dict(name="additional_data", dict_to_send=sample, loop=loop, receiver=client)
+            # Pop the first sample of the numpy batch for each additional in / out
+            for field in ['dataset_in', 'dataset_out']:
+                # Tell TcpClient if there is additional data for this field
+                await self.send_data(data_to_send=field in self.batch_from_dataset, loop=loop, receiver=client)
+                if field in self.batch_from_dataset:
+                    sample = {}
+                    # Get each additional data field
+                    for key in self.batch_from_dataset[field]:
+                        # Pop sample from array
+                        sample[key] = self.batch_from_dataset[field][key][0]
+                        self.batch_from_dataset[field][key] = self.batch_from_dataset[field][key][1:]
+                        # Keep the sample in memory
+                        self.data_dict[client_id][field + key] = sample[key]
+                    # Send additional in / out sample
+                    await self.send_dict(name="additional_data", dict_to_send=sample, loop=loop, receiver=client)
 
-            # 2) Execute n steps, the last one send data computation signal
-            visu_dict = {}
-            for current_step in range(self.environment_manager.simulations_per_step):
-                # Last step is to compute data
-                if current_step == self.environment_manager.simulations_per_step - 1:
-                    await self.send_command_compute(loop=loop, receiver=client)
-                # Otherwise, just a simple step
-                else:
-                    await self.send_command_step(loop=loop, receiver=client)
-                # Receive data while Client has to
-                await self.listen_while_not_done(loop=loop, sender=client, data_dict=self.data_dict,
-                                                 client_id=client_id)
-                # Extract visualization data
-                if 'visualisation' in self.data_dict[client_id]:
-                    visu_dict[client_id] = self.data_dict[client_id]['visualisation']
-            # Update visualization
-            if visu_dict != {}:
-                self.environment_manager.update_visualizer(visu_dict)
+        # 2) Execute n steps, the last one send data computation signal
+        if animate:
+            await self.send_command_step(loop=loop, receiver=client)
+            # Receive data
+            await self.listen_while_not_done(loop=loop, sender=client, data_dict=self.data_dict,
+                                             client_id=client_id)
 
-        # 3) Add received data to queue
+        # 3.1) Add all received in / out data to queue
         data = {}
         for get_data, net_field, add_field in zip([get_inputs, get_outputs], ['input', 'output'],
                                                   ['dataset_in', 'dataset_out']):
@@ -259,15 +272,16 @@ class TcpIpServer(TcpIpObject):
                 data[add_field] = {}
                 for field in additional_fields:
                     data[add_field][field[len(add_field):]] = self.data_dict[client_id][field]
-        # Add loss data if provided
+        # 3.2) Add loss data if provided
         if 'loss' in self.data_dict[client_id]:
             data['loss'] = self.data_dict[client_id]['loss']
-        # Identify sample
+        # 3.3) Identify sample
         data['ID'] = client_id
-        # Add data to the Queue
+
+        # 4) Add data to the Queue
         self.data_fifo.put(data)
 
-    def set_dataset_batch(self, batch: numpy.ndarray) -> None:
+    def set_dataset_batch(self, batch: Dict[str, Union[ndarray, dict]]) -> None:
         """
         Receive a batch of data from the Dataset. Samples will be dispatched between clients.
 
@@ -282,6 +296,12 @@ class TcpIpServer(TcpIpObject):
         # Define batch from dataset
         self.batch_from_dataset = batch.copy()
 
+    ##########################################################################################
+    ##########################################################################################
+    #                                 Server & Client shutdown                               #
+    ##########################################################################################
+    ##########################################################################################
+
     def close(self) -> None:
         """
         Run __close method with asyncio
@@ -290,7 +310,7 @@ class TcpIpServer(TcpIpObject):
         """
 
         print(f"[{self.name}] Closing clients...")
-        run(self.__close())
+        async_run(self.__close())
 
     async def __close(self) -> None:
         """
@@ -323,7 +343,13 @@ class TcpIpServer(TcpIpObject):
         if data != b'exit':
             raise ValueError(f"Client {idx} was supposed to exit.")
 
-    async def action_on_prediction(self, data: numpy.ndarray, client_id: int, sender: socket, loop: Any) -> None:
+    ##########################################################################################
+    ##########################################################################################
+    #                            Actions to perform on commands                              #
+    ##########################################################################################
+    ##########################################################################################
+
+    async def action_on_prediction(self, data: ndarray, client_id: int, sender: socket, loop: Any) -> None:
         """
         Action to run when receiving the 'prediction' command
 
@@ -333,6 +359,7 @@ class TcpIpServer(TcpIpObject):
         :param sender: TcpIpObject sender
         :return:
         """
+
         # Receive network input
         label, network_input = await self.receive_labeled_data(loop=loop, sender=sender)
 
@@ -351,7 +378,7 @@ class TcpIpServer(TcpIpObject):
         await self.send_labeled_data(data_to_send=prediction, label="prediction", receiver=sender,
                                      send_read_command=False)
 
-    async def action_on_visualisation(self, data: numpy.ndarray, client_id: int, sender: socket, loop: Any) -> None:
+    async def action_on_visualisation(self, data: ndarray, client_id: int, sender: socket, loop: Any) -> None:
         """
         Action to run when receiving the 'visualisation' command
 
@@ -364,3 +391,6 @@ class TcpIpServer(TcpIpObject):
 
         # Receive visualization data
         await self.receive_dict(data[client_id], sender=sender, loop=loop)
+        # Update visualization
+        if 'visualisation' in data[client_id]:
+            self.environment_manager.update_visualizer(data[client_id]['visualisation'])

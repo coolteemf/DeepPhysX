@@ -32,8 +32,8 @@ class Environment(BaseEnvironment):
             self.output = array([[2 * self.nb_step], [2 * self.nb_step]])
             # Setting (and sending) training data
             # TODO: if inverted, last additional sample is not sent
-            self.additional_in_dataset(label="custom", data=self.input)
-            self.additional_out_dataset(label="custom", data=self.output)
+            self.set_additional_in_dataset(label="custom", data=self.input)
+            self.set_additional_out_dataset(label="custom", data=self.output)
             self.set_training_data(input_array=self.input, output_array=self.output)
             # Increment iteration counter
             self.nb_step += 1

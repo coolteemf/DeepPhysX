@@ -29,6 +29,7 @@ class AbstractEnvironment:
         # Input and output to give to the network
         self.input: numpy.ndarray = numpy.array([])
         self.output: numpy.ndarray = numpy.array([])
+        self.loss_data: Any = None
         # Variables to store samples from Dataset
         self.sample_in: Optional[numpy.ndarray] = None
         self.sample_out: Optional[numpy.ndarray] = None
@@ -63,7 +64,7 @@ class AbstractEnvironment:
         """
         pass
 
-    def step(self) -> None:
+    async def step(self) -> None:
         """
         Compute the number of steps in the Environment specified by simulations_per_step in EnvironmentConfig.
         Must be implemented by user.
@@ -91,7 +92,7 @@ class AbstractEnvironment:
         """
         raise NotImplementedError
 
-    def send_visualization(self) -> None:
+    def send_visualization(self) -> dict:
         """
         Define the visualization objects to send to the Visualizer.
         Not mandatory.
@@ -100,7 +101,7 @@ class AbstractEnvironment:
         """
         raise NotImplementedError
 
-    def send_parameters(self) -> None:
+    def send_parameters(self) -> dict:
         """
         Create a dictionary of parameters to send to the manager.
         Not mandatory.
@@ -115,18 +116,6 @@ class AbstractEnvironment:
         Not mandatory.
 
         :param ndarray prediction: Prediction data
-        :return:
-        """
-        raise NotImplementedError
-
-    def set_dataset_sample(self, sample_in: numpy.ndarray, sample_out: numpy.ndarray, additional_in: Dict[str, Dict[str, Any]] = {}, additional_out: Dict[str, Dict[str, Any]] = {}) -> None:
-        """
-        Set the sample received from Dataset.
-
-        :param ndarray sample_in: Input sample
-        :param ndarray sample_out: Output sample
-        :param dict additional_in: Contains each additional input data samples
-        :param dict additional_out: Contains each additional output data samples
         :return:
         """
         raise NotImplementedError

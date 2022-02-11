@@ -182,6 +182,7 @@ class BaseEnvironmentConfig:
             raise TypeError(f"[{self.name}] Wrong 'environment_class' type: BaseEnvironment required, get "
                             f"{self.environment_class}")
         # Create & Init Environment
+        environment.recv_parameters(self.param_dict)
         environment.create()
         environment.init()
         return environment

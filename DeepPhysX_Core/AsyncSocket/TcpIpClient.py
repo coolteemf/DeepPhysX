@@ -1,8 +1,9 @@
 import socket
-from asyncio import run, get_event_loop
-from typing import Any, Optional, Dict
+from asyncio import get_event_loop
+from asyncio import run as async_run
+from typing import Any, Dict
 
-import numpy
+from numpy import ndarray, array
 
 from DeepPhysX_Core.AsyncSocket.TcpIpObject import TcpIpObject
 from DeepPhysX_Core.AsyncSocket.AbstractEnvironment import AbstractEnvironment
@@ -44,6 +45,12 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
         # Flag to trigger client's shutdown
         self.close_client: bool = False
 
+    ##########################################################################################
+    ##########################################################################################
+    #                                 Initializing Environment                               #
+    ##########################################################################################
+    ##########################################################################################
+
     def initialize(self) -> None:
         """
         Run __initialize method with asyncio.
@@ -51,7 +58,7 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
         :return:
         """
 
-        run(self.__initialize())
+        async_run(self.__initialize())
 
     async def __initialize(self) -> None:
         """
@@ -62,6 +69,8 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
 
         loop = get_event_loop()
 
+        # Receive number of sub-steps
+        self.simulations_per_step = await self.receive_data(loop=loop, sender=self.sock)
         # Receive parameters
         recv_param_dict = {}
         await self.receive_dict(recv_to=recv_param_dict, sender=self.sock, loop=loop)
@@ -84,6 +93,12 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
         # Initialization done
         await self.send_command_done(loop=loop, receiver=self.sock)
 
+    ##########################################################################################
+    ##########################################################################################
+    #                                      Running Client                                    #
+    ##########################################################################################
+    ##########################################################################################
+
     def launch(self) -> None:
         """
         Run __launch method with asyncio.
@@ -91,7 +106,7 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
         :return:
         """
 
-        run(self.__launch())
+        async_run(self.__launch())
 
     async def __launch(self) -> None:
         """
@@ -140,12 +155,16 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
         # Close socket
         self.sock.close()
 
-    async def send_training_data(self, network_input: Optional[numpy.ndarray] = None, network_output: Optional[numpy.ndarray] = None, loop: Any = None, receiver: socket = None) -> None:
+    ##########################################################################################
+    ##########################################################################################
+    #                                  Data sending to Server                                #
+    ##########################################################################################
+    ##########################################################################################
+
+    async def __send_training_data(self, loop: Any = None, receiver: socket = None) -> None:
         """
         Send the training data to the TcpIpServer.
 
-        :param ndarray network_input: data to send under the label 'input'
-        :param ndarray network_output: data to send under the label 'output'
         :param loop: get_event_loop() return
         :param receiver: TcpIpObject receiver
         :return:
@@ -153,52 +172,31 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
 
         loop = get_event_loop() if loop is None else loop
         receiver = self.sock if receiver is None else receiver
-        # TODO: TcpIpServer no longer check the validity of the computed sample, do from TcpIpClient to compute another
-        # Send network input
-        if network_input is not None:
-            await self.send_labeled_data(data_to_send=network_input, label="input", loop=loop, receiver=receiver)
+
+        # Send and reset network input
+        if self.input:
+            await self.send_labeled_data(data_to_send=self.input, label="input", loop=loop, receiver=receiver)
+            self.input = array([])
         # Send network output
-        if network_output is not None:
-            await self.send_labeled_data(data_to_send=network_output, label="output", loop=loop, receiver=receiver)
+        if self.output:
+            await self.send_labeled_data(data_to_send=self.output, label="output", loop=loop, receiver=receiver)
+            self.output = array([])
+        # Send loss data
+        if self.loss_data:
+            await self.send_labeled_data(data_to_send=self.loss_data, label='loss', loop=loop, receiver=receiver)
+            self.loss_data = None
         # Send additional input data
         for key in self.additional_inputs.keys():
             await self.send_labeled_data(data_to_send=self.additional_inputs[key], label='dataset_in' + key,
                                          loop=loop, receiver=receiver)
+        self.additional_inputs = {}
         # Send additional output data
         for key in self.additional_outputs.keys():
             await self.send_labeled_data(data_to_send=self.additional_outputs[key], label='dataset_out' + key,
                                          loop=loop, receiver=receiver)
+        self.additional_outputs = {}
 
-    def sync_send_training_data(self, network_input: Optional[numpy.ndarray] = None, network_output: Optional[numpy.ndarray] = None, receiver: socket = None) -> None:
-        """
-        Send the training data to the TcpIpServer.
-        Synchronous version of 'TcpIpClient.send_training_data'.
-
-        :param ndarray network_input: data to send under the label 'input'
-        :param ndarray network_output: data to send under the label 'output'
-        :param receiver: TcpIpObject receiver
-        :return:
-        """
-
-        receiver = self.sock if receiver is None else receiver
-        # TODO: TcpIpServer no longer check the validity of the computed sample, do from TcpIpClient to compute another
-        # check = self.check_sample()
-        # self.sync_send_labeled_data(data_to_send=check, label="check", receiver=receiver)
-        # Send network input
-        if network_input is not None:
-            self.sync_send_labeled_data(data_to_send=network_input, label="input", receiver=receiver)
-        # Send network output
-        if network_output is not None:
-            self.sync_send_labeled_data(data_to_send=network_output, label="output", receiver=receiver)
-        # Send additional input data
-        for key in self.additional_inputs.keys():
-            self.sync_send_labeled_data(data_to_send=self.additional_inputs[key], label='dataset_in' + key,
-                                        receiver=receiver)
-        for key in self.additional_outputs.keys():
-            self.sync_send_labeled_data(data_to_send=self.additional_outputs[key], label='dataset_out' + key,
-                                        receiver=receiver)
-
-    async def send_prediction_request(self, network_input: Optional[numpy.ndarray], loop: Any = None, receiver: socket = None) -> numpy.ndarray:
+    async def send_prediction_data(self, network_input: ndarray, loop: Any = None, receiver: socket = None) -> ndarray:
         """
         Request a prediction from the Environment.
 
@@ -218,27 +216,8 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
         label, pred = await self.receive_labeled_data(loop=loop, sender=receiver)
         return pred
 
-    def sync_send_prediction_request(self, network_input: Optional[numpy.ndarray], receiver: socket = None) -> numpy.ndarray:
-
-        """
-        Request a prediction from the Environment.
-        Synchronous version of 'TcpIpClient.send_prediction_request'.
-
-        :param ndarray network_input: Data to send under the label 'input'
-        :param receiver: TcpIpObject receiver
-        :return:
-        """
-
-        receiver = self.sock if receiver is None else receiver
-        # Send prediction command
-        self.sync_send_command_prediction()
-        # Send the network input
-        self.sync_send_labeled_data(data_to_send=network_input, label='input', receiver=receiver)
-        # Receive the network prediction
-        _, pred = self.sync_receive_labeled_data()
-        return pred
-
-    async def send_visualization_data(self, visualization_data: Dict[Any, Any] = None, loop: Any = None, receiver: socket = None) -> None:
+    async def send_visualization_data(self, visualization_data: Dict[Any, Any], loop: Any = None,
+                                      receiver: socket = None) -> None:
         """
         Send the visualization data to TcpIpServer.
 
@@ -255,40 +234,59 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
         # Send visualization data
         await self.send_dict(name="visualisation", dict_to_send=visualization_data, receiver=receiver, loop=loop)
 
-    def sync_send_visualization_data(self, visualization_data: Dict[Any, Any] = None, receiver: socket = None) -> None:
-        """
-        Send the visualization data to TcpIpServer.
-        Synchronous version of 'TcpIpClient.send_visualization_data'.
+    ##########################################################################################
+    ##########################################################################################
+    #                              Available requests to Server                              #
+    ##########################################################################################
+    ##########################################################################################
 
-        :param dict visualization_data: Updated visualization data.
-        :param receiver: TcpIpObject receiver
+    def request_get_prediction(self, input_array: ndarray) -> ndarray:
+        """
+        Request a prediction from Network.
+
+        :param ndarray input_array: Network input
         :return:
         """
 
-        receiver = self.sock if receiver is None else receiver
-        # Send 'visualization' command
-        self.sync_send_command_visualisation()
-        # Send visualization data
-        self.sync_send_dict(name="visualisation", dict_to_send=visualization_data, receiver=receiver)
+        return async_run(self.__get_prediction(input_array))
 
-    async def action_on_compute(self, data: numpy.ndarray, client_id: int, sender: socket, loop: Any) -> None:
+    async def __get_prediction(self, input_array: ndarray) -> ndarray:
         """
-        Action to run when receiving the 'compute' command
+        Request a prediction from Network.
 
-        :param dict data: Dict storing data
-        :param int client_id: ID of the TcpIpClient
-        :param loop: asyncio.get_event_loop() return
-        :param sender: TcpIpObject sender
+        :param ndarray input_array: Network input
         :return:
         """
-        # Compute data flag set to True
-        self.compute_essential_data = True
-        # Trigger a step
-        await self.step()
-        # Protocol done
-        await self.send_command_done()
 
-    async def action_on_exit(self, data: numpy.ndarray, client_id: int, sender: socket, loop: Any) -> None:
+        return await self.send_prediction_data(network_input=input_array)
+
+    def request_update_visualization(self, visu_dict: Dict[int, Dict[str, Any]]) -> None:
+        """
+        Triggers the Visualizer update.
+
+        :param dict visu_dict: Updated visualization data.
+        :return:
+        """
+
+        async_run(self.__update_visualization(visu_dict))
+
+    async def __update_visualization(self, visu_dict: Dict[int, Dict[str, Any]]) -> None:
+        """
+        Triggers the Visualizer update.
+
+        :param dict visu_dict: Updated visualization data.
+        :return:
+        """
+
+        await self.send_visualization_data(visualization_data=visu_dict)
+
+    ##########################################################################################
+    ##########################################################################################
+    #                            Actions to perform on commands                              #
+    ##########################################################################################
+    ##########################################################################################
+
+    async def action_on_exit(self, data: ndarray, client_id: int, sender: socket, loop: Any) -> None:
         """
         Action to run when receiving the 'exit' command
 
@@ -301,7 +299,7 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
         # Close client flag set to True
         self.close_client = True
 
-    async def action_on_prediction(self, data: numpy.ndarray, client_id: int, sender: socket, loop: Any) -> None:
+    async def action_on_prediction(self, data: ndarray, client_id: int, sender: socket, loop: Any) -> None:
         """
         Action to run when receiving the 'prediction' command
 
@@ -316,7 +314,7 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
         # Apply the prediction in Environment
         self.apply_prediction(prediction)
 
-    async def action_on_sample(self, data: numpy.ndarray, client_id: int, sender: socket, loop: Any) -> None:
+    async def action_on_sample(self, data: ndarray, client_id: int, sender: socket, loop: Any) -> None:
         """
         Action to run when receiving the 'sample' command
 
@@ -327,24 +325,25 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
         :return:
         """
         # Receive input sample
-        sample_in = await self.receive_data(loop=loop, sender=sender)
+        if await self.receive_data(loop=loop, sender=sender):
+            self.sample_in = await self.receive_data(loop=loop, sender=sender)
         # Receive output sample
-        sample_out = await self.receive_data(loop=loop, sender=sender)
+        if await self.receive_data(loop=loop, sender=sender):
+            self.sample_out = await self.receive_data(loop=loop, sender=sender)
 
         additional_in, additional_out = {}, {}
         # Receive additional input sample if there are any
         if await self.receive_data(loop=loop, sender=sender):
-            additional_in = {}
             await self.receive_dict(recv_to=additional_in, loop=loop, sender=sender)
         # Receive additional output sample if there are any
         if await self.receive_data(loop=loop, sender=sender):
-            additional_out = {}
             await self.receive_dict(recv_to=additional_out, loop=loop, sender=sender)
 
         # Set the samples from Dataset
-        self.set_dataset_sample(sample_in, sample_out, additional_in, additional_out)
+        self.additional_inputs = additional_in.get('additional_data', None)
+        self.additional_outputs = additional_out.get('additional_data', None)
 
-    async def action_on_step(self, data: numpy.ndarray, client_id: int, sender: socket, loop: Any) -> None:
+    async def action_on_step(self, data: ndarray, client_id: int, sender: socket, loop: Any) -> None:
         """
         Action to run when receiving the 'step' command
 
@@ -355,9 +354,21 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
         :return:
         """
 
-        # Compute data flag set to False
-        self.compute_essential_data = False
-        # Trigger a step
-        await self.step()
-        # Done protocol
+        # Execute the required number of steps
+        for step in range(self.simulations_per_step):
+            # Compute data only on final step
+            self.compute_essential_data = step == self.simulations_per_step - 1
+            await self.step()
+
+        # If produced sample is not usable, run again
+        # Todo: add the max_rate here
+        if not self.sample_in and not self.sample_out:
+            while not self.check_sample():
+                for step in range(self.simulations_per_step):
+                    # Compute data only on final step
+                    self.compute_essential_data = step == self.simulations_per_step - 1
+                    await self.step()
+
+        # Sent training data to Server
+        await self.__send_training_data()
         await self.send_command_done()

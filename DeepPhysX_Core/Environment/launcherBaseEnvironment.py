@@ -23,4 +23,4 @@ if __name__ == '__main__':
     client.launch()
 
     # Client is closed at this point
-    print(f"[launcherBaseEnvironment] Shutting down client {argv[3]}")
+    print(f"[launcherBaseEnvironment] Shutting down client {argv[5]}")

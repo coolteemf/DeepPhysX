@@ -66,8 +66,7 @@ class DataManager:
             create_environment = self.dataset_manager.new_dataset()
         if create_environment:
             self.environment_manager = EnvironmentManager(data_manager=self, environment_config=environment_config,
-                                                          session_dir=session_dir, batch_size=batch_size,
-                                                          train=self.is_training)
+                                                          batch_size=batch_size, train=self.is_training)
 
     def get_manager(self) -> None:
         """

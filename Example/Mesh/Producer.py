@@ -79,4 +79,4 @@ class MeanEnvironment(BaseEnvironment):
         # Send visualisation data to update
         await self.update_visualisation(visu_dict=self.factory.updated_object_dict)
         # Send the training data
-        await self.send_training_data(network_input=self.input, network_output=self.output)
+        await self.__send_training_data(network_input=self.input, network_output=self.output)

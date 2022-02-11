@@ -39,7 +39,7 @@ class SofaRunner(Sofa.Core.Controller, BaseRunner):
                             nb_steps=nb_steps,
                             record_inputs=record_inputs,
                             record_outputs=record_outputs)
-        self.runBegin()
+        self.run_begin()
         self.root = self.manager.data_manager.environment_manager.environment.root
         self.root.addObject(self)
 
@@ -51,10 +51,11 @@ class SofaRunner(Sofa.Core.Controller, BaseRunner):
         :return: None
         """
 
-        if self.runningCondition():
-            self.sampleBegin()
-            prediction, loss = self.predict(animate=False)
+        if self.running_condition():
+            self.sample_begin()
+            # prediction, loss = self.predict(animate=False)
+            prediction = self.predict(animate=False)
             self.manager.data_manager.environment_manager.environment.apply_prediction(prediction)
-            self.sampleEnd()
+            self.sample_end()
         else:
-            self.runEnd()
+            self.run_end()

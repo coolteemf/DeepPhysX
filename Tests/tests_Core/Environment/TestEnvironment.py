@@ -1,5 +1,3 @@
-import numpy as np
-
 from DeepPhysX_Core.Environment.BaseEnvironment import BaseEnvironment
 
 
@@ -15,16 +13,10 @@ class TestEnvironment(BaseEnvironment):
         self.call_init = False
         # Parameters to receive
         self.parameters = {}
-        # Environment parameters that must be learned by network
-        self.p = [round(np.random.randn(), 2) for _ in range(4)]
-        self.idx_step = 0
 
     def create(self):
         # Assert method is called
         self.call_create = True
-        # Define sizes
-        self.input_size = np.random.randn(1).size
-        self.output_size = self.input_size
 
     def init(self):
         # Assert method is called
@@ -40,18 +32,7 @@ class TestEnvironment(BaseEnvironment):
         return dict_to_return
 
     def step(self):
-        self.idx_step += 1
-
-    def computeInput(self):
-        self.input = np.random.randn(1).round(2)
-
-    def computeOutput(self):
-        self.output = 0
-        for i in range(len(self.p)):
-            self.output += self.p[i] * (self.input ** i)
-
-    def reset(self):
-        self.idx_step = 0
+        pass
 
     def apply_prediction(self, prediction):
         pass

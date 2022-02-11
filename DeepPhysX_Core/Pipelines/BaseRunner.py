@@ -60,7 +60,8 @@ class BaseRunner(BasePipeline):
         self.run_begin()
         while self.running_condition():
             self.sample_begin()
-            prediction, loss_value = self.predict()
+            # prediction, loss_value = self.predict()
+            prediction = self.predict()
             self.manager.data_manager.environment_manager.environment.apply_prediction(prediction)
             self.sample_end()
         self.run_end()
@@ -73,7 +74,8 @@ class BaseRunner(BasePipeline):
         :return: tuple (numpy.ndarray, float)
         """
         self.manager.get_data(animate=animate)
-        return self.manager.get_prediction()
+        # return self.manager.network_manager.get_prediction()
+        return self.manager.network_manager.compute_online_prediction(self.manager.data_manager.data['input'])
 
     def run_begin(self) -> None:
         """
