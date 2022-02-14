@@ -3,8 +3,7 @@ from os.path import join as osPathJoin
 from os.path import isdir, isfile
 from typing import Any, Dict, Tuple, Optional
 
-import numpy
-from numpy import copy, array
+from numpy import copy, array, ndarray
 
 from DeepPhysX_Core.Network.BaseNetworkConfig import BaseNetworkConfig
 from DeepPhysX_Core.Utils.pathUtils import copy_dir, create_dir, get_first_caller
@@ -14,7 +13,7 @@ class NetworkManager:
 
     def __init__(self,
                  network_config: BaseNetworkConfig = None,
-                 manager=None,
+                 manager: Any = None,
                  session_name: str = 'default',
                  session_dir: str = None,
                  new_session: bool = True,
@@ -26,13 +25,14 @@ class NetworkManager:
         :param BaseNetworkConfig network_config: Specialisation containing the parameters of the network manager
         :param Manager manager : Manager that handle the network manager
         :param str session_name: Name of the newly created directory if session_dir is not defined
-        :param str session_dir: Name of the directory in which to write all of the necessary data
+        :param str session_dir: Name of the directory in which to write all the necessary data
         :param bool new_session: Define the creation of new directories to store data
         :param bool train: If True prediction will cause tensors gradient creation
         """
 
         self.name: str = self.__class__.__name__
 
+        # Todo: remove these check ?
         # Check network_config type
         if not isinstance(network_config, BaseNetworkConfig):
             raise TypeError(f"[{self.name}] Wrong 'network_config' type: BaseNetworkConfig required, "
@@ -78,6 +78,7 @@ class NetworkManager:
         """
         :return: Manager that handles the NetworkManager
         """
+
         return self.manager
 
     def set_network(self) -> None:
@@ -86,13 +87,14 @@ class NetworkManager:
 
         :return:
         """
+
         # Init network
         self.network = self.network_config.create_network()
         self.network.set_device()
         # Init optimization
         self.optimization = self.network_config.create_optimization()
         self.optimization.manager = self
-        if self.optimization.loss_class is not None:
+        if self.optimization.loss_class:
             self.optimization.set_loss()
 
         # Init DataTransformation
@@ -104,9 +106,10 @@ class NetworkManager:
             self.network.set_train()
             self.optimization.set_optimizer(self.network)
             # Setting network directory
-            if self.new_session and self.network_config.network_dir is not None and isdir(self.network_config.network_dir):
+            if self.new_session and self.network_config.network_dir and isdir(self.network_config.network_dir):
                 self.network_dir = self.network_config.network_dir
                 self.network_dir = copy_dir(self.network_dir, self.session_dir, dest_dir='network')
+                self.load_network()
             else:
                 self.network_dir = osPathJoin(self.session_dir, 'network/')
                 self.network_dir = create_dir(self.network_dir, dir_name='network')
@@ -117,40 +120,52 @@ class NetworkManager:
             self.network.set_eval()
             # Need an existing network
             self.network_dir = osPathJoin(self.session_dir, 'network/')
-            # Get eventual epoch saved networks
-            networks_list = [osPathJoin(self.network_dir, f) for f in listdir(self.network_dir) if
-                             isfile(osPathJoin(self.network_dir, f)) and f.__contains__('_network_.')]
-            networks_list = sorted(networks_list)
-            # Add the final saved network
-            last_saved_network = [osPathJoin(self.network_dir, f) for f in listdir(self.network_dir) if
-                                  isfile(osPathJoin(self.network_dir, f)) and f.__contains__('network.')]
-            networks_list = networks_list + last_saved_network
-            which_network = self.network_config.which_network
-            if len(networks_list) == 0:
-                print("NetworkManager: There is no network in {}. Shutting down.".format(self.network_dir))
-                quit(0)
-            elif len(networks_list) == 1:
-                which_network = 0
-            elif len(networks_list) > 1 and which_network is None:
-                print("There is more than one network in this directory, loading the most trained by default.")
-                print("If you want to load another network please use the 'which_network' variable.")
-                which_network = -1
-            elif which_network > len(networks_list) > 1:
-                print("The selected network doesn't exist (index is too big), loading the most trained by default.")
-                which_network = -1
-            print("NetworkManager: Loading network from {}.".format(networks_list[which_network]))
-            self.network.load_parameters(networks_list[which_network])
+            # Load parameters
+            self.load_network()
 
-    def compute_prediction_and_loss(self, batch: Dict[str, numpy.ndarray], optimize: bool) -> Tuple[numpy.ndarray, Dict[str, float]]:
+    def load_network(self) -> None:
         """
-        Make a prediction with the data passe as argument, optimize or not the network
+        Load an existing set of parameters to the network.
 
-        :param dict batch:  Format {'input': numpy.ndarray, 'output': numpy.ndarray} Contains the input value and ground truth
-        to compare against
+        :return:
+        """
+
+        # Get eventual epoch saved networks
+        networks_list = [osPathJoin(self.network_dir, f) for f in listdir(self.network_dir) if
+                         isfile(osPathJoin(self.network_dir, f)) and f.__contains__('_network_.')]
+        networks_list = sorted(networks_list)
+        # Add the final saved network
+        last_saved_network = [osPathJoin(self.network_dir, f) for f in listdir(self.network_dir) if
+                              isfile(osPathJoin(self.network_dir, f)) and f.__contains__('network.')]
+        networks_list = networks_list + last_saved_network
+        which_network = self.network_config.which_network
+        if len(networks_list) == 0:
+            print(f"[{self.name}]: There is no network in {self.network_dir}. Shutting down.")
+            quit(0)
+        elif len(networks_list) == 1:
+            which_network = 0
+        elif len(networks_list) > 1 and which_network is None:
+            print(f"[{self.name}] There is more than one network in this directory, loading the most trained by "
+                  f"default. If you want to load another network please use the 'which_network' variable.")
+            which_network = -1
+        elif which_network > len(networks_list) > 1:
+            print(f"[{self.name}] The selected network doesn't exist (index is too big), loading the most trained "
+                  f"by default.")
+            which_network = -1
+        print(f"[{self.name}]: Loading network from {networks_list[which_network]}.")
+        self.network.load_parameters(networks_list[which_network])
+
+    def compute_prediction_and_loss(self, batch: Dict[str, ndarray], optimize: bool) -> Tuple[ndarray, Dict[str, float]]:
+        """
+        Make a prediction with the data passed as argument, optimize or not the network
+
+        :param dict batch: Format {'input': numpy.ndarray, 'output': numpy.ndarray} Contains the input value and ground
+        truth to compare against
         :param bool optimize: If true run a back propagation
 
         :return:
         """
+
         # Getting data from the data manager
         data_in = self.network.transform_from_numpy(batch['input'], grad=optimize)
         data_gt = self.network.transform_from_numpy(batch['output'], grad=optimize)
@@ -171,14 +186,15 @@ class NetworkManager:
         prediction = self.network.transform_to_numpy(data_out)
         return prediction, loss_dict
 
-    def compute_online_prediction(self, network_input: numpy.ndarray) -> numpy.ndarray:
+    def compute_online_prediction(self, network_input: ndarray) -> ndarray:
         """
-        Make a prediction with the data passe as argument, optimize or not the network
+        Make a prediction with the data passed as argument.
 
-        :param numpy.ndarray network_input: Input of the network=
+        :param ndarray network_input: Input of the network=
 
         :return:
         """
+
         # Getting data from the data manager
         data_in = self.network.transform_from_numpy(copy(network_input), grad=False)
 
@@ -193,27 +209,33 @@ class NetworkManager:
 
     def save_network(self, last_save: bool = False) -> None:
         """
-        Save the network with the corresponding suffix so they do not erase the last save.
+        Save the network with the corresponding suffix, so they do not erase the last save.
 
         :param bool last_save: Do not add suffix if it's the last save
 
         :return:
         """
+
+        # Final session saving
         if last_save:
             path = self.network_dir + "network"
-            print(f"Saving network at {path}.")
+            print(f"[{self.name}] Saving final network at {path}.")
             self.network.save_parameters(path)
+
+        # Intermediate states saving
         elif self.save_each_epoch:
             path = self.network_dir + self.network_template_name.format(self.saved_counter)
             self.saved_counter += 1
-            print(f"Saving network at {path}.")
+            print(f"[{self.name}] Saving intermediate network at {path}.")
             self.network.save_parameters(path)
 
     def close(self) -> None:
         """
         Closing procedure.
+
         :return:
         """
+
         if self.training:
             self.save_network(last_save=True)
         del self.network
@@ -223,6 +245,7 @@ class NetworkManager:
         """
         :return: String containing information about the BaseNetwork object
         """
+
         description = "\n"
         description += f"# {self.__class__.__name__}\n"
         description += f"    Network Directory: {self.network_dir}\n"

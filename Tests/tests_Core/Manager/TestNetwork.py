@@ -1,3 +1,5 @@
+from typing import Any, Dict
+
 import numpy as np
 
 from DeepPhysX_Core.Network.BaseNetworkConfig import BaseNetworkConfig
@@ -54,15 +56,18 @@ class NumpyOptimisation(BaseOptimization):
         BaseOptimization.__init__(self, config)
         self.net = None
 
-    def setLoss(self):
+    def set_loss(self):
         pass
 
-    def computeLoss(self, prediction, ground_truth, data):
-        self.loss_value = {'item': np.square(prediction - ground_truth).sum(),
-                           'grad': 2.0 * (prediction - ground_truth)}
+    def transform_loss(self, data):
+        pass
+
+    def compute_loss(self, prediction, ground_truth, data):
+        self.loss_value = {'item': (np.square(prediction - ground_truth)).mean(),
+                           'grad': (2.0 * (prediction - ground_truth)).mean()}
         return self.loss_value['item']
 
-    def setOptimizer(self, net):
+    def set_optimizer(self, net):
         self.net = net
 
     def optimize(self):
@@ -75,8 +80,8 @@ class NumpyOptimisation(BaseOptimization):
 
 class NumpyDataTransformation(DataTransformation):
 
-    def __init__(self, network_config):
-        super(NumpyDataTransformation, self).__init__(network_config)
+    def __init__(self, config):
+        super(NumpyDataTransformation, self).__init__(config)
         self.data_type = np.ndarray
 
     @DataTransformation.check_type
@@ -84,7 +89,7 @@ class NumpyDataTransformation(DataTransformation):
         return data_in
 
     @DataTransformation.check_type
-    def transform_before_loss(self, data_out, data_gt):
+    def transform_before_loss(self, data_out, data_gt=None):
         return data_out, data_gt
 
     @DataTransformation.check_type
@@ -104,7 +109,8 @@ class NumpyNetworkConfig(BaseNetworkConfig):
                  which_network=0,
                  save_each_epoch=True,
                  lr=None,
-                 nb_parameters=4):
+                 require_training_stuff=False,
+                 nb_parameters=3):
         super(NumpyNetworkConfig, self).__init__(network_class=network_class,
                                                  optimization_class=optimization_class,
                                                  data_transformation_class=data_transformation_class,
@@ -113,5 +119,6 @@ class NumpyNetworkConfig(BaseNetworkConfig):
                                                  network_type=network_type,
                                                  which_network=which_network,
                                                  save_each_epoch=save_each_epoch,
-                                                 lr=lr)
+                                                 lr=lr,
+                                                 require_training_stuff=require_training_stuff)
         self.network_config = self.make_config('network_config', nb_parameters=nb_parameters)

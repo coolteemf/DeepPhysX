@@ -13,17 +13,26 @@ class FCConfig(TorchNetworkConfig):
                  save_each_epoch: bool = False,
                  which_network: int = 0,
                  data_transformation_class: Type[TorchDataTransformation] = TorchDataTransformation,
-                 loss: Any = None,
                  lr: Optional[float] = None,
+                 require_training_stuff: bool = True,
+                 loss: Any = None,
                  optimizer: Any = None,
                  dim_output: int = 0,
                  dim_layers: list = None):
 
-        TorchNetworkConfig.__init__(self, network_class=FC, network_dir=network_dir, network_name=network_name,
-                                    network_type='FC', save_each_epoch=save_each_epoch,
+        TorchNetworkConfig.__init__(self,
+                                    network_class=FC,
+                                    network_dir=network_dir,
+                                    network_name=network_name,
+                                    network_type='FC',
+                                    save_each_epoch=save_each_epoch,
                                     optimization_class=optimization_class,
-                                    which_network=which_network, data_transformation_class=data_transformation_class,
-                                    loss=loss, lr=lr, optimizer=optimizer)
+                                    which_network=which_network,
+                                    data_transformation_class=data_transformation_class,
+                                    require_training_stuff=require_training_stuff,
+                                    lr=lr,
+                                    loss=loss,
+                                    optimizer=optimizer)
 
         # Check FC variables
         if dim_output is not None and type(dim_output) != int:

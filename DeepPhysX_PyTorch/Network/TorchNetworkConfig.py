@@ -23,8 +23,9 @@ class TorchNetworkConfig(BaseNetworkConfig):
                  network_type: str = 'TorchNetwork',
                  which_network: int = 0,
                  save_each_epoch: bool = False,
-                 loss: Any = None,
                  lr: Optional[float] = None,
+                 require_training_stuff: bool = True,
+                 loss: Any = None,
                  optimizer: Any = None):
 
         BaseNetworkConfig.__init__(self,
@@ -36,8 +37,9 @@ class TorchNetworkConfig(BaseNetworkConfig):
                                    network_type=network_type,
                                    which_network=which_network,
                                    save_each_epoch=save_each_epoch,
-                                   loss=loss,
                                    lr=lr,
+                                   require_training_stuff=require_training_stuff,
+                                   loss=loss,
                                    optimizer=optimizer)
 
         # Change default config values for network only (configs for optimization and data_transformation are the same)

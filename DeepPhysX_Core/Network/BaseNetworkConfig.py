@@ -23,8 +23,9 @@ class BaseNetworkConfig:
                  network_type: str = 'BaseNetwork',
                  which_network: int = 0,
                  save_each_epoch: bool = False,
-                 loss: Any = None,
                  lr: Optional[float] = None,
+                 require_training_stuff: bool = True,
+                 loss: Any = None,
                  optimizer: Any = None):
         """
         BaseNetworkConfig is a configuration class to parameterize and create BaseNetwork, BaseOptimization and
@@ -42,8 +43,9 @@ class BaseNetworkConfig:
         :param int which_network: If several networks in network_dir, load the specified one
         :param bool save_each_epoch: If True, network state will be saved at each epoch end; if False, network state
                                      will be saved at the end of the training
-        :param loss: Loss class
         :param float lr: Learning rate
+        :param bool require_training_stuff: If specified, loss and optimizer class can be not necessary for training
+        :param loss: Loss class
         :param optimizer: Network's parameters optimizer class
         """
 
@@ -82,7 +84,7 @@ class BaseNetworkConfig:
         self.optimization_class: Type[BaseOptimization] = optimization_class
         self.optimization_config: namedtuple = self.make_config(config_name='optimization_config', loss=loss, lr=lr,
                                                                 optimizer=optimizer)
-        self.training_stuff: bool = (loss is not None) and (optimizer is not None)
+        self.training_stuff: bool = (loss is not None) and (optimizer is not None) or (not require_training_stuff)
 
         # NetworkManager parameterization
         self.data_transformation_class: Type[DataTransformation] = data_transformation_class
@@ -119,6 +121,7 @@ class BaseNetworkConfig:
         """
         :return: BaseNetwork object from network_class and its parameters.
         """
+
         try:
             network = self.network_class(config=self.network_config)
         except:
@@ -133,6 +136,7 @@ class BaseNetworkConfig:
         """
         :return: BaseOptimization object from optimization_class and its parameters.
         """
+
         try:
             optimization = self.optimization_class(config=self.optimization_config)
         except:
@@ -147,6 +151,7 @@ class BaseNetworkConfig:
         """
         :return: DataTransformation object from data_transformation_class and its parameters.
         """
+
         try:
             data_transformation = self.data_transformation_class(config=self.data_transformation_config)
         except:
@@ -163,6 +168,7 @@ class BaseNetworkConfig:
         """
         :return: String containing information about the BaseDatasetConfig object
         """
+
         # Todo: fields in Configs are the set in Managers or objects, then remove __str__ method
         description = "\n"
         description += f"{self.__class__.__name__}\n"

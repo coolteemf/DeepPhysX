@@ -20,8 +20,9 @@ class UNetConfig(TorchNetworkConfig):
                  network_name: str = "UNetNetwork",
                  which_network: int = 0,
                  save_each_epoch: bool = False,
-                 loss: Any = None,
                  lr: Optional[float] = None,
+                 require_training_stuff: bool = True,
+                 loss: Any = None,
                  optimizer: Any = None,
                  input_size: List[int] = None,
                  nb_dims: int = 3,
@@ -43,8 +44,9 @@ class UNetConfig(TorchNetworkConfig):
                                     network_type='UNet',
                                     which_network=which_network,
                                     save_each_epoch=save_each_epoch,
-                                    loss=loss,
                                     lr=lr,
+                                    require_training_stuff=require_training_stuff,
+                                    loss=loss,
                                     optimizer=optimizer)
 
         name = self.__class__.__name__
