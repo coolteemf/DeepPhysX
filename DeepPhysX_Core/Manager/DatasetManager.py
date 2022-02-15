@@ -8,7 +8,7 @@ from typing import Any, Dict, Tuple, List, Optional, Union
 
 import numpy
 import numpy as np
-from numpy import load, squeeze
+from numpy import load, squeeze, ndarray
 
 from DeepPhysX_Core.Dataset.BaseDatasetConfig import BaseDatasetConfig
 from DeepPhysX_Core.Utils.pathUtils import get_first_caller, create_dir
@@ -41,6 +41,7 @@ class DatasetManager:
         self.name: str = self.__class__.__name__
         self.data_manager: Any = data_manager
 
+        # Todo: remove check
         # Checking arguments
         if dataset_config is not None and not isinstance(dataset_config, BaseDatasetConfig):
             raise TypeError(f"[{self.name}] The dataset config must be a BaseDatasetConfig object.")
@@ -112,7 +113,7 @@ class DatasetManager:
                 # New training session with new dataset
                 if dataset_dir is None:
                     self.dataset_dir: str = create_dir(dir_path=osPathJoin(self.session_dir, 'dataset/'),
-                                                  dir_name='dataset')
+                                                       dir_name='dataset')
                     self.__new_dataset = True
                 # New training session with existing dataset
                 else:
@@ -140,7 +141,7 @@ class DatasetManager:
         """
         return self.data_manager
 
-    def add_data(self, data: Dict[str, Union[numpy.ndarray, Dict[str, numpy.ndarray]]]) -> None:
+    def add_data(self, data: Dict[str, Union[ndarray, Dict[str, ndarray]]]) -> None:
         """
         Push the data in the dataset. If max size is reached generate a new partition and write into it.
 
@@ -197,7 +198,7 @@ class DatasetManager:
             self.update_json(update_partitions_lists=True, update_nb_samples=True)
             self.dataset.empty()
 
-    def get_data(self, get_inputs: bool, get_outputs: bool, batch_size: int = 1, batched: bool = True) -> Dict[str, numpy.ndarray]:
+    def get_data(self, get_inputs: bool, get_outputs: bool, batch_size: int = 1, batched: bool = True) -> Dict[str, ndarray]:
         """
         Fetch tensors from the dataset or reload partitions if dataset is empty or specified.
 
@@ -272,7 +273,7 @@ class DatasetManager:
                         data[side][field] = np.concatenate((data[side][field], missing_data[side][field]))
         return data
 
-    def register_new_fields(self, new_fields: Dict[str, str]) -> None:
+    def register_new_fields(self, new_fields: Dict[str, List[str]]) -> None:
         """
         Add new data fields in the dataset.
 
@@ -474,7 +475,8 @@ class DatasetManager:
 
         # 1. If there is only one partition for the current mode for input field at least, don't need to reload it
         if self.last_loaded_dataset_mode == self.mode and self.idx_partitions[self.mode] == 1 and not force_reload:
-            print("LOAD PARTITION SKIP")
+            if self.shuffle_dataset:
+                self.dataset.shuffle()
             return
 
         # 2. Check partitions existence for the current mode
@@ -567,7 +569,8 @@ class DatasetManager:
         self.current_partition_path['input'] = self.mul_part_list_path[0][self.fields['IN'][0]]
         self.dataset.current_sample = 0
 
-    def update_json(self, update_shapes: bool = False, update_nb_samples: bool = False, update_partitions_lists: bool = False) -> None:
+    def update_json(self, update_shapes: bool = False, update_nb_samples: bool = False,
+                    update_partitions_lists: bool = False) -> None:
         """
         Update the json info file with the current Dataset repository information.
 
@@ -651,26 +654,26 @@ class DatasetManager:
     def new_dataset(self) -> bool:
         return self.__new_dataset
 
-    def getNextBatch(self, batch_size: int) -> Dict[str, numpy.ndarray]:
+    def getNextBatch(self, batch_size: int) -> Dict[str, ndarray]:
         """
         :param int batch_size: Size of the batch
         :return: dict of format {'input': numpy.ndarray, 'output': numpy.ndarray} filled with a batch of data
         """
         return self.get_data(get_inputs=True, get_outputs=True, batch_size=batch_size, batched=True)
 
-    def getNextSample(self, batched: bool = True) -> Dict[str, numpy.ndarray]:
+    def getNextSample(self, batched: bool = True) -> Dict[str, ndarray]:
         """
         :return: dict of format {'input': numpy.ndarray, 'output': numpy.ndarray} filled with a sample of data
         """
         return self.get_data(get_inputs=True, get_outputs=True, batched=batched)
 
-    def getNextInput(self, batched: bool = False) -> Dict[str, numpy.ndarray]:
+    def getNextInput(self, batched: bool = False) -> Dict[str, ndarray]:
         """
         :return: dict of format {'input': numpy.ndarray, 'output': numpy.ndarray} where only the input field is filled
         """
         return self.get_data(get_inputs=True, get_outputs=False, batched=batched)
 
-    def getNextOutput(self, batched: bool = False) -> Dict[str, numpy.ndarray]:
+    def getNextOutput(self, batched: bool = False) -> Dict[str, ndarray]:
         """
         :return: dict of format {'input': numpy.ndarray, 'output': numpy.ndarray} where only the output field is filled
         """
