@@ -392,5 +392,5 @@ class TcpIpServer(TcpIpObject):
         # Receive visualization data
         await self.receive_dict(data[client_id], sender=sender, loop=loop)
         # Update visualization
-        if 'visualisation' in data[client_id]:
-            self.environment_manager.update_visualizer(data[client_id]['visualisation'])
+        if 'visualisation' in data[client_id] and hasattr(self.environment_manager, 'visualizer_manager'):
+            self.environment_manager.update_visualizer({client_id: data[client_id]['visualisation']})
