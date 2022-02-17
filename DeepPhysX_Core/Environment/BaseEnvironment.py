@@ -77,23 +77,23 @@ class BaseEnvironment(TcpIpClient):
         """
         pass
 
-    def send_parameters(self) -> None:
+    def send_parameters(self) -> dict:
         """
         Create a dictionary of parameters to send to the manager.
         Not mandatory.
 
         :return:
         """
-        return
+        return {}
 
-    def send_visualization(self) -> None:
+    def send_visualization(self) -> dict:
         """
         Define the visualization objects to send to the Visualizer.
         Not mandatory.
 
         :return:
         """
-        return
+        return {}
 
     ##########################################################################################
     ##########################################################################################
