@@ -54,7 +54,6 @@ class MeanEnvironment(BaseEnvironment):
         # The vector is the input of the network and the ground truth is the mean.
         self.input_value = pi * random(self.data_size)
         self.output_value = mean(self.input_value, axis=0)
-        print("Constant values:", self.constant)
 
     def send_visualization(self):
         # Point cloud (object will have id = 0)
