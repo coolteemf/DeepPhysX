@@ -3,6 +3,7 @@ from typing import Any, Optional, Dict
 from numpy import array, ndarray
 
 from DeepPhysX_Core.AsyncSocket.TcpIpClient import TcpIpClient
+from DeepPhysX_Core.Visualizer.VedoObjectFactories.VedoObjectFactory import VedoObjectFactory
 
 
 class BaseEnvironment(TcpIpClient):
@@ -42,6 +43,7 @@ class BaseEnvironment(TcpIpClient):
         self.loss_data: Any = None
         # Manager if the Environment is not a TcpIpClient
         self.environment_manager: Any = environment_manager
+        self.factory = VedoObjectFactory()
 
     ##########################################################################################
     ##########################################################################################
