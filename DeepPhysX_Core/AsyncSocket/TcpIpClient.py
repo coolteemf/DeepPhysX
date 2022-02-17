@@ -84,7 +84,7 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
 
         # Send visualization
         visu_dict = self.send_visualization()
-        await self.send_visualization_data(visualization_data=visu_dict, loop=loop, receiver=self.sock)
+        self.send_visualization_data(visualization_data=visu_dict, receiver=self.sock)
 
         # Send parameters
         param_dict = self.send_parameters()
@@ -174,11 +174,11 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
         receiver = self.sock if receiver is None else receiver
 
         # Send and reset network input
-        if self.input:
+        if self.input.tolist():
             await self.send_labeled_data(data_to_send=self.input, label="input", loop=loop, receiver=receiver)
             self.input = array([])
         # Send network output
-        if self.output:
+        if self.output.tolist():
             await self.send_labeled_data(data_to_send=self.output, label="output", loop=loop, receiver=receiver)
             self.output = array([])
         # Send loss data
@@ -196,43 +196,38 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
                                          loop=loop, receiver=receiver)
         self.additional_outputs = {}
 
-    async def send_prediction_data(self, network_input: ndarray, loop: Any = None, receiver: socket = None) -> ndarray:
+    def send_prediction_data(self, network_input: ndarray, receiver: socket = None) -> ndarray:
         """
         Request a prediction from the Environment.
 
         :param ndarray network_input: Data to send under the label 'input'
-        :param loop: get_event_loop() return
         :param receiver: TcpIpObject receiver
         :return:
         """
 
-        loop = get_event_loop() if loop is None else loop
         receiver = self.sock if receiver is None else receiver
         # Send prediction command
-        await self.send_command_prediction()
+        self.sync_send_command_prediction()
         # Send the network input
-        await self.send_labeled_data(data_to_send=network_input, label='input', receiver=receiver)
+        self.sync_send_labeled_data(data_to_send=network_input, label='input', receiver=receiver)
         # Receive the network prediction
-        label, pred = await self.receive_labeled_data(loop=loop, sender=receiver)
+        label, pred = self.sync_receive_labeled_data()
         return pred
 
-    async def send_visualization_data(self, visualization_data: Dict[Any, Any], loop: Any = None,
-                                      receiver: socket = None) -> None:
+    def send_visualization_data(self, visualization_data: Dict[Any, Any], receiver: socket = None) -> None:
         """
         Send the visualization data to TcpIpServer.
 
         :param dict visualization_data: Updated visualization data.
-        :param loop: get_event_loop() return
         :param receiver: TcpIpObject receiver
         :return:
         """
 
-        loop = get_event_loop() if loop is None else loop
         receiver = self.sock if receiver is None else receiver
         # Send 'visualization' command
-        await self.send_command_visualisation()
+        self.sync_send_command_visualisation()
         # Send visualization data
-        await self.send_dict(name="visualisation", dict_to_send=visualization_data, receiver=receiver, loop=loop)
+        self.sync_send_dict(name="visualisation", dict_to_send=visualization_data, receiver=receiver)
 
     ##########################################################################################
     ##########################################################################################
@@ -247,18 +242,7 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
         :param ndarray input_array: Network input
         :return:
         """
-
-        return async_run(self.__get_prediction(input_array))
-
-    async def __get_prediction(self, input_array: ndarray) -> ndarray:
-        """
-        Request a prediction from Network.
-
-        :param ndarray input_array: Network input
-        :return:
-        """
-
-        return await self.send_prediction_data(network_input=input_array)
+        return self.send_prediction_data(network_input=input_array)
 
     def request_update_visualization(self, visu_dict: Dict[int, Dict[str, Any]]) -> None:
         """
@@ -268,17 +252,7 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
         :return:
         """
 
-        async_run(self.__update_visualization(visu_dict))
-
-    async def __update_visualization(self, visu_dict: Dict[int, Dict[str, Any]]) -> None:
-        """
-        Triggers the Visualizer update.
-
-        :param dict visu_dict: Updated visualization data.
-        :return:
-        """
-
-        await self.send_visualization_data(visualization_data=visu_dict)
+        self.send_visualization_data(visualization_data=visu_dict)
 
     ##########################################################################################
     ##########################################################################################
