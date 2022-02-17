@@ -1,13 +1,13 @@
 from typing import Union, Dict
 import torch
-import numpy
 import gc
 import psutil
 from torch import Tensor
+from numpy import ndarray
 
 from DeepPhysX_Core.Network.BaseNetwork import BaseNetwork
 
-DataContainer = Union[numpy.ndarray, torch.Tensor]
+DataContainer = Union[ndarray, Tensor]
 
 
 class TorchNetwork(torch.nn.Module, BaseNetwork):
@@ -50,7 +50,7 @@ class TorchNetwork(torch.nn.Module, BaseNetwork):
         """Load network parameter from path"""
         self.load_state_dict(torch.load(path, map_location=self.device))
 
-    def get_parameters(self) -> Dict[str, Tensor]:
+    def get_parameters(self) -> Dict[str, DataContainer]:
         """Return network parameter"""
         return self.state_dict()
 
@@ -64,7 +64,7 @@ class TorchNetwork(torch.nn.Module, BaseNetwork):
         return sum(p.numel() for p in self.parameters())
 
     def transform_from_numpy(self, x: DataContainer, grad: bool = True) -> DataContainer:
-        """Transform and cast data data from numpy to the desired tensor type"""
+        """Transform and cast data from numpy to the desired tensor type"""
         x = torch.as_tensor(x, dtype=torch.float, device=self.device)
         if grad:
             x.requires_grad_()
