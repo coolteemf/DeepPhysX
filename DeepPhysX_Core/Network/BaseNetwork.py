@@ -1,8 +1,8 @@
 from typing import Union, Dict
 import numpy
-import torch
 
-DataContainer = Union[numpy.ndarray, torch.Tensor]
+DataContainer = Union[numpy.ndarray]
+
 
 class BaseNetwork:
 
@@ -40,7 +40,7 @@ class BaseNetwork:
         """Load network parameter from path"""
         raise NotImplementedError
 
-    def get_parameters(self) -> Dict[str, torch.Tensor]:
+    def get_parameters(self) -> Dict[str, DataContainer]:
         """Return network parameter"""
         raise NotImplementedError
 
