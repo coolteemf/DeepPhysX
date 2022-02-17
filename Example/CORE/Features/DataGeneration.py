@@ -21,15 +21,14 @@ def main():
                                                param_dict={'constant': True,
                                                            'nb_points': nb_points,
                                                            'dimension': dimension},
-                                               as_tcp_ip_client=True,
-                                               number_of_thread=5)
+                                               as_tcp_ip_client=False)
     # Dataset configuration
     dataset_config = BaseDatasetConfig()
     # Create DataGenerator
     data_generator = BaseDataGenerator(session_name='sessions/data_generation',
                                        environment_config=environment_config,
                                        dataset_config=dataset_config,
-                                       nb_batches=200,
+                                       nb_batches=500,
                                        batch_size=10)
     # Launch the training session
     data_generator.execute()
