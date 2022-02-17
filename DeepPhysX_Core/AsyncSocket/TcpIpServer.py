@@ -368,6 +368,9 @@ class TcpIpServer(TcpIpObject):
             raise ValueError("Cannot request prediction if DataManager does not exist")
         elif self.environment_manager.data_manager.manager is None:
             raise ValueError("Cannot request prediction if Manager does not exist")
+        elif not hasattr(self.environment_manager.data_manager.manager, 'network_manager'):
+            raise AttributeError("Cannot request prediction if NetworkManager does not exist. If using a data "
+                                 "generation pipeline, please disable get_prediction requests.")
         elif self.environment_manager.data_manager.manager.network_manager is None:
             raise ValueError("Cannot request prediction if NetworkManager does not exist")
 
