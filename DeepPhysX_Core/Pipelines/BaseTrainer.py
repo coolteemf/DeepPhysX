@@ -9,9 +9,9 @@ from DeepPhysX_Core.Environment.BaseEnvironmentConfig import BaseEnvironmentConf
 class BaseTrainer(BasePipeline):
 
     def __init__(self,
-                 network_config,
-                 dataset_config,
-                 environment_config,
+                 network_config: BaseNetworkConfig,
+                 dataset_config: BaseDatasetConfig,
+                 environment_config: BaseEnvironmentConfig = None,
                  session_name='default',
                  session_dir=None,
                  new_session=True,
@@ -20,13 +20,13 @@ class BaseTrainer(BasePipeline):
                  batch_size=0):
         """
         BaseTrainer is a pipeline defining the training process of an artificial neural network.
-        It provide a highly tunable learning process that can be used with any machine learning library.
+        It provides a highly tunable learning process that can be used with any machine learning library.
 
         :param BaseNetworkConfig network_config: Specialisation containing the parameters of the network manager
         :param BaseDatasetConfig dataset_config: Specialisation containing the parameters of the dataset manager
         :param BaseEnvironmentConfig environment_config: Specialisation containing the parameters of the environment manager
         :param str session_name: Name of the newly created directory if session_dir is not defined
-        :param str session_dir: Name of the directory in which to write all of the neccesary data
+        :param str session_dir: Name of the directory in which to write all the necessary data
         :param bool new_session: Define the creation of new directories to store data
         :param int nb_epochs: Number of epochs
         :param int nb_batches: Number of batches
