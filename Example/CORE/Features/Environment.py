@@ -6,7 +6,8 @@ The random vector is the input of the network and the ground truth is the mean.
 
 # Python related imports
 from numpy import mean, pi, array
-from numpy.random import random
+from numpy.random import random, randint
+from time import sleep
 
 # DeepPhysX related imports
 from DeepPhysX_Core.Environment.BaseEnvironment import BaseEnvironment
@@ -18,7 +19,7 @@ class MeanEnvironment(BaseEnvironment):
     def __init__(self,
                  ip_address='localhost',
                  port=10000,
-                 instance_id=1,
+                 instance_id=0,
                  number_of_instances=1,
                  as_tcp_ip_client=True,
                  environment_manager=None):
@@ -36,6 +37,7 @@ class MeanEnvironment(BaseEnvironment):
         self.output_value = array([])
         self.constant = False
         self.data_size = (30, 2)
+        self.sleep = False
 
     """
     ENVIRONMENT INITIALIZATION
@@ -49,6 +51,8 @@ class MeanEnvironment(BaseEnvironment):
         nb_points = param_dict['nb_points'] if 'nb_points' in param_dict else self.data_size[0]
         dimension = param_dict['dimension'] if 'dimension' in param_dict else self.data_size[1]
         self.data_size = (nb_points, dimension)
+        # If True, step will sleep a random time to simulate longer processes
+        self.sleep = param_dict['sleep'] if 'sleep' in param_dict else self.sleep
 
     def create(self):
         # The vector is the input of the network and the ground truth is the mean.
@@ -88,6 +92,9 @@ class MeanEnvironment(BaseEnvironment):
         if not self.constant:
             self.input_value = pi * random(self.data_size)
             self.output_value = mean(self.input_value, axis=0)
+        # Simulate longer process
+        if self.sleep:
+            sleep(0.01 * randint(0, 10))
         # Request a prediction for the given input
         prediction = self.get_prediction(input_array=self.input_value)
         # Apply this prediction in Environment
