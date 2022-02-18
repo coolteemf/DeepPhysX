@@ -74,7 +74,6 @@ class MeanEnvironment(BaseEnvironment):
                                            "c": "orange",
                                            "at": self.instance_id,
                                            "r": 12})
-        print("Visu")
         # Return the visualization data
         return self.factory.objects_dict
 
