@@ -5,7 +5,7 @@ import numpy
 class AbstractEnvironment:
 
     def __init__(self,
-                 instance_id: int = 1,
+                 instance_id: int = 0,
                  number_of_instances: int = 1,
                  as_tcp_ip_client: bool = True):
         """

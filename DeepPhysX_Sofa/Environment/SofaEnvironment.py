@@ -12,7 +12,7 @@ class SofaEnvironment(Sofa.Core.Controller, BaseEnvironment):
                  root_node,
                  ip_address='localhost',
                  port=10000,
-                 instance_id=1,
+                 instance_id=0,
                  number_of_instances=1,
                  as_tcp_ip_client=True,
                  environment_manager=None,
