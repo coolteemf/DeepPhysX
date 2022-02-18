@@ -32,13 +32,6 @@ class MeanEnvironmentOffscreen(MeanEnvironment):
                                  as_tcp_ip_client=as_tcp_ip_client,
                                  environment_manager=environment_manager)
 
-        self.sleep = False
-
-    def recv_parameters(self, param_dict):
-        MeanEnvironment.recv_parameters(self, param_dict)
-        # If True, step will sleep a random time to simulate longer processes
-        self.sleep = param_dict['sleep'] if 'sleep' in param_dict else self.sleep
-
     def send_visualization(self):
         # Return no visualization data
         return {}
