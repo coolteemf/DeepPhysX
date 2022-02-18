@@ -11,9 +11,9 @@ from DeepPhysX_Core.Manager.Manager import Manager
 class BaseRunner(BasePipeline):
 
     def __init__(self,
-                 network_config,
-                 dataset_config,
-                 environment_config,
+                 network_config: BaseNetworkConfig,
+                 environment_config: BaseEnvironmentConfig,
+                 dataset_config: BaseDatasetConfig = None,
                  session_name='default',
                  session_dir=None,
                  nb_steps=0,
@@ -21,13 +21,13 @@ class BaseRunner(BasePipeline):
                  record_outputs=False):
         """
         BaseRunner is a pipeline defining the running process of an artificial neural network.
-        It provide a highly tunable learning process that can be used with any machine learning library.
+        It provides a highly tunable learning process that can be used with any machine learning library.
 
         :param BaseNetworkConfig network_config: Specialisation containing the parameters of the network manager
         :param BaseDatasetConfig dataset_config: Specialisation containing the parameters of the dataset manager
         :param BaseEnvironmentConfig environment_config: Specialisation containing the parameters of the environment manager
         :param str session_name: Name of the newly created directory if session_dir is not defined
-        :param str session_dir: Name of the directory in which to write all of the neccesary data
+        :param str session_dir: Name of the directory in which to write all the necessary data
         :param int nb_steps: Number of simulation step to play
         :param bool record_inputs: Save or not the input in a numpy file
         :param bool record_outputs: Save or not the output in a numpy file
@@ -45,7 +45,9 @@ class BaseRunner(BasePipeline):
         self.idx_step = 0
 
         # Tell if data is recording while predicting (output is recorded only if input too)
-        self.record_data = {'input': record_inputs, 'output': record_outputs and record_inputs}
+        self.record_data = {'input': False, 'output': False}
+        if dataset_config is not None:
+            self.record_data = {'input': record_inputs, 'output': record_outputs and record_inputs}
 
         self.manager = Manager(pipeline=self, network_config=self.network_config, dataset_config=dataset_config,
                                environment_config=self.environment_config, session_name=session_name,
