@@ -336,7 +336,7 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
 
         # If produced sample is not usable, run again
         # Todo: add the max_rate here
-        if not self.sample_in and not self.sample_out:
+        if self.sample_in is None and self.sample_out is None:
             while not self.check_sample():
                 for step in range(self.simulations_per_step):
                     # Compute data only on final step
