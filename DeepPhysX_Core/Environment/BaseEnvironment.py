@@ -11,7 +11,7 @@ class BaseEnvironment(TcpIpClient):
     def __init__(self,
                  ip_address: str = 'localhost',
                  port: int = 10000,
-                 instance_id: int = 1,
+                 instance_id: int = 0,
                  number_of_instances: int = 1,
                  as_tcp_ip_client: bool = True,
                  environment_manager: Any = None):
