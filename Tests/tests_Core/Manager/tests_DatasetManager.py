@@ -1,7 +1,7 @@
 from unittest import TestCase
 import os
 import shutil
-from numpy import array
+from numpy import array, arange
 
 from DeepPhysX_Core.Manager.DatasetManager import DatasetManager
 from DeepPhysX_Core.Dataset.BaseDatasetConfig import BaseDatasetConfig, BaseDataset
@@ -87,3 +87,36 @@ class TestDatasetManager(TestCase):
         self.assertFalse(False in [self.manager.list_partitions[field] == [[], [], []] for field in fields['IN'] +
                                    fields['OUT']])
         self.assertFalse(False in [self.manager.record_data[field] for field in fields['IN'] + fields['OUT']])
+
+    def test_load_multiple_dataset(self):
+        # Produce a Dataset with several fields and small partition size
+        dataset_config = BaseDatasetConfig(partition_size=1e-6)
+        manager = DatasetManager(dataset_config=dataset_config, session_dir=os.getcwd())
+        input_array, duplicated_in = arange(0, 100), arange(0, 100)
+        output_array, duplicated_out = 2 * input_array, 2 * duplicated_in
+        for i in range(100):
+            data = {'input': input_array[10 * i: 10 * (i + 1)],
+                    'output': output_array[10 * i: 10 * (i + 1)],
+                    'dataset_in': {'duplicated_in': duplicated_in[10 * i: 10 * (i + 1)]},
+                    'dataset_out': {'duplicated_out': duplicated_out[10 * i: 10 * (i + 1)]}}
+            manager.add_data(data)
+        manager.close()
+        # Load the multiple partitions
+        dataset_config = BaseDatasetConfig(dataset_dir=os.getcwd(), shuffle_dataset=False)
+        self.manager = DatasetManager(dataset_config=dataset_config)
+        input_get, duplicated_in_get = [], []
+        output_get, duplicated_out_get = [], []
+        for _ in range(5):
+            data = self.manager.get_data(get_inputs=True, get_outputs=True, batch_size=10)
+            input_get += data['input'].tolist()
+            output_get += data['output'].tolist()
+            duplicated_in_get += data['dataset_in']['duplicated_in'].tolist()
+            duplicated_out_get += data['dataset_out']['duplicated_out'].tolist()
+        # Check the concatenated batches received
+        val = lambda x, y, s: arange(x, y, s).tolist()
+        input_expected = val(0, 14, 1) + val(40, 54, 1) + val(80, 87, 1) + val(14, 28, 1) + [54]
+        output_expected = val(0, 28, 2) + val(80, 108, 2) + val(160, 174, 2) + val(28, 56, 2) + [108]
+        self.assertEqual(input_get, input_expected)
+        self.assertEqual(duplicated_in_get, input_expected)
+        self.assertEqual(output_get, output_expected)
+        self.assertEqual(duplicated_out_get, output_expected)
