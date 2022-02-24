@@ -3,11 +3,12 @@ from DeepPhysX_Core.Visualizer.VedoObjectFactories.MeshFactory import MeshFactor
 from DeepPhysX_Core.Visualizer.VedoObjectFactories.GlyphFactory import GlyphFactory
 from DeepPhysX_Core.Visualizer.VedoObjectFactories.PointsFactory import PointsFactory
 from DeepPhysX_Core.Visualizer.VedoObjectFactories.WindowFactory import WindowFactory
-from vedo import Mesh, Glyph, Marker, Points
+from DeepPhysX_Core.Visualizer.VedoObjectFactories.ArrowsFactory import ArrowsFactory
+from vedo import Mesh, Glyph, Marker, Points, Arrows, Plotter
 from typing import List, Dict, Union, Tuple, Any
 
 ObjectDescription = Dict[str, Union[Dict[str, Any], Any]]
-VisualInstance = Union[Mesh, Glyph, Marker, Points]
+VisualInstance = Union[Mesh, Glyph, Marker, Points, Arrows]
 Factory = Union[MeshFactory, PointsFactory, GlyphFactory, MarkerFactory, WindowFactory]
 
 
@@ -32,14 +33,16 @@ class VedoObjectFactory:
         self.updated_object_dict = {}
         self.windows_id = []
         self.factories = {}
+        self.non_updatable_objects = ['Arrows']
 
     def add_object(self, object_type: str, data_dict: ObjectDescription) -> Tuple[ObjectDescription, int, Factory]:
         """
         Create a factory with the given object type and data dictionary
 
-        :param object_type: str Type the desired factory Object (Mesh, Points, Glyph, Marker, Window)
+        :param object_type: str Type the desired factory Object (Mesh, Points, Glyph, Marker, Window, Arrows)
         :param data_dict: Dict[str, Union[Dict[str, Any], Any]] Dictionary that contains the associated data
-        :return: Tuple[ObjectDescription, int, Factory] The fully parsed and updated dictionary, its Id, the associated factory
+        :return: Tuple[ObjectDescription, int, Factory] The fully parsed and updated dictionary, its index, the
+        associated factory
         """
 
         self.factories[self.next_id] = self.factory_getter(object_type)
@@ -50,7 +53,8 @@ class VedoObjectFactory:
                              "Points, PointCloud, Point, points, point\n"
                              "Glyph, glyph\n"
                              "Marker, marker, markers, Markers\n"
-                             "Window, window\n")
+                             "Window, window\n"
+                             "Arrows, arrows, Arrow, arrow\n")
 
         self.objects_dict[self.next_id] = self.factories[self.next_id].parse(data_dict)
 
@@ -72,25 +76,34 @@ class VedoObjectFactory:
         """
         if object_id not in self.factories:
             self.factories[object_id] = self.factory_getter(self.objects_dict[object_id]["type"])
-        self.objects_dict[object_id] = self.factories[object_id].update_dict(new_data_dict)
+        self.objects_dict[object_id] = self.factories[object_id].parse(new_data_dict)
         self.updated_object_dict[object_id] = {}
         for field in new_data_dict:
             self.updated_object_dict[object_id][field] = new_data_dict[field]
         return self.objects_dict[object_id], self.factories[object_id]
 
-    def update_object_instance(self, object_id: int, instance: VisualInstance) -> VisualInstance:
+    def update_object_instance(self, object_id: int, instance: VisualInstance, viewer_data: (Plotter, int)) \
+            -> VisualInstance:
         """
         Update the given instance using the factory corresponding to the passed object_id
 
         :param object_id: int ID of the factory of the object to use
         :param instance: VisualInstance object to update
+        :param viewer_data: Tuple with [Viewer instance, index of sub-window] in which object is rendered
         :return: The updated VisualInstance
         """
         if object_id not in self.factories:
             self.factories[object_id] = self.factory_getter(self.objects_dict[object_id]["type"])
+        viewer, at = viewer_data[0], viewer_data[1]
 
-        updated_instance = self.factories[object_id].update_instance(instance)
+        if self.objects_dict[object_id]['type'] in self.non_updatable_objects:
+            viewer.remove(instance)
+            updated_instance = self.factories[object_id].update_instance(instance)
+            viewer.add(updated_instance, at=at)
+        else:
+            updated_instance = self.factories[object_id].update_instance(instance)
         self.updated_object_dict[object_id] = {}
+        # return updated_instance, viewer
         return updated_instance
 
     @staticmethod
@@ -112,4 +125,6 @@ class VedoObjectFactory:
             factory = MarkerFactory()
         elif object_type in ['Window', 'window']:
             factory = WindowFactory()
+        elif object_type in ['Arrow', 'Arrows', 'arrow', 'arrows']:
+            factory = ArrowsFactory()
         return factory
