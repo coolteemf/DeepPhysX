@@ -314,8 +314,8 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
             await self.receive_dict(recv_to=additional_out, loop=loop, sender=sender)
 
         # Set the samples from Dataset
-        self.additional_inputs = additional_in.get('additional_data', None)
-        self.additional_outputs = additional_out.get('additional_data', None)
+        self.additional_inputs = additional_in.get('additional_data', {})
+        self.additional_outputs = additional_out.get('additional_data', {})
 
     async def action_on_step(self, data: ndarray, client_id: int, sender: socket, loop: Any) -> None:
         """
