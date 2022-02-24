@@ -1,23 +1,22 @@
 from DeepPhysX_Core.Visualizer.VedoObjectFactories.BaseObjectFactory import *
 
 
-class MeshFactory(BaseObjectFactory):
+class ArrowsFactory(BaseObjectFactory):
 
     def __init__(self):
         """
-        MeshFactory is a class that represent the data of a Mesh visual object.
-        MeshFactory defines the parse and update procedures of Mesh object according to Vedo.
+        ArrowsFactory is a class that represent the data of Arrows visual object.
+        It defines the parse and update procedures of Arrows object according to Vedo.
         """
 
         BaseObjectFactory.__init__(self)
 
-        self.type = 'Mesh'
-        self.grammar_plug = ['positions', 'cells', 'computeNormals']
+        self.type = "Arrows"
+        self.grammar_plug = ['positions', 'vectors', 'res']
         self.grammar.extend(self.grammar_plug)
         self.default_values.update({self.grammar_plug[0]: None,
                                     self.grammar_plug[1]: None,
-                                    self.grammar_plug[2]: False})
-        self.number_of_dimensions = 0
+                                    self.grammar_plug[2]: 12})
 
     @parse_wrapper()
     def parse(self, data_dict: ObjectDescription) -> None:
@@ -36,12 +35,12 @@ class MeshFactory(BaseObjectFactory):
             self.dirty_fields.append(self.grammar_plug[0])
             self.parsed_data[self.grammar_plug[0]] = self.parse_vector(data_dict[self.grammar_plug[0]])
 
-        # Parse 'cells' field
-        if 'cell' in data_dict:
-            data_dict[self.grammar_plug[1]] = data_dict.pop('cells')
+        # Parse 'vectors' field
+        if 'vector' in data_dict:
+            data_dict[self.grammar_plug[1]] = data_dict.pop('vector')
         if self.grammar_plug[1] in data_dict:
             self.dirty_fields.append(self.grammar_plug[1])
-            self.parsed_data[self.grammar_plug[1]] = array(data_dict['cells'], dtype=int)
+            self.parsed_data[self.grammar_plug[1]] = self.parse_vector(data_dict[self.grammar_plug[1]])
 
     @update_wrapper()
     def update_instance(self, instance: VisualInstance) -> VisualInstance:
@@ -52,9 +51,12 @@ class MeshFactory(BaseObjectFactory):
         :return: The updated VisualInstance
         """
 
-        # Update positions
-        if self.grammar_plug[0] in self.dirty_fields:
-            instance.points(self.parsed_data[self.grammar_plug[0]])
-            self.dirty_fields.remove(self.grammar_plug[0])
+        # Reset dirty fields
+        self.dirty_fields = []
 
-        return instance
+        # Create new Arrows instance
+        return Arrows(startPoints=self.parsed_data[self.grammar_plug[0]],
+                      endPoints=self.parsed_data[self.grammar_plug[0]] + self.parsed_data[self.grammar_plug[1]],
+                      res=self.parsed_data[self.grammar_plug[2]],
+                      c=self.parsed_data[self.grammar[0]],
+                      alpha=self.parsed_data[self.grammar[1]])

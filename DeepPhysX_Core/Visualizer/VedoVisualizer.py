@@ -1,138 +1,150 @@
-from vedo import Plotter
 from os.path import join as osPathJoin
 from os import makedirs
 
 from DeepPhysX_Core.Visualizer.VedoObjectGenerator import *
 
+Viewers = Dict[int, Dict[str, Union[str, List[Any], bool, Plotter]]]
+
 
 class VedoVisualizer:
-    """
-    Visualizer class to display VisualInstances in a 2D/3D environment
-        Description:
-            VedoVisualiser use the vedo library to display 3D models. Objects are given in the init_view function.\n
-            Updates to these objects are achieved by using updateVisualizer and updateInstances functions.
-    """
-
-    scene = Dict[int, VedoObjects]
-    default_viewer_id: int
-    viewers: Dict[int, Dict[str, Union[str, List[Any], bool, Plotter]]]
-    folder_path: str
-    nb_saved: int
-    nb_screenshots: int
     
     def __init__(self):
         """
-        Automatically set the default parameters of the VedoVisualiser
+        Visualizer class to display VisualInstances in a 2D/3D environment.
+        VedoVisualiser use the vedo library to display 3D models.
+        Objects are given in the init_view function.
+        Updates to these objects are achieved by using update_visualizer and update_instances functions.
         """
-        super().__init__()
-        self.scene = {}
-        self.default_viewer_id = 9
-        self.viewers = {self.default_viewer_id: {'title': f"Vedo_axes_{self.default_viewer_id}", 'instances': [], 'sharecam': False, 'interactive': True}}
+
+        self.scene: Dict[int, VedoObjects] = {}
+        self.default_viewer_id: int = 9
+        self.viewers: Viewers = {self.default_viewer_id: {'title': f"Vedo_axes_{self.default_viewer_id}",
+                                                          'instances': [],
+                                                          'sharecam': False,
+                                                          'interactive': True}}
+        self.objects_rendered_in: Dict[str, (int, int)] = {}
+
         # Wrong samples parameters
-        self.folder_path = ""
-        self.nb_saved = 0
-        self.nb_screenshots = 0
+        self.folder_path: str = ''
+        self.nb_saved: int = 0
+        self.nb_screenshots: int = 0
 
     def init_view(self, data_dict: Dict[int, Dict[int, Dict[str, Union[Dict[str, Any], Any]]]]) -> None:
         """
         Initialize VedoVisualizer class by parsing the scenes hierarchy and creating VisualInstances.
-        OBJECT DESCRIPTION DICTIONARY is usually obtained using the corresponding factory (VedoObjectFactory)
-            data_dict example:
+        OBJECT DESCRIPTION DICTIONARY is usually obtained using the corresponding factory (VedoObjectFactory).
 
-                {SCENE_1_ID: {OBJECT_1.1_ID: {CONTENT OF OBJECT_1.1 DESCRIPTION DICTIONARY},\n
+        data_dict format:
+            {SCENE_1_ID:    {OBJECT_1.1_ID: {CONTENT OF OBJECT_1.1 DESCRIPTION DICTIONARY},
                              ...\n
-                             OBJECT_1.N_ID:  {CONTENT OF OBJECT_1.N DESCRIPTION DICTIONARY}\n
-                             },\n
-                ...\n
-                SCENE_M_ID: OBJECT_M.1_ID: {CONTENT OF OBJECT_K.1 DESCRIPTION DICTIONARY},\n
-                            ...\n
-                            OBJECT_M.K_ID:  {CONTENT OF OBJECT_K.P DESCRIPTION DICTIONARY}\n
-                            }\n
-                }
+                            OBJECT_1.N_ID: {CONTENT OF OBJECT_1.N DESCRIPTION DICTIONARY}
+                            },
+             ...\n
+             SCENE_M_ID:    {OBJECT_M.1_ID: {CONTENT OF OBJECT_K.1 DESCRIPTION DICTIONARY},
+                             ...\n
+                             OBJECT_M.K_ID: {CONTENT OF OBJECT_K.P DESCRIPTION DICTIONARY}
+                            }
+            }
 
-        :param data_dict: Dict[int, Dict[int, Dict[str, Union[Dict[str, Any], Any]]]] Dictionary describing the scene hierarchy and object parameters.
+        :param data_dict: Dictionary describing the scene hierarchy and object parameters.
         """
-        from itertools import filterfalse
-        for scene_id in sorted(data_dict):  # For each scene/client
-            self.scene.update({scene_id: VedoObjects()})
 
+        # For each scene/client
+        for scene_id in sorted(data_dict):
+
+            # Add a VedoObjects container for the scene
+            self.scene.update({scene_id: VedoObjects()})
             scene = self.scene[scene_id]
 
-            for object_id in data_dict[scene_id]:  # For each object in current scene/client
+            # Create each object in current scene/client
+            for object_id in data_dict[scene_id]:
                 scene.create_object(data_dict[scene_id][object_id])
-
-            # Simple syntax shortcuts
             objects_dict = scene.objects_factory.objects_dict
 
-            # Deal with all of the windows and object attached to these windows first
+            # Deal with all the windows and object attached to these windows first
             remaining_object_id = set(objects_dict.keys())
             for window_id in scene.objects_factory.windows_id:
+
                 # Removes the window we are dealing with from the object we have to add to the plotter
                 remaining_object_id -= {window_id}
-                # Vedo can only handle 1 axe type per viewer so we create as much viewers as needed
+                # Vedo can only handle 1 axe type per viewer, so we create as many viewers as needed
                 viewer_id = objects_dict[window_id]['axes']
+
+                # Existing viewer: ensure all objects share the same window parameters
                 if viewer_id in self.viewers:
-                    # If atleast one need a sharedcam then we wet true for all
+                    # If at least one need a shared camera then we set True for all
                     self.viewers[viewer_id]['sharecam'] |= objects_dict[window_id]['sharecam']
-                    # If one requires that the window is not interactive then it's not interactive.
+                    # If one requires that the window is not interactive then it's not interactive for all
                     self.viewers[viewer_id]['interactive'] &= objects_dict[window_id]['interactive']
+
+                # New viewer: init parameters
                 else:
-                    self.viewers[viewer_id] = {}
-                    self.viewers[viewer_id]['sharecam'] = objects_dict[window_id]['sharecam']
-                    self.viewers[viewer_id]['interactive'] = objects_dict[window_id]['interactive']
-                    self.viewers[viewer_id]['instances'] = []
-                    self.viewers[viewer_id]['title'] = f"Vedo_axes_{objects_dict[window_id]['axes']}"
+                    self.viewers[viewer_id] = {'sharecam': objects_dict[window_id]['sharecam'],
+                                               'interactive': objects_dict[window_id]['interactive'],
+                                               'instances': [],
+                                               'title': f"Vedo_axes_{objects_dict[window_id]['axes']}"}
 
                 # Add the objects to the corresponding list
                 for object_id in objects_dict[window_id]['objects_id']:
                     # Affects the object in the existing window
                     if -1 < objects_dict[object_id]['at'] < len(self.viewers[viewer_id]['instances']):
                         self.viewers[viewer_id]['instances'][objects_dict[object_id]['at']].append([scene_id, object_id])
+                    # Affects the object in the next non-existing window
                     else:
-                        # Affects the object in the next non existing window.
                         objects_dict[object_id]['at'] = len(self.viewers[viewer_id]['instances'])
                         self.viewers[viewer_id]['instances'].append([[scene_id, object_id]])
 
-                # Removes all of the objects attached to the window from the object to deal with
+                # Remove all the objects attached to the window from the object to deal with
                 remaining_object_id -= set(objects_dict[window_id]['objects_id'])
 
             # Deals with the remaining objects that are not specified in windows
             for object_id in remaining_object_id:
+
                 # Affects the object in the existing window
                 if -1 < objects_dict[object_id]['at'] < len(self.viewers[self.default_viewer_id]['instances']):
                     self.viewers[self.default_viewer_id]['instances'][objects_dict[object_id]['at']].append([scene_id, object_id])
+
+                # Affects the object in the next non-existing window
                 else:
-                    # Affects the object in the next non existing window.
                     objects_dict[object_id]['at'] = len(self.viewers[self.default_viewer_id]['instances'])
                     self.viewers[self.default_viewer_id]['instances'].append([[scene_id, object_id]])
 
         # Once all objects are created we create the plotter with the corresponding parameters
         for viewer_id in list(self.viewers.keys()):
+
+            # If no objects created for the viewer, remove it
             if len(self.viewers[viewer_id]['instances']) == 0:
                 del self.viewers[viewer_id]
                 continue
 
+            # Create plotter
             self.viewers[viewer_id]['plotter'] = Plotter(N=len(self.viewers[viewer_id]['instances']),
                                                          title=self.viewers[viewer_id]['title'],
                                                          axes=viewer_id,
                                                          sharecam=self.viewers[viewer_id]['sharecam'],
                                                          interactive=self.viewers[viewer_id]['interactive'])
 
-            # self.viewers[viewer_id]['instances'] is a list of list of instances
+            # self.viewers[viewer_id]['instances'] is a list containing lists of instances
             # Each sublist contains all instances present in a window hence, each sublist has it own "at"
             for at, ids in enumerate(self.viewers[viewer_id]['instances']):
                 for scene_id, object_in_scene_id in ids:
-                    self.viewers[viewer_id]['plotter'].add(self.scene[scene_id].objects_instance[object_in_scene_id]['instance'], at=at, render=False)
+                    # Add object instance in the actors list of plotter
+                    self.viewers[viewer_id]['plotter'].add(
+                        self.scene[scene_id].objects_instance[object_in_scene_id], at=at, render=False)
+                    # Register the object rendering location
+                    self.objects_rendered_in[f'{scene_id}_{object_in_scene_id}'] = (viewer_id, at)
 
+            # Render viewer
             self.viewers[viewer_id]['plotter'].show(interactive=True)
-
-        self.render()
 
     def render(self) -> None:
         """
         Call render on all valid plotter.
         """
+
+        # Update all objects
         self.update_instances()
+        # Render all plotters
         for viewer_id in self.viewers:
             self.viewers[viewer_id]['plotter'].render()
             self.viewers[viewer_id]['plotter'].allowInteraction()
@@ -141,9 +153,18 @@ class VedoVisualizer:
         """
         Call update_instance on all updates object description
         """
+
+        # Update in every scene/client
         for scene_id in self.scene:
+            # Update every object of the current scene
             for object_id in self.scene[scene_id].objects_instance:
-                self.scene[scene_id].update_instance(object_id)
+                # Get the rendering location of the object
+                viewer_data = self.objects_rendered_in[f'{scene_id}_{object_id}']
+                plotter = self.viewers[viewer_data[0]]['plotter']
+                at = viewer_data[1]
+                # _, self.viewers[viewer_data[0]]['plotter'] = self.scene[scene_id].update_instance(
+                #     object_id, (self.viewers[viewer_data[0]]['plotter'], viewer_data[1]))
+                self.scene[scene_id].update_instance(object_id, (plotter, at))
 
     def update_visualizer(self, data_dict: Dict[int, Dict[int, ObjectDescription]]) -> None:
         """
@@ -151,9 +172,10 @@ class VedoVisualizer:
 
         :param data_dict:
         """
+
         for scene_id in data_dict:
             for object_id in data_dict[scene_id]:
-                self.scene[scene_id].objects_factory.update_object_dict(object_id, data_dict[scene_id][object_id])
+                self.scene[scene_id].update_object(object_id, data_dict[scene_id][object_id])
 
     def save_sample(self, session_dir: str, viewer_id: int) -> None:
         """
@@ -162,6 +184,7 @@ class VedoVisualizer:
         :param session_dir: Directory in which to save the file
         :param viewer_id: id of the designed viewer
         """
+
         if self.folder_path == "":
             self.folder_path = osPathJoin(session_dir, 'dataset', 'wrong_samples')
             makedirs(self.folder_path)
