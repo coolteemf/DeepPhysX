@@ -112,13 +112,11 @@ class BaseEnvironment(TcpIpClient):
         """
         raise NotImplementedError
 
-    def check_sample(self, check_input: bool = True, check_output: bool = True) -> bool:
+    def check_sample(self) -> bool:
         """
         Check if the current produced sample is usable for training.
         Not mandatory.
 
-        :param bool check_input: If True, input tensors need to be checked
-        :param bool check_output: If True, output tensors need to be checked
         :return: bool - Current data can be used or not
         """
         return True
