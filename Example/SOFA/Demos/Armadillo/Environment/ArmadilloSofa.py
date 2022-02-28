@@ -21,7 +21,7 @@ import SofaRuntime
 # DeepPhysX related imports
 from DeepPhysX_Sofa.Environment.SofaEnvironment import SofaEnvironment
 
-# Session imports
+# Session related imports
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from parameters import p_model, p_grid, p_forces
 
@@ -213,24 +213,6 @@ class ArmadilloSofa(SofaEnvironment):
             self.cff[i].force.value = f
             self.cff[i].showArrowSize.value = 10 * len(self.cff[i].forces.value)
 
-        # for cff in self.forces:
-        #     cff.force.value = np.array([0., 0., 0.])
-        # if self.idx_forces is not None:
-        #     cff, amplitude = self.cff[self.idx_forces], p_forces['amplitude'][self.idx_forces]
-        #     f = np.array([0., 0., 0.])
-        #     for direction in self.directions[self.idx_forces]:
-        #         f[direction] = self.amplitudes[self.idx_range]
-        #     f = f * amplitude
-        #     cff.force.value = f
-        #     cff.showArrowSize.value = 10 if self.idx_forces == 0 else 100
-        #
-        #     self.idx_forces += 1
-        #     if self.idx_forces == len(self.forces):
-        #         self.idx_forces = 0
-        #         self.idx_range += 1
-        #         if self.idx_range == len(self.amplitudes):
-        #             self.idx_range = 0
-
     def onAnimateEndEvent(self, event):
         """
         Called within the Sofa pipeline at the end of the time step.
@@ -240,7 +222,7 @@ class ArmadilloSofa(SofaEnvironment):
         if not self.check_sample():
             print("Solver diverged.")
 
-    def check_sample(self, check_input=True, check_output=True):
+    def check_sample(self):
         """
         Check if the produced sample is correct. Automatically called by DeepPhysX to check sample validity.
         """

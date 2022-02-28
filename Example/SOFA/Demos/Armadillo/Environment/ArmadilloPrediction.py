@@ -9,13 +9,13 @@ Training data are produced at each time step :
     * output : resulted displacement of each surface node
 """
 
-# Python imports
+# Python related imports
 import os
 import sys
 
-# Working session imports
+# Session related imports
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-from ArmadilloTraining import ArmadilloTraining, np
+from ArmadilloTraining import ArmadilloTraining, np, p_model
 
 
 class ArmadilloPrediction(ArmadilloTraining):
@@ -65,7 +65,7 @@ class ArmadilloPrediction(ArmadilloTraining):
         """
 
         # Reshape to correspond regular grid, transform to sparse grid
-        U = np.reshape(prediction, self.output_size) / 10
+        U = np.reshape(prediction, self.data_size) * p_model.size
         self.n_surface_mo.position.value = self.n_surface_mo.rest_position.array() + U
 
     def check_sample(self, check_input=True, check_output=True):

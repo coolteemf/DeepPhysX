@@ -9,11 +9,11 @@ Training data are produced at each time step :
     * output : resulted displacement of each surface node
 """
 
-# Python imports
+# Python related imports
 import os
 import sys
 
-# Working session imports
+# Session related imports
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from ArmadilloSofa import ArmadilloSofa, p_model, np
 
@@ -39,8 +39,7 @@ class ArmadilloTraining(ArmadilloSofa):
                                environment_manager=environment_manager)
 
         self.create_model['nn'] = True
-        self.input_size = (p_model.nb_nodes, 3)
-        self.output_size = (p_model.nb_nodes, 3)
+        self.data_size = (p_model.nb_nodes, 3)
 
     def send_visualization(self):
         """
@@ -52,12 +51,6 @@ class ArmadilloTraining(ArmadilloSofa):
                                                                'cells': self.f_visu.triangles.value.copy(),
                                                                'at': self.instance_id,
                                                                'c': 'green'})
-        # Add the NN model with translation
-        # T = np.array(p_model.vedo_translation * self.n_visu.position.shape[0]).reshape(self.n_visu.position.shape)
-        # self.factory.add_object(object_type='Mesh', data_dict={'position': self.n_visu.position.value.copy() + T,
-        #                                                        'cells': self.n_visu.triangles.value.copy(),
-        #                                                        'at': self.instance_id,
-        #                                                        'c': 'orange'})
         # Return the initial visualization data
         return self.factory.objects_dict
 
@@ -82,13 +75,14 @@ class ArmadilloTraining(ArmadilloSofa):
         Compute force vector for the whole surface.
         """
 
-        F = np.zeros(self.input_size)
+        F = np.zeros(self.data_size)
         # Add each force vector to the network input
         for force_field in self.cff:
             f = force_field.forces.value.copy()
             idx = force_field.indices.value.copy()
             F[idx] = f
-        return F.copy() / p_model.scale
+        in_array = F.copy() / p_model.scale
+        return in_array
 
     def compute_output(self):
         """
@@ -97,7 +91,8 @@ class ArmadilloTraining(ArmadilloSofa):
 
         # Compute generated displacement
         U = self.f_surface_mo.position.value - self.f_surface_mo.rest_position.value
-        return U.copy() * 10
+        out_array = U.copy() / p_model.size
+        return out_array
 
     def apply_prediction(self, prediction):
         """
@@ -105,15 +100,10 @@ class ArmadilloTraining(ArmadilloSofa):
         """
 
         # Reshape to correspond regular grid, transform to sparse grid
-        U = np.reshape(prediction, self.output_size) / 10
+        U = np.reshape(prediction, self.data_size) * p_model.size
         self.n_surface_mo.position.value = self.n_surface_mo.rest_position.array() + U
 
         # Update visualization data
         self.factory.update_object_dict(object_id=0, new_data_dict={'position': self.f_visu.position.value.copy()})
-        # Update the NN model with translation
-        # translation = np.array(p_model.vedo_translation * self.n_visu.position.value.shape[0]).reshape(
-        #     self.n_visu.position.value.shape)
-        # self.factory.update_object_dict(object_id=1, new_data_dict={'position': self.n_visu.position.value.copy() +
-        #                                                                         translation})
         # Send updated data
         self.update_visualisation(visu_dict=self.factory.updated_object_dict)

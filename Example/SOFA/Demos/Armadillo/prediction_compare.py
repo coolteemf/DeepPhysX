@@ -3,33 +3,24 @@ prediction_compare.py
 Launch the prediction session in a SOFA GUI. Compare the two models.
 """
 
-# Python imports
+# Python related imports
 import os
 
-# Sofa imports
+# Sofa related imports
 import Sofa.Gui
 
-# DeepPhysX Core imports
+# DeepPhysX related imports
 from DeepPhysX_Core.Dataset.BaseDatasetConfig import BaseDatasetConfig
 from DeepPhysX_Sofa.Runner.SofaRunner import SofaRunner
-
-# DeepPhysX Torch imports
 from DeepPhysX_PyTorch.FC.FCConfig import FCConfig
-
-# DeepPhysX Sofa imports
 from DeepPhysX_Sofa.Environment.SofaEnvironmentConfig import SofaEnvironmentConfig
 
-# Working session imports
+# Session related imports
 from Environment.ArmadilloPrediction import ArmadilloPrediction
 import Environment.parameters as parameters
 
 
 def create_runner():
-    """
-    Launch DeepPhysX training session.
-
-    :return:
-    """
 
     # Environment config
     env_config = SofaEnvironmentConfig(environment_class=ArmadilloPrediction,
@@ -47,12 +38,11 @@ def create_runner():
     dataset_config = BaseDatasetConfig(partition_size=1, shuffle_dataset=True)
 
     # Runner
-    runner = SofaRunner(session_dir="sessions/armadillo",
-                        dataset_config=dataset_config,
-                        environment_config=env_config,
-                        network_config=net_config,
-                        nb_steps=0)
-    return runner
+    return SofaRunner(session_dir="sessions/armadillo",
+                      dataset_config=dataset_config,
+                      environment_config=env_config,
+                      network_config=net_config,
+                      nb_steps=0)
 
 
 if __name__ == '__main__':
