@@ -12,11 +12,12 @@ class MeshFactory(BaseObjectFactory):
         BaseObjectFactory.__init__(self)
 
         self.type = 'Mesh'
-        self.grammar_plug = ['positions', 'cells', 'computeNormals']
+        self.grammar_plug = ['positions', 'cells', 'computeNormals', 'wireframe']
         self.grammar.extend(self.grammar_plug)
         self.default_values.update({self.grammar_plug[0]: None,
                                     self.grammar_plug[1]: None,
-                                    self.grammar_plug[2]: False})
+                                    self.grammar_plug[2]: False,
+                                    self.grammar_plug[3]: False})
         self.number_of_dimensions = 0
 
     @parse_wrapper()
