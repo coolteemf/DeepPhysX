@@ -1,5 +1,5 @@
-import vedo
-import math
+from vedo import Mesh
+from math import fabs
 
 
 def find_fixed_box(source_file, scale):
@@ -8,7 +8,7 @@ def find_fixed_box(source_file, scale):
 
     :param str source_file: Mesh file
     :param float scale: Scale to apply
-    :return:
+    :return: Min and max corners of the fixed box.
     """
 
     # Get the bounding box
@@ -31,11 +31,11 @@ def find_extremities(source_file, scale):
 
     :param str source_file: Mesh file
     :param float scale: Scale to apply
-    :return:
+    :return: Key points of the mesh.
     """
 
     # Get the coordinates of the mesh
-    mesh = vedo.Mesh(source_file).scale(scale)
+    mesh = Mesh(source_file).scale(scale)
     coords = mesh.points().copy()
 
     # Get the size of the bounding box
@@ -76,7 +76,7 @@ def define_bbox(source_file, margin_scale, scale):
     """
 
     # Find min and max corners of the bounding box
-    mesh = vedo.Mesh(source_file).scale(scale)
+    mesh = Mesh(source_file).scale(scale)
     bbox_min = mesh.points().min(0)
     bbox_max = mesh.points().max(0)
 
@@ -99,9 +99,9 @@ def compute_grid_resolution(max_bbox, min_bbox, cell_size, print_log=False):
     """
 
     # Absolute size values along 3 dimensions
-    sx = math.fabs(max_bbox[0] - min_bbox[0])
-    sy = math.fabs(max_bbox[1] - min_bbox[1])
-    sz = math.fabs(max_bbox[2] - min_bbox[2])
+    sx = fabs(max_bbox[0] - min_bbox[0])
+    sy = fabs(max_bbox[1] - min_bbox[1])
+    sz = fabs(max_bbox[2] - min_bbox[2])
 
     # Compute number of nodes in the grid
     cell_size = cell_size * min(sx, sy, sz)  # Cells need to be hexahedron
@@ -124,7 +124,19 @@ def get_nb_nodes(source_file):
     Get the number of nodes of a mesh.
 
     :param str source_file: Mesh file
-    :return:
+    :return: Number of nodes in the mesh
     """
 
-    return vedo.Mesh(source_file).N()
+    return Mesh(source_file).N()
+
+
+def get_object_max_size(source_file, scale):
+    """
+    Get the max size of the object along x, y, z axis.
+
+    :param str source_file: Mesh file
+    :param float scale: Scale to apply to the mesh
+    :return: Max size of the object
+    """
+
+    return Mesh(source_file).scale(scale).maxBoundSize()

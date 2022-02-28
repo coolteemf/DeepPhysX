@@ -18,9 +18,11 @@ from Environment.ArmadilloSofa import ArmadilloSofa
 
 
 def create_environment():
+
     # Create SofaEnvironment configuration
     environment_config = SofaEnvironmentConfig(environment_class=ArmadilloSofa,
                                                as_tcp_ip_client=False)
+
     # Create Armadillo Environment within EnvironmentManager
     environment_manager = EnvironmentManager(environment_config=environment_config)
     return environment_manager.environment

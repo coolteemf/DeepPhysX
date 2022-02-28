@@ -3,19 +3,15 @@ training.py
 Launch the training session with a VedoVisualizer.
 """
 
-# Python imports
+# Python related imports
 import sys
 import torch
 
-# DeepPhysX Core imports
+# DeepPhysX related imports
 from DeepPhysX_Core.Dataset.BaseDatasetConfig import BaseDatasetConfig
 from DeepPhysX_Core.Visualizer.VedoVisualizer import VedoVisualizer
 from DeepPhysX_Core.Pipelines.BaseTrainer import BaseTrainer
-
-# DeepPhysX Torch imports
 from DeepPhysX_PyTorch.FC.FCConfig import FCConfig
-
-# DeepPhysX Sofa imports
 from DeepPhysX_Sofa.Environment.SofaEnvironmentConfig import SofaEnvironmentConfig
 
 # Working session imports
@@ -23,26 +19,20 @@ from Environment.ArmadilloTraining import ArmadilloTraining
 import Environment.parameters as parameters
 
 # Training parameters
-nb_epochs = 400  # 20 / 40 / 50
-nb_batch = 50  # 100 / 200 / 400
-batch_size = 24
-lr = 1e-4
+nb_epochs = 400
+nb_batch = 200
+batch_size = 32
+lr = 1e-5
 
 
-def main():
-    """
-    Launch DeepPhysX training session.
-
-    :return:
-    """
+def launch_trainer():
 
     # Environment config
     env_config = SofaEnvironmentConfig(environment_class=ArmadilloTraining,
                                        visualizer=VedoVisualizer,
                                        number_of_thread=int(sys.argv[1]),
                                        always_create_data=False,
-                                       use_prediction_in_environment=False,
-                                       port=10000)
+                                       use_prediction_in_environment=False)
 
     # UNet config
     nb_hidden_layers = 2
@@ -73,4 +63,4 @@ if __name__ == '__main__':
     if len(sys.argv) != 2:
         print(f"Usage: python3 {sys.argv[0]} <nb_thread>")
         sys.exit(1)
-    main()
+    launch_trainer()
