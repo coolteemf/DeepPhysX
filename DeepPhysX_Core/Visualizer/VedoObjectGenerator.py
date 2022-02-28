@@ -6,7 +6,7 @@ create_filter: Dict[str, Callable[[ObjectDescription], VisualInstance]] = {
     "Mesh": lambda sorted_data: Mesh(inputobj=[sorted_data["positions"], sorted_data["cells"]],
                                      c=sorted_data["c"],
                                      alpha=sorted_data["alpha"],
-                                     computeNormals=sorted_data["computeNormals"]),
+                                     computeNormals=sorted_data["computeNormals"]).wireframe(sorted_data['wireframe']),
 
     "Points": lambda sorted_data: Points(inputobj=sorted_data["positions"],
                                          c=sorted_data["c"],
