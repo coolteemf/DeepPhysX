@@ -1,4 +1,4 @@
-from typing import Any, Optional, Type
+from typing import Any, Optional, Type, Union, List
 
 from DeepPhysX_PyTorch.Network.TorchNetworkConfig import TorchNetworkConfig, TorchDataTransformation, TorchOptimization
 from DeepPhysX_PyTorch.FC.FC import FC
@@ -18,7 +18,8 @@ class FCConfig(TorchNetworkConfig):
                  loss: Any = None,
                  optimizer: Any = None,
                  dim_output: int = 0,
-                 dim_layers: list = None):
+                 dim_layers: list = None,
+                 biases: Union[List[bool], bool] = True):
 
         TorchNetworkConfig.__init__(self,
                                     network_class=FC,
@@ -47,4 +48,5 @@ class FCConfig(TorchNetworkConfig):
                                                network_name=network_name,
                                                network_type='FC',
                                                dim_output=dim_output,
-                                               dim_layers=dim_layers)
+                                               dim_layers=dim_layers,
+                                               biases=biases)
