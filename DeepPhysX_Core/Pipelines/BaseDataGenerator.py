@@ -1,13 +1,13 @@
 from os.path import join as osPathJoin
 from os.path import basename
 from sys import stdout
-from vedo import ProgressBar
 
 from DeepPhysX_Core.Manager.DataManager import DataManager
 from DeepPhysX_Core.Utils.pathUtils import create_dir, get_first_caller
 
 from DeepPhysX_Core.Dataset.BaseDatasetConfig import BaseDatasetConfig
 from DeepPhysX_Core.Environment.BaseEnvironmentConfig import BaseEnvironmentConfig
+from DeepPhysX_Core.Utils.progressbar import Progressbar
 
 
 class BaseDataGenerator:
@@ -53,12 +53,12 @@ class BaseDataGenerator:
                                         record_data={'input': record_input, 'output': record_output},
                                         batch_size=batch_size)
         self.nb_batch = nb_batches
-        self.progress_bar = ProgressBar(start=0, stop=self.nb_batch - 1, c='orange', title="Data Generation")
+        self.progress_bar = Progressbar(start=0, stop=self.nb_batch, c='orange', title="Data Generation")
 
     def execute(self) -> None:
         """Run the data generation and recording process"""
         for i in range(self.nb_batch):
             stdout.write("\033[K")
-            self.progress_bar.print(counts=i)
+            self.progress_bar.print(counts=i + 1)
             self.data_manager.get_data()
         self.data_manager.close()

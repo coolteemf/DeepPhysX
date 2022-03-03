@@ -1,9 +1,12 @@
+from sys import stdout
+
 from DeepPhysX_Core.Pipelines.BasePipeline import BasePipeline
 from DeepPhysX_Core.Manager.Manager import Manager
 
 from DeepPhysX_Core.Network.BaseNetworkConfig import BaseNetworkConfig
 from DeepPhysX_Core.Dataset.BaseDatasetConfig import BaseDatasetConfig
 from DeepPhysX_Core.Environment.BaseEnvironmentConfig import BaseEnvironmentConfig
+from DeepPhysX_Core.Utils.progressbar import Progressbar
 
 
 class BaseTrainer(BasePipeline):
@@ -17,20 +20,23 @@ class BaseTrainer(BasePipeline):
                  new_session=True,
                  nb_epochs=0,
                  nb_batches=0,
-                 batch_size=0):
+                 batch_size=0,
+                 debug=False):
         """
         BaseTrainer is a pipeline defining the training process of an artificial neural network.
         It provides a highly tunable learning process that can be used with any machine learning library.
 
         :param BaseNetworkConfig network_config: Specialisation containing the parameters of the network manager
         :param BaseDatasetConfig dataset_config: Specialisation containing the parameters of the dataset manager
-        :param BaseEnvironmentConfig environment_config: Specialisation containing the parameters of the environment manager
+        :param BaseEnvironmentConfig environment_config: Specialisation containing the parameters of the environment
+        manager
         :param str session_name: Name of the newly created directory if session_dir is not defined
         :param str session_dir: Name of the directory in which to write all the necessary data
         :param bool new_session: Define the creation of new directories to store data
         :param int nb_epochs: Number of epochs
         :param int nb_batches: Number of batches
         :param int batch_size: Size of a batch
+        :param bool debug: If True, main training features will not be launched
         """
 
         if environment_config is None and dataset_config.dataset_dir is None:
@@ -54,7 +60,15 @@ class BaseTrainer(BasePipeline):
         # Tell if data is recording while predicting (output is recorded only if input too)
         self.record_data = {'input': True, 'output': True}
 
-        # self.training_progress_bar = vedo.ProgressBar(start=0, stop=self.nb_samples, c='orange', title="Training")
+        self.debug = debug
+        if not self.debug:
+            self.progress_counter = 0
+            self.digits = ['{' + f':0{len(str(self.nb_epochs))}d' + '}',
+                           '{' + f':0{len(str(self.nb_batches))}d' + '}']
+            id_epoch, nb_epoch = self.digits[0].format(0), self.digits[0].format(self.nb_epochs)
+            id_batch, nb_batch = self.digits[1].format(0), self.digits[1].format(self.nb_batches)
+            self.progress_bar = Progressbar(start=0, stop=self.nb_batches * self.nb_epochs, c='orange',
+                                            title=f'Epoch n°{id_epoch}/{nb_epoch} - Batch n°{id_batch}/{nb_batch} ')
 
         self.manager = Manager(pipeline=self, network_config=self.network_config, dataset_config=dataset_config,
                                environment_config=self.environment_config,
@@ -67,7 +81,8 @@ class BaseTrainer(BasePipeline):
         """
         Main function of the training process \"execute\" call the functions associated with the learning process.
         Each of the called functions are already implemented so one can start a basic training.
-        Each of the called function can also be rewritten via inheritance to provide more specific / complex training process.
+        Each of the called function can also be rewritten via inheritance to provide more specific / complex training
+        process.
         """
         self.train_begin()
         while self.epoch_condition():
@@ -89,11 +104,11 @@ class BaseTrainer(BasePipeline):
         """
         self.manager.get_data(self.id_epoch, self.batch_size)
         prediction, self.loss_dict = self.manager.optimize_network()
-        print(f"Current loss : {self.loss_dict['loss']}")
 
     def save_network(self) -> None:
         """
-        Registers the network weights and biases in the corresponding directory (session_name/network or session_dir/network)
+        Registers the network weights and biases in the corresponding directory (session_name/network or
+        session_dir/network)
         """
         self.manager.save_network()
 
@@ -144,7 +159,14 @@ class BaseTrainer(BasePipeline):
         Called one at the start of each batch.
         Allows the user to run some pre-batch computations.
         """
-        print(f'Epoch n°{self.id_epoch + 1}/{self.nb_epochs} - Batch n°{self.id_batch + 1}/{self.nb_batches}')
+
+        if not self.debug:
+            stdout.write("\033[K")
+            self.progress_counter += 1
+            id_epoch, nb_epoch = self.digits[0].format(self.id_epoch + 1), self.digits[0].format(self.nb_epochs)
+            id_batch, nb_batch = self.digits[1].format(self.id_batch + 1), self.digits[1].format(self.nb_batches)
+            self.progress_bar.title = f'Epoch n°{id_epoch}/{nb_epoch} - Batch n°{id_batch}/{nb_batch} '
+            self.progress_bar.print(counts=self.progress_counter)
 
     def batch_end(self) -> None:
         """
@@ -152,11 +174,12 @@ class BaseTrainer(BasePipeline):
         Allows the user to run some post-batch computations.
         """
         self.manager.stats_manager.add_train_batch_loss(self.loss_dict['loss'],
-                                                      self.id_epoch * self.nb_batches + self.id_batch)
+                                                        self.id_epoch * self.nb_batches + self.id_batch)
         for key in self.loss_dict.keys():
             if key != 'loss':
-                self.manager.stats_manager.add_custom_scalar(tag=key, value=self.loss_dict[key],
-                                                            count=self.id_epoch * self.nb_batches + self.id_batch)
+                self.manager.stats_manager.add_custom_scalar(tag=key,
+                                                             value=self.loss_dict[key],
+                                                             count=self.id_epoch * self.nb_batches + self.id_batch)
 
     def batch_condition(self) -> bool:
         """
@@ -177,25 +200,15 @@ class BaseTrainer(BasePipeline):
     def __str__(self) -> str:
         """
         
-        :return: str Contains training informations about the training process
+        :return: str Contains training information about the training process
         """
         description = "\n"
         description += f"# {self.__class__.__name__}\n"
         description += f"    Session directory: {self.manager.session_dir}\n"
         description += f"    Number of epochs: {self.nb_epochs}\n"
         description += f"    Number of batches per epoch: {self.nb_batches}\n"
-        description += f"    Number of samples per epoch: {self.nb_samples}\n"
+        description += f"    Number of samples per epoch: {self.nb_batches * self.batch_size}\n"
         description += f"    Number of samples per batch: {self.batch_size}\n"
         description += f"    Total: Number of batches : {self.nb_batches * self.nb_epochs}\n"
-        description += f"           Number of samples : {self.nb_epochs * self.nb_samples}\n"
+        description += f"           Number of samples : {self.nb_samples}\n"
         return description
-
-# def validate(self, size):
-    #     success_count = 0
-    #     with no_grad():
-    #         for i in range(size):
-    #             inputs, ground_truth = self.manager.environment_manager.getData(1, True, True)
-    #             prediction = np.argmax(self.manager.getPrediction(inputs=inputs).numpy())
-    #             if prediction == ground_truth[0]:
-    #                 success_count += 1
-    #     print("Success Rate =", success_count * 100.0 / size)
