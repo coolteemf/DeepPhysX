@@ -47,6 +47,7 @@ class BasePipeline:
             raise TypeError("[BaseRunner] The session directory must be a str.")
 
         self.type = pipeline    # Either training or prediction
+        self.debug = False
         self.new_session = True
         self.record_data = None  # Can be of type {'in': bool, 'out': bool}
         # Dataset variables

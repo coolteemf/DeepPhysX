@@ -3,6 +3,8 @@ import torch
 import numpy
 DataContainer = Union[numpy.ndarray, torch.Tensor]
 from tensorboardX import SummaryWriter
+from tensorboard import program
+from webbrowser import open as w_open
 from numpy import full, inf, array, append, concatenate
 
 
@@ -32,11 +34,11 @@ class StatsManager:
         self.manager = manager
         self.log_dir: str = log_dir
         self.writer: SummaryWriter = SummaryWriter(log_dir)
-        # import os
-        # os.popen(f'tensorboard --logdir={log_dir} &')
-        # import webbrowser
-        # # TODO Inspect previous command string to get the good ip adress
-        # webbrowser.open('http://localhost:6006/')
+        if not self.manager.pipeline.debug:
+            tb = program.TensorBoard()
+            tb.configure(argv=[None, '--logdir', log_dir])
+            # url = tb.launch()
+            # w_open(url)
         self.mean: numpy.ndarray = full(4, inf)  # Contain in the first dimension the mean, and second the variance of the mean
         self.train_loss: numpy.ndarray = array([])
         self.keep_losses: bool = keep_losses
