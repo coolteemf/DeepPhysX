@@ -174,11 +174,11 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
         receiver = self.sock if receiver is None else receiver
 
         # Send and reset network input
-        if self.input.any():
+        if bool(self.input.tolist()):
             await self.send_labeled_data(data_to_send=self.input, label="input", loop=loop, receiver=receiver)
             self.input = array([])
         # Send network output
-        if self.output.any():
+        if bool(self.output.tolist()):
             await self.send_labeled_data(data_to_send=self.output, label="output", loop=loop, receiver=receiver)
             self.output = array([])
         # Send loss data
@@ -186,14 +186,16 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
             await self.send_labeled_data(data_to_send=self.loss_data, label='loss', loop=loop, receiver=receiver)
             self.loss_data = None
         # Send additional input data
-        for key in self.additional_inputs.keys():
-            await self.send_labeled_data(data_to_send=self.additional_inputs[key], label='dataset_in' + key,
-                                         loop=loop, receiver=receiver)
+        if self.additional_inputs is not None:
+            for key in self.additional_inputs.keys():
+                await self.send_labeled_data(data_to_send=self.additional_inputs[key], label='dataset_in' + key,
+                                             loop=loop, receiver=receiver)
         self.additional_inputs = {}
         # Send additional output data
-        for key in self.additional_outputs.keys():
-            await self.send_labeled_data(data_to_send=self.additional_outputs[key], label='dataset_out' + key,
-                                         loop=loop, receiver=receiver)
+        if self.additional_outputs is not None:
+            for key in self.additional_outputs.keys():
+                await self.send_labeled_data(data_to_send=self.additional_outputs[key], label='dataset_out' + key,
+                                             loop=loop, receiver=receiver)
         self.additional_outputs = {}
 
     async def send_prediction_data(self, network_input: ndarray, loop: Any = None, receiver: socket = None) -> ndarray:
@@ -214,6 +216,24 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
         await self.send_labeled_data(data_to_send=network_input, label='input', receiver=receiver)
         # Receive the network prediction
         label, pred = await self.receive_labeled_data(loop=loop, sender=receiver)
+        return pred
+
+    def send_prediction_data(self, network_input: ndarray, receiver: socket = None) -> ndarray:
+        """
+        Request a prediction from the Environment.
+
+        :param ndarray network_input: Data to send under the label 'input'
+        :param socket receiver: TcpIpObject receiver
+        :return: Prediction of the Network
+        """
+
+        receiver = self.sock if receiver is None else receiver
+        # Send prediction command
+        self.sync_send_command_prediction()
+        # Send the network input
+        self.sync_send_labeled_data(data_to_send=network_input, label='input', receiver=receiver)
+        # Receive the network prediction
+        _, pred = self.sync_receive_labeled_data()
         return pred
 
     async def send_visualization_data(self, visualization_data: Dict[Any, Any], loop: Any = None,
@@ -248,7 +268,7 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
         :return:
         """
 
-        return async_run(self.__get_prediction(input_array))
+        return self.send_prediction_data(network_input=input_array)
 
     async def __get_prediction(self, input_array: ndarray) -> ndarray:
         """
@@ -362,7 +382,7 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
 
         # If produced sample is not usable, run again
         # Todo: add the max_rate here
-        if not self.sample_in and not self.sample_out:
+        if self.sample_in is not None and self.sample_out is not None:
             while not self.check_sample():
                 for step in range(self.simulations_per_step):
                     # Compute data only on final step
