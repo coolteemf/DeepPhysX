@@ -1,27 +1,26 @@
 from typing import Dict, List, Optional, Tuple
-
-import numpy
 from numpy import array, ndarray, concatenate, save, arange
 from numpy.random import shuffle
+from collections import namedtuple
 
 
 class BaseDataset:
+    """
+    | BaseDataset is a dataset class to store any data from a BaseEnvironment or from files.
+    | Given data is split into input data and output data.
+    | Saving data results in multiple partitions of input and output data.
 
-    def __init__(self, config):
-        """
-        BaseDataset is a dataset class to store any data from a BaseEnvironment or from files.
-        Given data is split into input data and output data.
-        Saving data results in multiple partitions of input and output data.
+    :param namedtuple config: Namedtuple which contains BaseDataset parameters
+    """
 
-        :param config: namedtuple which contains BaseDataset parameters
-        """
+    def __init__(self, config: namedtuple):
 
         self.name: str = self.__class__.__name__
 
         # Data fields containers
         self.data_type = ndarray
         self.fields: Dict[str, List[str]] = {'IN': ['input'], 'OUT': ['output']}
-        self.data: Dict[str, numpy.ndarray] = {'input': array([]), 'output': array([])}
+        self.data: Dict[str, ndarray] = {'input': array([]), 'output': array([])}
         self.shape: Dict[str, Optional[List[int]]] = {'input': None, 'output': None}
 
         # Indexing
@@ -36,19 +35,19 @@ class BaseDataset:
     @property
     def nb_samples(self) -> int:
         """
-        Property returning the current number of samples
+        | Property returning the current number of samples
 
-        :return:
+        :return: The current number of samples in all partitions
         """
 
         return max([len(self.data[field]) for field in self.fields['IN'] + self.fields['OUT']])
 
     def is_empty(self) -> bool:
         """
-        Check if the fields of the dataset are empty. A field is considered as non-empty if it is filled with another
-        sample.
+        | Check if the fields of the dataset are empty. A field is considered as non-empty if it is filled with another
+          sample.
 
-        :return:
+        :return: The Dataset is empty or not
         """
 
         # The empty flag is set to False once the Dataset is considered as non-empty
@@ -65,11 +64,10 @@ class BaseDataset:
 
     def init_data_size(self, field: str, shape: List[int]) -> None:
         """
-        Store the original shape of data. Reshape data containers.
+        | Store the original shape of data. Reshape data containers.
 
         :param str field: Data field name
-        :param tuple shape: Shape of the corresponding tensor
-        :return:
+        :param List[int] shape: Shape of the corresponding tensor
         """
 
         # Store the original data shape
@@ -79,21 +77,20 @@ class BaseDataset:
 
     def get_data_shape(self, field: str) -> Tuple[int]:
         """
-        Returns the data shape of field.
+        | Returns the data shape of field.
 
         :param str field: Data field name
-        :return: tuple - Data shape for field
+        :return: Data shape for field
         """
 
         return tuple(self.shape[field])
 
     def init_additional_field(self, field: str, shape: List[int]) -> None:
         """
-        Register a new data field.
+        | Register a new data field.
 
         :param str field: Name of the data field
-        :param tuple shape: Data shape
-        :return:
+        :param List[int] shape: Data shape
         """
 
         # Register the data field
@@ -106,14 +103,12 @@ class BaseDataset:
 
     def empty(self) -> None:
         """
-        Empty the dataset.
-
-        :return:
+        | Empty the dataset.
         """
 
         # Reinit each data container
         for field in self.fields['IN'] + self.fields['OUT']:
-            self.data[field] = array([]).reshape((0, *self.shape[field])) if self.shape[field] is not None else array([])
+            self.data[field] = array([]) if self.shape[field] is None else array([]).reshape((0, *self.shape[field]))
         # Reinit indexing variables
         self.shuffle_pattern = None
         self.current_sample = 0
@@ -122,10 +117,10 @@ class BaseDataset:
 
     def memory_size(self, field: Optional[str] = None) -> int:
         """
-        Return the actual memory size of the dataset if field is None. Otherwise, return the actual memory size of the
-        field.
+        | Return the actual memory size of the dataset if field is None. Otherwise, return the actual memory size of the
+          field.
 
-        :param str field: Name of the data field
+        :param Optional[str] field: Name of the data field
         :return: Size in bytes of the current dataset.
         """
 
@@ -135,27 +130,25 @@ class BaseDataset:
         # Return the memory size for the specified field
         return self.data[field].nbytes
 
-    def check_data(self, field: str, data: numpy.ndarray) -> None:
+    def check_data(self, field: str, data: ndarray) -> None:
         """
-        Check if the data is a numpy array.
+        | Check if the data is a numpy array.
 
         :param str field: Values at 'input' or anything else. Define if the associated shape is correspond to input
-        shape or output one.
+                          shape or output one.
         :param ndarray data: New data
-        :return:
         """
 
         if type(data) != self.data_type:
             raise TypeError(f"[{self.name}] Wrong data type in field '{field}': numpy array required, got {type(data)}")
 
-    def add(self, field: str, data: numpy.ndarray, partition_file: str = None) -> None:
+    def add(self, field: str, data: ndarray, partition_file: Optional[str] = None) -> None:
         """
-        Add data to the dataset.
+        | Add data to the dataset.
 
         :param str field: Name of the data field
         :param ndarray data: New data as batch of samples
-        :param str partition_file: Path to the file in which to write the data
-        :return:
+        :param Optional[str] partition_file: Path to the file in which to write the data
         """
 
         # Check data type
@@ -184,24 +177,22 @@ class BaseDataset:
         self.batch_per_field[field] += 1
         self.current_sample = max([len(self.data[f]) for f in self.fields['IN'] + self.fields['OUT']])
 
-    def save(self, field, file) -> None:
+    def save(self, field: str, file: str) -> None:
         """
-        Save the corresponding field of the Dataset.
+        | Save the corresponding field of the Dataset.
 
         :param str field: Name of the data field
         :param str file: Path to the file in which to write the data
-        :return:
         """
 
         save(file, self.data[field])
 
-    def set(self, field: str, data: numpy.ndarray) -> None:
+    def set(self, field: str, data: ndarray) -> None:
         """
-        Set a full field of the dataset.
+        | Set a full field of the dataset.
 
         :param str field: Name of the data field
         :param ndarray data: New data as batch of samples
-        :return:
         """
 
         # Check data type
@@ -223,14 +214,14 @@ class BaseDataset:
         self.__empty = False
         self.current_sample = 0
 
-    def get(self, field: str, idx_begin: int, idx_end: int) -> numpy.ndarray:
+    def get(self, field: str, idx_begin: int, idx_end: int) -> ndarray:
         """
-        Get a batch of data in 'field' container.
+        | Get a batch of data in 'field' container.
 
         :param str field: Name of the data field
         :param int idx_begin: Index of the first sample
         :param int idx_end: Index of the last sample
-        :return:
+        :return: Batch of data from 'field'
         """
 
         indices = slice(idx_begin, idx_end) if self.shuffle_pattern is None else self.shuffle_pattern[idx_begin:idx_end]
@@ -238,9 +229,7 @@ class BaseDataset:
 
     def shuffle(self) -> None:
         """
-        Define a random shuffle pattern.
-
-        :return:
+        | Define a random shuffle pattern.
         """
 
         # Nothing to shuffle if Dataset is empty
@@ -254,6 +243,7 @@ class BaseDataset:
         """
         :return: String containing information about the BaseDatasetConfig object
         """
+
         description = "\n"
         description += f"  {self.name}\n"
         description += f"    Max size: {self.max_size}\n"

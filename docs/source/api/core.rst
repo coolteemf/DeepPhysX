@@ -3,4 +3,5 @@ CORE
 
 .. toctree::
 
-    AsyncSocket <asyncsocket.rst>
+    AsyncSocket  <asyncsocket.rst>
+    Dataset      <dataset.rst>
