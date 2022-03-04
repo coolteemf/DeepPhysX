@@ -17,7 +17,7 @@ class FC(TorchNetwork):
 
         # Init the layers
         self.layers = []
-        for i, dim_in, dim_out in enumerate(zip(self.config.dim_layers[0:-2], self.config.dim_layers[1:-1])):
+        for i, (dim_in, dim_out) in enumerate(zip(self.config.dim_layers[0:-2], self.config.dim_layers[1:-1])):
             self.layers.append(Linear(dim_in, dim_out, biases[i]))
             self.layers.append(PReLU(num_parameters=dim_out))
         self.layers.append(Linear(self.config.dim_layers[-2],

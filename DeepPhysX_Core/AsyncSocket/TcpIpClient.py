@@ -174,11 +174,11 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
         receiver = self.sock if receiver is None else receiver
 
         # Send and reset network input
-        if self.input:
+        if self.input.any():
             await self.send_labeled_data(data_to_send=self.input, label="input", loop=loop, receiver=receiver)
             self.input = array([])
         # Send network output
-        if self.output:
+        if self.output.any():
             await self.send_labeled_data(data_to_send=self.output, label="output", loop=loop, receiver=receiver)
             self.output = array([])
         # Send loss data
