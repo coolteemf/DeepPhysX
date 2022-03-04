@@ -1,5 +1,4 @@
 from typing import Any, Dict, Optional, Union
-
 from numpy import array, ndarray
 from asyncio import run as async_run
 from copy import copy
@@ -9,21 +8,21 @@ from DeepPhysX_Core.Environment.BaseEnvironmentConfig import BaseEnvironmentConf
 
 
 class EnvironmentManager:
+    """
+    | Deals with the online generation of data for both training and running of the neural networks.
+
+    :param Optional[BaseEnvironmentConfig] environment_config: Specialisation containing the parameters of the
+                                                               environment manager
+    :param DataManager data_manager: DataManager that handles the EnvironmentManager
+    :param int batch_size: Number of samples in a batch of data
+    :param bool train: True if this session is a network training
+    """
 
     def __init__(self,
-                 environment_config: BaseEnvironmentConfig = None,
+                 environment_config: Optional[BaseEnvironmentConfig] = None,
                  data_manager: Any = None,
                  batch_size: int = 1,
                  train: bool = True):
-
-        """
-        Deals with the online generation of data for both training and running of the neural networks
-
-        :param BaseEnvironmentConfig environment_config:
-        :param DataManager data_manager: DataManager that handles the EnvironmentManager
-        :param int batch_size: Number of samples in a batch of data
-        :param bool train: True if this session is a network training
-        """
 
         self.name: str = self.__class__.__name__
 
@@ -64,7 +63,7 @@ class EnvironmentManager:
 
     def get_data_manager(self) -> Any:
         """
-        Return the Manager of the EnvironmentManager.
+        | Return the Manager of the EnvironmentManager.
 
         :return: DataManager that handle the EnvironmentManager
         """
@@ -73,9 +72,7 @@ class EnvironmentManager:
 
     def init_visualizer(self) -> None:
         """
-        Initialize the Visualizer with initial visualization data provided when creating the Environment(s).
-
-        :return:
+        | Initialize the Visualizer with initial visualization data provided when creating the Environment(s).
         """
 
         # This method is called only if a visualizer manager exists
@@ -93,25 +90,24 @@ class EnvironmentManager:
 
     def update_visualizer(self, data_dict: Dict[int, Dict[int, Dict[str, Dict[str, Any]]]]) -> None:
         """
-        Update the Visualizer with updated data.
+        | Update the Visualizer with updated data.
 
-        :param dict data_dict: Updated visualization data.
-        :return:
+        :param Dict[int, Dict[int, Dict[str, Dict[str, Any]]]] data_dict: Updated visualization data.
         """
 
         self.visualizer_manager.update_visualizer(data_dict)
         self.visualizer_manager.render()
 
-    def get_data_from_server(self, get_inputs: bool = True, get_outputs: bool = True, animate: bool = True) -> \
-            Dict[str, Union[ndarray, dict]]:
+    def get_data_from_server(self, get_inputs: bool = True, get_outputs: bool = True,
+                             animate: bool = True) -> Dict[str, Union[ndarray, dict]]:
         """
-        Compute a batch of data from Environments requested through TcpIpServer.
+        | Compute a batch of data from Environments requested through TcpIpServer.
 
         :param bool get_inputs: If True, compute and return input
         :param bool get_outputs: If True, compute and return output
         :param bool animate: If True, triggers an environment step
         :return: Dictionary containing all labeled data sent by the clients in their own dictionary + in and out key
-        corresponding to the batch
+                 corresponding to the batch
         """
 
         # Get data from server
@@ -130,16 +126,16 @@ class EnvironmentManager:
         # Return batch
         return training_data
 
-    def get_data_from_environment(self, get_inputs: bool = True, get_outputs: bool = True, animate: bool = True) -> \
-            Dict[str, Union[ndarray, dict]]:
+    def get_data_from_environment(self, get_inputs: bool = True, get_outputs: bool = True,
+                                  animate: bool = True) -> Dict[str, Union[ndarray, dict]]:
         """
-        Compute a batch of data directly from Environment.
+        | Compute a batch of data directly from Environment.
 
         :param bool get_inputs: If True, compute and return input
         :param bool get_outputs: If True, compute and return output
         :param bool animate: If True, triggers an environment step
         :return: Dictionary containing all labeled data sent by the clients in their own dictionary + in and out key
-        corresponding to the batch
+                 corresponding to the batch
         """
 
         # Init training data container, define production conditions
@@ -231,9 +227,9 @@ class EnvironmentManager:
 
     def dispatch_batch_to_server(self, batch: Dict[str, Union[ndarray, dict]]) -> Dict[str, Union[ndarray, dict]]:
         """
-        Send samples from dataset to the Environments. Get back the training data.
+        | Send samples from dataset to the Environments. Get back the training data.
 
-        :param batch: Batch of samples.
+        :param Dict[str, Union[ndarray, dict]] batch: Batch of samples.
         :return: Batch of training data.
         """
 
@@ -247,9 +243,9 @@ class EnvironmentManager:
 
     def dispatch_batch_to_environment(self, batch: Dict[str, Union[ndarray, dict]]) -> Dict[str, Union[ndarray, dict]]:
         """
-        Send samples from dataset to the Environments. Get back the training data.
+        | Send samples from dataset to the Environments. Get back the training data.
 
-        :param batch: Batch of samples.
+        :param Dict[str, Union[ndarray, dict]] batch: Batch of samples.
         :return: Batch of training data.
         """
 
@@ -260,9 +256,7 @@ class EnvironmentManager:
 
     def close(self) -> None:
         """
-        Close the environment
-
-        :return:
+        | Close the environment
         """
 
         # Server case
@@ -276,6 +270,7 @@ class EnvironmentManager:
         """
         :return: A string containing valuable information about the EnvironmentManager
         """
+
         description = "\n"
         description += f"# {self.name}\n"
         description += f"    Always create data: {self.always_create_data}\n"

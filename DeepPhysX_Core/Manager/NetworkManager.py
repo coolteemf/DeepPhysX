@@ -1,8 +1,7 @@
+from typing import Any, Dict, Tuple, Optional
 from os import listdir
 from os.path import join as osPathJoin
 from os.path import isdir, isfile
-from typing import Any, Dict, Tuple, Optional
-
 from numpy import copy, array, ndarray
 
 from DeepPhysX_Core.Network.BaseNetworkConfig import BaseNetworkConfig
@@ -10,29 +9,28 @@ from DeepPhysX_Core.Utils.pathUtils import copy_dir, create_dir, get_first_calle
 
 
 class NetworkManager:
+    """
+    Deals with all the interactions with the neural network. Predictions, saves, initialisation, loading,
+    back-propagation, etc...
+
+    :param Optional[BaseNetworkConfig] network_config: Specialisation containing the parameters of the network manager
+    :param Manager manager: Manager that handle the network manager
+    :param str session_name: Name of the newly created directory if session_dir is not defined
+    :param Optional[str] session_dir: Name of the directory in which to write all the necessary data
+    :param bool new_session: Define the creation of new directories to store data
+    :param bool train: If True prediction will cause tensors gradient creation
+    """
 
     def __init__(self,
-                 network_config: BaseNetworkConfig = None,
-                 manager: Any = None,
+                 network_config: Optional[BaseNetworkConfig] = None,
+                 manager: Optional[Any] = None,
                  session_name: str = 'default',
-                 session_dir: str = None,
+                 session_dir: Optional[str] = None,
                  new_session: bool = True,
                  train: bool = True):
-        """
-        Deals with all the interactions with the neural network. Predictions, saves, initialisation, loading,
-        back-propagation, etc...
-
-        :param BaseNetworkConfig network_config: Specialisation containing the parameters of the network manager
-        :param Manager manager : Manager that handle the network manager
-        :param str session_name: Name of the newly created directory if session_dir is not defined
-        :param str session_dir: Name of the directory in which to write all the necessary data
-        :param bool new_session: Define the creation of new directories to store data
-        :param bool train: If True prediction will cause tensors gradient creation
-        """
 
         self.name: str = self.__class__.__name__
 
-        # Todo: remove these check ?
         # Check network_config type
         if not isinstance(network_config, BaseNetworkConfig):
             raise TypeError(f"[{self.name}] Wrong 'network_config' type: BaseNetworkConfig required, "
@@ -76,6 +74,8 @@ class NetworkManager:
 
     def get_manager(self) -> Any:
         """
+        | Return the Manager of the NetworkManager.
+
         :return: Manager that handles the NetworkManager
         """
 
@@ -83,9 +83,7 @@ class NetworkManager:
 
     def set_network(self) -> None:
         """
-        Set the network to the corresponding weight from a given file
-
-        :return:
+        | Set the network to the corresponding weight from a given file.
         """
 
         # Init network
@@ -125,9 +123,7 @@ class NetworkManager:
 
     def load_network(self) -> None:
         """
-        Load an existing set of parameters to the network.
-
-        :return:
+        | Load an existing set of parameters to the network.
         """
 
         # Get eventual epoch saved networks
@@ -155,15 +151,16 @@ class NetworkManager:
         print(f"[{self.name}]: Loading network from {networks_list[which_network]}.")
         self.network.load_parameters(networks_list[which_network])
 
-    def compute_prediction_and_loss(self, batch: Dict[str, ndarray], optimize: bool) -> Tuple[ndarray, Dict[str, float]]:
+    def compute_prediction_and_loss(self, batch: Dict[str, ndarray],
+                                    optimize: bool) -> Tuple[ndarray, Dict[str, float]]:
         """
-        Make a prediction with the data passed as argument, optimize or not the network
+        | Make a prediction with the data passed as argument, optimize or not the network
 
-        :param dict batch: Format {'input': numpy.ndarray, 'output': numpy.ndarray} Contains the input value and ground
-        truth to compare against
+        :param Dict[str, ndarray] batch: Format {'input': numpy.ndarray, 'output': numpy.ndarray}.
+                                         Contains the input value and ground truth to compare against
         :param bool optimize: If true run a back propagation
 
-        :return:
+        :return: The prediction and the associated loss value
         """
 
         # Getting data from the data manager
@@ -188,11 +185,10 @@ class NetworkManager:
 
     def compute_online_prediction(self, network_input: ndarray) -> ndarray:
         """
-        Make a prediction with the data passed as argument.
+        | Make a prediction with the data passed as argument.
 
         :param ndarray network_input: Input of the network=
-
-        :return:
+        :return: The prediction
         """
 
         # Getting data from the data manager
@@ -209,11 +205,9 @@ class NetworkManager:
 
     def save_network(self, last_save: bool = False) -> None:
         """
-        Save the network with the corresponding suffix, so they do not erase the last save.
+        | Save the network with the corresponding suffix, so they do not erase the last save.
 
         :param bool last_save: Do not add suffix if it's the last save
-
-        :return:
         """
 
         # Final session saving
@@ -231,9 +225,7 @@ class NetworkManager:
 
     def close(self) -> None:
         """
-        Closing procedure.
-
-        :return:
+        | Closing procedure.
         """
 
         if self.training:
