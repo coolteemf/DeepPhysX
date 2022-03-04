@@ -1,54 +1,58 @@
-from typing import Callable, Dict, Any, Union, List
-
-import numpy
+from typing import Callable, Dict, Union, List
 from numpy import ndarray, array, frombuffer, zeros
 from struct import pack, unpack, calcsize
 
-Convertible = Union[type(None), bytes, str, bool, int, float, List, numpy.ndarray]
+Convertible = Union[type(None), bytes, str, bool, int, float, List, ndarray]
 
 
 class BytesConverter:
+    """
+    | Convert usual types to bytes and vice versa.
+    | Available types: None, bytes, str, bool, int, float, list, ndarray.
+    """
 
     def __init__(self):
-        """
-        Convert usual types to bytes and vice versa.
-        Available types: None, bytes, str, bool, int, float, list, numpy.ndarray.
-        """
 
         # Data to bytes conversions
-        self.__data_to_bytes_conversion: Dict[type, Callable[[Convertible], bytes]] = {type(None): lambda d: b'0',
-                                                                             bytes: lambda d: d,
-                                                                             str: lambda d: d.encode('utf-8'),
-                                                                             bool: lambda d: bytearray(pack('?', d)),
-                                                                             int: lambda d: bytearray(pack('i', d)),
-                                                                             float: lambda d: bytearray(pack('f', d)),
-                                                                             list: lambda d: array(d, dtype=float).tobytes(),
-                                                                             ndarray: lambda d: array(d, dtype=float).tobytes()}
+        self.__data_to_bytes_conversion: Dict[type, Callable[[Convertible], bytes]] = {
+            type(None): lambda d: b'0',
+            bytes: lambda d: d,
+            str: lambda d: d.encode('utf-8'),
+            bool: lambda d: bytearray(pack('?', d)),
+            int: lambda d: bytearray(pack('i', d)),
+            float: lambda d: bytearray(pack('f', d)),
+            list: lambda d: array(d, dtype=float).tobytes(),
+            ndarray: lambda d: array(d, dtype=float).tobytes(),
+        }
 
         # Bytes to data conversions
-        self.__bytes_to_data_conversion: Dict[str, Callable[[...], Convertible]] = {type(None).__name__: lambda b: None,
-                                                                            bytes.__name__: lambda b: b,
-                                                                            str.__name__: lambda b: b.decode('utf-8'),
-                                                                            bool.__name__: lambda b: unpack('?', b)[0],
-                                                                            int.__name__: lambda b: unpack('i', b)[0],
-                                                                            float.__name__: lambda b: unpack('f', b)[0],
-                                                                            list.__name__: lambda b, t, s: frombuffer(b).astype(t).reshape(s).tolist(),
-                                                                            ndarray.__name__: lambda b, t, s: frombuffer(b).astype(t).reshape(s)}
+        self.__bytes_to_data_conversion: Dict[str, Callable[[...], Convertible]] = {
+            type(None).__name__: lambda b: None,
+            bytes.__name__: lambda b: b,
+            str.__name__: lambda b: b.decode('utf-8'),
+            bool.__name__: lambda b: unpack('?', b)[0],
+            int.__name__: lambda b: unpack('i', b)[0],
+            float.__name__: lambda b: unpack('f', b)[0],
+            list.__name__: lambda b, t, s: frombuffer(b).astype(t).reshape(s).tolist(),
+            ndarray.__name__: lambda b, t, s: frombuffer(b).astype(t).reshape(s),
+        }
 
         # Size of a bytes field
         self.size_to_bytes: Callable[[bytes], bytes] = lambda i: self.__data_to_bytes_conversion[int](len(i))
         self.size_from_bytes: Callable[[bytes], int] = lambda b: self.__bytes_to_data_conversion[int.__name__](b)
         self.int_size: int = calcsize("i")
 
-    def data_to_bytes(self, data: Convertible, as_list: bool = False) -> List[bytes]:
+    def data_to_bytes(self, data: Convertible, as_list: bool = False) -> Union[bytes, List[bytes]]:
         """
-        Convert data to bytes.
-        Available types: None, bytes, str, bool, signed int, float, list, array.
+        | Convert data to bytes.
+        | Available types: None, bytes, str, bool, signed int, float, list, ndarray.
 
         :param data: Data to convert.
-        :param bool as_list: (FOR TESTS) If False (default), the whole bytes message is returned (default).
-        If True, the return will be a list of bytes fields.
-        :return: bytes - Concatenated bytes fields (Number of fields, Size of fields, Type, Data, Args)
+        :type data: Union[type(None), bytes, str, bool, int, float, List, ndarray]
+        :param bool as_list: (For tests only, False by default)
+                             If False, the whole bytes message is returned.
+                             If True, the return will be a list of bytes fields.
+        :return: Concatenated bytes fields (Number of fields, Size of fields, Type, Data, Args)
         """
 
         # Convert the type of 'data' from str to bytes
@@ -89,10 +93,10 @@ class BytesConverter:
 
     def bytes_to_data(self, bytes_fields: List[bytes]) -> Convertible:
         """
-        Recover data from bytes fields.
-        Available types: None, bytes, str, bool, signed int, float, list, array.
+        | Recover data from bytes fields.
+        | Available types: None, bytes, str, bool, signed int, float, list, ndarray.
 
-        :param list bytes_fields: Bytes fields (Type, Data, Args)
+        :param List[bytes] bytes_fields: Bytes fields (Type, Data, Args)
         :return: Converted data
         """
 

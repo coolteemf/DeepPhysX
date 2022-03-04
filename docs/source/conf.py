@@ -12,16 +12,22 @@
 
 import os
 import sys
+
+# DeepPhysX root
 root = os.path.abspath(os.path.join(os.path.abspath(__file__), '..', '..', '..'))
-for module in ['foo']:
-    sys.path.insert(0, os.path.join(root, module))
+
+# Import CORE modules
+sys.path.append(os.path.join(root, 'DeepPhysX_Core'))
+core_modules = ['AsyncSocket']
+for module in core_modules:
+    sys.path.append(os.path.join(root, 'DeepPhysX_Core', module))
 
 
 # -- Project information -----------------------------------------------------
 
 project = 'DeepPhysX'
-copyright = '2022, Enjalbert, Odot, Cotin'
-author = 'Robin Enjalbert, Alban Odot, Stephane Cotin'
+copyright = '2022, Mimesis, Inria'
+author = 'Robin ENJALBERT, Alban ODOT, Stephane COTIN'
 
 
 # -- General configuration ---------------------------------------------------
@@ -33,7 +39,8 @@ extensions = [
     'sphinx.ext.duration',
     'sphinx.ext.autodoc',
     'sphinx.ext.intersphinx',
-    'sphinx.ext.autosummary'
+    'sphinx.ext.autosummary',
+    'sphinx.ext.viewcode'
 ]
 
 intersphinx_mapping = {

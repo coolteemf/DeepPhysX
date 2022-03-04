@@ -1,119 +1,121 @@
 from typing import Optional, Dict, Any
-import numpy
+from numpy import array, ndarray
 
 
 class AbstractEnvironment:
+    """
+    | AbstractEnvironment sets the Environment API for TcpIpClient.
+    | Do not use AbstractEnvironment to implement a personal Environment, use BaseEnvironment instead.
+
+    :param int instance_id: ID of the instance
+    :param int number_of_instances: Number of simultaneously launched instances
+    :param bool as_tcp_ip_client: Environment is a TcpIpObject if True, is owned by an EnvironmentManager if False
+    """
 
     def __init__(self,
+                 as_tcp_ip_client: bool = True,
                  instance_id: int = 0,
-                 number_of_instances: int = 1,
-                 as_tcp_ip_client: bool = True):
-        """
-        AbstractEnvironment gathers the Environment API for TcpIpClient. Do not use AbstractEnvironment to implement
-        your own Environment, use BaseEnvironment instead.
-
-        :param int instance_id: ID of the instance
-        :param int number_of_instances: Number of simultaneously launched instances
-        :param bool as_tcp_ip_client: Environment is a TcpIpObject if True, is owned by an EnvironmentManager if False
-        """
+                 number_of_instances: int = 1):
 
         self.name: str = self.__class__.__name__ + f" n°{instance_id}"
 
+        # TcpIpClient variables
         if instance_id > number_of_instances:
             raise ValueError(f"[{self.name}] Instance ID ({instance_id}) is bigger than max instances "
-                             f"({number_of_instances})")
+                             f"({number_of_instances}).")
+        self.as_tcp_ip_client: bool = as_tcp_ip_client
         self.instance_id: int = instance_id
         self.number_of_instances: int = number_of_instances
-        self.as_tcp_ip_client: bool = as_tcp_ip_client
 
-        # Input and output to give to the network
-        self.input: numpy.ndarray = numpy.array([])
-        self.output: numpy.ndarray = numpy.array([])
+        # Training data variables
+        self.input: ndarray = array([])
+        self.output: ndarray = array([])
         self.loss_data: Any = None
-        # Variables to store samples from Dataset
-        self.sample_in: Optional[numpy.ndarray] = None
-        self.sample_out: Optional[numpy.ndarray] = None
+        self.compute_essential_data: bool = True
+
+        # Dataset data variables
+        self.sample_in: Optional[ndarray] = None
+        self.sample_out: Optional[ndarray] = None
         self.additional_inputs: Dict[str, Any] = {}
         self.additional_outputs: Dict[str, Any] = {}
-        self.compute_essential_data: bool = True
 
     def create(self) -> None:
         """
-        Create the Environment.
-        Must be implemented by user.
-
-        :return:
+        | Create the Environment. Automatically called when Environment is launched.
+        | Must be implemented by user.
         """
+
         raise NotImplementedError
 
     def init(self) -> None:
         """
-        Initialize the Environment.
-        Not mandatory.
-
-        :return:
+        | Initialize the Environment. Automatically called when Environment is launched.
+        | Not mandatory.
         """
+
         pass
 
     def close(self) -> None:
         """
-        Close the Environment.
-        Not mandatory.
-
-        :return:
+        | Close the Environment. Automatically called when Environment is shut down.
+        | Not mandatory.
         """
+
         pass
 
     async def step(self) -> None:
         """
-        Compute the number of steps in the Environment specified by simulations_per_step in EnvironmentConfig.
-        Must be implemented by user.
-
-        :return:
+        | Compute the number of steps in the Environment specified by simulations_per_step in EnvironmentConfig.
+        | Must be implemented by user.
         """
+
         raise NotImplementedError
 
     def check_sample(self) -> bool:
         """
-        Check if the current produced sample is usable for training.
-        Not mandatory.
+        | Check if the current produced sample is usable.
+        | Not mandatory.
 
-        :return: bool - Current data can be used or not
+        :return: Current sample can be used or not
         """
-        raise NotImplementedError
 
-    def recv_parameters(self, param_dict: Dict[Any, Any]) -> None:
-        """
-        Called before create and init, receive simulation parameters from the server
+        return True
 
-        :param param_dict: Dictionary of parameters
+    def recv_parameters(self, param_dict: Dict[str, Any]) -> None:
         """
-        raise NotImplementedError
+        | Receive simulation parameters set in Config from the Server. Automatically called before create and init.
+
+        :param Dict[str, Any] param_dict: Dictionary of parameters
+        """
+
+        pass
 
     def send_visualization(self) -> dict:
         """
-        Define the visualization objects to send to the Visualizer.
-        Not mandatory.
+        | Define the visualization objects to send to the Visualizer. Automatically called after create and init.
+        | Not mandatory.
 
-        :return:
+        :return: Initial visualization data dictionary
         """
-        raise NotImplementedError
+
+        return {}
 
     def send_parameters(self) -> dict:
         """
-        Create a dictionary of parameters to send to the manager.
-        Not mandatory.
+        | Create a dictionary of parameters to send to the manager. Automatically called after create and init.
+        | Not mandatory.
 
-        :return:
+        :return: Dictionary of parameters
         """
-        raise NotImplementedError
 
-    def apply_prediction(self, prediction: numpy.ndarray) -> None:
+        return {}
+
+    def apply_prediction(self, prediction: ndarray) -> None:
         """
-        Apply network prediction in environment.
-        Not mandatory.
+        | Apply network prediction in environment.
+        | Not mandatory.
 
         :param ndarray prediction: Prediction data
-        :return:
         """
-        raise NotImplementedError
+
+        pass
