@@ -36,4 +36,4 @@ For more information about DeepPhysX design, reading the section :doc:`presentat
     :maxdepth: 1
     :hidden:
 
-    foo <api/foo.rst>
+    Core <api/core.rst>
