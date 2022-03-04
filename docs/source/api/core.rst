@@ -7,3 +7,4 @@ CORE
     Dataset      <dataset.rst>
     Environment  <environment.rst>
     Manager      <manager.rst>
+    Network      <network.rst>

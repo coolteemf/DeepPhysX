@@ -1,53 +1,46 @@
+from typing import Any, Optional, Type
 from collections import namedtuple
-from typing import Any, Optional, Union, Callable, Type
-import numpy
 from os.path import isdir
 
 from DeepPhysX_Core.Network.BaseNetwork import BaseNetwork
 from DeepPhysX_Core.Network.BaseOptimization import BaseOptimization
 from DeepPhysX_Core.Network.DataTransformation import DataTransformation
 
-NetworkType = Union[BaseNetwork]
-OptimizationType = Union[BaseOptimization]
-DataTransformationType = Union[DataTransformation]
-
 
 class BaseNetworkConfig:
+    """
+    BaseNetworkConfig is a configuration class to parameterize and create BaseNetwork, BaseOptimization and
+    DataTransformation for the NetworkManager.
+
+    :param Type[BaseNetwork] network_class: BaseNetwork class from which an instance will be created
+    :param Type[BaseOptimization] optimization_class: BaseOptimization class from which an instance will be created
+    :param Type[DataTransformation] data_transformation_class: DataTransformation class from which an instance will
+                                                               be created
+    :param Optional[str] network_dir: Name of an existing network repository
+    :param str network_name: Name of the network
+    :param str network_type: Type of the network
+    :param int which_network: If several networks in network_dir, load the specified one
+    :param bool save_each_epoch: If True, network state will be saved at each epoch end; if False, network state
+                                 will be saved at the end of the training
+    :param Optional[float] lr: Learning rate
+    :param bool require_training_stuff: If specified, loss and optimizer class can be not necessary for training
+    :param Optional[Any] loss: Loss class
+    :param Optional[Any] optimizer: Network's parameters optimizer class
+    """
 
     def __init__(self,
                  network_class: Type[BaseNetwork] = BaseNetwork,
                  optimization_class: Type[BaseOptimization] = BaseOptimization,
                  data_transformation_class: Type[DataTransformation] = DataTransformation,
-                 network_dir: str = None,
+                 network_dir: Optional[str] = None,
                  network_name: str = 'Network',
                  network_type: str = 'BaseNetwork',
                  which_network: int = 0,
                  save_each_epoch: bool = False,
                  lr: Optional[float] = None,
                  require_training_stuff: bool = True,
-                 loss: Any = None,
-                 optimizer: Any = None):
-        """
-        BaseNetworkConfig is a configuration class to parameterize and create BaseNetwork, BaseOptimization and
-        DataTransformation for the NetworkManager.
-
-        :param network_class: BaseNetwork class from which an instance will be created
-        :type network_class: BaseNetwork
-        :param optimization_class: BaseOptimization class from which an instance will be created
-        :type optimization_class: BaseOptimization
-        :param data_transformation_class: DataTransformation class from which an instance will be created
-        :type data_transformation_class: DataTransformation
-        :param str network_dir: Name of an existing network repository
-        :param str network_name: Name of the network
-        :param str network_type: Type of the network
-        :param int which_network: If several networks in network_dir, load the specified one
-        :param bool save_each_epoch: If True, network state will be saved at each epoch end; if False, network state
-                                     will be saved at the end of the training
-        :param float lr: Learning rate
-        :param bool require_training_stuff: If specified, loss and optimizer class can be not necessary for training
-        :param loss: Loss class
-        :param optimizer: Network's parameters optimizer class
-        """
+                 loss: Optional[Any] = None,
+                 optimizer: Optional[Any] = None):
 
         # Check network_dir type and existence
         if network_dir is not None:
@@ -93,14 +86,14 @@ class BaseNetworkConfig:
         self.which_network: int = which_network
         self.save_each_epoch: bool = save_each_epoch and self.training_stuff
 
-    def make_config(self, config_name, **kwargs) -> namedtuple:
+    def make_config(self, config_name: str, **kwargs) -> namedtuple:
         """
-        Create a namedtuple which gathers all the parameters for an Object configuration (Network or Optimization).
-        For a child config class, only new items are required since parent's items will be added by default.
+        | Create a namedtuple which gathers all the parameters for an Object configuration (Network or Optimization).
+        | For a child config class, only new items are required since parent's items will be added by default.
 
-        :param config_name: Name of the configuration to fill
+        :param str config_name: Name of the configuration to fill
         :param kwargs: Items to add to the Object configuration
-        :return:
+        :return: Namedtuple which contains Object parameters
         """
 
         # Get items set as keyword arguments
@@ -117,8 +110,10 @@ class BaseNetworkConfig:
         # Create namedtuple with collected items
         return namedtuple(config_name, fields)._make(args)
 
-    def create_network(self) -> NetworkType:
+    def create_network(self) -> BaseNetwork:
         """
+        | Create an instance of network_class with given parameters.
+
         :return: BaseNetwork object from network_class and its parameters.
         """
 
@@ -129,11 +124,14 @@ class BaseNetworkConfig:
                 f"[{self.__class__.__name__}] Given 'network_class' cannot be created in {self.__class__.__name__}")
         if not isinstance(network, BaseNetwork):
             raise TypeError(
-                f"[{self.__class__.__name__}] Wrong 'network_class' type: BaseNetwork required, get {self.network_class}")
+                f"[{self.__class__.__name__}] Wrong 'network_class' type: BaseNetwork required, get "
+                f"{self.network_class}")
         return network
 
-    def create_optimization(self) -> OptimizationType:
+    def create_optimization(self) -> BaseOptimization:
         """
+        | Create an instance of optimization_class with given parameters.
+
         :return: BaseOptimization object from optimization_class and its parameters.
         """
 
@@ -147,8 +145,10 @@ class BaseNetworkConfig:
                             f"get {self.optimization_class}")
         return optimization
 
-    def create_data_transformation(self) -> DataTransformationType:
+    def create_data_transformation(self) -> DataTransformation:
         """
+        | Create an instance of data_transformation_class with given parameters.
+
         :return: DataTransformation object from data_transformation_class and its parameters.
         """
 
