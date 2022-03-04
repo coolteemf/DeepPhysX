@@ -18,7 +18,7 @@ root = os.path.abspath(os.path.join(os.path.abspath(__file__), '..', '..', '..')
 
 # Import CORE modules
 sys.path.append(os.path.join(root, 'DeepPhysX_Core'))
-core_modules = ['AsyncSocket']
+core_modules = ['AsyncSocket', 'Dataset']
 for module in core_modules:
     sys.path.append(os.path.join(root, 'DeepPhysX_Core', module))
 

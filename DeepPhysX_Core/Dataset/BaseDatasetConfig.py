@@ -1,26 +1,25 @@
+from typing import Type, Optional
 from os.path import isdir
 from collections import namedtuple
-from typing import Type
 
 from DeepPhysX_Core.Dataset.BaseDataset import BaseDataset
 
 
 class BaseDatasetConfig:
+    """
+    | BaseDatasetConfig is a configuration class to parameterize and create a BaseDataset for the DatasetManager.
+
+    :param Type[BaseDataset] dataset_class: BaseDataset class from which an instance will be created
+    :param Optional[str] dataset_dir: Name of an existing dataset repository
+    :param float partition_size: Maximum size in Gb of a single dataset partition
+    :param bool shuffle_dataset: Specify if existing dataset should be shuffled
+    """
 
     def __init__(self,
                  dataset_class: Type[BaseDataset] = BaseDataset,
-                 dataset_dir: str = None,
+                 dataset_dir: Optional[str] = None,
                  partition_size: float = 1.,
                  shuffle_dataset: bool = True):
-        """
-        BaseDatasetConfig is a configuration class to parameterize and create a BaseDataset for the DatasetManager.
-
-        :param dataset_class: BaseDataset class from which an instance will be created
-        :type dataset_class: BaseDataset
-        :param str dataset_dir: Name of an existing dataset repository
-        :param float partition_size: Maximum size in Gb of a single dataset partition
-        :param bool shuffle_dataset: Specify if existing dataset should be shuffled
-        """
 
         self.name: str = self.__class__.__name__
 
@@ -47,13 +46,13 @@ class BaseDatasetConfig:
         self.dataset_dir: str = dataset_dir
         self.shuffle_dataset: bool = shuffle_dataset
 
-    def make_config(self, **kwargs):
+    def make_config(self, **kwargs) -> namedtuple:
         """
-        Create a namedtuple which gathers all the parameters for the Dataset configuration.
-        For a child config class, only new items are required since parent's items will be added by default.
+        | Create a namedtuple which gathers all the parameters for the Dataset configuration.
+        | For a child config class, only new items are required since parent's items will be added by default.
 
         :param kwargs: Items to add to the Dataset configuration.
-        :return:
+        :return: Namedtuple which contains Dataset parameters
         """
 
         # Get items set as keyword arguments
@@ -72,9 +71,9 @@ class BaseDatasetConfig:
 
     def create_dataset(self) -> BaseDataset:
         """
-        Create an instance of dataset_class with given parameters.
+        | Create an instance of dataset_class with given parameters.
 
-        :return: BaseDataset object
+        :return: Dataset object
         """
 
         try:
@@ -89,6 +88,7 @@ class BaseDatasetConfig:
         """
         :return: String containing information about the BaseDatasetConfig object
         """
+
         # Todo: fields in Configs are the set in Managers or objects, the remove __str__ method
         description = "\n"
         description += f"{self.name}\n"
