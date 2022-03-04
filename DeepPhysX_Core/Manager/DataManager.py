@@ -1,46 +1,48 @@
 from typing import Any, Optional, Dict
-
-import numpy
+from numpy import ndarray
 
 from DeepPhysX_Core.Manager.DatasetManager import DatasetManager
 from DeepPhysX_Core.Manager.EnvironmentManager import EnvironmentManager
+from DeepPhysX_Core.Environment.BaseEnvironmentConfig import BaseEnvironmentConfig
+from DeepPhysX_Core.Dataset.BaseDatasetConfig import BaseDatasetConfig
 
 
 class DataManager:
+    """
+    | DataManager deals with the generation of input / output tensors. His job is to call get_data on either the
+      DatasetManager or the EnvironmentManager according to the context.
+
+    :param Optional[BaseDatasetConfig] dataset_config: Specialisation containing the parameters of the dataset manager
+    :param Optional[BaseEnvironmentConfig] environment_config: Specialisation containing the parameters of the
+                                                               environment manager
+    :param Optional[Any] manager: Manager that handle The DataManager
+    :param str session_name: Name of the newly created directory if session_dir is not defined
+    :param Optional[str] session_dir: Name of the directory in which to write all the necessary data
+    :param bool new_session: Define the creation of new directories to store data
+    :param bool training: True if this session is a network training
+    :param Dict[str, bool] record_data: Format {\'in\': bool, \'out\': bool} save the tensor when bool is True
+    :param int batch_size: Number of samples in a batch
+    """
 
     def __init__(self,
-                 dataset_config: Any = None,
-                 environment_config: Any = None,
-                 manager: Any = None,
+                 dataset_config: Optional[BaseDatasetConfig] = None,
+                 environment_config: Optional[BaseEnvironmentConfig] = None,
+                 manager: Optional[Any] = None,
                  session_name: str = 'default',
-                 session_dir: str = None,
+                 session_dir: Optional[str] = None,
                  new_session: bool = True,
                  training: bool = True,
                  record_data: Dict[str, bool] = None,
                  batch_size: int = 1):
-        """
-        DataManager deals with the generation of input / output tensors. His job is to call get_data on either the
-        DatasetManager or the EnvironmentManager according to the context.
-
-        :param BaseDatasetConfig dataset_config: Specialisation containing the parameters of the dataset manager
-        :param BaseEnvironmentConfig environment_config: Specialisation containing the parameters of the environment manager
-        :param Manager manager: Manager that handle The DataManager
-        :param str session_name: Name of the newly created directory if session_dir is not defined
-        :param str session_dir: Name of the directory in which to write all the necessary data
-        :param bool new_session: Define the creation of new directories to store data
-        :param bool training: True if this session is a network training
-        :param dict record_data: Format {\'in\': bool, \'out\': bool} save the tensor when bool is True
-        :param int batch_size: Number of samples in a batch
-        """
 
         self.name: str = self.__class__.__name__
 
-        self.manager: Any = manager
+        self.manager: Optional[Any] = manager
         self.is_training: bool = training
         self.dataset_manager: Optional[DatasetManager] = None
         self.environment_manager: Optional[EnvironmentManager] = None
         self.allow_dataset_fetch: bool = True
-        self.data: Optional[Dict[str, numpy.ndarray]] = None
+        self.data: Optional[Dict[str, ndarray]] = None
         # Training
         if self.is_training:
             # Always create a dataset_manager for training
@@ -58,9 +60,10 @@ class DataManager:
 
         # Create dataset if required
         if create_dataset:
-            self.dataset_manager = DatasetManager(data_manager=self, dataset_config=dataset_config, session_name=session_name,
-                                                  session_dir=session_dir, new_session=new_session,
-                                                  train=self.is_training, record_data=record_data)
+            self.dataset_manager = DatasetManager(data_manager=self, dataset_config=dataset_config,
+                                                  session_name=session_name, session_dir=session_dir,
+                                                  new_session=new_session, train=self.is_training,
+                                                  record_data=record_data)
         # Create environment if required
         if create_environment is None:  # If None then the dataset_manager exists
             create_environment = self.dataset_manager.new_dataset()
@@ -68,23 +71,24 @@ class DataManager:
             self.environment_manager = EnvironmentManager(data_manager=self, environment_config=environment_config,
                                                           batch_size=batch_size, train=self.is_training)
 
-    def get_manager(self) -> None:
+    def get_manager(self) -> Any:
         """
-        Return the manager of DataManager.
+        | Return the manager of DataManager.
 
         :return: Manager that handle the DataManager
         """
+
         return self.manager
 
-    def get_data(self, epoch: int = 0, batch_size: int = 1, animate: bool = True) -> Dict[str, numpy.ndarray]:
+    def get_data(self, epoch: int = 0, batch_size: int = 1, animate: bool = True) -> Dict[str, ndarray]:
         """
-        Fetch data from EnvironmentManager or DatasetManager according to the context
+        | Fetch data from EnvironmentManager or DatasetManager according to the context
 
         :param int epoch: Current epoch ID
         :param int batch_size: Size of the desired batch
         :param bool animate: Allow EnvironmentManager to generate a new sample
 
-        :return: the newly computed data
+        :return: Newly computed data
         """
 
         # Training
@@ -121,10 +125,9 @@ class DataManager:
 
     def close(self) -> None:
         """
-        Launch the closing procedure on its managers
-
-        :return:
+        | Launch the closing procedure on its managers
         """
+
         if self.environment_manager is not None:
             self.environment_manager.close()
         if self.dataset_manager is not None:
@@ -134,6 +137,7 @@ class DataManager:
         """
         :return: A string containing valuable information about the DataManager
         """
+
         data_manager_str = ""
         if self.environment_manager:
             data_manager_str += str(self.environment_manager)
