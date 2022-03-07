@@ -1,13 +1,16 @@
-from DeepPhysX_Core.Visualizer.VedoObjectFactories.BaseObjectFactory import *
+from vedo import Points
+
+from DeepPhysX_Core.Visualizer.VedoObjectFactories.BaseObjectFactory import BaseObjectFactory, parse_wrapper, \
+    update_wrapper, ObjectDescription
 
 
 class PointsFactory(BaseObjectFactory):
+    """
+    | PointsFactory is a class that represent the data of a Points visual object.
+    | PointsFactory defines the parse and update procedures of Points object according to Vedo.
+    """
 
     def __init__(self):
-        """
-        PointsFactory is a class that represent the data of a Points visual object.
-        PointsFactory defines the parse and update procedures of Points object according to Vedo.
-        """
 
         BaseObjectFactory.__init__(self)
 
@@ -20,11 +23,11 @@ class PointsFactory(BaseObjectFactory):
     @parse_wrapper()
     def parse(self, data_dict: ObjectDescription) -> None:
         """
-        Parse the given dictionary and fill the parsed_data member accordingly.
-        Note: It is the wrapper that return the parsed_data
+        | Parse the given dictionary and fill the parsed_data member accordingly.
+        | Note: It is the wrapper that return the parsed_data.
 
-        :param data_dict: Dict[str, Any] Dictionary to parse
-        :return: A Dict[str, Any] that represent the parsed_data member
+        :param data_dict: Dictionary to parse
+        :type data_dict: Dict[str, Union[Any, Dict[str, Any]]]
         """
 
         # Parse 'positions' field
@@ -35,11 +38,11 @@ class PointsFactory(BaseObjectFactory):
             self.parsed_data[self.grammar_plug[0]] = self.parse_vector(data_dict[self.grammar_plug[0]])
 
     @update_wrapper()
-    def update_instance(self, instance: VisualInstance) -> VisualInstance:
+    def update_instance(self, instance: Points) -> Points:
         """
-        Update the given VisualInstance instance.
+        | Update the given VisualInstance instance.
 
-        :param instance: VisualInstance Vedo object to update with its current parsed_data values
+        :param Points instance: Vedo object to update with its current parsed_data values
         :return: The updated VisualInstance
         """
 

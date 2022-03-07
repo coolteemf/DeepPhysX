@@ -1,13 +1,14 @@
-from DeepPhysX_Core.Visualizer.VedoObjectFactories.BaseObjectFactory import *
+from DeepPhysX_Core.Visualizer.VedoObjectFactories.BaseObjectFactory import BaseObjectFactory, parse_wrapper, \
+    update_wrapper, ObjectDescription
 
 
 class WindowFactory(BaseObjectFactory):
+    """
+    | WindowFactory is a class that represent the data of a Vedo Window.
+    | WindowFactory defines the parse and update procedures of a Vedo window.
+    """
 
     def __init__(self):
-        """
-        WindowFactory is a class that represent the data of a Vedo Window.
-        WindowFactory defines the parse and update procedures of a Vedo window.
-        """
 
         BaseObjectFactory.__init__(self)
 
@@ -24,11 +25,11 @@ class WindowFactory(BaseObjectFactory):
     @parse_wrapper()
     def parse(self, data_dict: ObjectDescription) -> None:
         """
-        Parse the given dictionary and fill the parsed_data member accordingly.
-        Note: It is the wrapper that return the parsed_data
+        | Parse the given dictionary and fill the parsed_data member accordingly.
+        | Note: It is the wrapper that return the parsed_data.
 
-        :param data_dict: Dict[str, Any] Dictionary to parse
-        :return: A Dict[str, Any] that represent the parsed_data member
+        :param data_dict: Dictionary to parse
+        :type data_dict: Dict[str, Union[Any, Dict[str, Any]]]
         """
 
         for word in self.grammar_plug:
@@ -37,11 +38,12 @@ class WindowFactory(BaseObjectFactory):
                 self.parsed_data[word] = data_dict[word]
 
     @update_wrapper()
-    def update_instance(self, instance: VisualInstance) -> VisualInstance:
+    def update_instance(self, instance: None) -> None:
         """
-        Update the given VisualInstance instance.
+        | Update the given VisualInstance instance.
 
-        :param instance: VisualInstance Vedo object to update with its current parsed_data values
+        :param None instance: Vedo object to update with its current parsed_data values
         :return: The updated VisualInstance
         """
+
         return instance

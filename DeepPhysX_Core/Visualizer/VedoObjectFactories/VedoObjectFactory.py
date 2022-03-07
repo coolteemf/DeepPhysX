@@ -1,11 +1,12 @@
+from typing import List, Dict, Union, Tuple, Any
+from vedo import Mesh, Glyph, Marker, Points, Arrows, Plotter
+
 from DeepPhysX_Core.Visualizer.VedoObjectFactories.MarkerFactory import MarkerFactory
 from DeepPhysX_Core.Visualizer.VedoObjectFactories.MeshFactory import MeshFactory
 from DeepPhysX_Core.Visualizer.VedoObjectFactories.GlyphFactory import GlyphFactory
 from DeepPhysX_Core.Visualizer.VedoObjectFactories.PointsFactory import PointsFactory
 from DeepPhysX_Core.Visualizer.VedoObjectFactories.WindowFactory import WindowFactory
 from DeepPhysX_Core.Visualizer.VedoObjectFactories.ArrowsFactory import ArrowsFactory
-from vedo import Mesh, Glyph, Marker, Points, Arrows, Plotter
-from typing import List, Dict, Union, Tuple, Any
 
 ObjectDescription = Dict[str, Union[Dict[str, Any], Any]]
 VisualInstance = Union[Mesh, Glyph, Marker, Points, Arrows]
@@ -14,35 +15,26 @@ Factory = Union[MeshFactory, PointsFactory, GlyphFactory, MarkerFactory, WindowF
 
 class VedoObjectFactory:
     """
-    Class that contains all the Factories of a scene
-        Description:
-            VedoObjectFactory Contains all the factories present in a Vedo scene.\n
+    | VedoObjectFactory contains all the Factories of a scene.
     """
-    next_id: int
-    object_dict: Dict[int, ObjectDescription]
-    updated_object_dict: Dict[int, ObjectDescription]
-    windows_id = List[int]
-    factories = Dict[int, Factory]
 
     def __init__(self):
-        """
-        Automatically set the attributes of a Vedo scene
-        """
-        self.next_id = 0
-        self.objects_dict = {}
-        self.updated_object_dict = {}
-        self.windows_id = []
-        self.factories = {}
-        self.non_updatable_objects = ['Arrows']
+
+        self.next_id: int = 0
+        self.objects_dict: Dict[int, ObjectDescription] = {}
+        self.updated_object_dict: Dict[int, ObjectDescription] = {}
+        self.windows_id: List[int] = []
+        self.factories: Dict[int, Factory] = {}
+        self.non_updatable_objects: List[str] = ['Arrows']
 
     def add_object(self, object_type: str, data_dict: ObjectDescription) -> Tuple[ObjectDescription, int, Factory]:
         """
-        Create a factory with the given object type and data dictionary
+        | Create a factory with the given object type and data dictionary.
 
-        :param object_type: str Type the desired factory Object (Mesh, Points, Glyph, Marker, Window, Arrows)
-        :param data_dict: Dict[str, Union[Dict[str, Any], Any]] Dictionary that contains the associated data
-        :return: Tuple[ObjectDescription, int, Factory] The fully parsed and updated dictionary, its index, the
-        associated factory
+        :param str object_type: Type of the desired factory Object (Mesh, Points, Glyph, Marker, Window, Arrows)
+        :param data_dict: Dictionary that contains the associated data
+        :type data_dict: Dict[str, Union[Dict[str, Any], Any]]
+        :return: The fully parsed and updated dictionary, its index, the associated factory
         """
 
         self.factories[self.next_id] = self.factory_getter(object_type)
@@ -67,13 +59,14 @@ class VedoObjectFactory:
 
     def update_object_dict(self, object_id: int, new_data_dict: ObjectDescription) -> Tuple[ObjectDescription, Factory]:
         """
-        Update the object with the given ID using the data passed by new_data_dict
+        | Update the object with the given ID using the data passed by new_data_dict.
 
-        :param object_id: int ID of the object to update
-        :param new_data_dict: Dict[str, Union[Dict[str, Any], Any]] Dictionary containing the data to update
-
-        :return: Tuple[ObjectDescription, Factory] The updated dictionary, the updated factory
+        :param int object_id: ID of the object to update
+        :param new_data_dict: Dictionary containing the data to update
+        :type new_data_dict: Dict[str, Union[Dict[str, Any], Any]]
+        :return: The updated dictionary, the updated factory
         """
+
         if object_id not in self.factories:
             self.factories[object_id] = self.factory_getter(self.objects_dict[object_id]["type"])
         self.objects_dict[object_id] = self.factories[object_id].parse(new_data_dict)
@@ -82,16 +75,19 @@ class VedoObjectFactory:
             self.updated_object_dict[object_id][field] = new_data_dict[field]
         return self.objects_dict[object_id], self.factories[object_id]
 
-    def update_object_instance(self, object_id: int, instance: VisualInstance, viewer_data: (Plotter, int)) \
-            -> VisualInstance:
+    def update_object_instance(self, object_id: int, instance: VisualInstance,
+                               viewer_data: Tuple[Plotter, int]) -> VisualInstance:
         """
-        Update the given instance using the factory corresponding to the passed object_id
+        | Update the given instance using the factory corresponding to the passed object_id
 
-        :param object_id: int ID of the factory of the object to use
+        :param int object_id: ID of the factory of the object to use
         :param instance: VisualInstance object to update
-        :param viewer_data: Tuple with [Viewer instance, index of sub-window] in which object is rendered
+        :type instance: Union[Mesh, Glyph, Marker, Points, Arrows]
+        :param Tuple[Plotter, int] viewer_data: Tuple with [Viewer instance, index of sub-window] in which object is
+                                                rendered
         :return: The updated VisualInstance
         """
+
         if object_id not in self.factories:
             self.factories[object_id] = self.factory_getter(self.objects_dict[object_id]["type"])
         viewer, at = viewer_data[0], viewer_data[1]
@@ -109,11 +105,12 @@ class VedoObjectFactory:
     @staticmethod
     def factory_getter(object_type: str) -> Factory:
         """
-        Helper function that return a default Factory corresponding to the given object_type
+        | Helper function that return a default Factory corresponding to the given object_type
 
-        :param object_type: str Type of the object
+        :param str object_type: Type of the object
         :return: Factory corresponding to the given object type
         """
+
         factory = None
         if object_type in ["Mesh", "mesh"]:
             factory = MeshFactory()

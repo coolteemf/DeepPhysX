@@ -1,20 +1,22 @@
+from typing import List, Any, Dict, Union
 from os.path import join as osPathJoin
 from os import makedirs
+from vedo import Plotter
 
-from DeepPhysX_Core.Visualizer.VedoObjectGenerator import *
+from DeepPhysX_Core.Visualizer.VedoObjects import VedoObjects, ObjectDescription
 
 Viewers = Dict[int, Dict[str, Union[str, List[Any], bool, Plotter]]]
 
 
 class VedoVisualizer:
-    
+    """
+    | Visualizer class to display VisualInstances in a 2D/3D environment.
+    | VedoVisualiser use the vedo library to display 3D models.
+    | Objects are given in the init_view function.
+    | Updates to these objects are achieved by using update_visualizer and update_instances functions.
+    """
+
     def __init__(self):
-        """
-        Visualizer class to display VisualInstances in a 2D/3D environment.
-        VedoVisualiser use the vedo library to display 3D models.
-        Objects are given in the init_view function.
-        Updates to these objects are achieved by using update_visualizer and update_instances functions.
-        """
 
         self.scene: Dict[int, VedoObjects] = {}
         self.default_viewer_id: int = 9
@@ -31,22 +33,22 @@ class VedoVisualizer:
 
     def init_view(self, data_dict: Dict[int, Dict[int, Dict[str, Union[Dict[str, Any], Any]]]]) -> None:
         """
-        Initialize VedoVisualizer class by parsing the scenes hierarchy and creating VisualInstances.
-        OBJECT DESCRIPTION DICTIONARY is usually obtained using the corresponding factory (VedoObjectFactory).
+        | Initialize VedoVisualizer class by parsing the scenes hierarchy and creating VisualInstances.
+        | OBJECT DESCRIPTION DICTIONARY is usually obtained using the corresponding factory (VedoObjectFactory).
+        | data_dict example:
+        |       {SCENE_1_ID: {OBJECT_1.1_ID: {CONTENT OF OBJECT_1.1 DESCRIPTION DICTIONARY},
+        |                     ...
+        |                     OBJECT_1.N_ID: {CONTENT OF OBJECT_1.N DESCRIPTION DICTIONARY}
+        |                     },
+        |        ...
+        |        SCENE_M_ID: {OBJECT_M.1_ID: {CONTENT OF OBJECT_K.1 DESCRIPTION DICTIONARY},
+        |                     ...
+        |                     OBJECT_M.K_ID: {CONTENT OF OBJECT_K.P DESCRIPTION DICTIONARY}
+        |                    }
+        |        }
 
-        data_dict format:
-            {SCENE_1_ID:    {OBJECT_1.1_ID: {CONTENT OF OBJECT_1.1 DESCRIPTION DICTIONARY},
-                             ...\n
-                            OBJECT_1.N_ID: {CONTENT OF OBJECT_1.N DESCRIPTION DICTIONARY}
-                            },
-             ...\n
-             SCENE_M_ID:    {OBJECT_M.1_ID: {CONTENT OF OBJECT_K.1 DESCRIPTION DICTIONARY},
-                             ...\n
-                             OBJECT_M.K_ID: {CONTENT OF OBJECT_K.P DESCRIPTION DICTIONARY}
-                            }
-            }
-
-        :param data_dict: Dictionary describing the scene hierarchy and object parameters.
+        :param data_dict: Dictionary describing the scene hierarchy and object parameters
+        :type data_dict: Dict[int, Dict[int, Dict[str, Union[Dict[str, Any], Any]]]]
         """
 
         # For each scene/client
@@ -88,7 +90,8 @@ class VedoVisualizer:
                 for object_id in objects_dict[window_id]['objects_id']:
                     # Affects the object in the existing window
                     if -1 < objects_dict[object_id]['at'] < len(self.viewers[viewer_id]['instances']):
-                        self.viewers[viewer_id]['instances'][objects_dict[object_id]['at']].append([scene_id, object_id])
+                        self.viewers[viewer_id]['instances'][objects_dict[object_id]['at']].append([scene_id,
+                                                                                                    object_id])
                     # Affects the object in the next non-existing window
                     else:
                         objects_dict[object_id]['at'] = len(self.viewers[viewer_id]['instances'])
@@ -102,7 +105,8 @@ class VedoVisualizer:
 
                 # Affects the object in the existing window
                 if -1 < objects_dict[object_id]['at'] < len(self.viewers[self.default_viewer_id]['instances']):
-                    self.viewers[self.default_viewer_id]['instances'][objects_dict[object_id]['at']].append([scene_id, object_id])
+                    self.viewers[self.default_viewer_id]['instances'][objects_dict[object_id]['at']].append([scene_id,
+                                                                                                             object_id])
 
                 # Affects the object in the next non-existing window
                 else:
@@ -139,7 +143,7 @@ class VedoVisualizer:
 
     def render(self) -> None:
         """
-        Call render on all valid plotter.
+        | Call render on all valid plotter.
         """
 
         # Update all objects
@@ -151,7 +155,7 @@ class VedoVisualizer:
 
     def update_instances(self) -> None:
         """
-        Call update_instance on all updates object description
+        | Call update_instance on all updates object description
         """
 
         # Update in every scene/client
@@ -168,9 +172,10 @@ class VedoVisualizer:
 
     def update_visualizer(self, data_dict: Dict[int, Dict[int, ObjectDescription]]) -> None:
         """
-        Call update_object_dict on all designed objects
+        | Call update_object_dict on all designed objects.
 
-        :param data_dict:
+        :param data_dict: Dictionary describing the scene hierarchy and object parameters
+        :type data_dict: Dict[int, Dict[int, Dict[str, Union[Dict[str, Any], Any]]]]
         """
 
         for scene_id in data_dict:
@@ -179,10 +184,10 @@ class VedoVisualizer:
 
     def save_sample(self, session_dir: str, viewer_id: int) -> None:
         """
-        Save the samples as a .npz file
+        Save the samples as a .npz file.
 
-        :param session_dir: Directory in which to save the file
-        :param viewer_id: id of the designed viewer
+        :param str session_dir: Directory in which to save the file
+        :param int viewer_id: id of the designed viewer
         """
 
         if self.folder_path == "":
@@ -197,9 +202,9 @@ class VedoVisualizer:
 
     def save_screenshot(self, session_dir: str) -> None:
         """
-        Save a screenshot of each viewer in the dataset folder_path of the session.
+        | Save a screenshot of each viewer in the dataset folder_path of the session.
 
-        :param session_dir: Directory in which to save the file
+        :param str session_dir: Directory in which to save the file
         """
 
         # Check folder_path existence

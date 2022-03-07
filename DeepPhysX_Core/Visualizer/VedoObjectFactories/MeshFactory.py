@@ -1,13 +1,17 @@
-from DeepPhysX_Core.Visualizer.VedoObjectFactories.BaseObjectFactory import *
+from vedo import Mesh
+from numpy import array
+
+from DeepPhysX_Core.Visualizer.VedoObjectFactories.BaseObjectFactory import BaseObjectFactory, parse_wrapper, \
+    update_wrapper, ObjectDescription
 
 
 class MeshFactory(BaseObjectFactory):
+    """
+    | MeshFactory is a class that represent the data of a Mesh visual object.
+    | MeshFactory defines the parse and update procedures of Mesh object according to Vedo.
+    """
 
     def __init__(self):
-        """
-        MeshFactory is a class that represent the data of a Mesh visual object.
-        MeshFactory defines the parse and update procedures of Mesh object according to Vedo.
-        """
 
         BaseObjectFactory.__init__(self)
 
@@ -23,11 +27,11 @@ class MeshFactory(BaseObjectFactory):
     @parse_wrapper()
     def parse(self, data_dict: ObjectDescription) -> None:
         """
-        Parse the given dictionary and fill the parsed_data member accordingly.
-        Note: It is the wrapper that return the parsed_data
+        | Parse the given dictionary and fill the parsed_data member accordingly.
+        | Note: It is the wrapper that return the parsed_data.
 
-        :param data_dict: Dict[str, Any] Dictionary to parse
-        :return: A Dict[str, Any] that represent the parsed_data member
+        :param data_dict: Dictionary to parse
+        :type data_dict: Dict[str, Union[Any, Dict[str, Any]]]
         """
 
         # Parse 'positions' field
@@ -45,11 +49,11 @@ class MeshFactory(BaseObjectFactory):
             self.parsed_data[self.grammar_plug[1]] = array(data_dict['cells'], dtype=int)
 
     @update_wrapper()
-    def update_instance(self, instance: VisualInstance) -> VisualInstance:
+    def update_instance(self, instance: Mesh) -> Mesh:
         """
-        Update the given VisualInstance instance.
+        | Update the given VisualInstance instance.
 
-        :param instance: VisualInstance Vedo object to update with its current parsed_data values
+        :param Mesh instance: Vedo object to update with its current parsed_data values
         :return: The updated VisualInstance
         """
 
