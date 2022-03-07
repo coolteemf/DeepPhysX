@@ -8,3 +8,4 @@ CORE
     Environment  <environment.rst>
     Manager      <manager.rst>
     Network      <network.rst>
+    Pipelines    <pipeline.rst>
