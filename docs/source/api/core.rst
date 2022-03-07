@@ -3,10 +3,10 @@ CORE
 
 .. toctree::
 
-    AsyncSocket  <asyncsocket.rst>
-    Dataset      <dataset.rst>
-    Environment  <environment.rst>
-    Manager      <manager.rst>
-    Network      <network.rst>
-    Pipelines    <pipeline.rst>
-    Visualizer   <visualizer.rst>
+    AsyncSocket  <core/asyncsocket.rst>
+    Dataset      <core/dataset.rst>
+    Environment  <core/environment.rst>
+    Manager      <core/manager.rst>
+    Network      <core/network.rst>
+    Pipelines    <core/pipeline.rst>
+    Visualizer   <core/visualizer.rst>

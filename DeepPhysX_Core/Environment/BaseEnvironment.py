@@ -136,6 +136,7 @@ class BaseEnvironment(TcpIpClient):
         | Close the Environment.
         | Not mandatory.
         """
+
         pass
 
     ##########################################################################################

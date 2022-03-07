@@ -22,6 +22,12 @@ core_modules = ['AsyncSocket', 'Dataset', 'Environment', 'Manager', 'Network', '
 for module in core_modules:
     sys.path.append(os.path.join(root, 'DeepPhysX_Core', module))
 
+# Import SOFA modules
+sys.path.append(os.path.join(root, 'DeepPhysX_Sofa'))
+core_modules = ['Environment', 'Pipeline']
+for module in core_modules:
+    sys.path.append(os.path.join(root, 'DeepPhysX_Sofa', module))
+
 
 # -- Project information -----------------------------------------------------
 
