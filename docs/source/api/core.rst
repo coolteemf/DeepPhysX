@@ -9,3 +9,4 @@ CORE
     Manager      <manager.rst>
     Network      <network.rst>
     Pipelines    <pipeline.rst>
+    Visualizer   <visualizer.rst>

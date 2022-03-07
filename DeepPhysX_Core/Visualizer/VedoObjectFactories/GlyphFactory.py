@@ -1,14 +1,17 @@
-from DeepPhysX_Core.Visualizer.VedoObjectFactories.BaseObjectFactory import *
+from vedo import Glyph
+
+from DeepPhysX_Core.Visualizer.VedoObjectFactories.BaseObjectFactory import BaseObjectFactory, parse_wrapper, \
+    update_wrapper, ObjectDescription
 from DeepPhysX_Core.Visualizer.VedoObjectFactories.MarkerFactory import MarkerFactory
 
 
 class GlyphFactory(BaseObjectFactory):
+    """
+    | GlyphFactory is a class that represent the data of a Glyph visual object.
+    | GlyphFactory defines the parse and update procedures of Glyph object according to Vedo.
+    """
 
     def __init__(self):
-        """
-        GlyphFactory is a class that represent the data of a Glyph visual object.
-        GlyphFactory defines the parse and update procedures of Glyph object according to Vedo.
-        """
 
         BaseObjectFactory.__init__(self)
 
@@ -31,11 +34,11 @@ class GlyphFactory(BaseObjectFactory):
     @parse_wrapper()
     def parse(self, data_dict: ObjectDescription) -> None:
         """
-        Parse the given dictionary and fill the parsed_data member accordingly.
-        Note: It is the wrapper that return the parsed_data
+        | Parse the given dictionary and fill the parsed_data member accordingly.
+        | Note: It is the wrapper that return the parsed_data.
 
-        :param data_dict: Dict[str, Any] Dictionary to parse
-        :return: A Dict[str, Any] that represent the parsed_data member
+        :param data_dict: Dictionary to parse
+        :type data_dict: Dict[str, Union[Any, Dict[str, Any]]]
         """
 
         # Parse 'positions' field
@@ -55,11 +58,11 @@ class GlyphFactory(BaseObjectFactory):
             self.parsed_data[self.grammar_plug[1]] = self.marker_factory.get_data()
 
     @update_wrapper()
-    def update_instance(self, instance: VisualInstance) -> VisualInstance:
+    def update_instance(self, instance: Glyph) -> Glyph:
         """
-        Update the given VisualInstance instance.
+        | Update the given VisualInstance instance.
 
-        :param instance: VisualInstance Vedo object to update with its current parsed_data values
+        :param Glyph instance: Vedo object to update with its current parsed_data values
         :return: The updated VisualInstance
         """
 

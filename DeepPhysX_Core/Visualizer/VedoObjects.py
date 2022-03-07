@@ -1,5 +1,9 @@
-from DeepPhysX_Core.Visualizer.VedoObjectFactories.VedoObjectFactory import *
-from typing import Callable
+from typing import Callable, Dict, Union, Tuple
+from vedo import Mesh, Glyph, Marker, Points, Arrows, Plotter
+
+from DeepPhysX_Core.Visualizer.VedoObjectFactories.VedoObjectFactory import VedoObjectFactory
+from DeepPhysX_Core.Visualizer.VedoObjectFactories.VedoObjectFactory import ObjectDescription, VisualInstance
+
 
 create_filter: Dict[str, Callable[[ObjectDescription], VisualInstance]] = {
 
@@ -43,13 +47,13 @@ create_filter: Dict[str, Callable[[ObjectDescription], VisualInstance]] = {
 
 
 class VedoObjects:
+    """
+    | Container class that contain a scene description (factory, hierarchy, instances).
+    | VedoObjects is container that matches visualizer and VisualInstances to provide an easy and intuitive mean to
+      update Vedo scenes from a remote client.
+    """
 
     def __init__(self):
-        """
-        Container class that contain a scene description (factory, hierarchy, instances).
-        VedoObjects is container that matches factories and VisualInstances to provide an easy and intuitive mean to
-        update Vedo scenes from a remote client.
-        """
 
         self.name = self.__class__.__name__
         self.objects_instance = {}
@@ -57,10 +61,10 @@ class VedoObjects:
 
     def create_object(self, data_dict: ObjectDescription) -> None:
         """
-        Initialise a factory and a VisualInstance with the given parameters (Type, positions, etc.)
+        | Initialise a factory and a VisualInstance with the given parameters (Type, positions, etc.).
 
-        :param data_dict: Dict[str, Union[Dict[str, Any], Any]] Dictionary that describes the parameters and type of
-        object
+        :param Dict[str, Union[Dict[str, Any], Any]] data_dict: Dictionary that describes the parameters and type of
+                                                                object
         """
 
         # Register the object in the ObjectsFactory
@@ -71,21 +75,21 @@ class VedoObjects:
 
     def update_object(self, object_id: int, new_dict: ObjectDescription) -> None:
         """
-        Update the factory designed by the object_id with the given data.
+        | Update the factory designed by the object_id with the given data.
 
-        :param object_id: int ID of the factory/object to update
-        :param new_dict: Dict[str, Dict[str, Any]] Dictionary containing the data to update
+        :param int object_id: ID of the factory/object to update
+        :param Dict[str, Dict[str, Any]] new_dict: Dictionary containing the data to update
         """
 
         self.objects_factory.update_object_dict(object_id, new_dict)
 
-    def update_instance(self, object_id: int, viewer_data: (Plotter, int)) -> None:
+    def update_instance(self, object_id: int, viewer_data: Tuple[Plotter, int]) -> None:
         """
-        Update the VisualInstance designed by the object_id with the corresponding factory.
+        | Update the VisualInstance designed by the object_id with the corresponding factory.
 
-        :param object_id: int ID of the factory/object to update
-        :param viewer_data: Tuple with [Viewer instance, index of sub-window] in which object is rendered
-        :return: The update VisualInstance
+        :param int object_id: ID of the factory/object to update
+        :param Tuple[Plotter, int] viewer_data: Tuple with [Viewer instance, index of sub-window] in which object is
+                                                rendered
         """
 
         updated_instance = self.objects_factory.update_object_instance(object_id=object_id,

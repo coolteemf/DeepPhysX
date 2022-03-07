@@ -1,6 +1,6 @@
+from typing import Union, Optional, Dict, Any, Callable, TypeVar, List
 from vedo import utils, Mesh, Glyph, Marker, Points, Arrows
 from numpy import array, ndarray, stack, zeros, c_
-from typing import Union, Optional, Dict, Any, Callable, TypeVar, List
 
 VisualInstance = Union[Mesh, Glyph, Marker, Points, Arrows]
 ObjectDescription = Dict[str, Union[Any, Dict[str, Any]]]
@@ -12,19 +12,18 @@ UpdateParameters = TypeVar("UpdateParameters", Callable[..., Any], Any)  # Param
 
 class parse_wrapper:
     """
-    Class wrapper.
-    Wraps the parse function of all vedo BaseObjectFactory subclasses.
-    Allows to only define the specialized parse procedure in the subclasses while still running the general parse
-    procedure.
-    When calling the parse function, the caller is passed as args[0] (self) and the arguments are either in args or
-    kwargs.
-    This class only implements __call__.
+    | Class wrapper. Wraps the parse function of all vedo BaseObjectFactory subclasses.
+    | Allows to only define the specialized parse procedure in the subclasses while still running the general parse
+      procedure.
+    | When calling the parse function, the caller is passed as args[0] (self) and the arguments are either in args or
+      kwargs.
+    | This class only implements __call__.
     """
 
     def __call__(self, specialized_parse: Callable[[ParseParameters], None]) -> Callable[[Any, Any], ObjectDescription]:
         """
-        Wrap the parse call.
-        Parses all the attributes shared between subclasses of BaseObjectFactory.
+        | Wrap the parse call.
+        | Parses all the attributes shared between subclasses of BaseObjectFactory.
 
         :param specialized_parse: parse function of a subclass of BaseObjectFactory
         :return: general_update: The general parse function
@@ -32,12 +31,12 @@ class parse_wrapper:
 
         def general_parse(*args: Any, **kwargs: Any) -> ObjectDescription:
             """
-            Run the general parse procedure, then run the one defined in the calling subclass of BaseObjectFactory.
+            | Run the general parse procedure, then run the one defined in the calling subclass of BaseObjectFactory.
 
-            :param args: Tuple[CallingSubClass,...] List with the calling subclass and maybe the dictionary of data to
-            be parsed
-            :param kwargs: Dict[str, Any] "Any" here will be the dictionary of data to be parsed if not present in args
-            :return: parsed_data: Dict[str, Any] The fully parsed and evaluated dictionary
+            :param Tuple[CallingSubClass,...] args: List with the calling subclass and maybe the dictionary of data to
+                                                    be parsed
+            :param Dict[str, Any] kwargs: "Any" here will be the dictionary of data to be parsed if not present in args
+            :return: The fully parsed and evaluated dictionary
             """
 
             # Parse only takes 2 arguments (self and data_dict)
@@ -70,19 +69,18 @@ class parse_wrapper:
 
 class update_wrapper:
     """
-    Class wrapper.
-    Wraps the update_instance function of all vedo BaseObjectFactory subclasses.
-    Allows to only define the specialized update_instance procedure in the subclasses while still running the general
-    update_instance procedure.
-    When calling the update_instance function, the caller is passed as args[0] (self) and the arguments are either in
-    args or kwargs.
-    This class only implements __call__.
+    | Class wrapper. Wraps the update_instance function of all vedo BaseObjectFactory subclasses.
+    | Allows to only define the specialized update_instance procedure in the subclasses while still running the general
+      update_instance procedure.
+    | When calling the update_instance function, the caller is passed as args[0] (self) and the arguments are either in
+      args or kwargs.
+    | This class only implements __call__.
     """
 
     def __call__(self, specialized_update: Callable[[UpdateParameters], None]) -> Callable[[Any, Any], VisualInstance]:
         """
-        Wrap the update_instance call.
-        Updates all the attributes shared between subclasses of BaseObjectFactory.
+        | Wrap the update_instance call.
+        | Updates all the attributes shared between subclasses of BaseObjectFactory.
 
         :param specialized_update: update_instance function of a subclass of BaseObjectFactory
         :return: general_update: The general update function
@@ -90,12 +88,12 @@ class update_wrapper:
 
         def general_update(*args: Any, **kwargs: Any) -> VisualInstance:
             """
-            Run the general update_instance procedure, then run the one defined in the calling subclass of
-            BaseObjectFactory.
+            | Run the general update_instance procedure, then run the one defined in the calling subclass of
+              BaseObjectFactory.
 
-            :param args: Tuple[CallingSubClass,...] List with the calling subclass and the instance to update
-            :param kwargs: Dict[str, Any] "Any" here will be the instance to be updated if not present in args
-            :return: instance: The updated VisualObject
+            :param Tuple[CallingSubClass,...] args: List with the calling subclass and the instance to update
+            :param Dict[str, Any] kwargs: "Any" here will be the instance to be updated if not present in args
+            :return: The updated VisualObject
             """
 
             # Parse only takes 2 arguments (self and instance)
@@ -137,12 +135,12 @@ class update_wrapper:
 
 
 class BaseObjectFactory:
+    """
+    | Base class of all the Visual object visualizer.
+    | BaseObjectFactory defines the parse and update procedures of all the object visualizer.
+    """
 
     def __init__(self):
-        """
-        Base class of all the Visual object factories.
-        BaseObjectFactory defines the parse and update procedures of all the object factories.
-        """
 
         self.type: str = ""
         self.grammar: List[str] = ['c', 'alpha', 'at', 'colormap', 'scalar_field', "scalar_field_name"]
@@ -156,11 +154,11 @@ class BaseObjectFactory:
     @parse_wrapper()
     def parse(self, data_dict: ObjectDescription) -> None:
         """
-        Parse the given dictionary and fill the parsed_data member accordingly.
-        Note: It is the wrapper that return the parsed_data
+        | Parse the given dictionary and fill the parsed_data member accordingly.
+        | Note: It is the wrapper that return the parsed_data.
 
-        :param data_dict: Dict[str, Any] Dictionary to parse
-        :return: A Dict[str, Any] that represent the parsed_data member
+        :param data_dict: Dictionary to parse
+        :type data_dict: Dict[str, Union[Any, Dict[str, Any]]]
         """
 
         raise NotImplementedError
@@ -168,9 +166,10 @@ class BaseObjectFactory:
     @update_wrapper()
     def update_instance(self, instance: VisualInstance) -> VisualInstance:
         """
-        Update the given VisualInstance instance.
+        | Update the given VisualInstance instance.
 
-        :param instance: VisualInstance Vedo object to update with its current parsed_data values
+        :param instance: Vedo object to update with its current parsed_data values
+        :type instance: Union[Mesh, Glyph, Marker, Points, Arrows]
         :return: The updated VisualInstance
         """
 
@@ -178,6 +177,8 @@ class BaseObjectFactory:
 
     def get_data(self) -> ObjectDescription:
         """
+        | Get the visualization data description.
+
         :return: A Dict[str, Any] that represent the parsed_data member
         """
 
@@ -186,11 +187,11 @@ class BaseObjectFactory:
     @staticmethod
     def parse_vector(vec: Optional[Vector], wrap: bool = True) -> Optional[ndarray]:
         """
-        Helper function (static method) that parses the positions field
+        | Helper function (static method) that parses a vector field.
 
-        :param vec: Optional[numpy.ndarray, List[numpy.ndarray]] Vector to parse
-        :param wrap: bool When True add a dimension to the vector (ex: if the input data shape is [N, 3], data will
-        have shape [1, N, 3]
+        :param Optional[numpy.ndarray, List[numpy.ndarray]] vec: Vector to parse
+        :param bool wrap: When True add a dimension to the vector (ex: if the input data shape is [N, 3], data will
+                          have shape [1, N, 3]
         :return: A numpy.ndarray that contains the parsed vector and an additional dimension if wrap is True
         """
 
