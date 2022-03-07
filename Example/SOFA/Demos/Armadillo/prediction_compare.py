@@ -11,7 +11,7 @@ import Sofa.Gui
 
 # DeepPhysX related imports
 from DeepPhysX_Core.Dataset.BaseDatasetConfig import BaseDatasetConfig
-from DeepPhysX_Sofa.Runner.SofaRunner import SofaRunner
+from DeepPhysX_Sofa.Pipeline.SofaRunner import SofaRunner
 from DeepPhysX_PyTorch.FC.FCConfig import FCConfig
 from DeepPhysX_Sofa.Environment.SofaEnvironmentConfig import SofaEnvironmentConfig
 

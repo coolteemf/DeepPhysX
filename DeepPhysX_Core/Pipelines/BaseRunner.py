@@ -1,4 +1,4 @@
-from typing import Tuple, Optional
+from typing import Optional
 from numpy import ndarray
 
 from DeepPhysX_Core.Network.BaseNetworkConfig import BaseNetworkConfig
