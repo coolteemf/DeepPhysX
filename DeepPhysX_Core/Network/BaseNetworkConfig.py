@@ -6,6 +6,10 @@ from DeepPhysX_Core.Network.BaseNetwork import BaseNetwork
 from DeepPhysX_Core.Network.BaseOptimization import BaseOptimization
 from DeepPhysX_Core.Network.DataTransformation import DataTransformation
 
+NetworkType = BaseNetwork
+OptimizationType = BaseOptimization
+DataTransformationType = DataTransformation
+
 
 class BaseNetworkConfig:
     """
@@ -110,7 +114,7 @@ class BaseNetworkConfig:
         # Create namedtuple with collected items
         return namedtuple(config_name, fields)._make(args)
 
-    def create_network(self) -> BaseNetwork:
+    def create_network(self) -> NetworkType:
         """
         | Create an instance of network_class with given parameters.
 
@@ -128,7 +132,7 @@ class BaseNetworkConfig:
                 f"{self.network_class}")
         return network
 
-    def create_optimization(self) -> BaseOptimization:
+    def create_optimization(self) -> OptimizationType:
         """
         | Create an instance of optimization_class with given parameters.
 
@@ -145,7 +149,7 @@ class BaseNetworkConfig:
                             f"get {self.optimization_class}")
         return optimization
 
-    def create_data_transformation(self) -> DataTransformation:
+    def create_data_transformation(self) -> DataTransformationType:
         """
         | Create an instance of data_transformation_class with given parameters.
 
