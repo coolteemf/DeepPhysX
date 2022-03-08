@@ -28,7 +28,7 @@ class BaseOptimization:
 
     def set_loss(self) -> None:
         """
-        | Initialize the loss function
+        | Initialize the loss function.
         """
 
         raise NotImplementedError

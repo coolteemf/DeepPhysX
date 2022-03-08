@@ -36,5 +36,6 @@ For more information about DeepPhysX design, reading the section :doc:`presentat
     :maxdepth: 1
     :hidden:
 
-    Core  <api/core.rst>
-    Sofa  <api/sofa.rst>
+    Core   <api/core.rst>
+    Sofa   <api/sofa.rst>
+    Torch  <api/torch.rst>
