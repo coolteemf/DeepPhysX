@@ -28,7 +28,7 @@ class BaseNetwork:
 
     def forward(self, input_data: Any) -> Any:
         """
-        | Gives input_data as raw input to the neural network
+        | Gives input_data as raw input to the neural network.
 
         :param Any input_data: Input tensor
         :return: Network prediction
@@ -88,7 +88,7 @@ class BaseNetwork:
         """
         | Return the number of parameters of the network.
 
-        :return: Number of parameters.
+        :return: Number of parameters
         """
 
         raise NotImplementedError

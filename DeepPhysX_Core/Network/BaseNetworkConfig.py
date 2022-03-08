@@ -13,8 +13,8 @@ DataTransformationType = DataTransformation
 
 class BaseNetworkConfig:
     """
-    BaseNetworkConfig is a configuration class to parameterize and create BaseNetwork, BaseOptimization and
-    DataTransformation for the NetworkManager.
+    | BaseNetworkConfig is a configuration class to parameterize and create BaseNetwork, BaseOptimization and
+      DataTransformation for the NetworkManager.
 
     :param Type[BaseNetwork] network_class: BaseNetwork class from which an instance will be created
     :param Type[BaseOptimization] optimization_class: BaseOptimization class from which an instance will be created

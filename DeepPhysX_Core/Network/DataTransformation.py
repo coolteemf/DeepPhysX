@@ -55,6 +55,7 @@ class DataTransformation:
         :param Any data_out: Prediction data
         :return: Transformed prediction data
         """
+
         return data_out
 
     def __str__(self) -> str:

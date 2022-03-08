@@ -24,9 +24,15 @@ for module in core_modules:
 
 # Import SOFA modules
 sys.path.append(os.path.join(root, 'DeepPhysX_Sofa'))
-core_modules = ['Environment', 'Pipeline']
-for module in core_modules:
+sofa_modules = ['Environment', 'Pipeline']
+for module in sofa_modules:
     sys.path.append(os.path.join(root, 'DeepPhysX_Sofa', module))
+
+# Import TORCH modules
+sys.path.append(os.path.join(root, 'DeepPhysX_PyTorch'))
+torch_modules = ['Network']
+for module in torch_modules:
+    sys.path.append(os.path.join(root, 'DeepPhysX_PyTorch', module))
 
 
 # -- Project information -----------------------------------------------------
