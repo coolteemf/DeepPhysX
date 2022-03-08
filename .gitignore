@@ -11,6 +11,7 @@ cmake-build-debug/
 /DeepPhysX.egg-info/
 /dist/
 /venv/
+sessions/
 
 #File extensions to ignore
 *.log
