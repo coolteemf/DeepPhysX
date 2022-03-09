@@ -30,7 +30,7 @@ for module in sofa_modules:
 
 # Import TORCH modules
 sys.path.append(os.path.join(root, 'DeepPhysX_PyTorch'))
-torch_modules = ['Network', 'FC']
+torch_modules = ['Network', 'FC', 'UNet']
 for module in torch_modules:
     sys.path.append(os.path.join(root, 'DeepPhysX_PyTorch', module))
 

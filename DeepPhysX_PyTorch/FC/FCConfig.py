@@ -6,8 +6,8 @@ from DeepPhysX_PyTorch.FC.FC import FC
 
 class FCConfig(TorchNetworkConfig):
     """
-    | TorchNetworkConfig is a configuration class to parameterize and create TorchNetwork, TorchOptimization and
-      TorchDataTransformation for the NetworkManager.
+    | FCConfig is a configuration class to parameterize and create FC, TorchOptimization and TorchDataTransformation
+      for the NetworkManager.
 
     :param Type[TorchOptimization] optimization_class: BaseOptimization class from which an instance will be created
     :param Type[TorchDataTransformation] data_transformation_class: DataTransformation class from which an instance will

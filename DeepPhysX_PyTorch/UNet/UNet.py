@@ -1,22 +1,28 @@
 from typing import List, Tuple, Union
-
 import torch
 from torch.nn import Module, Conv2d, Conv3d, BatchNorm2d, BatchNorm3d, ReLU, Sequential, MaxPool2d, MaxPool3d, \
     ConvTranspose2d, ConvTranspose3d
-from torch import zeros_like
+from collections import namedtuple
 
 from DeepPhysX_PyTorch.Network.TorchNetwork import TorchNetwork
 from DeepPhysX_PyTorch.EncoderDecoder.EncoderDecoder import EncoderDecoder
-from .utils import crop_and_merge
+from DeepPhysX_PyTorch.UNet.utils import crop_and_merge
 
 
 class UNetLayer(Module):
+    """
+    | Create a UNet Layer.
+
+    :param int nb_input_channels: Number of channels in input data
+    :param int nb_output_channels: Number of channels in output data
+    :param namedtuple config: Namedtuple containing UNet parameters
+    """
 
     def __init__(self,
                  nb_input_channels: int,
                  nb_output_channels: int,
                  config):
-        """Creates one layers of the Unet Architecture"""
+
         super().__init__()
 
         # Configure the UNet layer
@@ -47,14 +53,25 @@ class UNetLayer(Module):
         self.unet_layer = Sequential(*layers)
 
     def forward(self, input_data: torch.Tensor) -> torch.Tensor:
-        """Gives input_data as raw input to the neural network"""
+        """
+        | Gives input_data as raw input to the layer.
+
+        :param torch.Tensor input_data: Input tensor
+        :return: Forward pass result
+        """
+
         return self.unet_layer(input_data)
 
 
 class UNet(TorchNetwork):
+    """
+    | Create a UNet Neural Network Architecture.
 
-    def __init__(self, config):
-        """Creates the UNet architecture"""
+    :param namedtuple config: Namedtuple containing UNet parameters
+    """
+
+    def __init__(self, config: namedtuple):
+
         TorchNetwork.__init__(self, config)
 
         # Configure the UNet layers
@@ -97,7 +114,13 @@ class UNet(TorchNetwork):
                                                                         kernel_size=final_kernel_size)
 
     def forward(self, input_data: torch.Tensor) -> torch.Tensor:
-        """Gives input_data as raw input to the neural network"""
+        """
+        | Gives input_data as raw input to the neural network.
+
+        :param torch.Tensor input_data: Input tensor
+        :return: Network prediction
+        """
+
         # Process down layers. Keep the outputs at each 'down' step to merge at same 'up' level.
         down_outputs = [self.down[0](input_data)]
         for unet_layer in self.down[1:]:
@@ -106,12 +129,16 @@ class UNet(TorchNetwork):
         # Process up layers. Merge same level 'down' outputs.
         x = down_outputs.pop()
         for (up_conv_layer, unet_layer), down_output in zip(self.up, down_outputs[::-1]):
-            same_level_down_output = zeros_like(down_output) if self.skip_merge else down_output
+            same_level_down_output = torch.zeros_like(down_output) if self.skip_merge else down_output
             x = unet_layer(crop_and_merge(same_level_down_output, up_conv_layer(x)))
 
         return self.finalLayer(x)
 
     def __str__(self) -> str:
+        """
+        :return: String containing information about the BaseNetwork object
+        """
+
         description = TorchNetwork.__str__(self)
         description += f"    Number of dimensions: {self.config.nb_dims}\n"
         description += f"    Number of input channels: {self.config.nb_input_channels}\n"

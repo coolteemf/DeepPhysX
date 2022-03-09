@@ -32,7 +32,7 @@ class FC(TorchNetwork):
         self.layers = self.layers[:-1]
         self.linear = Sequential(*self.layers)
 
-    def forward(self, input_data: torch.Tensor):
+    def forward(self, input_data: torch.Tensor) -> torch.Tensor:
         """
         | Gives input_data as raw input to the neural network.
 

@@ -1,15 +1,20 @@
 from typing import List, Optional, Tuple
-
 from torch.nn.functional import pad
 from torch import reshape, Tensor
 from numpy import asarray
+from collections import namedtuple
 
 from DeepPhysX_PyTorch.Network.TorchDataTransformation import TorchDataTransformation
 
 
 class UnetDataTransformation(TorchDataTransformation):
+    """
+    | UNetDataTransformation is dedicated to data operations before and after UNet predictions.
 
-    def __init__(self, config):
+    :param namedtuple config: Namedtuple containing the parameters of the network manager
+    """
+
+    def __init__(self, config: namedtuple):
 
         super().__init__(config)
 
@@ -32,11 +37,12 @@ class UnetDataTransformation(TorchDataTransformation):
     @TorchDataTransformation.check_type
     def transform_before_prediction(self, data_in: Tensor) -> Tensor:
         """
-        Apply data operations before network's prediction.
+        | Apply data operations before network's prediction.
 
-        :param data_in: Input data
+        :param Tensor data_in: Input data
         :return: Transformed input data
         """
+
         # Transform tensor shape
         data_in = data_in.view((-1, self.input_size[2], self.input_size[1], self.input_size[0], self.nb_input_channels))
         data_in = data_in.permute((0, 4, 1, 2, 3))
@@ -51,14 +57,16 @@ class UnetDataTransformation(TorchDataTransformation):
         return data_in
 
     @TorchDataTransformation.check_type
-    def transform_before_loss(self, data_out: Tensor, data_gt: Tensor = None) -> Tuple[Tensor, Optional[Tensor]]:
+    def transform_before_loss(self, data_out: Tensor,
+                              data_gt: Optional[Tensor] = None) -> Tuple[Tensor, Optional[Tensor]]:
         """
-        Apply data operations between network's prediction and loss computation.
+        | Apply data operations between network's prediction and loss computation.
 
-        :param data_out: Prediction data
-        :param data_gt: Ground truth data
+        :param Tensor data_out: Prediction data
+        :param Optional[Tensor] data_gt: Ground truth data
         :return: Transformed prediction data, transformed ground truth data
         """
+
         # Transform ground truth
         # Transform tensor shape, apply scale
         if data_gt is not None:
@@ -76,16 +84,22 @@ class UnetDataTransformation(TorchDataTransformation):
     @TorchDataTransformation.check_type
     def transform_before_apply(self, data_out: Tensor) -> Tensor:
         """
-        Apply data operations between loss computation and prediction apply in environment.
+        | Apply data operations between loss computation and prediction apply in environment.
 
-        :param data_out: Prediction data
+        :param Tensor data_out: Prediction data
         :return: Transformed prediction data
         """
+
         # Rescale prediction
         data_out = data_out / self.data_scale
         return data_out
 
     def compute_pad_widths(self, desired_shape: List[int]) -> None:
+        """
+        | Define padding to apply on data given the data shape and the network architecture.
+
+        :param List[int] desired_shape: Data shape without padding
+        """
 
         # Compute minimal input shape given the desired shape
         minimal_shape = asarray(desired_shape)
@@ -104,6 +118,10 @@ class UnetDataTransformation(TorchDataTransformation):
             self.inverse_pad_widths += (-p[0], -p[1])   # PyTorch accepts negative padding
 
     def __str__(self):
+        """
+        :return: String containing information about the TorchDataTransformation object
+        """
+
         description = "\n"
         description += f"  {self.name}\n"
         description += f"    Data type: {self.data_type}\n"

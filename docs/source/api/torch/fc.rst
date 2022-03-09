@@ -11,8 +11,8 @@ Base:
     :members:
 
 
-TorchNetworkConfig
----------------------
+FCConfig
+--------
 
 Base:
 :py:class:`TorchNetworkConfig.TorchNetworkConfig`
