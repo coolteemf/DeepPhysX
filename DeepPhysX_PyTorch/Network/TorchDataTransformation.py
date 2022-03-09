@@ -29,7 +29,8 @@ class TorchDataTransformation(DataTransformation):
         return data_in
 
     @DataTransformation.check_type
-    def transform_before_loss(self, data_out: Tensor, data_gt: Tensor = None) -> Tuple[Tensor, Optional[Tensor]]:
+    def transform_before_loss(self, data_out: Tensor,
+                              data_gt: Optional[Tensor] = None) -> Tuple[Tensor, Optional[Tensor]]:
         """
         | Apply data operations between network's prediction and loss computation.
 

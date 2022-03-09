@@ -4,7 +4,6 @@ from DeepPhysX_PyTorch.Network.TorchNetworkConfig import TorchNetworkConfig
 from DeepPhysX_PyTorch.Network.TorchOptimization import TorchOptimization
 from DeepPhysX_PyTorch.UNet.UnetDataTransformation import UnetDataTransformation
 from DeepPhysX_PyTorch.UNet.UNet import UNet
-
 from DeepPhysX_PyTorch.Network.TorchNetworkConfig import NetworkType, DataTransformationType
 
 NetworkType = Union[NetworkType, UNet]
@@ -12,18 +11,46 @@ DataTransformationType = Union[DataTransformationType, UnetDataTransformation]
 
 
 class UNetConfig(TorchNetworkConfig):
+    """
+    | UNetConfig is a configuration class to parameterize and create UNet, TorchOptimization and UNetDataTransformation
+      for the NetworkManager.
+
+    :param Type[TorchOptimization] optimization_class: BaseOptimization class from which an instance will be created
+    :param Type[TorchDataTransformation] data_transformation_class: DataTransformation class from which an instance will
+                                                                    be created
+    :param Optional[str] network_dir: Name of an existing network repository
+    :param str network_name: Name of the network
+    :param int which_network: If several networks in network_dir, load the specified one
+    :param bool save_each_epoch: If True, network state will be saved at each epoch end; if False, network state
+                                 will be saved at the end of the training
+    :param Optional[float] lr: Learning rate
+    :param bool require_training_stuff: If specified, loss and optimizer class can be not necessary for training
+    :param Optional[Any] loss: Loss class
+    :param Optional[Any] optimizer: Network's parameters optimizer class
+
+    :param List[int] input_size: Size of the input
+    :param int nb_dims: Number of dimension of data
+    :param int nb_input_channels: Number of channels of the input layer
+    :param int nb_first_layer_channels: Number of channels of the first layer
+    :param int nb_output_channels: Number of channels of the output layer
+    :param int nb_steps: Number of steps of down layers / up layers
+    :param bool two_sublayers: Duplicate each layer or not
+    :param str border_mode: Zero-padding mode
+    :param bool skip_merge: Skip the crop step at each up layer or not
+    :param float data_scale: Scale to apply to data
+    """
 
     def __init__(self,
                  optimization_class: Type[TorchOptimization] = TorchOptimization,
                  data_transformation_class: Type[UnetDataTransformation] = UnetDataTransformation,
-                 network_dir: str = None,
+                 network_dir: Optional[str] = None,
                  network_name: str = "UNetNetwork",
                  which_network: int = 0,
                  save_each_epoch: bool = False,
                  lr: Optional[float] = None,
                  require_training_stuff: bool = True,
-                 loss: Any = None,
-                 optimizer: Any = None,
+                 loss: Optional[Any] = None,
+                 optimizer: Optional[Any] = None,
                  input_size: List[int] = None,
                  nb_dims: int = 3,
                  nb_input_channels: int = 1,
@@ -102,9 +129,3 @@ class UNetConfig(TorchNetworkConfig):
                                                            two_sublayers=two_sublayers,
                                                            border_mode=border_mode,
                                                            data_scale=data_scale)
-
-    def create_network(self) -> NetworkType:
-        return TorchNetworkConfig.create_network(self)
-
-    def create_data_transformation(self) -> DataTransformationType:
-        return TorchNetworkConfig.create_data_transformation(self)
