@@ -5,14 +5,35 @@ from DeepPhysX_PyTorch.FC.FC import FC
 
 
 class FCConfig(TorchNetworkConfig):
+    """
+    | TorchNetworkConfig is a configuration class to parameterize and create TorchNetwork, TorchOptimization and
+      TorchDataTransformation for the NetworkManager.
+
+    :param Type[TorchOptimization] optimization_class: BaseOptimization class from which an instance will be created
+    :param Type[TorchDataTransformation] data_transformation_class: DataTransformation class from which an instance will
+                                                                    be created
+    :param Optional[str] network_dir: Name of an existing network repository
+    :param str network_name: Name of the network
+    :param int which_network: If several networks in network_dir, load the specified one
+    :param bool save_each_epoch: If True, network state will be saved at each epoch end; if False, network state
+                                 will be saved at the end of the training
+    :param Optional[float] lr: Learning rate
+    :param bool require_training_stuff: If specified, loss and optimizer class can be not necessary for training
+    :param Optional[Any] loss: Loss class
+    :param Optional[Any] optimizer: Network's parameters optimizer class
+    :param int dim_output: Dimension of the output
+    :param Optional[List[int]] dim_layers: Size of each layer of the network
+    :param Union[List[bool], bool] biases: Layers should have biases or not. This value can either be given as a bool
+                                           for all layers or as a list to detail each layer.
+    """
 
     def __init__(self,
-                 network_dir: str = None,
-                 network_name: str = "FCNetwork",
                  optimization_class: Type[TorchOptimization] = TorchOptimization,
-                 save_each_epoch: bool = False,
-                 which_network: int = 0,
                  data_transformation_class: Type[TorchDataTransformation] = TorchDataTransformation,
+                 network_dir: Optional[str] = None,
+                 network_name: str = "FCNetwork",
+                 which_network: int = 0,
+                 save_each_epoch: bool = False,
                  lr: Optional[float] = None,
                  require_training_stuff: bool = True,
                  loss: Any = None,
@@ -23,13 +44,13 @@ class FCConfig(TorchNetworkConfig):
 
         TorchNetworkConfig.__init__(self,
                                     network_class=FC,
+                                    optimization_class=optimization_class,
+                                    data_transformation_class=data_transformation_class,
                                     network_dir=network_dir,
                                     network_name=network_name,
                                     network_type='FC',
-                                    save_each_epoch=save_each_epoch,
-                                    optimization_class=optimization_class,
                                     which_network=which_network,
-                                    data_transformation_class=data_transformation_class,
+                                    save_each_epoch=save_each_epoch,
                                     require_training_stuff=require_training_stuff,
                                     lr=lr,
                                     loss=loss,
