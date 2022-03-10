@@ -32,7 +32,7 @@ class EnvironmentManager:
         # Data producing parameters
         self.batch_size: int = batch_size
         self.always_create_data: bool = environment_config.always_create_data
-        self.use_prediction_in_environment: bool = environment_config.use_prediction_in_environment
+        self.use_dataset_in_environment: bool = environment_config.use_dataset_in_environment
         self.simulations_per_step: int = environment_config.simulations_per_step
         self.max_wrong_samples_per_step: int = environment_config.max_wrong_samples_per_step
         self.train: bool = train

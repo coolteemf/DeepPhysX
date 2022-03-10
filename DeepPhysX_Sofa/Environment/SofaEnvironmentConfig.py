@@ -24,7 +24,7 @@ class SofaEnvironmentConfig(BaseEnvironmentConfig):
                                     Dataset.
     :param bool record_wrong_samples: If True, wrong samples are recorded through Visualizer
     :param int screenshot_sample_rate: A screenshot of the viewer will be done every x sample
-    :param bool use_prediction_in_environment: If True, the prediction will always be used in the environment
+    :param bool use_dataset_in_environment: If True, the dataset will always be used in the environment
     :param Optional[Dict[Any, Any]] param_dict: Dictionary containing specific environment parameters
     :param bool as_tcp_ip_client: Environment is owned by a TcpIpClient if True, by an EnvironmentManager if False
     :param int number_of_thread: Number of thread to run
@@ -42,7 +42,7 @@ class SofaEnvironmentConfig(BaseEnvironmentConfig):
                  always_create_data: bool = False,
                  record_wrong_samples: bool = False,
                  screenshot_sample_rate: int = 0,
-                 use_prediction_in_environment: bool = False,
+                 use_dataset_in_environment: bool = False,
                  param_dict: Optional[Dict[Any, Any]] = None,
                  as_tcp_ip_client: bool = True,
                  max_client_connection: int = 1000,
@@ -59,7 +59,7 @@ class SofaEnvironmentConfig(BaseEnvironmentConfig):
                                        always_create_data=always_create_data,
                                        record_wrong_samples=record_wrong_samples,
                                        screenshot_sample_rate=screenshot_sample_rate,
-                                       use_prediction_in_environment=use_prediction_in_environment,
+                                       use_dataset_in_environment=use_dataset_in_environment,
                                        param_dict=param_dict,
                                        as_tcp_ip_client=as_tcp_ip_client,
                                        number_of_thread=number_of_thread,

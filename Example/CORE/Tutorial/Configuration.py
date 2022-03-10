@@ -17,7 +17,7 @@ from Network import DummyNetwork, DummyOptimization
 env_config = BaseEnvironmentConfig(environment_class=DummyEnvironment,      # The Environment class to create
                                    visualizer=None,                         # The Visualizer to use
                                    simulations_per_step=1,                  # The number of bus-steps to run
-                                   use_prediction_in_environment=False,     # Predictions will not be applied
+                                   use_dataset_in_environment=False,        # Dataset will not be sent to Environment
                                    param_dict={'increment': 1},             # Parameters to send at init
                                    as_tcp_ip_client=True,                   # Create a Client / Server architecture
                                    number_of_thread=3,                      # Number of Clients connected to Server

@@ -12,6 +12,7 @@ cmake-build-debug/
 /dist/
 /venv/
 sessions/
+debug/
 
 #File extensions to ignore
 *.log

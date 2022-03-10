@@ -50,7 +50,7 @@ class DataManager:
             # Create an environment if prediction must be applied else ask DatasetManager
             create_environment = False
             if environment_config is not None:
-                create_environment = None if not environment_config.use_prediction_in_environment else True
+                create_environment = None if not environment_config.use_dataset_in_environment else True
         # Prediction
         else:
             # Always create an environment for prediction
@@ -103,7 +103,7 @@ class DataManager:
             # Force data from the dataset
             else:
                 data = self.dataset_manager.get_data(batch_size=batch_size, get_inputs=True, get_outputs=True)
-                if self.environment_manager is not None and self.environment_manager.use_prediction_in_environment:
+                if self.environment_manager is not None and self.environment_manager.use_dataset_in_environment:
                     new_data = self.environment_manager.dispatch_batch(batch=data)
                     if len(new_data['input']) != 0:
                         data['input'] = new_data['input']
@@ -111,6 +111,10 @@ class DataManager:
                         data['output'] = new_data['output']
                     if 'loss' in new_data:
                         data['loss'] = new_data['loss']
+                elif self.environment_manager is not None:
+                    # EnvironmentManager is no longer used
+                    self.environment_manager.close()
+                    self.environment_manager = None
 
         # Prediction
         else:
