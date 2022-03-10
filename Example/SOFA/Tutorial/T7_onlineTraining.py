@@ -1,0 +1,27 @@
+"""
+#07 - Online Training
+Launch a training session and Dataset production simultaneously.
+"""
+
+# DeepPhysX related imports
+from DeepPhysX_Core.Pipelines.BaseTrainer import BaseTrainer
+
+# Tutorial related imports
+from T3_configuration import env_config, net_config, dataset_config
+
+
+def main():
+    # Create the Pipeline
+    pipeline = BaseTrainer(session_name='sessions/online_training',
+                           environment_config=env_config,
+                           dataset_config=dataset_config,
+                           network_config=net_config,
+                           nb_epochs=2,
+                           nb_batches=100,
+                           batch_size=10)
+    # Launch the Pipeline
+    pipeline.execute()
+
+
+if __name__ == '__main__':
+    main()
