@@ -16,7 +16,7 @@ def main():
     env_config = BaseEnvironmentConfig(environment_class=DummyEnvironment,
                                        visualizer=None,
                                        simulations_per_step=1,
-                                       use_prediction_in_environment=False,
+                                       use_dataset_in_environment=False,
                                        param_dict={'increment': 1},
                                        as_tcp_ip_client=False)
     # Create the Pipeline

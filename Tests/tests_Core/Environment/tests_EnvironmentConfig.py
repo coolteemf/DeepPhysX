@@ -40,7 +40,7 @@ class TestBaseEnvironmentConfig(TestCase):
         self.assertEqual(environment_config.always_create_data, False)
         self.assertEqual(environment_config.record_wrong_samples, False)
         self.assertEqual(environment_config.screenshot_sample_rate, 0)
-        self.assertEqual(environment_config.use_prediction_in_environment, False)
+        self.assertEqual(environment_config.use_dataset_in_environment, False)
         self.assertEqual(environment_config.simulations_per_step, 1)
         self.assertEqual(environment_config.max_wrong_samples_per_step, 10)
         self.assertEqual(environment_config.visualizer, None)
