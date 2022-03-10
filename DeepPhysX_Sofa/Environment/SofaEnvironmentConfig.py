@@ -68,6 +68,8 @@ class SofaEnvironmentConfig(BaseEnvironmentConfig):
                                        ip_address=ip_address,
                                        port=port)
 
+        self.environment_class: Type[SofaEnvironment] = environment_class
+
     def start_client(self, idx: int = 1) -> None:
         """
         | Run a subprocess to start a TcpIpClient.
@@ -105,6 +107,7 @@ class SofaEnvironmentConfig(BaseEnvironmentConfig):
             raise TypeError(f"[{self.name}] Wrong 'environment_class' type: SofaEnvironment required, get "
                             f"{self.environment_class}")
         # Create & Init Environment
+        environment.recv_parameters(self.param_dict)
         environment.create()
         environment.init()
         return environment
