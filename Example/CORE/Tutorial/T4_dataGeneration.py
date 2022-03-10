@@ -7,7 +7,7 @@ Only create a Dataset without training session.
 from DeepPhysX_Core.Pipelines.BaseDataGenerator import BaseDataGenerator
 
 # Tutorial related imports
-from Configuration import env_config, dataset_config
+from T3_configuration import env_config, dataset_config
 
 
 def main():

@@ -9,8 +9,8 @@ from DeepPhysX_Core.Network.BaseNetworkConfig import BaseNetworkConfig
 from DeepPhysX_Core.Dataset.BaseDatasetConfig import BaseDatasetConfig
 
 # Tutorial related imports
-from Environment import DummyEnvironment
-from Network import DummyNetwork, DummyOptimization
+from T1_environment import DummyEnvironment
+from T2_network import DummyNetwork, DummyOptimization
 
 
 # Create the Environment config

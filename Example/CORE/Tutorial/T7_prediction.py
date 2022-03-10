@@ -1,6 +1,6 @@
 """
 #07 - Prediction
-Launch a training session and Dataset production simultaneously.
+Launch a running session.
 """
 
 # DeepPhysX related imports
@@ -8,7 +8,7 @@ from DeepPhysX_Core.Pipelines.BaseRunner import BaseRunner
 from DeepPhysX_Core.Environment.BaseEnvironmentConfig import BaseEnvironmentConfig
 
 # Tutorial related imports
-from Configuration import DummyEnvironment, net_config, dataset_config
+from T3_configuration import DummyEnvironment, net_config, dataset_config
 
 
 def main():

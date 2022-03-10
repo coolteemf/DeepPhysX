@@ -11,7 +11,7 @@ from DeepPhysX_Core.Pipelines.BaseTrainer import BaseTrainer
 from DeepPhysX_Core.Dataset.BaseDatasetConfig import BaseDatasetConfig
 
 # Tutorial related imports
-from Configuration import env_config, net_config
+from T3_configuration import env_config, net_config
 
 
 def main():
