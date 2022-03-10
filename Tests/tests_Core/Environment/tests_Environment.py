@@ -17,7 +17,7 @@ class TestBaseEnvironment(TestCase):
             self.assertEqual(attribute, None)
         for attribute in [self.env.loss_data, self.env.environment_manager]:
             self.assertEqual(attribute, None)
-        for attribute in [self.env.additional_inputs, self.env.additional_outputs]:
+        for attribute in [self.env.additional_fields]:
             self.assertEqual(attribute, {})
 
     def test_not_implemented(self):
@@ -61,15 +61,12 @@ class TestBaseEnvironment(TestCase):
 
     def test_additional_dataset(self):
         # Check initial state of the additional fields
-        for attribute in [self.env.additional_inputs, self.env.additional_outputs]:
+        for attribute in [self.env.additional_fields]:
             self.assertEqual(attribute, {})
         # Create random samples
-        additional_in, additional_out = np.random.random((3, 1)), np.random.random((3, 3))
+        additional_field = np.random.random((3, 1))
         # Set as additional inputs and outputs
-        self.env.set_additional_in_dataset('input', additional_in)
-        self.env.set_additional_out_dataset('output', additional_out)
+        self.env.set_additional_dataset('field', additional_field)
         # Check additional data are well-defined in environment
-        for label, value, additional_dict in zip(['input', 'output'], [additional_in, additional_out],
-                                                 [self.env.additional_inputs, self.env.additional_outputs]):
-            self.assertTrue(label in additional_dict)
-            self.assertTrue(np.equal(additional_dict[label], value).all())
+        self.assertTrue('field' in self.env.additional_fields)
+        self.assertTrue(np.equal(self.env.additional_fields['field'], additional_field).all())

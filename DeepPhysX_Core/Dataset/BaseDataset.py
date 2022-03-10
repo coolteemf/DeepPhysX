@@ -19,7 +19,7 @@ class BaseDataset:
 
         # Data fields containers
         self.data_type = ndarray
-        self.fields: Dict[str, List[str]] = {'IN': ['input'], 'OUT': ['output']}
+        self.fields: List[str] = ['input', 'output']
         self.data: Dict[str, ndarray] = {'input': array([]), 'output': array([])}
         self.shape: Dict[str, Optional[List[int]]] = {'input': None, 'output': None}
 
@@ -40,7 +40,7 @@ class BaseDataset:
         :return: The current number of samples in all partitions
         """
 
-        return max([len(self.data[field]) for field in self.fields['IN'] + self.fields['OUT']])
+        return max([len(self.data[field]) for field in self.fields])
 
     def is_empty(self) -> bool:
         """
@@ -54,7 +54,7 @@ class BaseDataset:
         if not self.__empty:
             return False
         # Check each registered data field
-        for field in self.fields['IN'] + self.fields['OUT']:
+        for field in self.fields:
             # Dataset is considered as non-empty if a field is filled with another sample
             if self.batch_per_field[field] > 1:
                 self.__empty = False
@@ -75,7 +75,7 @@ class BaseDataset:
         # Reshape the data container
         self.data[field] = array([]).reshape((0, *shape))
 
-    def get_data_shape(self, field: str) -> Tuple[int]:
+    def get_data_shape(self, field: str) -> List[int]:
         """
         | Returns the data shape of field.
 
@@ -83,7 +83,7 @@ class BaseDataset:
         :return: Data shape for field
         """
 
-        return tuple(self.shape[field])
+        return self.shape[field]
 
     def init_additional_field(self, field: str, shape: List[int]) -> None:
         """
@@ -94,8 +94,7 @@ class BaseDataset:
         """
 
         # Register the data field
-        side = 'IN' if field[:3] == 'IN_' else 'OUT'
-        self.fields[side].append(field)
+        self.fields.append(field)
         # Init the number of adds in the field
         self.batch_per_field[field] = 0
         # Init the field shape
@@ -107,12 +106,12 @@ class BaseDataset:
         """
 
         # Reinit each data container
-        for field in self.fields['IN'] + self.fields['OUT']:
+        for field in self.fields:
             self.data[field] = array([]) if self.shape[field] is None else array([]).reshape((0, *self.shape[field]))
         # Reinit indexing variables
         self.shuffle_pattern = None
         self.current_sample = 0
-        self.batch_per_field = {field: 0 for field in self.fields['IN'] + self.fields['OUT']}
+        self.batch_per_field = {field: 0 for field in self.fields}
         self.__empty = True
 
     def memory_size(self, field: Optional[str] = None) -> int:
@@ -126,7 +125,7 @@ class BaseDataset:
 
         # Return the total memory size
         if field is None:
-            return sum([self.data[field].nbytes for field in self.fields['IN'] + self.fields['OUT']])
+            return sum([self.data[field].nbytes for field in self.fields])
         # Return the memory size for the specified field
         return self.data[field].nbytes
 
@@ -155,7 +154,7 @@ class BaseDataset:
         self.check_data(field, data)
 
         # Check if field is registered
-        if field not in self.fields['IN'] + self.fields['OUT']:
+        if field not in self.fields:
             # Fields can be register only if Dataset is empty
             if not self.is_empty():
                 raise ValueError(f"[{self.name}] A new field {field} tries to be created as Dataset is non empty. This "
@@ -175,7 +174,7 @@ class BaseDataset:
 
         # Update sample indexing in dataset
         self.batch_per_field[field] += 1
-        self.current_sample = max([len(self.data[f]) for f in self.fields['IN'] + self.fields['OUT']])
+        self.current_sample = max([len(self.data[f]) for f in self.fields])
 
     def save(self, field: str, file: str) -> None:
         """
@@ -199,7 +198,7 @@ class BaseDataset:
         self.check_data(field, data)
 
         # Check if field is registered
-        if field not in self.fields['IN'] + self.fields['OUT']:
+        if field not in self.fields:
             # Add new field if not registered
             self.init_additional_field(field, data[0].shape)
 
@@ -247,8 +246,7 @@ class BaseDataset:
         description = "\n"
         description += f"  {self.name}\n"
         description += f"    Max size: {self.max_size}\n"
-        for side in ['IN', 'OUT']:
-            description += f"    {'in' if side == 'IN' else 'Out'}put data fields: {self.fields[side]}"
-            for field in self.fields[side]:
-                description += f"      {field} shape: {self.shape[field]}"
+        description += f"    Data fields: {self.fields}"
+        for field in self.fields:
+            description += f"      {field} shape: {self.shape[field]}"
         return description

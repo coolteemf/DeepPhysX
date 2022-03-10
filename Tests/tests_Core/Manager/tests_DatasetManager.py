@@ -28,7 +28,6 @@ class TestDatasetManager(TestCase):
         self.assertFalse(False in self.manager.record_data.values())
         self.assertEqual(self.manager.mode, 0)
         self.assertEqual(len(self.manager.partitions_templates), 3)
-        self.assertFalse(False in [len(field) == 1 for field in self.manager.fields.values()])
         self.assertFalse(False in [partitions == [[], [], []] for partitions in self.manager.list_partitions.values()])
         self.assertFalse(False in [idx == 0 for idx in self.manager.idx_partitions])
         self.assertFalse(False in [current is None for current in self.manager.current_partition_path.values()])
@@ -77,16 +76,13 @@ class TestDatasetManager(TestCase):
 
     def test_register_new_fields(self):
         self.manager = DatasetManager(dataset_config=self.data_config, session_dir=os.getcwd())
-        fields = {'IN': ['IN_field1'],
-                  'OUT': ['OUT_field1', 'OUT_field2']}
+        fields = ['IN_field1', 'OUT_field1', 'OUT_field2']
         self.manager.register_new_fields(fields)
         # Check fields
-        self.assertEqual(len(self.manager.fields['IN']), 1 + 1)
-        self.assertEqual(len(self.manager.fields['OUT']), 1 + 2)
-        self.assertFalse(False in [field in self.manager.list_partitions for field in fields['IN'] + fields['OUT']])
-        self.assertFalse(False in [self.manager.list_partitions[field] == [[], [], []] for field in fields['IN'] +
-                                   fields['OUT']])
-        self.assertFalse(False in [self.manager.record_data[field] for field in fields['IN'] + fields['OUT']])
+        self.assertEqual(len(self.manager.fields), 2 + len(fields))
+        self.assertFalse(False in [field in self.manager.list_partitions for field in fields])
+        self.assertFalse(False in [self.manager.list_partitions[field] == [[], [], []] for field in fields])
+        self.assertFalse(False in [self.manager.record_data[field] for field in fields])
 
     def test_load_multiple_dataset(self):
         # Produce a Dataset with several fields and small partition size
@@ -97,8 +93,8 @@ class TestDatasetManager(TestCase):
         for i in range(100):
             data = {'input': input_array[10 * i: 10 * (i + 1)],
                     'output': output_array[10 * i: 10 * (i + 1)],
-                    'dataset_in': {'duplicated_in': duplicated_in[10 * i: 10 * (i + 1)]},
-                    'dataset_out': {'duplicated_out': duplicated_out[10 * i: 10 * (i + 1)]}}
+                    'additional_fields': {'duplicated_in': duplicated_in[10 * i: 10 * (i + 1)],
+                                          'duplicated_out': duplicated_out[10 * i: 10 * (i + 1)]}}
             manager.add_data(data)
         manager.close()
         # Load the multiple partitions
@@ -110,8 +106,8 @@ class TestDatasetManager(TestCase):
             data = self.manager.get_data(get_inputs=True, get_outputs=True, batch_size=10)
             input_get += data['input'].tolist()
             output_get += data['output'].tolist()
-            duplicated_in_get += data['dataset_in']['duplicated_in'].tolist()
-            duplicated_out_get += data['dataset_out']['duplicated_out'].tolist()
+            duplicated_in_get += data['additional_fields']['duplicated_in'].tolist()
+            duplicated_out_get += data['additional_fields']['duplicated_out'].tolist()
         # Check the concatenated batches received
         val = lambda x, y, s: arange(x, y, s).tolist()
         input_expected = val(0, 14, 1) + val(40, 54, 1) + val(80, 87, 1) + val(14, 28, 1) + [54]

@@ -151,29 +151,29 @@ class TcpIpServer(TcpIpObject):
         async_run(self.__request_data_to_clients(get_inputs=get_inputs, get_outputs=get_outputs, animate=animate))
 
         # Sort stored data between following fields
-        data_sorter = {'input': [], 'dataset_in': {}, 'output': [], 'dataset_out': {}, 'loss': []}
+        data_sorter = {'input': [], 'output': [], 'additional_fields': {}, 'loss': []}
+        list_fields = [key for key in data_sorter.keys() if type(data_sorter[key]) == list]
         # Map produced samples with clients ID
         self.sample_to_client_id = []
 
         # Process while queue is empty or batch is full
-        while max([len(data_sorter[k]) for k in data_sorter]) < self.batch_size and not self.data_fifo.empty():
+        while max([len(data_sorter[key]) for key in list_fields]) < self.batch_size and not self.data_fifo.empty():
             # Get data dict from queue
             data = self.data_fifo.get()
             # Network in / out / loss
             for field in ['input', 'output', 'loss']:
                 if field in data:
                     data_sorter[field].append(data[field])
-            # Additional in / out
-            for field in ['dataset_in', 'dataset_out']:
-                if field in data:
-                    for key in data[field]:
-                        if key not in data_sorter[field].keys():
-                            data_sorter[field][key] = []
-                        data_sorter[field][key].append(data[field][key])
+            # Additional fields
+            field = 'additional_fields'
+            if field in data:
+                for key in data[field]:
+                    if key not in data_sorter[field].keys():
+                        data_sorter[field][key] = []
+                    data_sorter[field][key].append(data[field][key])
             # ID of client
             if 'ID' in data:
                 self.sample_to_client_id.append(data['ID'])
-
         return data_sorter
 
     async def __request_data_to_clients(self, get_inputs: bool = True, get_outputs: bool = True,
@@ -232,21 +232,21 @@ class TcpIpServer(TcpIpObject):
                     self.data_dict[client_id][field] = sample
                     # Send network in / out sample
                     await self.send_data(data_to_send=sample, loop=loop, receiver=client)
-            # Pop the first sample of the numpy batch for each additional in / out
-            for field in ['dataset_in', 'dataset_out']:
-                # Tell TcpClient if there is additional data for this field
-                await self.send_data(data_to_send=field in self.batch_from_dataset, loop=loop, receiver=client)
-                if field in self.batch_from_dataset:
-                    sample = {}
-                    # Get each additional data field
-                    for key in self.batch_from_dataset[field]:
-                        # Pop sample from array
-                        sample[key] = self.batch_from_dataset[field][key][0]
-                        self.batch_from_dataset[field][key] = self.batch_from_dataset[field][key][1:]
-                        # Keep the sample in memory
-                        self.data_dict[client_id][field + key] = sample[key]
-                    # Send additional in / out sample
-                    await self.send_dict(name="additional_data", dict_to_send=sample, loop=loop, receiver=client)
+            # Pop the first sample of the numpy batch for each additional dataset field
+            field = 'additional_fields'
+            # Tell TcpClient if there is additional data for this field
+            await self.send_data(data_to_send=field in self.batch_from_dataset, loop=loop, receiver=client)
+            if field in self.batch_from_dataset:
+                sample = {}
+                # Get each additional data field
+                for key in self.batch_from_dataset[field]:
+                    # Pop sample from array
+                    sample[key] = self.batch_from_dataset[field][key][0]
+                    self.batch_from_dataset[field][key] = self.batch_from_dataset[field][key][1:]
+                    # Keep the sample in memory
+                    self.data_dict[client_id][field + '_' + key] = sample[key]
+                # Send additional in / out sample
+                await self.send_dict(name="additional_fields", dict_to_send=sample, loop=loop, receiver=client)
 
         # 2) Execute n steps, the last one send data computation signal
         if animate:
@@ -257,22 +257,21 @@ class TcpIpServer(TcpIpObject):
 
         # 3.1) Add all received in / out data to queue
         data = {}
-        for get_data, net_field, add_field in zip([get_inputs, get_outputs], ['input', 'output'],
-                                                  ['dataset_in', 'dataset_out']):
+        for get_data, net_field in zip([get_inputs, get_outputs], ['input', 'output']):
             if get_data:
                 # Add network field
                 data[net_field] = self.data_dict[client_id][net_field]
-                # Add each additional dataset
-                additional_fields = [key for key in self.data_dict[client_id].keys() if key.__contains__(add_field)]
-                data[add_field] = {}
-                for field in additional_fields:
-                    data[add_field][field[len(add_field):]] = self.data_dict[client_id][field]
         # 3.2) Add loss data if provided
         if 'loss' in self.data_dict[client_id]:
             data['loss'] = self.data_dict[client_id]['loss']
-        # 3.3) Identify sample
+        # 3.3) Add additional fields (transform key from 'dataset_{FIELD}' to '{FIELD}')
+        additional_fields = [key for key in self.data_dict[client_id].keys() if key.__contains__('dataset_')]
+        data['additional_fields'] = {}
+        for field in additional_fields:
+            data['additional_fields'][field[len('dataset_'):]] = self.data_dict[client_id][field]
+        # 3.4) Identify sample
         data['ID'] = client_id
-        # 3.4) Add data to the Queue
+        # 3.5) Add data to the Queue
         self.data_fifo.put(data)
 
     def set_dataset_batch(self, batch: Dict[str, Union[ndarray, Dict]]) -> None:

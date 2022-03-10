@@ -116,10 +116,9 @@ class EnvironmentManager:
         training_data = {'input': array(batch['input']) if get_inputs else array([]),
                          'output': array(batch['output']) if get_outputs else array([])}
         # Convert each additional field
-        for key in ['dataset_in', 'dataset_out']:
-            for field in batch[key]:
-                batch[key][field] = array(batch[key][field])
-            training_data[key] = batch[key]
+        for field in batch['additional_fields']:
+            batch['additional_fields'][field] = array(batch['additional_fields'][field])
+        training_data['additional_fields'] = batch['additional_fields']
         # Convert loss data
         if 'loss' in batch and len(batch['loss']) != 0:
             training_data['loss'] = array(batch['loss'])
@@ -154,22 +153,13 @@ class EnvironmentManager:
                 # Extract a sample from dataset batch: output
                 self.environment.sample_out = self.dataset_batch['output'][0]
                 self.dataset_batch['output'] = self.dataset_batch['output'][1:]
-                # Extract a sample from dataset batch: additional input
-                additional_in = None
-                if 'dataset_in' in self.dataset_batch:
-                    additional_in = {}
-                    for field in self.dataset_batch['dataset_in']:
-                        additional_in[field] = self.dataset_batch['dataset_in'][field][0]
-                        self.dataset_batch['dataset_in'][field] = self.dataset_batch['dataset_in'][field][1:]
-                self.environment.additional_inputs = additional_in
-                # Extract a sample from dataset batch: additional output
-                additional_out = None
-                if 'dataset_out' in self.dataset_batch:
-                    additional_out = {}
-                    for field in self.dataset_batch['dataset_out']:
-                        additional_out[field] = self.dataset_batch['dataset_out'][field][0]
-                        self.dataset_batch['dataset_out'][field] = self.dataset_batch['dataset_out'][field][1:]
-                self.environment.additional_outputs = additional_out
+                # Extract a sample from dataset batch: additional fields
+                additional_fields = {}
+                if 'additional_fields' in self.dataset_batch:
+                    for field in self.dataset_batch['additional_fields']:
+                        additional_fields[field] = self.dataset_batch['additional_fields'][field][0]
+                        self.dataset_batch['additional_fields'][field] = self.dataset_batch['additional_fields'][field][1:]
+                self.environment.additional_fields = additional_fields
 
             # 1.2 Run the defined number of step
             if animate:
@@ -194,29 +184,20 @@ class EnvironmentManager:
                         training_data['loss'] = []
                     training_data['loss'].append(self.environment.loss_data)
                     self.environment.loss_data = None
-                # Check if there is additional input data fields
-                if self.environment.additional_inputs != {}:
-                    if 'dataset_in' not in training_data:
-                        training_data['dataset_in'] = {}
-                    for field in self.environment.additional_inputs:
-                        if field not in training_data['dataset_in']:
-                            training_data['dataset_in'][field] = []
-                        training_data['dataset_in'][field].append(self.environment.additional_inputs[field])
-                    self.environment.additional_inputs = {}
-                # Check if there is additional output data fields
-                if self.environment.additional_outputs != {}:
-                    if 'dataset_out' not in training_data:
-                        training_data['dataset_out'] = {}
-                    for field in self.environment.additional_outputs:
-                        if field not in training_data['dataset_out']:
-                            training_data['dataset_out'][field] = []
-                        training_data['dataset_out'][field].append(self.environment.additional_outputs[field])
-                    self.environment.additional_outputs = {}
+                # Check if there is additional dataset fields
+                if self.environment.additional_fields != {}:
+                    if 'additional_fields' not in training_data:
+                        training_data['additional_fields'] = {}
+                    for field in self.environment.additional_fields:
+                        if field not in training_data['additional_fields']:
+                            training_data['additional_fields'][field] = []
+                        training_data['additional_fields'][field].append(self.environment.additional_fields[field])
+                    self.environment.additional_fields = {}
 
         # 2. Convert data in ndarray
         for key in training_data:
             # If key does not contain a dict, convert value directly
-            if key not in ['dataset_in', 'dataset_out']:
+            if key != 'additional_fields':
                 training_data[key] = array(training_data[key])
             # If key contains a dict, convert item by item
             else:

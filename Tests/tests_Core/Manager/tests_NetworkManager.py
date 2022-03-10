@@ -1,8 +1,11 @@
 from unittest import TestCase
-import os
 import shutil
 from numpy import array, arange, load
 from numpy.random import shuffle
+import os
+import sys
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
 
 from DeepPhysX_Core.Manager.NetworkManager import NetworkManager
 

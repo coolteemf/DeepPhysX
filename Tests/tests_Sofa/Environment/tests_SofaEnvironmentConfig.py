@@ -13,15 +13,15 @@ class TestSofaEnvironmentConfig(TestCase):
     def test_init(self):
         # TypeError
         with self.assertRaises(TypeError):
-            SofaEnvironmentConfig(simulations_per_step="0")
-            SofaEnvironmentConfig(max_wrong_samples_per_step="0")
-            SofaEnvironmentConfig(always_create_data="0")
-            SofaEnvironmentConfig(number_of_thread="0")
+            SofaEnvironmentConfig(environment_class=Env.TestEnvironment, simulations_per_step="0")
+            SofaEnvironmentConfig(environment_class=Env.TestEnvironment, max_wrong_samples_per_step="0")
+            SofaEnvironmentConfig(environment_class=Env.TestEnvironment, always_create_data="0")
+            SofaEnvironmentConfig(environment_class=Env.TestEnvironment, number_of_thread="0")
         # ValueError
         with self.assertRaises(ValueError):
-            SofaEnvironmentConfig(simulations_per_step=0)
-            SofaEnvironmentConfig(max_wrong_samples_per_step=0)
-            SofaEnvironmentConfig(number_of_thread=-1)
+            SofaEnvironmentConfig(environment_class=Env.TestEnvironment, simulations_per_step=0)
+            SofaEnvironmentConfig(environment_class=Env.TestEnvironment, max_wrong_samples_per_step=0)
+            SofaEnvironmentConfig(environment_class=Env.TestEnvironment, number_of_thread=-1)
         # Default values
         environment_config = SofaEnvironmentConfig(environment_class=Env.TestEnvironment)
         # TcpIpClient values

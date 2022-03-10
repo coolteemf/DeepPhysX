@@ -170,16 +170,11 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
         if self.loss_data:
             await self.send_labeled_data(data_to_send=self.loss_data, label='loss', loop=loop, receiver=receiver)
             self.loss_data = None
-        # Send additional input data
-        for key in self.additional_inputs.keys():
-            await self.send_labeled_data(data_to_send=self.additional_inputs[key], label='dataset_in' + key,
+        # Send additional dataset fields
+        for key in self.additional_fields.keys():
+            await self.send_labeled_data(data_to_send=self.additional_fields[key], label='dataset_' + key,
                                          loop=loop, receiver=receiver)
-        self.additional_inputs = {}
-        # Send additional output data
-        for key in self.additional_outputs.keys():
-            await self.send_labeled_data(data_to_send=self.additional_outputs[key], label='dataset_out' + key,
-                                         loop=loop, receiver=receiver)
-        self.additional_outputs = {}
+        self.additional_fields = {}
 
     def send_prediction_data(self, network_input: ndarray, receiver: socket = None) -> ndarray:
         """
@@ -289,17 +284,13 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
         if await self.receive_data(loop=loop, sender=sender):
             self.sample_out = await self.receive_data(loop=loop, sender=sender)
 
-        additional_in, additional_out = {}, {}
+        additional_fields = {}
         # Receive additional input sample if there are any
         if await self.receive_data(loop=loop, sender=sender):
-            await self.receive_dict(recv_to=additional_in, loop=loop, sender=sender)
-        # Receive additional output sample if there are any
-        if await self.receive_data(loop=loop, sender=sender):
-            await self.receive_dict(recv_to=additional_out, loop=loop, sender=sender)
+            await self.receive_dict(recv_to=additional_fields, loop=loop, sender=sender)
 
         # Set the samples from Dataset
-        self.additional_inputs = additional_in.get('additional_data', {})
-        self.additional_outputs = additional_out.get('additional_data', {})
+        self.additional_fields = additional_fields.get('additional_fields', {})
 
     async def action_on_step(self, data: ndarray, client_id: int, sender: socket, loop: EventLoop) -> None:
         """

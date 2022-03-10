@@ -1,11 +1,15 @@
 from unittest import TestCase
 from numpy import array, equal, sort
+import os
+import sys
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
 
 from DeepPhysX_Core.Manager.EnvironmentManager import EnvironmentManager
 from DeepPhysX_Core.Environment.BaseEnvironmentConfig import BaseEnvironmentConfig
 from DeepPhysX_Core.AsyncSocket.TcpIpServer import TcpIpServer
 
-from TestEnvironment import TestEnvironment
+from .TestEnvironment import TestEnvironment
 
 
 class TestEnvironmentManager(TestCase):
@@ -59,13 +63,12 @@ class TestEnvironmentManager(TestCase):
         # Check loss
         self.assertTrue('loss' in data)
         self.assertTrue(equal(data['loss'].squeeze(), pair).all())
-        # Check additional input
-        self.assertTrue('dataset_in' in data)
-        self.assertTrue('step' in data['dataset_in'] and equal(data['dataset_in']['step'].squeeze(), pair).all())
-        # Check additional input
-        self.assertTrue('dataset_out' in data)
-        self.assertTrue('step_1' in data['dataset_out'] and equal(data['dataset_out']['step_1'].squeeze(), pair).all())
-        self.assertTrue('step_2' in data['dataset_out'] and equal(data['dataset_out']['step_2'].squeeze(), pair).all())
+        # Check additional fields
+        self.assertTrue('additional_fields' in data)
+        self.assertTrue('step' in data['additional_fields'] and
+                        equal(data['additional_fields']['step'].squeeze(), pair).all())
+        self.assertTrue('step_1' in data['additional_fields'] and
+                        equal(data['additional_fields']['step_1'].squeeze(), pair).all())
 
     def test_get_data_tcp_ip(self):
         self.manager = EnvironmentManager(environment_config=self.env_config_tcp_ip, batch_size=5)
@@ -80,13 +83,12 @@ class TestEnvironmentManager(TestCase):
         # Check loss
         self.assertTrue('loss' in data)
         self.assertTrue(equal(data['loss'].squeeze(), pair).all())
-        # Check additional input
-        self.assertTrue('dataset_in' in data)
-        self.assertTrue('step' in data['dataset_in'] and equal(data['dataset_in']['step'].squeeze(), pair).all())
-        # Check additional input
-        self.assertTrue('dataset_out' in data)
-        self.assertTrue('step_1' in data['dataset_out'] and equal(data['dataset_out']['step_1'].squeeze(), pair).all())
-        self.assertTrue('step_2' in data['dataset_out'] and equal(data['dataset_out']['step_2'].squeeze(), pair).all())
+        # Check additional fields
+        self.assertTrue('additional_fields' in data)
+        self.assertTrue('step' in data['additional_fields'] and
+                        equal(data['additional_fields']['step'].squeeze(), pair).all())
+        self.assertTrue('step_1' in data['additional_fields'] and
+                        equal(data['additional_fields']['step_1'].squeeze(), pair).all())
 
     def test_dispatch_batch_single(self):
         self.manager = EnvironmentManager(environment_config=self.env_config_single, batch_size=5)
@@ -97,10 +99,8 @@ class TestEnvironmentManager(TestCase):
         self.assertTrue(equal(2 * data['input'], data_['input']).all())
         self.assertTrue(equal(2 * data['output'], data_['output']).all())
         # Check additional fields received
-        self.assertEqual(list(data_['dataset_in'].keys()), ['full'])
-        self.assertFalse(False in data_['dataset_in']['full'])
-        self.assertEqual(list(data_['dataset_out'].keys()), ['full'])
-        self.assertFalse(False in data_['dataset_out']['full'])
+        self.assertEqual(list(data_['additional_fields'].keys()), ['full'])
+        self.assertFalse(False in data_['additional_fields']['full'])
 
     def test_dispatch_batch_tcp_ip(self):
         self.manager = EnvironmentManager(environment_config=self.env_config_tcp_ip, batch_size=5)
@@ -110,5 +110,4 @@ class TestEnvironmentManager(TestCase):
         # Check input / output
         self.assertTrue(equal(2 * sort(data['input'].squeeze()), sort(data_['input'].squeeze())).all())
         # Check additional fields received
-        self.assertFalse(False in data_['dataset_in']['full'])
-        self.assertFalse(False in data_['dataset_out']['full'])
+        self.assertFalse(False in data_['additional_fields']['full'])

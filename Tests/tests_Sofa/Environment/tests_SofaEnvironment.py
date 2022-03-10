@@ -21,7 +21,7 @@ class TestSofaEnvironment(TestCase):
             self.assertEqual(attribute, None)
         for attribute in [self.env.loss_data, self.env.environment_manager]:
             self.assertEqual(attribute, None)
-        for attribute in [self.env.additional_inputs, self.env.additional_outputs]:
+        for attribute in [self.env.additional_fields]:
             self.assertEqual(attribute, {})
         self.assertIsInstance(self.env.root, Sofa.Core.Node)
 

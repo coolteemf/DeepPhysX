@@ -1,4 +1,7 @@
 from unittest import TestCase
+import os
+import sys
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from DeepPhysX_Core.Environment.BaseEnvironmentConfig import BaseEnvironmentConfig
 import TestEnvironment as Env
@@ -12,15 +15,15 @@ class TestBaseEnvironmentConfig(TestCase):
     def test_init(self):
         # TypeError
         with self.assertRaises(TypeError):
-            BaseEnvironmentConfig(simulations_per_step="0")
-            BaseEnvironmentConfig(max_wrong_samples_per_step="0")
-            BaseEnvironmentConfig(always_create_data="0")
-            BaseEnvironmentConfig(number_of_thread="0")
+            BaseEnvironmentConfig(environment_class=Env.TestEnvironment, simulations_per_step="0")
+            BaseEnvironmentConfig(environment_class=Env.TestEnvironment, max_wrong_samples_per_step="0")
+            BaseEnvironmentConfig(environment_class=Env.TestEnvironment, always_create_data="0")
+            BaseEnvironmentConfig(environment_class=Env.TestEnvironment, number_of_thread="0")
         # ValueError
         with self.assertRaises(ValueError):
-            BaseEnvironmentConfig(simulations_per_step=0)
-            BaseEnvironmentConfig(max_wrong_samples_per_step=0)
-            BaseEnvironmentConfig(number_of_thread=-1)
+            BaseEnvironmentConfig(environment_class=Env.TestEnvironment, simulations_per_step=0)
+            BaseEnvironmentConfig(environment_class=Env.TestEnvironment, max_wrong_samples_per_step=0)
+            BaseEnvironmentConfig(environment_class=Env.TestEnvironment, number_of_thread=-1)
         # Default values
         environment_config = BaseEnvironmentConfig(environment_class=Env.TestEnvironment)
         # TcpIpClient values
