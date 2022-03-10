@@ -58,13 +58,10 @@ implement its *Environment* regardless of this dependence.
 :``set_loss_data``: This method allows adding specific data to compute the loss function with numeric values from the
                     simulation.
 
-:``additional_in_dataset``: In addition to the training data, some additional data can be sent directly to the dataset
-                            to replay some simulation states.
-                            This method adds a new field to the *Dataset* considered as input data.
-                            If used, this method must be called at each step.
-
-:``additional_out_dataset``: In the same way, new fields considered as outputs can be created in the *Dataset*.
-                             If used, this method must be called at each step too.
+:``set_additional_dataset``: In addition to the training data, some additional data can be sent directly to the dataset
+                             to replay some simulation states.
+                             This method adds a new field to the *Dataset*.
+                             If used, this method must be called at each step.
 
 :``set_dataset_sample``: This method is already implemented and must not be overwritten by the user.
                          Depending on the application, when reloading existing data the *DataManager* might need to send
