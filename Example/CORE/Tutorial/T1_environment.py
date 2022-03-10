@@ -38,7 +38,7 @@ class DummyEnvironment(BaseEnvironment):
        - create: Create the Environment
        - init: Initialize the Environment if required
        - send_parameters: Same as recv_parameters, Environment can send back a set of parameters if required
-       - send_visualization: Send initial visualization data (see Example/CORE/Components to add visualization data)
+       - send_visualization: Send initial visualization data (see Example/CORE/Features to add visualization data)
     """
 
     # Optional
@@ -63,7 +63,7 @@ class DummyEnvironment(BaseEnvironment):
 
     # Optional
     def send_visualization(self):
-        # Nothing to visualize (see Example/CORE/Components to add visualization data)
+        # Nothing to visualize (see Example/CORE/Features to add visualization data)
         return {}
 
     """
@@ -74,7 +74,7 @@ class DummyEnvironment(BaseEnvironment):
        - close: Shutdown procedure when data producer is no longer used
      Some requests can be performed here:
        - get_prediction: Get an online prediction from an input array
-       - update_visualization: Send updated visualization data (see Example/CORE/Components to update viewer data)
+       - update_visualization: Send updated visualization data (see Example/CORE/Features to update viewer data)
     """
 
     # MANDATORY
@@ -85,8 +85,7 @@ class DummyEnvironment(BaseEnvironment):
         self.nb_step += self.increment
         # Other data fields can be filled:
         #   - set_loss_data: Define an additional data to compute loss value (see Optimization.transform_loss)
-        #   - set_additional_in_dataset: Add a field to the dataset considered as input
-        #   - set_additional_out_dataset: Add a field to the Dataset considered as output
+        #   - set_additional_dataset: Add a field to the dataset
 
     # Optional
     def check_sample(self, check_input=True, check_output=True):

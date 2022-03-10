@@ -7,7 +7,7 @@ Launch a training session and Dataset production simultaneously.
 from DeepPhysX_Core.Pipelines.BaseTrainer import BaseTrainer
 
 # Tutorial related imports
-from Configuration import env_config, net_config, dataset_config
+from T3_configuration import env_config, net_config, dataset_config
 
 
 def main():
