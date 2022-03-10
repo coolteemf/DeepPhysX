@@ -37,30 +37,27 @@ class TestBaseDataset(TestCase):
         # Adding first batch
         data_in = np.zeros((10, 2, 1))
         data_out = np.ones((10, 2, 1))
-        data_new_in = np.empty((10, 2, 1))
-        data_new_out = np.empty((10, 2, 1))
-        for field, data in zip(['input', 'output', 'IN_new', 'OUT_new'],
-                               [data_in, data_out, data_new_in, data_new_out]):
+        data_new = np.empty((10, 2, 1))
+        for field, data in zip(['input', 'output', 'new'], [data_in, data_out, data_new]):
             self.dataset.add(field, data)
             self.assertTrue((self.dataset.data[field] == data).all())
         self.assertEqual(self.dataset.is_empty(), True)
         self.assertEqual(self.dataset.current_sample, 10)
-        self.assertEqual(self.dataset.fields, {'IN': ['input', 'IN_new'], 'OUT': ['output', 'OUT_new']})
-        for field in ['input', 'output', 'IN_new']:
+        self.assertEqual(self.dataset.fields, ['input', 'output', 'new'])
+        for field in ['input', 'output', 'new']:
             self.assertEqual(self.dataset.batch_per_field[field], 1)
             self.assertEqual(self.dataset.shape[field], (2, 1))
         # Adding following batches
-        for field, data in zip(['input', 'output', 'IN_new', 'OUT_new'],
-                               [data_in, data_out, data_new_in, data_new_out]):
+        for field, data in zip(['input', 'output', 'new'], [data_in, data_out, data_new]):
             self.dataset.add(field, data)
             self.assertTrue((self.dataset.data[field] == np.concatenate((data, data))).all())
         self.assertEqual(self.dataset.is_empty(), False)
         self.assertEqual(self.dataset.current_sample, 20)
-        for field in ['input', 'output', 'IN_new']:
+        for field in ['input', 'output', 'new']:
             self.assertEqual(self.dataset.batch_per_field[field], 2)
         # Adding new field too late
         with self.assertRaises(ValueError):
-            self.dataset.add('new', data_new_in)
+            self.dataset.add('field', data_new)
 
     def test_set(self):
         # TypeError
@@ -70,16 +67,14 @@ class TestBaseDataset(TestCase):
         # Adding first batch
         data_in = np.zeros((20, 2, 1))
         data_out = np.ones((20, 2, 1))
-        data_new_in = np.empty((20, 2, 1))
-        data_new_out = np.empty((20, 2, 1))
-        for field, data in zip(['input', 'output', 'IN_new', 'OUT_new'],
-                               [data_in, data_out, data_new_in, data_new_out]):
+        data_new = np.empty((20, 2, 1))
+        for field, data in zip(['input', 'output', 'new'], [data_in, data_out, data_new]):
             self.dataset.set(field, data)
             self.assertTrue((self.dataset.data[field] == data).all())
         self.assertEqual(self.dataset.is_empty(), False)
         self.assertEqual(self.dataset.current_sample, 0)
-        self.assertEqual(self.dataset.fields, {'IN': ['input', 'IN_new'], 'OUT': ['output', 'OUT_new']})
-        for field in ['input', 'output', 'IN_new']:
+        self.assertEqual(self.dataset.fields, ['input', 'output', 'new'])
+        for field in ['input', 'output', 'new']:
             self.assertEqual(self.dataset.shape[field], (2, 1))
 
     def test_get(self):
@@ -167,10 +162,9 @@ class TestBaseDataset(TestCase):
 
     def test_init_additional_field(self):
         data = np.empty((10, 2, 1))
-        for field, side, default in zip(['IN_new', 'OUT_new'], ['IN', 'OUT'], ['input', 'output']):
-            self.dataset.init_additional_field(field, data[0].shape)
-            self.assertEqual(self.dataset.fields[side], [default, field])
-            self.assertTrue(field in self.dataset.batch_per_field)
-            self.assertTrue(field in self.dataset.data)
+        self.dataset.init_additional_field('field', data[0].shape)
+        self.assertEqual(self.dataset.fields, ['input', 'output', 'field'])
+        self.assertTrue('field' in self.dataset.batch_per_field)
+        self.assertTrue('field' in self.dataset.data)
 
 

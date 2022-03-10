@@ -31,19 +31,16 @@ class TestEnvironment(BaseEnvironment):
             self.set_training_data(input_array=my_input,
                                    output_array=self.truth(my_input))
             self.set_loss_data(self.idx_step)
-            self.set_additional_in_dataset('step', self.idx_step)
-            self.set_additional_out_dataset('step_1', self.idx_step)
-            self.set_additional_out_dataset('step_2', self.idx_step)
+            self.set_additional_dataset('step', array([self.idx_step]))
+            self.set_additional_dataset('step_1', array([self.idx_step]))
         # With dataset sample
         else:
             self.set_training_data(input_array=self.sample_in * 2,
                                    output_array=self.sample_out * 2)
-            full_in_dataset = 'step' in self.additional_inputs
-            full_out_dataset = 'step_1' in self.additional_outputs and 'step_2' in self.additional_outputs
+            full_dataset = 'step' in self.additional_fields and 'step_1' in self.additional_fields
             self.set_loss_data(100)
             self.reset_additional_datasets()
-            self.set_additional_in_dataset('full', full_in_dataset)
-            self.set_additional_out_dataset('full', full_out_dataset)
+            self.set_additional_dataset('full', array([full_dataset]))
 
     def check_sample(self, check_input=True, check_output=True):
         return self.idx_step % 2 == 0 if not (self.sample_in or self.sample_out) else True

@@ -62,6 +62,7 @@ class DatasetManager:
         self.shuffle_dataset: bool = dataset_config.shuffle_dataset
         self.record_data: Dict[str, bool] = record_data if record_data is not None else {'input': True, 'output': True}
         self.first_add: bool = True
+        self.__writing: bool = False
 
         # Dataset modes
         self.modes: Dict[str, int] = {'Training': 0, 'Validation': 1, 'Running': 2}
@@ -72,7 +73,7 @@ class DatasetManager:
         self.partitions_templates: Tuple[str, str, str] = (session_name + '_training_{}_{}.npy',
                                                            session_name + '_validation_{}_{}.npy',
                                                            session_name + '_running_{}_{}.npy')
-        self.fields: Dict[str, List[str]] = {'IN': ['input'], 'OUT': ['output']}
+        self.fields: List[str] = ['input', 'output']
         self.list_partitions: Dict[str, Optional[List[List[ndarray]]]] = {
             'input': [[], [], []] if self.record_data['input'] else None,
             'output': [[], [], []] if self.record_data['output'] else None}
@@ -80,7 +81,7 @@ class DatasetManager:
         self.current_partition_path: Dict[str, Optional[str]] = {'input': None, 'output': None}
 
         # Dataset loading with multiple partitions variables
-        self.mul_part_list_path: Optional[Dict[int, Dict[str, List[str]]]] = None
+        self.mul_part_list_path: Optional[List[Dict[str, str]]] = None
         self.mul_part_slices: Optional[List[List[int]]] = None
         self.mul_part_idx: Optional[int] = None
 
@@ -147,11 +148,9 @@ class DatasetManager:
 
         # 1. If first add, create first partitions
         if self.first_add:
-            new_fields = {}
-            for side, key in zip(['IN', 'OUT'], ['dataset_in', 'dataset_out']):
-                if key in data:
-                    new_fields[side] = [f'{side}_{field}' for field in data[key].keys()]
-            self.register_new_fields(new_fields)
+            self.__writing = True
+            if 'additional_fields' in data:
+                self.register_new_fields(list(data['additional_fields'].keys()))
             self.create_partitions()
 
         # 2. Add network data
@@ -161,23 +160,17 @@ class DatasetManager:
 
         # 3. Add additional data
         # 3.1 If there is additional data, convert field names then add each field
-        if 'dataset_in' in data.keys() or 'dataset_out' in data.keys():
-            for side, key in zip(['IN', 'OUT'], ['dataset_in', 'dataset_out']):
-                additional_data = {}
-                if key in data:
-                    additional_data = {f'{side}_{field}': data[key][field] for field in data[key].keys()}
-                # Check all registered fields are in additional data
-                for field in self.fields[side][1:]:
-                    if field not in additional_data:
-                        raise ValueError(f"[{self.name}] No data received for the additional field {field}.")
-                # Add each field to dataset
-                for field in additional_data:
-                    self.dataset.add(field, additional_data[field], self.current_partition_path[field])
+        if 'additional_fields' in data.keys():
+            # Check all registered are in additional data
+            for field in self.fields[2:]:
+                if field not in data['additional_fields']:
+                    raise ValueError(f"[{self.name}] No data received for the additional field {field}.")
+            # Add each field to the dataset
+            for field in data['additional_fields']:
+                self.dataset.add(field, data['additional_fields'][field], self.current_partition_path[field])
         # 3.2 If there is no additional data but registered additional data
-        elif 'dataset_in' not in data.keys() and len(self.fields['IN']) > 1:
-            raise ValueError(f"[{self.name}] No data received for the additional fields {self.fields['IN']}")
-        elif 'dataset_out' not in data.keys() and len(self.fields['OUT']) > 1:
-            raise ValueError(f"[{self.name}] No data received for the additional fields {self.fields['OUT']}")
+        elif 'additional_fields' not in data.keys() and len(self.fields) > 2:
+            raise ValueError(f"[{self.name}] No data received for the additional fields {self.fields[:2]}")
 
         # 4. Update json file
         self.update_json(update_nb_samples=True)
@@ -205,6 +198,9 @@ class DatasetManager:
         :return: Dict of format {'input':numpy.ndarray, 'output':numpy.ndarray} filled with desired data
         """
 
+        # Do not allow overwriting partitions
+        self.__writing = False
+
         # 1. Check if a dataset is loaded and if the current sample is not the last
         if self.current_partition_path['input'] is None or self.dataset.current_sample >= self.dataset.nb_samples:
             # if not force_partition_reload:
@@ -218,10 +214,11 @@ class DatasetManager:
         idx = self.dataset.current_sample
         self.dataset.current_sample += batch_size
 
-        # 3. Get a batch of each data field if input / output sides are required
+        # 3. Get a batch of each data field
         data = {}
-        fields = self.fields['IN'][:] if get_inputs else []
-        fields += self.fields['OUT'][:] if get_outputs else []
+        fields = self.fields[2:]
+        fields += ['input'] if get_inputs else []
+        fields += ['output'] if get_outputs else []
         for field in fields:
             # Network input and output fields
             if field in ['input', 'output']:
@@ -230,24 +227,21 @@ class DatasetManager:
                     data[field] = squeeze(data[field], axis=0)
             # Additional data fields
             else:
-                side = 'dataset_in' if field[:3] == 'IN_' else 'dataset_out'
-                if side not in data.keys():
-                    data[side] = {}
-                user_field = field[3:] if side == 'dataset_in' else field[4:]
-                data[side][user_field] = self.dataset.get(field, idx, idx + batch_size)
+                if 'additional_fields' not in data.keys():
+                    data['additional_fields'] = {}
+                data['additional_fields'][field] = self.dataset.get(field, idx, idx + batch_size)
                 if not batched:
-                    data[side][user_field] = squeeze(data[side][user_field], axis=0)
+                    data['additional_fields'][field] = squeeze(data['additional_fields'][field], axis=0)
 
         # 4. Ensure each field received the same batch size
         if data['input'].shape[0] != data['output'].shape[0]:
             raise ValueError(f"[{self.name}] Size of loaded batch mismatch for input and output "
                              f"(in: {data['input'].shape} / out: {data['output'].shape}")
-        for data_side in ['dataset_in', 'dataset_out']:
-            if data_side in data.keys():
-                for field in data[data_side].keys():
-                    if data[data_side][field].shape[0] != data['input'].shape[0]:
-                        raise ValueError(f"[{self.name}] Size of loaded batch mismatch for {data_side} field {field} "
-                                         f"(net: {data['input'].shape} / {field}: {data[data_side][field].shape}")
+        if 'additional_data' in data.keys():
+            for field in data['additional_fields'].keys():
+                if data['additional_fields'][field].shape[0] != data['input'].shape[0]:
+                    raise ValueError(f"[{self.name}] Size of loaded batch mismatch for additional field {field} "
+                                     f"(net: {data['input'].shape} / {field}: {data['additional_fields'][field].shape}")
 
         # 5. Ensure the batch has the good size, otherwise load new data to complete it
         if data['input'].shape[0] < batch_size:
@@ -262,35 +256,31 @@ class DatasetManager:
             # Merge fields
             for field in ['input', 'output']:
                 data[field] = concatenate((data[field], missing_data[field]))
-            for side in ['dataset_in', 'dataset_out']:
-                if side in data.keys():
-                    for field in data[side].keys():
-                        data[side][field] = concatenate((data[side][field], missing_data[side][field]))
+            if 'additional_fields' in data.keys():
+                for field in data['additional_fields'].keys():
+                    data['additional_fields'][field] = concatenate((data['additional_fields'][field],
+                                                                    missing_data['additional_fields'][field]))
         return data
 
-    def register_new_fields(self, new_fields: Dict[str, List[str]]) -> None:
+    def register_new_fields(self, new_fields: List[str]) -> None:
         """
         | Add new data fields in the dataset.
 
-        :param Dict[str, List[str]] new_fields: Name of the new fields split in either 'IN' side or 'OUT' side of the
-                                                dataset
+        :param List[str] new_fields: Name of the new fields split in either 'IN' side or 'OUT' side of the dataset
         """
 
-        for side in ['IN', 'OUT']:
-            if side in new_fields:
-                for field in new_fields[side]:
-                    self.register_new_field(side, field)
+        for field in new_fields:
+            self.register_new_field(field)
 
-    def register_new_field(self, side: str, new_field: str) -> None:
+    def register_new_field(self, new_field: str) -> None:
         """
         | Add a new data field in the dataset.
 
-        :param str side: Either 'IN' or 'OUT' side of the Dataset.
         :param str new_field: Name of the new field.
         """
 
-        if new_field not in self.fields[side]:
-            self.fields[side].append(new_field)
+        if new_field not in self.fields:
+            self.fields.append(new_field)
             self.list_partitions[new_field] = [[], [], []]
             self.record_data[new_field] = True
 
@@ -300,14 +290,18 @@ class DatasetManager:
         """
 
         print(f"[{self.name}] New partitions added for each field with max size ~{float(self.max_size) / 1e9}Gb.")
-        for side in self.fields:
-            for field in self.fields[side]:
-                if self.record_data[field]:
-                    name = side if field in ['input', 'output'] else field
-                    partition_path = self.partitions_templates[self.mode].format(name,
-                                                                                 self.idx_partitions[self.mode])
-                    self.list_partitions[field][self.mode].append(partition_path)
-                    self.current_partition_path[field] = self.dataset_dir + partition_path
+        for field in self.fields:
+            if self.record_data[field]:
+                # Fill partition name template
+                if field in ['input', 'output']:
+                    name = 'IN' if field == 'input' else 'OUT'
+                else:
+                    name = 'ADD_' + field
+                partition_path = self.partitions_templates[self.mode].format(name, self.idx_partitions[self.mode])
+                # Make it current partition
+                self.list_partitions[field][self.mode].append(partition_path)
+                self.current_partition_path[field] = self.dataset_dir + partition_path
+        # Index partitions
         self.idx_partitions[self.mode] += 1
 
     def create_running_partitions(self) -> None:
@@ -350,16 +344,14 @@ class DatasetManager:
             # 3.1. Get sorted partitions
             partitions_dict = self.json_dict['partitions'][mode] if self.json_found else self.search_partitions(mode)
             # 3.2. Register additional fields
-            for side in ['IN', 'OUT']:
-                for field in partitions_dict:
-                    if field.__contains__(side):
-                        self.register_new_field(side, field)
+            for field in partitions_dict:
+                self.register_new_field(field)
             # 3.3. Register each partition
             for field in partitions_dict:
                 self.list_partitions[field][self.modes[mode]] = partitions_dict[field]
             # 3.4. Check that the number of partitions is the same for each field
-            number_of_partitions = len(self.list_partitions[self.fields['IN'][0]][self.modes[mode]])
-            for field in self.fields['IN'] + self.fields['OUT']:
+            number_of_partitions = len(self.list_partitions[self.fields[0]][self.modes[mode]])
+            for field in self.fields:
                 if len(self.list_partitions[field][self.modes[mode]]) != number_of_partitions:
                     raise ValueError(f"[{self.name}] The number of partitions is different for {field} with "
                                      f"{len(self.list_partitions[field][self.modes[mode]])} partitions found.")
@@ -387,21 +379,23 @@ class DatasetManager:
         partitions_list = [f for f in listdir(self.dataset_dir) if isfile(osPathJoin(self.dataset_dir, f))
                            and f.endswith('.npy') and f.__contains__(mode.lower())]
 
-        # 2. Sort partitions by side (IN, OUT) and by name
+        # 2. Sort partitions by side (IN, OUT, ADD) and by name
         in_partitions = sorted([file for file in partitions_list if file.__contains__('_IN_')])
         out_partitions = sorted([file for file in partitions_list if file.__contains__('_OUT_')])
+        add_partitions = sorted([file for file in partitions_list if file.__contains__('_ADD_')])
 
         # 3. Sort partitions by data field
-        for side, partitions, net_field in zip(['IN', 'OUT'], [in_partitions, out_partitions], ['input', 'output']):
+        for side, partitions, field_name in zip(['IN', 'OUT', 'ADD'], [in_partitions, out_partitions, add_partitions],
+                                                ['input', 'output', '']):
             for partition in partitions:
                 # Extract information from the filenames
                 split_name = partition.split('_')
                 clues = split_name[split_name.index(side):]
                 # Partition name for network data: {NAME_OF_SESSION}_SIDE_IDX.npy
                 if len(clues) == 2:
-                    if net_field not in partitions_dict.keys():
-                        partitions_dict[net_field] = []
-                    partitions_dict[net_field].append(partition)
+                    if field_name not in partitions_dict.keys():
+                        partitions_dict[field_name] = []
+                    partitions_dict[field_name].append(partition)
                 # Partition name for additional data: {NAME_OF_SESSION}_SIDE_{NAME_OF_FIELD}_IDX.npy
                 else:
                     field_name = '_'.join(clues[:-1])
@@ -417,9 +411,9 @@ class DatasetManager:
         """
 
         # 1. Get the shape of each partition
-        partition_shapes = [{field: [] for field in self.fields['IN'] + self.fields['OUT']} for _ in self.modes]
+        partition_shapes = [{field: [] for field in self.fields} for _ in self.modes]
         for mode in self.modes:
-            for field in self.fields['IN'] + self.fields['OUT']:
+            for field in self.fields:
                 for partition in [self.dataset_dir + path for path in self.list_partitions[field][self.modes[mode]]]:
                     partition_data = load(partition)
                     partition_shapes[self.modes[mode]][field].append(partition_data.shape)
@@ -428,7 +422,7 @@ class DatasetManager:
         # 2. Get the number of samples per partition for each mode
         for mode in self.modes:
             number_of_samples = {}
-            for field in self.fields['IN'] + self.fields['OUT']:
+            for field in self.fields:
                 number_of_samples[field] = [shape[0] for shape in partition_shapes[self.modes[mode]][field]]
                 # Number of samples through partitions must be the same along fields
                 if number_of_samples[field] != list(number_of_samples.values())[0]:
@@ -438,9 +432,9 @@ class DatasetManager:
             self.json_dict['nb_samples'][mode] = list(number_of_samples.values())[0]
 
         # 3. Get the data shape for each field
-        data_shape = {field: [] for field in self.fields['IN'] + self.fields['OUT']}
+        data_shape = {field: [] for field in self.fields}
         for mode in self.modes:
-            for field in self.fields['IN'] + self.fields['OUT']:
+            for field in self.fields:
                 for i, shape in enumerate(partition_shapes[self.modes[mode]][field]):
                     if len(data_shape[field]) == 0:
                         data_shape[field] = shape[1:]
@@ -489,7 +483,7 @@ class DatasetManager:
         | Load the last loaded partitions for each data field.
         """
 
-        for field in self.fields['IN'] + self.fields['OUT']:
+        for field in self.fields:
             self.current_partition_path[field] = self.dataset_dir + self.list_partitions[field][self.mode][-1]
             data = load(self.current_partition_path[field])
             self.dataset.set(field, data)
@@ -502,13 +496,13 @@ class DatasetManager:
         """
 
         # 1. Initialize multiple partition loading variables
-        self.mul_part_list_path = {field: [] for field in self.fields['IN'] + self.fields['OUT']}
+        self.mul_part_list_path = {field: [] for field in self.fields}
         self.mul_part_slices = []
         self.mul_part_idx = 0
-        nb_sample_per_partition = {field: [] for field in self.fields['IN'] + self.fields['OUT']}
+        nb_sample_per_partition = {field: [] for field in self.fields}
 
         # 2. For each field, load all partitions
-        for field in self.fields['IN'] + self.fields['OUT']:
+        for field in self.fields:
             for mode in modes:
                 # 2.1. Add partitions to the list of partitions to read
                 self.mul_part_list_path[field] += [self.dataset_dir + partition
@@ -517,15 +511,16 @@ class DatasetManager:
                 nb_sample_per_partition[field] += self.json_dict['nb_samples'][list(self.modes.keys())[mode]]
 
         # 3. Invert the partitions list structure
-        nb_partition = len(nb_sample_per_partition[self.fields['IN'][0]])
+        nb_partition = len(nb_sample_per_partition[self.fields[0]])
         inverted_list = [{} for _ in range(nb_partition)]
         for i in range(nb_partition):
-            for field in self.fields['IN'] + self.fields['OUT']:
+            for field in self.fields:
                 inverted_list[i][field] = self.mul_part_list_path[field][i]
         self.mul_part_list_path = inverted_list
+        print(self.mul_part_list_path)
 
         # 4. Define the slicing pattern of reading for partitions
-        for idx in nb_sample_per_partition[self.fields['IN'][0]]:
+        for idx in nb_sample_per_partition[self.fields[0]]:
             idx_slicing = [0]
             for _ in range(nb_partition - 1):
                 idx_slicing.append(idx_slicing[-1] + idx // nb_partition + 1)
@@ -545,7 +540,7 @@ class DatasetManager:
                 self.dataset.add(field, dataset[samples])
                 del dataset
         self.mul_part_idx = (self.mul_part_idx + 1) % (len(self.mul_part_slices[0]) - 1)
-        self.current_partition_path['input'] = self.mul_part_list_path[0][self.fields['IN'][0]]
+        self.current_partition_path['input'] = self.mul_part_list_path[0][self.fields[0]]
         self.dataset.current_sample = 0
 
     def update_json(self, update_shapes: bool = False, update_nb_samples: bool = False,
@@ -560,7 +555,7 @@ class DatasetManager:
 
         # Update data shapes
         if update_shapes:
-            for field in self.fields['IN'] + self.fields['OUT']:
+            for field in self.fields:
                 self.json_dict['data_shape'][field] = self.dataset.get_data_shape(field)
 
         # Update number of samples
@@ -574,7 +569,7 @@ class DatasetManager:
         # Update partitions lists
         if update_partitions_lists:
             for mode in self.modes:
-                for field in self.fields['IN'] + self.fields['OUT']:
+                for field in self.fields:
                     self.json_dict['partitions'][mode][field] = self.list_partitions[field][self.modes[mode]]
 
         # Overwrite json file
@@ -684,7 +679,8 @@ class DatasetManager:
         | Launch the close procedure of the dataset manager
         """
 
-        self.save_data()
+        if self.__writing:
+            self.save_data()
 
     def __str__(self) -> str:
         """

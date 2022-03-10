@@ -169,9 +169,9 @@ class BaseEnvironment(TcpIpClient):
         if self.compute_essential_data:
             self.loss_data = loss_data if type(loss_data) in [list, ndarray] else array([loss_data])
 
-    def set_additional_in_dataset(self, label: str, data: ndarray) -> None:
+    def set_additional_dataset(self, label: str, data: ndarray) -> None:
         """
-        | Set additional input data fields to store in the dataset.
+        | Set additional data fields to store in the dataset.
 
         :param str label: Name of the data field
         :param ndarray data: Data to store
@@ -179,27 +179,14 @@ class BaseEnvironment(TcpIpClient):
 
         # Training data is set if the Environment can compute data
         if self.compute_essential_data:
-            self.additional_inputs[label] = data if type(data) in [list, ndarray] else array([data])
-
-    def set_additional_out_dataset(self, label: str, data: ndarray) -> None:
-        """
-        | Set additional output data fields to store in the dataset.
-
-        :param str label: Name of the data field
-        :param ndarray data: Data to store
-        """
-
-        # Training data is set if the Environment can compute data
-        if self.compute_essential_data:
-            self.additional_outputs[label] = data if type(data) in [list, ndarray] else array([data])
+            self.additional_fields[label] = data if type(data) in [list, ndarray] else array([data])
 
     def reset_additional_datasets(self) -> None:
         """
         | Reset the additional dataset dictionaries.
         """
 
-        self.additional_inputs = {}
-        self.additional_outputs = {}
+        self.additional_fields = {}
 
     ##########################################################################################
     ##########################################################################################

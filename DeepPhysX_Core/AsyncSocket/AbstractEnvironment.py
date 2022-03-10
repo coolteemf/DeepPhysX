@@ -36,8 +36,7 @@ class AbstractEnvironment:
         # Dataset data variables
         self.sample_in: Optional[ndarray] = None
         self.sample_out: Optional[ndarray] = None
-        self.additional_inputs: Dict[str, Any] = {}
-        self.additional_outputs: Dict[str, Any] = {}
+        self.additional_fields: Dict[str, Any] = {}
 
     def create(self) -> None:
         """
