@@ -8,7 +8,7 @@ These examples illustrate the main features of DeepPhysX framework.
 please make sure it is installed if you want to run training scripts. 
 Otherwise, you can download training data and / or trained network by running ___.
 
-###Content
+### Content
 
 Examples of a SofaEnvironment: how to create it, how to send and receive data, how to initialize and update 
 visualization data, how to send requests.
