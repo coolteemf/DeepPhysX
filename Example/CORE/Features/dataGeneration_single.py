@@ -1,5 +1,5 @@
 """
-Dataset Generation
+dataGeneration_single.py
 Run the pipeline DataGenerator to produce a Dataset only.
 """
 
@@ -9,18 +9,19 @@ from DeepPhysX_Core.Environment.BaseEnvironmentConfig import BaseEnvironmentConf
 from DeepPhysX_Core.Dataset.BaseDatasetConfig import BaseDatasetConfig
 
 # Session related imports
-from EnvironmentOffscreen import MeanEnvironmentOffscreen
+from Environment import MeanEnvironment
 
 
-def main():
+def launch_data_generation():
     # Define the number of points and the dimension
     nb_points = 30
     dimension = 3
     # Environment configuration
-    environment_config = BaseEnvironmentConfig(environment_class=MeanEnvironmentOffscreen,
-                                               param_dict={'constant': True,
-                                                           'nb_points': nb_points,
-                                                           'dimension': dimension},
+    environment_config = BaseEnvironmentConfig(environment_class=MeanEnvironment,
+                                               param_dict={'constant': False,
+                                                           'data_size': [nb_points, dimension],
+                                                           'sleep': False,
+                                                           'allow_requests': False},
                                                as_tcp_ip_client=False)
     # Dataset configuration
     dataset_config = BaseDatasetConfig()
@@ -35,4 +36,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    launch_data_generation()

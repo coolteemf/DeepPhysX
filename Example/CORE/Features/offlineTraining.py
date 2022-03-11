@@ -1,5 +1,5 @@
 """
-Offline Training
+offlineTraining.py
 Run the pipeline BaseTrainer to create a training session with an existing Dataset.
 """
 
@@ -14,7 +14,7 @@ from DeepPhysX_Core.Dataset.BaseDatasetConfig import BaseDatasetConfig
 from DeepPhysX_PyTorch.FC.FCConfig import FCConfig
 
 
-def main():
+def launch_training():
     # Define the number of points and the dimension
     nb_points = 30
     dimension = 3
@@ -40,7 +40,9 @@ def main():
 
 
 if __name__ == '__main__':
-
     if not os.path.exists(os.path.join(os.getcwd(), 'sessions/data_generation')):
-        raise ValueError('Run DataGeneration.py script first!')
-    main()
+        print("Existing Dataset required, 'sessions/data_generation' not found. "
+              "Run dataGeneration_single.py script first.")
+        from dataGeneration_single import launch_data_generation
+        launch_data_generation()
+    launch_training()

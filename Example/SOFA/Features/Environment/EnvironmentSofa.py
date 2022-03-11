@@ -36,10 +36,12 @@ class MeanEnvironmentSofa(SofaEnvironment):
                                  as_tcp_ip_client=as_tcp_ip_client,
                                  environment_manager=environment_manager)
 
-        # Define training data values
+        # MechanicalObjects container
         self.MO = {}
+
+        # Environment parameters
         self.constant = False
-        self.data_size = (30, 3)
+        self.data_size = [30, 3]
         self.sleep = False
 
     """

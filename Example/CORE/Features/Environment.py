@@ -35,9 +35,12 @@ class MeanEnvironment(BaseEnvironment):
         # Define training data values
         self.input_value = array([])
         self.output_value = array([])
+
+        # Environment parameters
         self.constant = False
-        self.data_size = (30, 2)
+        self.data_size = [30, 2]
         self.sleep = False
+        self.allow_requests = True
 
     """
     ENVIRONMENT INITIALIZATION
@@ -48,11 +51,11 @@ class MeanEnvironment(BaseEnvironment):
         # If True, the same data is always sent so one can observe how the prediction crawl toward the ground truth.
         self.constant = param_dict['constant'] if 'constant' in param_dict else self.constant
         # Define the data size
-        nb_points = param_dict['nb_points'] if 'nb_points' in param_dict else self.data_size[0]
-        dimension = param_dict['dimension'] if 'dimension' in param_dict else self.data_size[1]
-        self.data_size = (nb_points, dimension)
+        self.data_size = param_dict['data_size'] if 'data_size' in param_dict else self.data_size
         # If True, step will sleep a random time to simulate longer processes
         self.sleep = param_dict['sleep'] if 'sleep' in param_dict else self.sleep
+        # If True, requests can be performed
+        self.allow_requests = param_dict['allow_requests'] if 'allow_requests' in param_dict else self.allow_requests
 
     def create(self):
         # The vector is the input of the network and the ground truth is the mean.
@@ -95,13 +98,14 @@ class MeanEnvironment(BaseEnvironment):
         # Simulate longer process
         if self.sleep:
             sleep(0.01 * randint(0, 10))
-        # Request a prediction for the given input
-        prediction = self.get_prediction(input_array=self.input_value)
-        # Apply this prediction in Environment
-        self.apply_prediction(prediction)
         # Send the training data
         self.set_training_data(input_array=self.input_value,
                                output_array=self.output_value)
+        if self.allow_requests:
+            # Request a prediction for the given input
+            prediction = self.get_prediction(input_array=self.input_value)
+            # Apply this prediction in Environment
+            self.apply_prediction(prediction)
 
     def apply_prediction(self, prediction):
         # Update visualization with new input and ground truth

@@ -10,7 +10,7 @@ from DeepPhysX_Core.Pipelines.BaseTrainer import BaseTrainer
 from T3_configuration import env_config, net_config, dataset_config
 
 
-def main():
+def launch_training():
     # Create the Pipeline
     pipeline = BaseTrainer(session_name='sessions/online_training',
                            environment_config=env_config,
@@ -24,4 +24,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    launch_training()

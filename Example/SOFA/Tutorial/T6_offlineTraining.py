@@ -14,7 +14,7 @@ from DeepPhysX_Core.Dataset.BaseDatasetConfig import BaseDatasetConfig
 from T3_configuration import env_config, net_config
 
 
-def main():
+def launch_training():
     # Adapt the Dataset config with the existing dataset directory
     dataset_config = BaseDatasetConfig(dataset_dir=os.path.join(os.getcwd(), 'sessions/data_generation'),
                                        partition_size=1,
@@ -32,4 +32,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    launch_training()
