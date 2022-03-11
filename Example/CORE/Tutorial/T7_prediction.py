@@ -11,7 +11,7 @@ from DeepPhysX_Core.Environment.BaseEnvironmentConfig import BaseEnvironmentConf
 from T3_configuration import DummyEnvironment, net_config, dataset_config
 
 
-def main():
+def launch_prediction():
     # Adapt the Environment config to avoid using Client / Server Architecture
     env_config = BaseEnvironmentConfig(environment_class=DummyEnvironment,
                                        visualizer=None,
@@ -30,4 +30,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    launch_prediction()

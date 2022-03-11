@@ -10,7 +10,7 @@ from DeepPhysX_Core.Pipelines.BaseDataGenerator import BaseDataGenerator
 from T3_configuration import env_config, dataset_config
 
 
-def main():
+def launch_data_generation():
     # Create the Pipeline
     pipeline = BaseDataGenerator(session_name='sessions/tutorial_data_generation',
                                  dataset_config=dataset_config,
@@ -22,4 +22,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    launch_data_generation()

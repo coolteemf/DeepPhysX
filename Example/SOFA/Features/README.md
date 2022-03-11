@@ -4,9 +4,8 @@ This repository contains examples focused on training a Fully Connected Network 
 The same application is implemented in CORE examples, this is the SOFA compatible version of the application.
 These examples illustrate the main features of DeepPhysX framework.
 
-> :warning: **PyTorch usage**: This working session uses the Fully Connected implementation from DeepPhysX_Torch package, 
-please make sure it is installed if you want to run training scripts. 
-Otherwise, you can download training data and / or trained network by running ___.
+> :warning: **PyTorch usage**: This working session uses the Fully Connected implementation from DeepPhysX_Torch 
+package, please make sure it is installed if you want to run training scripts.
 
 ### Content
 
