@@ -95,8 +95,9 @@ class EnvironmentManager:
         :param Dict[int, Dict[int, Dict[str, Dict[str, Any]]]] data_dict: Updated visualization data.
         """
 
-        self.visualizer_manager.update_visualizer(data_dict)
-        self.visualizer_manager.render()
+        if self.visualizer_manager is not None:
+            self.visualizer_manager.update_visualizer(data_dict)
+            self.visualizer_manager.render()
 
     def get_data_from_server(self, get_inputs: bool = True, get_outputs: bool = True,
                              animate: bool = True) -> Dict[str, Union[ndarray, dict]]:
