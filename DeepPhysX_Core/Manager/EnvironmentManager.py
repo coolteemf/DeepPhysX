@@ -126,7 +126,7 @@ class EnvironmentManager:
             training_data[key] = batch[key]
         # Convert loss data
         if 'loss' in batch and len(batch['loss']) != 0:
-            training_data['loss'] = array(batch['loss'])
+            training_data['loss'] = batch['loss']
         # Return batch
         return training_data
 
