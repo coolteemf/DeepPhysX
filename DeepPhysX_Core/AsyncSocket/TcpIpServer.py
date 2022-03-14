@@ -154,7 +154,7 @@ class TcpIpServer(TcpIpObject):
         async_run(self.__request_data_to_clients(get_inputs=get_inputs, get_outputs=get_outputs, animate=animate))
 
         # Sort stored data between following fields
-        data_sorter = {'input': [], 'dataset_in': {}, 'output': [], 'dataset_out': {}, 'loss': []}
+        data_sorter = {'input': [], 'dataset_in': {}, 'output': [], 'dataset_out': {}, 'loss': {}}
         # Map produced samples with clients ID
         self.sample_to_client_id = []
 
@@ -163,11 +163,11 @@ class TcpIpServer(TcpIpObject):
             # Get data dict from queue
             data = self.data_fifo.get()
             # Network in / out / loss
-            for field in ['input', 'output', 'loss']:
+            for field in ['input', 'output']:
                 if field in data:
                     data_sorter[field].append(data[field])
             # Additional in / out
-            for field in ['dataset_in', 'dataset_out']:
+            for field in ['dataset_in', 'dataset_out', 'loss']:
                 if field in data:
                     for key in data[field]:
                         if key not in data_sorter[field].keys():

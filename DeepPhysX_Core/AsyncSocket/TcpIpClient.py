@@ -183,7 +183,9 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
             self.output = array([])
         # Send loss data
         if self.loss_data:
-            await self.send_labeled_data(data_to_send=self.loss_data, label='loss', loop=loop, receiver=receiver)
+            if not isinstance(self.loss_data, dict):
+                self.loss_data = {'data': self.loss_data}
+            await self.send_dict('loss', self.loss_data)
             self.loss_data = None
         # Send additional input data
         if self.additional_inputs is not None:
@@ -218,7 +220,7 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
         label, pred = await self.receive_labeled_data(loop=loop, sender=receiver)
         return pred
 
-    def send_prediction_data(self, network_input: ndarray, receiver: socket = None) -> ndarray:
+    def sync_send_prediction_data(self, network_input: ndarray, receiver: socket = None) -> ndarray:
         """
         Request a prediction from the Environment.
 
@@ -260,7 +262,7 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
     ##########################################################################################
     ##########################################################################################
 
-    def request_get_prediction(self, input_array: ndarray) -> ndarray:
+    def sync_request_get_prediction(self, input_array: ndarray) -> ndarray:
         """
         Request a prediction from Network.
 
@@ -268,9 +270,9 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
         :return:
         """
 
-        return self.send_prediction_data(network_input=input_array)
+        return self.sync_send_prediction_data(network_input=input_array)
 
-    async def __get_prediction(self, input_array: ndarray) -> ndarray:
+    async def request_get_prediction(self, input_array: ndarray) -> ndarray:
         """
         Request a prediction from Network.
 
@@ -288,17 +290,7 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
         :return:
         """
 
-        async_run(self.__update_visualization(visu_dict))
-
-    async def __update_visualization(self, visu_dict: Dict[int, Dict[str, Any]]) -> None:
-        """
-        Triggers the Visualizer update.
-
-        :param dict visu_dict: Updated visualization data.
-        :return:
-        """
-
-        await self.send_visualization_data(visualization_data=visu_dict)
+        async_run(self.send_visualization_data(visualization_data=visu_dict))
 
     ##########################################################################################
     ##########################################################################################

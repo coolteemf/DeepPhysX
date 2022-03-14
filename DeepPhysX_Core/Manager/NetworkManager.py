@@ -169,7 +169,8 @@ class NetworkManager:
         # Getting data from the data manager
         data_in = self.network.transform_from_numpy(batch['input'], grad=optimize)
         data_gt = self.network.transform_from_numpy(batch['output'], grad=optimize)
-        loss_data = self.network.transform_from_numpy(batch['loss'], grad=False) if 'loss' in batch.keys() else None
+        loss_data = batch.get('loss', None)
+        print(f"{loss_data=}")
 
         # Compute prediction
         data_in = self.data_transformation.transform_before_prediction(data_in)
