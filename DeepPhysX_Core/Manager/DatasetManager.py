@@ -67,6 +67,7 @@ class DatasetManager:
         # Dataset modes
         self.modes: Dict[str, int] = {'Training': 0, 'Validation': 1, 'Running': 2}
         self.mode: int = self.modes['Training'] if train else self.modes['Running']
+        self.mode = self.mode if dataset_config.use_mode is None else self.modes[dataset_config.use_mode]
         self.last_loaded_dataset_mode: int = self.mode
 
         # Dataset partitions
@@ -124,9 +125,19 @@ class DatasetManager:
                 self.load_directory()
         # Prediction
         else:
-            self.dataset_dir = osPathJoin(self.session_dir, 'dataset/')
-            self.__new_dataset = True
-            self.create_running_partitions()
+            # Saving running data
+            if dataset_dir is None:
+                self.dataset_dir = osPathJoin(self.session_dir, 'dataset/')
+                self.__new_dataset = True
+                self.create_running_partitions()
+            # Loading partitions
+            else:
+                if dataset_dir[-1] != "/":
+                    dataset_dir += "/"
+                if dataset_dir[-8:] != "dataset/":
+                    dataset_dir += "dataset/"
+                self.dataset_dir = dataset_dir
+                self.load_directory()
 
     def get_data_manager(self) -> Any:
         """
@@ -279,7 +290,7 @@ class DatasetManager:
         :param str new_field: Name of the new field.
         """
 
-        if new_field not in self.fields:
+        if new_field not in self.fields or self.list_partitions[new_field] is None:
             self.fields.append(new_field)
             self.list_partitions[new_field] = [[], [], []]
             self.record_data[new_field] = True

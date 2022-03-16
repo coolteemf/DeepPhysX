@@ -57,6 +57,8 @@ class DataManager:
             create_environment = True
             # Create a dataset if data will be stored from environment during prediction
             create_dataset = record_data is not None and (record_data['input'] or record_data['output'])
+            # Create a dataset also if data should be loaded from any partition
+            create_dataset = create_dataset or dataset_config.dataset_dir is not None
 
         # Create dataset if required
         if create_dataset:
@@ -118,11 +120,22 @@ class DataManager:
 
         # Prediction
         else:
-            # Get data from environment
-            data = self.environment_manager.get_data(animate=animate, get_inputs=True, get_outputs=True)
-            # Record data
-            if self.dataset_manager is not None:
-                self.dataset_manager.add_data(data)
+            if self.dataset_manager is not None and not self.dataset_manager.new_dataset():
+                # Get data from dataset
+                data = self.dataset_manager.get_data(batch_size=1, get_inputs=True, get_outputs=True)
+                new_data = self.environment_manager.dispatch_batch(batch=data, animate=animate)
+                if len(new_data['input']) != 0:
+                    data['input'] = new_data['input']
+                if len(new_data['output']) != 0:
+                    data['output'] = new_data['output']
+                if 'loss' in new_data:
+                    data['loss'] = new_data['loss']
+            else:
+                # Get data from environment
+                data = self.environment_manager.get_data(animate=animate, get_inputs=True, get_outputs=True)
+                # Record data
+                if self.dataset_manager is not None:
+                    self.dataset_manager.add_data(data)
 
         self.data = data
         return data
