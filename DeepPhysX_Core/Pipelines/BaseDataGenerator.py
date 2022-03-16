@@ -2,6 +2,7 @@ from os.path import join as osPathJoin
 from os.path import basename
 from sys import stdout
 
+from DeepPhysX_Core.Pipelines.BasePipeline import BasePipeline
 from DeepPhysX_Core.Manager.DataManager import DataManager
 from DeepPhysX_Core.Dataset.BaseDatasetConfig import BaseDatasetConfig
 from DeepPhysX_Core.Environment.BaseEnvironmentConfig import BaseEnvironmentConfig
@@ -9,7 +10,7 @@ from DeepPhysX_Core.Utils.progressbar import Progressbar
 from DeepPhysX_Core.Utils.pathUtils import create_dir, get_first_caller
 
 
-class BaseDataGenerator:
+class BaseDataGenerator(BasePipeline):
     """
     | BaseDataGenerator implement a minimalist execute function that simply produce and store data without
       training a neural network.
@@ -32,7 +33,12 @@ class BaseDataGenerator:
                  record_input: bool = True,
                  record_output: bool = True):
 
-        # todo: inherit from Pipeline
+        BasePipeline.__init__(self,
+                              dataset_config=dataset_config,
+                              environment_config=environment_config,
+                              session_name=session_name,
+                              pipeline='dataset')
+
         # Init session repository
         session_dir = create_dir(osPathJoin(get_first_caller(), session_name), dir_name=session_name)
         session_name = (session_name if session_name is not None else basename(session_dir)).split("/")[-1]

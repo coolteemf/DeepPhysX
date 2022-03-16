@@ -25,24 +25,26 @@ class BasePipeline:
     """
 
     def __init__(self,
-                 network_config: BaseNetworkConfig,
-                 dataset_config: BaseDatasetConfig,
-                 environment_config: BaseEnvironmentConfig,
+                 network_config: Optional[BaseNetworkConfig] = None,
+                 dataset_config: Optional[BaseDatasetConfig] = None,
+                 environment_config: Optional[BaseEnvironmentConfig] = None,
                  session_name: str = 'default',
                  session_dir: Optional[str] = None,
                  pipeline: Optional[str] = None):
 
+        self.name: str = self.__class__.__name__
+
         # Check the arguments
-        if not isinstance(network_config, BaseNetworkConfig):
-            raise TypeError("[BaseRunner] The network configuration must be a BaseNetworkConfig")
+        if network_config is not None and not isinstance(network_config, BaseNetworkConfig):
+            raise TypeError(f"[{self.name}] The network configuration must be a BaseNetworkConfig")
         if environment_config is not None and not isinstance(environment_config, BaseEnvironmentConfig):
-            raise TypeError("[BaseRunner] The environment configuration must be a BaseEnvironmentConfig")
+            raise TypeError(f"[{self.name}] The environment configuration must be a BaseEnvironmentConfig")
         if dataset_config is not None and not isinstance(dataset_config, BaseDatasetConfig):
-            raise TypeError("[BaseRunner] The dataset configuration must be a BaseDatasetConfig")
+            raise TypeError(f"[{self.name}] The dataset configuration must be a BaseDatasetConfig")
         if type(session_name) != str:
-            raise TypeError("[BaseRunner] The network config must be a BaseNetworkConfig object.")
+            raise TypeError(f"[{self.name}] The network config must be a BaseNetworkConfig object.")
         if session_dir is not None and type(session_dir) != str:
-            raise TypeError("[BaseRunner] The session directory must be a str.")
+            raise TypeError(f"[{self.name}] The session directory must be a str.")
 
         self.type: str = pipeline    # Either training or prediction
         self.debug: bool = False

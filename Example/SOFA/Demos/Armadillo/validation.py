@@ -16,15 +16,16 @@ from DeepPhysX_PyTorch.FC.FCConfig import FCConfig
 from DeepPhysX_Sofa.Environment.SofaEnvironmentConfig import SofaEnvironmentConfig
 
 # Session related imports
-from Environment.ArmadilloPrediction import ArmadilloPrediction
+# from Environment.ArmadilloPrediction import ArmadilloPrediction
+from Environment.ArmadilloValidation import ArmadilloPrediction
 import Environment.parameters as parameters
 
 
 def create_runner():
-
     # Environment config
     env_config = SofaEnvironmentConfig(environment_class=ArmadilloPrediction,
-                                       as_tcp_ip_client=False)
+                                       as_tcp_ip_client=False,
+                                       param_dict={'normalize': True})
 
     # UNet config
     nb_hidden_layers = 2
@@ -32,17 +33,19 @@ def create_runner():
     layers_dim = [nb_neurons] + [nb_neurons for _ in range(nb_hidden_layers + 1)] + [nb_neurons]
     net_config = FCConfig(network_name='armadillo_FC',
                           dim_output=3,
-                          dim_layers=layers_dim)
+                          dim_layers=layers_dim,
+                          biases=False)
 
     # Dataset config
-    dataset_config = BaseDatasetConfig(partition_size=1, shuffle_dataset=True)
+    dataset_config = BaseDatasetConfig(partition_size=1, shuffle_dataset=True,
+                                       dataset_dir='sessions/data_generation/dataset', use_mode='Validation')
 
     # Runner
-    return SofaRunner(session_dir="sessions/armadillo",
+    return SofaRunner(session_dir="sessions/200/armadillo_11",
                       dataset_config=dataset_config,
                       environment_config=env_config,
                       network_config=net_config,
-                      nb_steps=0)
+                      nb_steps=501)
 
 
 if __name__ == '__main__':
