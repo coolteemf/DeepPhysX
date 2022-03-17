@@ -50,6 +50,7 @@ class BaseDataGenerator(BasePipeline):
                                         session_name=session_name,
                                         session_dir=session_dir,
                                         new_session=True,
+                                        offline=True,
                                         record_data={'input': record_input, 'output': record_output},
                                         batch_size=batch_size)
         self.nb_batch: int = nb_batches
@@ -61,10 +62,10 @@ class BaseDataGenerator(BasePipeline):
         """
 
         for i in range(self.nb_batch):
+            # Produce a batch
+            self.data_manager.get_data()
             # Update progress bar
             stdout.write("\033[K")
             self.progress_bar.print(counts=i + 1)
-            # Produce a batch
-            self.data_manager.get_data()
         # Close manager
         self.data_manager.close()

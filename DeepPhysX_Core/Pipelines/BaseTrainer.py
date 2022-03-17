@@ -112,7 +112,7 @@ class BaseTrainer(BasePipeline):
         """
 
         self.manager.get_data(self.id_epoch, self.batch_size)
-        prediction, self.loss_dict = self.manager.optimize_network()
+        _, self.loss_dict = self.manager.optimize_network()
 
     def save_network(self) -> None:
         """

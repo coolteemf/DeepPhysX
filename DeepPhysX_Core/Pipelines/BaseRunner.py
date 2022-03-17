@@ -74,7 +74,7 @@ class BaseRunner(BasePipeline):
         while self.running_condition():
             self.sample_begin()
             prediction = self.predict()
-            self.manager.data_manager.environment_manager.environment.apply_prediction(prediction)
+            self.manager.data_manager.apply_prediction(prediction)
             self.sample_end()
         self.run_end()
 
@@ -87,7 +87,9 @@ class BaseRunner(BasePipeline):
         """
 
         self.manager.get_data(animate=animate)
-        return self.manager.network_manager.compute_online_prediction(self.manager.data_manager.data['input'])
+        data = self.manager.data_manager.data['input']
+        data = self.manager.data_manager.normalize_data(data, 'input')
+        return self.manager.network_manager.compute_online_prediction(data)
 
     def run_begin(self) -> None:
         """

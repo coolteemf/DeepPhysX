@@ -1,7 +1,7 @@
 from typing import Any, Dict, Tuple, List, Optional, Union
 from os.path import join as osPathJoin
-from os.path import isfile, isdir
-from os import listdir
+from os.path import isfile, isdir, abspath
+from os import listdir, symlink
 from json import dump as json_dump
 from json import load as json_load
 from numpy import load, squeeze, ndarray, concatenate
@@ -21,6 +21,7 @@ class DatasetManager:
     :param str session_dir: Name of the directory in which to write all the necessary data
     :param bool new_session: Define the creation of new directories to store data
     :param bool train: True if this session is a network training
+    :param bool offline: True if the session is done offline
     :param Optional[Dict[str, bool]] record_data: Format {\'in\': bool, \'out\': bool} save the tensor when bool is True
     """
 
@@ -31,6 +32,7 @@ class DatasetManager:
                  session_dir: str = None,
                  new_session: bool = True,
                  train: bool = True,
+                 offline: bool = False,
                  record_data: Optional[Dict[str, bool]] = None):
 
         self.name: str = self.__class__.__name__
@@ -63,6 +65,8 @@ class DatasetManager:
         self.record_data: Dict[str, bool] = record_data if record_data is not None else {'input': True, 'output': True}
         self.first_add: bool = True
         self.__writing: bool = False
+        self.normalize: bool = dataset_config.normalize
+        self.offline = offline
 
         # Dataset modes
         self.modes: Dict[str, int] = {'Training': 0, 'Validation': 1, 'Running': 2}
@@ -92,7 +96,8 @@ class DatasetManager:
                                                                                    'nb_samples': {mode: [] for mode in
                                                                                                   self.modes},
                                                                                    'partitions': {mode: {} for mode in
-                                                                                                  self.modes}}
+                                                                                                  self.modes},
+                                                                                   'normalization': {}}
         self.json_dict: Dict[str, Dict[str, Union[List[int], Dict[Any, Any]]]] = self.json_empty.copy()
         self.json_found: bool = False
 
@@ -118,6 +123,7 @@ class DatasetManager:
                     if dataset_dir[-8:] != "dataset/":
                         dataset_dir += "dataset/"
                     self.dataset_dir = dataset_dir
+                    symlink(abspath(self.dataset_dir), osPathJoin(self.session_dir, 'dataset'))
                     self.load_directory()
             # Existing training session
             else:
@@ -188,6 +194,8 @@ class DatasetManager:
         if self.first_add:
             self.update_json(update_partitions_lists=True, update_shapes=True)
             self.first_add = False
+        if self.normalize and not self.offline:
+            self.update_json(update_normalization=True)
 
         # 5. Check the size of the dataset
         if self.dataset.memory_size() > self.max_size:
@@ -555,13 +563,14 @@ class DatasetManager:
         self.dataset.current_sample = 0
 
     def update_json(self, update_shapes: bool = False, update_nb_samples: bool = False,
-                    update_partitions_lists: bool = False) -> None:
+                    update_partitions_lists: bool = False, update_normalization: bool = False) -> None:
         """
         | Update the json info file with the current Dataset repository information.
 
         :param bool update_shapes: If True, data shapes per field are overwritten
         :param bool update_nb_samples: If True, number of samples per partition are overwritten
         :param bool update_partitions_lists: If True, list of partitions is overwritten
+        :param bool update_normalization: If True, compute and save current normalization coefficients
         """
 
         # Update data shapes
@@ -582,6 +591,12 @@ class DatasetManager:
             for mode in self.modes:
                 for field in self.fields:
                     self.json_dict['partitions'][mode][field] = self.list_partitions[field][self.modes[mode]]
+
+        # Update normalization coefficients
+        if update_normalization:
+            for field in ['input', 'output']:
+                if len(self.list_partitions[field][0]) > 0:
+                    self.json_dict['normalization'][field] = self.compute_normalization(field)
 
         # Overwrite json file
         with open(self.dataset_dir + self.json_filename, 'w') as json_file:
@@ -633,6 +648,23 @@ class DatasetManager:
             else:
                 print(f"[{self.name}] Change to {self.mode} mode, load last partition")
                 self.read_last_partitions()
+
+    def compute_normalization(self, field: str) -> List[float]:
+        """
+        | Compute the normalization coefficients (mean & standard deviation) of input and output data fields.
+        | Compute the normalization on the whole set of partitions for a given data field.
+
+        :param str field: Field for which normalization coefficients should be computed
+        :return: List containing normalization coefficients (mean, standard deviation)
+        """
+
+        partitions_content = []
+        for partition in self.list_partitions[field][0]:
+            partitions_content.append(load(self.dataset_dir + partition))
+        full_field = concatenate(partitions_content).reshape((-1))
+        if self.data_manager is not None:
+            self.data_manager.normalization[field] = [full_field.mean(), full_field.std()]
+        return [full_field.mean(), full_field.std()]
 
     def new_dataset(self) -> bool:
         """
@@ -692,6 +724,8 @@ class DatasetManager:
 
         if self.__writing:
             self.save_data()
+            if self.offline and self.normalize:
+                self.update_json(update_normalization=True)
 
     def __str__(self) -> str:
         """

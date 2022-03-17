@@ -361,8 +361,7 @@ class TcpIpServer(TcpIpObject):
             raise ValueError("Cannot request prediction if NetworkManager does not exist")
 
         # Get the prediction from NetworkPrediction
-        prediction = self.environment_manager.data_manager.manager.network_manager.compute_online_prediction(
-            network_input=network_input[None, ])
+        prediction = self.environment_manager.data_manager.get_prediction(network_input=network_input[None, ])
         # Send back the prediction to the Client
         await self.send_labeled_data(data_to_send=prediction, label="prediction", receiver=sender,
                                      send_read_command=False)
