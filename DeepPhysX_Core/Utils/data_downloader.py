@@ -77,3 +77,9 @@ class DataDownloader:
         for repo, files in self.tree[session_name][1].items():
             self.download_files(file_list=files,
                                 repository=os.path.join(self.root, session_name, repo))
+
+    def show_content(self):
+
+        # Print the content of the desired Dataset
+        for file_id in sorted(list(self.files.keys())):
+            print(f"\t{file_id}: {self.files[file_id]}")
