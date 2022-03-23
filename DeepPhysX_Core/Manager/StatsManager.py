@@ -192,7 +192,7 @@ class StatsManager:
             n = count if count < 50 else 50
             variance = self.mean[index]
             self.mean[index] = self.mean[index] + (value - self.mean[index]) / n
-            return variance - self.mean[index]
+            return abs(variance - self.mean[index])
 
     def add_3D_point_cloud(self, tag: str, vertices: DataContainer, colors: DataContainer = None, BN3: bool = False, config_dict: Dict[Any, Any] = None) -> None:
         """
