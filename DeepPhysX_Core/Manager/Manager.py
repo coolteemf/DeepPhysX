@@ -43,8 +43,11 @@ class Manager:
         # Trainer: must create a new session to avoid overwriting
         if pipeline.type == 'training':
             train = True
-            # Create manager directory from the session name
-            self.session_dir: str = osPathJoin(get_first_caller(), session_name)
+            if session_dir is None:
+                # Create manager directory from the session name
+                self.session_dir: str = osPathJoin(get_first_caller(), session_name)
+            else:
+                self.session_dir: str = osPathJoin(session_dir, session_name)
             # Avoid unwanted overwritten data
             if new_session:
                 self.session_dir: str = create_dir(self.session_dir, dir_name=session_name)
