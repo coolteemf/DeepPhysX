@@ -41,8 +41,8 @@ class StatsManager:
         if not self.manager.pipeline.debug:
             tb = program.TensorBoard()
             tb.configure(argv=[None, '--logdir', log_dir])
-            # url = tb.launch()
-            # w_open(url)
+            url = tb.launch()
+            w_open(url)
 
         # Values
         self.mean: ndarray = full(4, inf)  # Contains in the 1st dimension the mean, and 2nd the variance of the mean
