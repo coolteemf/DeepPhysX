@@ -1,10 +1,13 @@
 """
-prediction_compare.py
+validation.py
 Launch the prediction session in a SOFA GUI. Compare the two models.
+Use 'python3 validation.py -e' to run the pipeline with newly created samples in Environment (default).
+Use 'python3 validation.py -d' to run the pipeline with existing samples from a Dataset.
 """
 
 # Python related imports
 import os
+import sys
 
 # Sofa related imports
 import Sofa.Gui
@@ -16,16 +19,16 @@ from DeepPhysX_PyTorch.FC.FCConfig import FCConfig
 from DeepPhysX_Sofa.Environment.SofaEnvironmentConfig import SofaEnvironmentConfig
 
 # Session related imports
-# from Environment.ArmadilloPrediction import ArmadilloPrediction
-from Environment.ArmadilloValidation import ArmadilloPrediction
+from Environment.ArmadilloValidation import ArmadilloValidation
 import Environment.parameters as parameters
 
 
-def create_runner():
+def create_runner(dataset_dir):
+
     # Environment config
-    env_config = SofaEnvironmentConfig(environment_class=ArmadilloPrediction,
-                                       as_tcp_ip_client=False,
-                                       param_dict={'normalize': True})
+    env_config = SofaEnvironmentConfig(environment_class=ArmadilloValidation,
+                                       param_dict={'compute_sample': dataset_dir is None},
+                                       as_tcp_ip_client=False)
 
     # UNet config
     nb_hidden_layers = 2
@@ -34,24 +37,53 @@ def create_runner():
     net_config = FCConfig(network_name='armadillo_FC',
                           dim_output=3,
                           dim_layers=layers_dim,
-                          biases=False)
+                          biases=True)
 
     # Dataset config
-    dataset_config = BaseDatasetConfig(partition_size=1, shuffle_dataset=True,
-                                       dataset_dir='sessions/data_generation/dataset', use_mode='Validation')
+    dataset_config = BaseDatasetConfig(shuffle_dataset=True,
+                                       normalize=True,
+                                       dataset_dir=dataset_dir,
+                                       use_mode=None if dataset_dir is None else 'Validation')
+
+    # Define trained network session
+    dpx_session, user_session = 'sessions/armadillo_training_dpx', 'sessions/armadillo_training_user'
+    if not os.path.exists(dpx_session) and not os.path.exists(user_session):
+        from download import download_training
+        print('Downloading Demo trained network to launch validation...')
+        download_training()
+    session_dir = user_session if os.path.exists(user_session) else dpx_session
 
     # Runner
-    return SofaRunner(session_dir="sessions/200/armadillo_11",
+    return SofaRunner(session_dir=session_dir,
                       dataset_config=dataset_config,
                       environment_config=env_config,
                       network_config=net_config,
-                      nb_steps=501)
+                      nb_steps=500)
 
 
 if __name__ == '__main__':
 
+    # Get dataset option
+    dataset = None
+    if len(sys.argv) > 1:
+
+        # Check script option
+        if sys.argv[1] not in ['-e', '-d']:
+            print("Script option must be either '-e' for samples produced in Environment (default) or '-d' for samples "
+                  "loaded from an existing Dataset.")
+            quit(0)
+
+        # Check Dataset existence for normalization coefficients
+        dpx_session = 'sessions/armadillo_data_dpx'
+        if not os.path.exists(dpx_session):
+            from download import download_dataset
+            print('Downloading Demo dataset to launch training...')
+            download_dataset()
+
+        dataset = dpx_session if sys.argv[1] == '-d' else None
+
     # Create SOFA runner
-    runner = create_runner()
+    runner = create_runner(dataset)
 
     # Launch SOFA GUI
     Sofa.Gui.GUIManager.Init("main", "qglviewer")

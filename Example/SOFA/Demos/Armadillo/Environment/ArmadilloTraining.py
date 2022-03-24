@@ -40,10 +40,18 @@ class ArmadilloTraining(ArmadilloSofa):
 
         self.create_model['nn'] = True
         self.data_size = (p_model.nb_nodes, 3)
+        self.is_network = True
+
+    def recv_parameters(self, param_dict):
+        """
+        Exploit received parameters before scene creation.
+        """
+
+        self.is_network = param_dict['is_network'] if 'is_network' in param_dict else self.is_network
 
     def send_visualization(self):
         """
-        Define and send the initial visualization data dictionary. Automatically called whn creating Environment.
+        Define and send the initial visualization data dictionary. Automatically called when creating Environment.
         """
 
         # Add the FEM model
@@ -63,8 +71,12 @@ class ArmadilloTraining(ArmadilloSofa):
         input_array = self.compute_input()
         output_array = self.compute_output()
 
-        # Get and apply the prediction of the network
-        self.apply_prediction(self.get_prediction(input_array=input_array))
+        # If requests are allowed,
+        if self.is_network:
+            self.apply_prediction(self.get_prediction(input_array=input_array))
+
+        else:
+            self.update_visualization()
 
         # Send training data
         self.set_training_data(input_array=input_array,
@@ -102,7 +114,9 @@ class ArmadilloTraining(ArmadilloSofa):
         # Reshape to correspond regular grid, transform to sparse grid
         U = np.reshape(prediction, self.data_size) * p_model.size
         self.n_surface_mo.position.value = self.n_surface_mo.rest_position.array() + U
+        self.update_visualization()
 
+    def update_visualization(self):
         # Update visualization data
         self.factory.update_object_dict(object_id=0, new_data_dict={'position': self.f_visu.position.value.copy()})
         # Send updated data

@@ -21,7 +21,7 @@ class DataDownloader:
                          'train': ''}
         self.tree = {'session_name': [[],
                                       {'subdirectory': []}]}
-        self.nb_files = 0
+        self.nb_files = {'all': 0, 'data': 0, 'train': 0}
         self.nb_loaded = 0
 
     def get_filenames(self, DOI):
@@ -52,12 +52,12 @@ class DataDownloader:
                 else:
                     os.mkdir(os.path.join(session_dir, repo))
 
-    def download_files(self, file_list, repository):
+    def download_files(self, file_list, repository, nb_files):
 
         # Download each file of the list
         for file_id in file_list:
             self.nb_loaded += 1
-            print(f"\tDownloading file {self.nb_loaded}/{self.nb_files} in "
+            print(f"\tDownloading file {self.nb_loaded}/{nb_files} in "
                   f"{os.path.join(repository[len(os.getcwd()):], self.files[file_id])}")
             file = self.data_api.get_datafile(file_id)
             with open(os.path.join(repository, self.files[file_id]), 'wb') as f:
@@ -71,12 +71,14 @@ class DataDownloader:
 
         # Download files in session repository
         self.download_files(file_list=self.tree[session_name][0],
-                            repository=os.path.join(self.root, session_name))
+                            repository=os.path.join(self.root, session_name),
+                            nb_files=self.nb_files[session_type])
 
         # Download files in sub repositories
         for repo, files in self.tree[session_name][1].items():
             self.download_files(file_list=files,
-                                repository=os.path.join(self.root, session_name, repo))
+                                repository=os.path.join(self.root, session_name, repo),
+                                nb_files=self.nb_files[session_type])
 
     def show_content(self):
 

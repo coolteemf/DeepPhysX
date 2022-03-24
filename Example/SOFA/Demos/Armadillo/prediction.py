@@ -1,6 +1,6 @@
 """
-prediction_compare.py
-Launch the prediction session in a SOFA GUI. Compare the two models.
+prediction.py
+Launch the prediction session in a SOFA GUI with only predictions of the network.
 """
 
 # Python related imports
@@ -21,6 +21,7 @@ import Environment.parameters as parameters
 
 
 def create_runner():
+
     # Environment config
     env_config = SofaEnvironmentConfig(environment_class=ArmadilloNetwork,
                                        as_tcp_ip_client=False)
@@ -31,13 +32,22 @@ def create_runner():
     layers_dim = [nb_neurons] + [nb_neurons for _ in range(nb_hidden_layers + 1)] + [nb_neurons]
     net_config = FCConfig(network_name='armadillo_FC',
                           dim_output=3,
-                          dim_layers=layers_dim)
+                          dim_layers=layers_dim,
+                          biases=True)
 
     # Dataset config
-    dataset_config = BaseDatasetConfig(partition_size=1, shuffle_dataset=True)
+    dataset_config = BaseDatasetConfig(normalize=True)
+
+    # Define trained network session
+    dpx_session, user_session = 'sessions/armadillo_training_dpx', 'sessions/armadillo_training_user'
+    if not os.path.exists(dpx_session) and not os.path.exists(user_session):
+        from download import download_training
+        print('Downloading Demo trained network to launch validation...')
+        download_training()
+    session_dir = user_session if os.path.exists(user_session) else dpx_session
 
     # Runner
-    return SofaRunner(session_dir="sessions/armadillo",
+    return SofaRunner(session_dir=session_dir,
                       dataset_config=dataset_config,
                       environment_config=env_config,
                       network_config=net_config,

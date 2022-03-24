@@ -172,7 +172,7 @@ class ArmadilloSofa(SofaEnvironment):
 
         # Visual
         self.root.nn.addChild('visual')
-        self.n_visu = self.root.nn.visual.addObject('OglModel', name="OGL", src='@../../Mesh', color='orange')
+        self.n_visu = self.root.nn.visual.addObject('OglModel', name="OGL", src='@../../MeshCoarse', color='orange')
         self.root.nn.visual.addObject('BarycentricMapping', input='@../surface/SurfaceMO', output='@./')
 
     def create_forces(self):

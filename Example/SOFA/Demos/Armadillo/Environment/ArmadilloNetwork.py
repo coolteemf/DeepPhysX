@@ -13,11 +13,11 @@ import sys
 
 # Working session imports
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-from ArmadilloPrediction import ArmadilloPrediction, np
+from ArmadilloTraining import ArmadilloTraining, p_model, np
 from parameters import p_forces
 
 
-class ArmadilloNetwork(ArmadilloPrediction):
+class ArmadilloNetwork(ArmadilloTraining):
 
     def __init__(self,
                  root_node,
@@ -28,14 +28,14 @@ class ArmadilloNetwork(ArmadilloPrediction):
                  as_tcp_ip_client=True,
                  environment_manager=None):
 
-        ArmadilloPrediction.__init__(self,
-                                     root_node=root_node,
-                                     ip_address=ip_address,
-                                     port=port,
-                                     instance_id=instance_id,
-                                     number_of_instances=number_of_instances,
-                                     as_tcp_ip_client=as_tcp_ip_client,
-                                     environment_manager=environment_manager)
+        ArmadilloTraining.__init__(self,
+                                   root_node=root_node,
+                                   ip_address=ip_address,
+                                   port=port,
+                                   instance_id=instance_id,
+                                   number_of_instances=number_of_instances,
+                                   as_tcp_ip_client=as_tcp_ip_client,
+                                   environment_manager=environment_manager)
 
         self.create_model['fem'] = False
 
@@ -49,6 +49,14 @@ class ArmadilloNetwork(ArmadilloPrediction):
         self.idx_direction = 0
         # Zone index
         self.idx_zone = 0
+
+    def send_visualization(self):
+        """
+        Define and send the initial visualization data dictionary. Automatically called whn creating Environment.
+        """
+
+        # Nothing to visualize since the predictions are run in SOFA GUI.
+        return self.factory.objects_dict
 
     def onAnimateBeginEvent(self, event):
         """
@@ -92,3 +100,20 @@ class ArmadilloNetwork(ArmadilloPrediction):
         # Send training data
         self.set_training_data(input_array=input_array,
                                output_array=np.array([]))
+
+    def apply_prediction(self, prediction):
+        """
+        Apply the predicted displacement to the NN model.
+        """
+
+        # Reshape to correspond regular grid, transform to sparse grid
+        U = np.reshape(prediction, self.data_size) * p_model.size
+        self.n_surface_mo.position.value = self.n_surface_mo.rest_position.array() + U
+
+    def check_sample(self, check_input=True, check_output=True):
+        """
+        Check if the produced sample is correct. Automatically called by DeepPhysX to check sample validity.
+        """
+
+        # See the network prediction even if the solver diverged.
+        return True
