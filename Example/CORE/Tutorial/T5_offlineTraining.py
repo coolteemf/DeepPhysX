@@ -18,9 +18,9 @@ from T3_configuration import env_config, net_config
 
 def launch_training():
     # Adapt the Dataset config with the existing dataset directory
-    dataset_config = BaseDatasetConfig(dataset_dir=os.path.join(os.getcwd(), 'sessions/tutorial_data_generation'),
+    dataset_config = (BaseDatasetConfig, dict(dataset_dir=os.path.join(os.getcwd(), 'sessions/tutorial_data_generation'),
                                        partition_size=1,
-                                       shuffle_dataset=False)
+                                       shuffle_dataset=False))
     # Create the Pipeline
     pipeline_config = dict(
         session_dir=os.getcwd(),

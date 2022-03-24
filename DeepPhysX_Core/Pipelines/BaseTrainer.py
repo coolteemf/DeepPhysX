@@ -28,9 +28,9 @@ class BaseTrainer(BasePipeline):
     """
 
     def __init__(self,
-                 network_config: BaseNetworkConfig,
-                 dataset_config: BaseDatasetConfig,
-                 environment_config: Optional[BaseEnvironmentConfig] = None,
+                 network_config: tuple[2],
+                 dataset_config: tuple[2],
+                 environment_config: Optional[tuple[2]] = None,
                  session_name: str = 'default',
                  session_dir: Optional[str] = None,
                  new_session: bool = True,
@@ -39,11 +39,6 @@ class BaseTrainer(BasePipeline):
                  batch_size: int = 0,
                  debug: bool = False):
 
-        if environment_config is None and dataset_config.dataset_dir is None:
-            print("BaseTrainer: You have to give me a dataset source (existing dataset directory or simulation to "
-                  "create data on the fly")
-            quit(0)
-
         BasePipeline.__init__(self,
                               network_config=network_config,
                               dataset_config=dataset_config,
@@ -51,6 +46,11 @@ class BaseTrainer(BasePipeline):
                               session_name=session_name,
                               session_dir=session_dir,
                               pipeline='training')
+
+        if self.environment_config is None and self.dataset_config.dataset_dir is None:
+            print("BaseTrainer: You have to give me a dataset source (existing dataset directory or simulation to "
+                  "create data on the fly")
+            quit(0)
 
         # Training variables
         self.nb_epochs = nb_epochs
@@ -76,7 +76,7 @@ class BaseTrainer(BasePipeline):
 
         self.manager = Manager(pipeline=self,
                                network_config=self.network_config,
-                               dataset_config=dataset_config,
+                               dataset_config=self.dataset_config,
                                environment_config=self.environment_config,
                                session_name=session_name,
                                session_dir=session_dir,

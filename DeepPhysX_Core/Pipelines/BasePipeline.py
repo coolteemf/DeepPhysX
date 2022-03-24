@@ -25,19 +25,25 @@ class BasePipeline:
     """
 
     def __init__(self,
-                 network_config: BaseNetworkConfig,
-                 dataset_config: BaseDatasetConfig,
-                 environment_config: BaseEnvironmentConfig,
+                 network_config: tuple[2],
+                 dataset_config: tuple[2],
+                 environment_config: tuple[2],
                  session_name: str = 'default',
                  session_dir: Optional[str] = None,
                  pipeline: Optional[str] = None):
 
+        # Network variables
+        self.network_config = network_config[0](**network_config[1])
+        # Dataset variables
+        self.dataset_config = dataset_config[0](**dataset_config[1])
+        # Simulation variables
+        self.environment_config = environment_config[0](**environment_config[1])
         # Check the arguments
-        if not isinstance(network_config, BaseNetworkConfig):
+        if not isinstance(self.network_config, BaseNetworkConfig):
             raise TypeError("[BaseRunner] The network configuration must be a BaseNetworkConfig")
-        if environment_config is not None and not isinstance(environment_config, BaseEnvironmentConfig):
+        if self.environment_config is not None and not isinstance(self.environment_config, BaseEnvironmentConfig):
             raise TypeError("[BaseRunner] The environment configuration must be a BaseEnvironmentConfig")
-        if dataset_config is not None and not isinstance(dataset_config, BaseDatasetConfig):
+        if self.dataset_config is not None and not isinstance(self.dataset_config, BaseDatasetConfig):
             raise TypeError("[BaseRunner] The dataset configuration must be a BaseDatasetConfig")
         if type(session_name) != str:
             raise TypeError("[BaseRunner] The network config must be a BaseNetworkConfig object.")
@@ -49,12 +55,6 @@ class BasePipeline:
         self.new_session: bool = True
         self.record_data: Optional[Dict[str, bool]] = None  # Can be of type {'in': bool, 'out': bool}
 
-        # Dataset variables
-        self.dataset_config: BaseDatasetConfig = dataset_config
-        # Network variables
-        self.network_config: BaseNetworkConfig = network_config
-        # Simulation variables
-        self.environment_config: BaseEnvironmentConfig = environment_config
         # Main manager
         self.manager: Optional[Manager] = None
 

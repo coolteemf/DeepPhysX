@@ -12,44 +12,35 @@ def BaseYamlExporter(filename: str=None, var_dict:dict=None):
     def convert_repr_to_name(repr_str: str):
         if repr_str.__contains__("<class "): #Class object, not instanciated
             return repr_str.split("<class '")[1].split("'>")[0]
-        elif repr_str.__contains__(" object "): #Instance object
-            return repr_str.split("<")[1].split(" ")[0]
-        elif repr_str.__contains__("("): #Namedtuple object
-            return repr_str.split("(")[0]
         else:
             raise ValueError(f"BaseYamlExporter: {repr_str} could not be converted to an object name.")
-    def convert_dict_rec(_dict):
-        if isinstance(_dict, dict):
-            keys = list(_dict.keys())
+    def convert_variables(var_container):
+        var_container_type = type(var_container)
+        if isinstance(var_container, dict):
+            keys = list(var_container.keys())
             if 'excluded' in keys: #Special keyword that specify which keys should be removed
-                for exclude_key in _dict['excluded']:
-                    if exclude_key in _dict: _dict.pop(exclude_key) #Remove the key listed in excluded
-                keys = list(_dict.keys()) #Update the keys
-        elif hasattr(_dict, '__iter__'):
-            keys = range(len(_dict))
+                for exclude_key in var_container['excluded']:
+                    if exclude_key in var_container: var_container.pop(exclude_key) #Remove the key listed in excluded
+                    keys = list(var_container.keys()) #Update the keys
+        elif isinstance(var_container, (tuple, list, set)): #Is not a dict but is iterable.
+            keys = range(len(var_container))
+            var_container = list(var_container) #Allows to change elements in var_container
         else:
-            raise ValueError(f"BaseYamlExporter: encountered an object to convert which is neither a dict nor iterable.")
+            raise ValueError(f"BaseYamlExporter: encountered an object to convert which is not a dict, tuple or list.")
         for k in keys:
-            v = _dict[k]
-            if isinstance(k, int) or not (k[:2] == '__' and k[-2:] == '__'):
-                if isinstance(v, type): #Object is just a type, not an instance
-                    name = convert_repr_to_name(repr(v))
-                    _dict.update({k: name})
-                else:
-                    if hasattr(v, '__dict__'): #Object is an instance and contains other objects, named by keys
-                        d = convert_dict_rec(getattr(v, '__dict__'))
-                        name = convert_repr_to_name(repr(v))
-                        _dict.update({k: {name: d}})
-                    elif isinstance(v, tuple) and hasattr(v, '_fields'): #Object is a namedtuple -> convert to dict
-                        d = convert_dict_rec(v._asdict())
-                        name = convert_repr_to_name(repr(v))
-                        _dict.update({k: {name: d}})
-                    elif hasattr(v, '__iter__') and not isinstance(v, str): #Object contains other objects but has no keys
-                        d = convert_dict_rec(v)
-                    else: #Object is assumed to not contain other objects
-                        pass
-        return _dict
-    convert_dict_rec(export_dict)
+            v = var_container[k]
+            if isinstance(v, type):  # Object is just a type, not an instance
+                new_val = convert_repr_to_name(repr(v))
+            elif hasattr(v, '__iter__') and not isinstance(v, str):  # Object contains other objects
+                new_val = convert_variables(v)
+            else:  # Object is assumed to not contain other objects
+                new_val = v
+            var_container[k] = new_val
+        if var_container_type in (tuple, set):
+            var_container = var_container_type(var_container) #Convert back to original type
+        return var_container
+
+    convert_variables(export_dict)
     if filename is not None:
         #Export to yaml file
         with open(filename,'w') as f:
