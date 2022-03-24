@@ -42,7 +42,7 @@ def create_runner():
     dpx_session, user_session = 'sessions/armadillo_training_dpx', 'sessions/armadillo_training_user'
     if not os.path.exists(dpx_session) and not os.path.exists(user_session):
         from download import download_training
-        print('Downloading Demo trained network to launch validation...')
+        print('Downloading Demo trained network to launch prediction...')
         download_training()
     session_dir = user_session if os.path.exists(user_session) else dpx_session
 

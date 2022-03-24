@@ -24,16 +24,6 @@ class ArmadilloDownloader(DataDownloader):
         self.nb_files = {'data': 5, 'train': 3}
 
 
-def download_dataset():
-    downloader = ArmadilloDownloader('doi:10.5072/FK2/B1NUY0')
-    downloader.get_session('data')
-
-
-def download_training():
-    downloader = ArmadilloDownloader('doi:10.5072/FK2/B1NUY0')
-    downloader.get_session('train')
-
-
 def download_all():
     downloader = ArmadilloDownloader('doi:10.5072/FK2/B1NUY0')
     downloader.get_session('data')

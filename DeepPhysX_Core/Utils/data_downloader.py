@@ -21,8 +21,7 @@ class DataDownloader:
                          'train': ''}
         self.tree = {'session_name': [[],
                                       {'subdirectory': []}]}
-        self.nb_files = {'all': 0, 'data': 0, 'train': 0}
-        self.nb_loaded = 0
+        self.nb_files = {'data': 0, 'train': 0}
 
     def get_filenames(self, DOI):
 
@@ -55,9 +54,10 @@ class DataDownloader:
     def download_files(self, file_list, repository, nb_files):
 
         # Download each file of the list
+        nb_loaded = 0
         for file_id in file_list:
-            self.nb_loaded += 1
-            print(f"\tDownloading file {self.nb_loaded}/{nb_files} in "
+            nb_loaded += 1
+            print(f"\tDownloading file {nb_loaded}/{nb_files} in "
                   f"{os.path.join(repository[len(os.getcwd()):], self.files[file_id])}")
             file = self.data_api.get_datafile(file_id)
             with open(os.path.join(repository, self.files[file_id]), 'wb') as f:

@@ -27,7 +27,7 @@ def launch_runner():
                                        visualizer=VedoVisualizer,
                                        as_tcp_ip_client=False,
                                        param_dict={'detailed': True,
-                                                   'pattern': False})
+                                                   'pattern': True})
 
     # UNet config
     nb_hidden_layers = 2
@@ -35,13 +35,14 @@ def launch_runner():
     layers_dim = [nb_neurons] + [nb_neurons for _ in range(nb_hidden_layers + 1)] + [nb_neurons]
     net_config = FCConfig(network_name='armadillo_FC',
                           dim_output=3,
-                          dim_layers=layers_dim)
+                          dim_layers=layers_dim,
+                          biases=True)
 
     # Dataset config
-    dataset_config = BaseDatasetConfig(partition_size=1, shuffle_dataset=True)
+    dataset_config = BaseDatasetConfig(normalize=True)
 
     # Runner
-    runner = BaseRunner(session_dir="sessions/armadillo",
+    runner = BaseRunner(session_dir="sessions/armadillo_training_dpx",
                         dataset_config=dataset_config,
                         environment_config=env_config,
                         network_config=net_config,
@@ -51,5 +52,11 @@ def launch_runner():
 
 
 if __name__ == '__main__':
+
+    dpx_dataset, dpx_training = 'sessions/armadillo_data_dpx', 'sessions/armadillo_training_dpx'
+    if not os.path.exists(dpx_dataset) or not os.path.exists(dpx_training):
+        from download import download_all
+        print('Downloading Demo training data to launch prediction...')
+        download_all()
 
     launch_runner()
