@@ -536,7 +536,6 @@ class DatasetManager:
             for field in self.fields:
                 inverted_list[i][field] = self.mul_part_list_path[field][i]
         self.mul_part_list_path = inverted_list
-        print(self.mul_part_list_path)
 
         # 4. Define the slicing pattern of reading for partitions
         for idx in nb_sample_per_partition[self.fields[0]]:
