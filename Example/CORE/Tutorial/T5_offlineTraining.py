@@ -8,6 +8,8 @@ import copy
 import os
 
 # DeepPhysX related imports
+from DeepPhysX_Core.Pipelines.BaseYamlLoader import BaseYamlLoader
+
 from DeepPhysX_Core.Pipelines.BaseYamlExporter import BaseYamlExporter
 from DeepPhysX_Core.Pipelines.BaseTrainer import BaseTrainer
 from DeepPhysX_Core.Dataset.BaseDatasetConfig import BaseDatasetConfig
@@ -36,6 +38,7 @@ def launch_training():
     #export the parameters to a conf file
     conf_export_dir = os.path.join(pipeline.manager.session_dir,'conf.yml')
     pipeline_config_exported = BaseYamlExporter(conf_export_dir, pipeline_config)
+    pipeline_config_loaded = BaseYamlLoader(conf_export_dir)
     # Launch the Pipeline
     pipeline.execute()
 

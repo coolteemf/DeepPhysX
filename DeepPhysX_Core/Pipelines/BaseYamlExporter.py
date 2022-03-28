@@ -31,6 +31,7 @@ def BaseYamlExporter(filename: str=None, var_dict:dict=None):
             v = var_container[k]
             if isinstance(v, type):  # Object is just a type, not an instance
                 new_val = convert_repr_to_name(repr(v))
+                new_val = dict(type=new_val)
             elif hasattr(v, '__iter__') and not isinstance(v, str):  # Object contains other objects
                 new_val = convert_variables(v)
             else:  # Object is assumed to not contain other objects
