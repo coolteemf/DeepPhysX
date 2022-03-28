@@ -18,7 +18,7 @@ def BaseYamlLoader(filename: str):
             keys = range(len(var_container))
             var_container = list(var_container) #Allows to change elements in var_container
         else:
-            raise ValueError(f"BaseYamlExporter: encountered an object to convert which is not a dict, tuple or list.")
+            raise ValueError(f"BaseYamlLoader: encountered an object to convert which is not a dict, tuple or list.")
         for k in keys:
             v = var_container[k]
             # Detection of a type object that was converted to str
