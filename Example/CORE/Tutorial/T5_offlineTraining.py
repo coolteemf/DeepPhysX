@@ -35,10 +35,13 @@ def launch_training():
         batch_size=10,
     )
     pipeline = BaseTrainer(**pipeline_config)
-    #export the parameters to a conf file
+    # export the parameters to a conf file
     conf_export_dir = os.path.join(pipeline.manager.session_dir,'conf.yml')
+
     pipeline_config_exported = BaseYamlExporter(conf_export_dir, pipeline_config)
     pipeline_config_loaded = BaseYamlLoader(conf_export_dir)
+    print(f"Saved pipeline config is {'the same as' if pipeline_config_loaded == pipeline_config else 'different from'}"
+          f" the original config.")
     # Launch the Pipeline
     pipeline.execute()
 
