@@ -1,4 +1,4 @@
-from typing import Any, Optional, Dict
+from typing import Any, Optional, Dict, Union
 from numpy import ndarray
 
 from DeepPhysX_Core.Manager.DatasetManager import DatasetManager
@@ -25,8 +25,8 @@ class DataManager:
     """
 
     def __init__(self,
-                 dataset_config: Optional[BaseDatasetConfig] = None,
-                 environment_config: Optional[BaseEnvironmentConfig] = None,
+                 dataset_config: Optional[Union[BaseDatasetConfig], tuple[2]] = None,
+                 environment_config: Optional[Union[BaseEnvironmentConfig, tuple[2]]] = None,
                  manager: Optional[Any] = None,
                  session_name: str = 'default',
                  session_dir: Optional[str] = None,
@@ -43,14 +43,25 @@ class DataManager:
         self.environment_manager: Optional[EnvironmentManager] = None
         self.allow_dataset_fetch: bool = True
         self.data: Optional[Dict[str, ndarray]] = None
+
+        #We need to instantiate environment_config because its attributes are used afterwards
+        if isinstance(environment_config, tuple):
+            env_config = environment_config[0](**environment_config[1])
+        else:
+            env_config = environment_config
+        if isinstance(dataset_config, tuple):
+            data_config = dataset_config[0](**dataset_config[1])
+        else:
+            data_config = dataset_config
+
         # Training
         if self.is_training:
             # Always create a dataset_manager for training
             create_dataset = True
             # Create an environment if prediction must be applied else ask DatasetManager
             create_environment = False
-            if environment_config is not None:
-                create_environment = None if not environment_config.use_dataset_in_environment else True
+            if env_config is not None:
+                create_environment = None if not env_config.use_dataset_in_environment else True
         # Prediction
         else:
             # Always create an environment for prediction
@@ -60,7 +71,7 @@ class DataManager:
 
         # Create dataset if required
         if create_dataset:
-            self.dataset_manager = DatasetManager(data_manager=self, dataset_config=dataset_config,
+            self.dataset_manager = DatasetManager(data_manager=self, dataset_config=data_config,
                                                   session_name=session_name, session_dir=session_dir,
                                                   new_session=new_session, train=self.is_training,
                                                   record_data=record_data)
@@ -68,7 +79,7 @@ class DataManager:
         if create_environment is None:  # If None then the dataset_manager exists
             create_environment = self.dataset_manager.new_dataset()
         if create_environment:
-            self.environment_manager = EnvironmentManager(data_manager=self, environment_config=environment_config,
+            self.environment_manager = EnvironmentManager(data_manager=self, environment_config=env_config,
                                                           batch_size=batch_size, train=self.is_training)
 
     def get_manager(self) -> Any:

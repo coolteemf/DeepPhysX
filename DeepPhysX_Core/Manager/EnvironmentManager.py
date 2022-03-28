@@ -11,7 +11,7 @@ class EnvironmentManager:
     """
     | Deals with the online generation of data for both training and running of the neural networks.
 
-    :param Optional[BaseEnvironmentConfig] environment_config: Specialisation containing the parameters of the
+    :param BaseEnvironmentConfig environment_config: Specialisation containing the parameters of the
                                                                environment manager
     :param DataManager data_manager: DataManager that handles the EnvironmentManager
     :param int batch_size: Number of samples in a batch of data
@@ -19,10 +19,15 @@ class EnvironmentManager:
     """
 
     def __init__(self,
-                 environment_config: Optional[BaseEnvironmentConfig] = None,
+                 environment_config: Union[BaseEnvironmentConfig, tuple[2]],
                  data_manager: Any = None,
                  batch_size: int = 1,
                  train: bool = True):
+
+        if isinstance(environment_config, tuple):
+            self.environment_config = environment_config[0](**environment_config[1])
+        else:
+            self.environment_config = environment_config
 
         self.name: str = self.__class__.__name__
 
@@ -31,34 +36,34 @@ class EnvironmentManager:
 
         # Data producing parameters
         self.batch_size: int = batch_size
-        self.always_create_data: bool = environment_config.always_create_data
-        self.use_dataset_in_environment: bool = environment_config.use_dataset_in_environment
-        self.simulations_per_step: int = environment_config.simulations_per_step
-        self.max_wrong_samples_per_step: int = environment_config.max_wrong_samples_per_step
+        self.always_create_data: bool = self.environment_config.always_create_data
+        self.use_dataset_in_environment: bool = self.environment_config.use_dataset_in_environment
+        self.simulations_per_step: int = self.environment_config.simulations_per_step
+        self.max_wrong_samples_per_step: int = self.environment_config.max_wrong_samples_per_step
         self.train: bool = train
         self.dataset_batch: Optional[Dict[str, Dict[int, Any]]] = None
         # self.prediction_requested: bool = False
 
         # Create a single Environment or a TcpIpServer
-        self.number_of_thread: int = environment_config.number_of_thread
+        self.number_of_thread: int = self.environment_config.number_of_thread
         self.server: Optional[TcpIpServer] = None
         self.environment: Optional[BaseEnvironment] = None
-        if environment_config.as_tcp_ip_client:
-            self.server = environment_config.create_server(environment_manager=self, batch_size=batch_size)
+        if self.environment_config.as_tcp_ip_client:
+            self.server = self.environment_config.create_server(environment_manager=self, batch_size=batch_size)
         else:
-            self.environment = environment_config.create_environment(environment_manager=self)
+            self.environment = self.environment_config.create_environment(environment_manager=self)
 
         # Define get_data and dispatch methods
         self.get_data = self.get_data_from_server if self.server else self.get_data_from_environment
         self.dispatch_batch = self.dispatch_batch_to_server if self.server else self.dispatch_batch_to_environment
 
         # Init visualizer
-        if environment_config.visualizer is None:
+        if self.environment_config.visualizer is None:
             self.visualizer_manager = None
         else:
             self.visualizer_manager = VisualizerManager(data_manager=data_manager,
-                                                        visualizer=environment_config.visualizer,
-                                                        screenshot_rate=environment_config.screenshot_sample_rate)
+                                                        visualizer=self.environment_config.visualizer,
+                                                        screenshot_rate=self.environment_config.screenshot_sample_rate)
             self.init_visualizer()
 
     def get_data_manager(self) -> Any:
