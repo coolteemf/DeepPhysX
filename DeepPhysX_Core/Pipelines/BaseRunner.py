@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Union
 from numpy import ndarray
 
 from DeepPhysX_Core.Network.BaseNetworkConfig import BaseNetworkConfig
@@ -24,9 +24,9 @@ class BaseRunner(BasePipeline):
     """
 
     def __init__(self,
-                 network_config: BaseNetworkConfig,
-                 environment_config: BaseEnvironmentConfig,
-                 dataset_config: Optional[BaseDatasetConfig] = None,
+                 network_config: Union[tuple[2], BaseNetworkConfig],
+                 environment_config: Union[tuple[2], BaseEnvironmentConfig],
+                 dataset_config: Optional[Union[tuple[2], BaseDatasetConfig]] = None,
                  session_name: str = 'default',
                  session_dir: Optional[str] = None,
                  nb_steps: int = 0,

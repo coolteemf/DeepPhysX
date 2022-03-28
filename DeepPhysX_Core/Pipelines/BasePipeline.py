@@ -25,24 +25,27 @@ class BasePipeline:
     """
 
     def __init__(self,
-                 network_config: tuple[2],
-                 dataset_config: tuple[2],
-                 environment_config: tuple[2],
+                 network_config: Union[tuple[2], BaseNetworkConfig],
+                 environment_config: Union[tuple[2], BaseEnvironmentConfig],
+                 dataset_config: Union[tuple[2], BaseDatasetConfig],
                  session_name: str = 'default',
                  session_dir: Optional[str] = None,
                  pipeline: Optional[str] = None):
 
-        # Network variables
-        self.network_config = network_config[0](**network_config[1])
-        # Dataset variables
-        self.dataset_config = dataset_config[0](**dataset_config[1])
-        # Simulation variables
-        self.environment_config = environment_config[0](**environment_config[1])
         # Check the arguments
+        # Network variables
+        if isinstance(network_config, tuple):
+            self.network_config = network_config[0](**network_config[1])
         if not isinstance(self.network_config, BaseNetworkConfig):
             raise TypeError("[BaseRunner] The network configuration must be a BaseNetworkConfig")
+        # Simulation variables
+        if isinstance(environment_config, tuple):
+            self.environment_config = environment_config[0](**environment_config[1])
         if self.environment_config is not None and not isinstance(self.environment_config, BaseEnvironmentConfig):
             raise TypeError("[BaseRunner] The environment configuration must be a BaseEnvironmentConfig")
+        # Dataset variables
+        if isinstance(dataset_config, tuple):
+            self.dataset_config = dataset_config[0](**dataset_config[1])
         if self.dataset_config is not None and not isinstance(self.dataset_config, BaseDatasetConfig):
             raise TypeError("[BaseRunner] The dataset configuration must be a BaseDatasetConfig")
         if type(session_name) != str:

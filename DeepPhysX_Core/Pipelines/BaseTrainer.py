@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Union
 from sys import stdout
 
 from DeepPhysX_Core.Pipelines.BasePipeline import BasePipeline
@@ -28,9 +28,9 @@ class BaseTrainer(BasePipeline):
     """
 
     def __init__(self,
-                 network_config: tuple[2],
-                 dataset_config: tuple[2],
-                 environment_config: Optional[tuple[2]] = None,
+                 network_config: Union[tuple[2], BaseNetworkConfig],
+                 environment_config: Optional[Union[tuple[2], BaseEnvironmentConfig]],
+                 dataset_config: Union[tuple[2], BaseDatasetConfig],
                  session_name: str = 'default',
                  session_dir: Optional[str] = None,
                  new_session: bool = True,
