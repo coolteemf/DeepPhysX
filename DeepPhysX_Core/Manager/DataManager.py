@@ -25,7 +25,7 @@ class DataManager:
     """
 
     def __init__(self,
-                 dataset_config: Optional[Union[BaseDatasetConfig], tuple[2]] = None,
+                 dataset_config: Optional[Union[BaseDatasetConfig, tuple[2]]] = None,
                  environment_config: Optional[Union[BaseEnvironmentConfig, tuple[2]]] = None,
                  manager: Optional[Any] = None,
                  session_name: str = 'default',
