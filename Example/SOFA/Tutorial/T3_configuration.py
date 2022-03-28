@@ -14,7 +14,7 @@ from T2_network import DummyNetwork, DummyOptimization
 
 
 # Create the Environment config
-env_config = SofaEnvironmentConfig(environment_class=DummyEnvironment,      # The Environment class to create
+env_config = (SofaEnvironmentConfig, dict(environment_class=DummyEnvironment,      # The Environment class to create
                                    visualizer=None,                         # The Visualizer to use
                                    simulations_per_step=1,                  # The number of bus-steps to run
                                    use_dataset_in_environment=False,        # Dataset will not be sent to Environment
@@ -22,10 +22,10 @@ env_config = SofaEnvironmentConfig(environment_class=DummyEnvironment,      # Th
                                    as_tcp_ip_client=True,                   # Create a Client / Server architecture
                                    number_of_thread=3,                      # Number of Clients connected to Server
                                    ip_address='localhost',                  # IP address to use for communication
-                                   port=10001)                              # Port number to use for communication
+                                   port=10001))                              # Port number to use for communication
 
 # Create the Network config
-net_config = BaseNetworkConfig(network_class=DummyNetwork,                  # The Network class to create
+net_config = (BaseNetworkConfig, dict(network_class=DummyNetwork,                  # The Network class to create
                                optimization_class=DummyOptimization,        # The Optimization class to create
                                network_name='DummyNetwork',                 # Nickname of the Network
                                network_type='Dummy',                        # Type of the Network
@@ -33,8 +33,8 @@ net_config = BaseNetworkConfig(network_class=DummyNetwork,                  # Th
                                require_training_stuff=False,                # loss and optimizer can remain at None
                                lr=None,                                     # Learning rate
                                loss=None,                                   # Loss class
-                               optimizer=None)                              # Optimizer class
+                               optimizer=None))                              # Optimizer class
 
 # Create the Dataset config
-dataset_config = BaseDatasetConfig(partition_size=1,                        # Max size of the Dataset
-                                   shuffle_dataset=False)                   # Dataset should be shuffled
+dataset_config = (BaseDatasetConfig, dict(partition_size=1,                        # Max size of the Dataset
+                                   shuffle_dataset=False))                   # Dataset should be shuffled

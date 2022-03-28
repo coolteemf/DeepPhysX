@@ -23,19 +23,19 @@ import Environment.parameters as parameters
 def create_runner():
 
     # Environment config
-    env_config = SofaEnvironmentConfig(environment_class=ArmadilloPrediction,
-                                       as_tcp_ip_client=False)
+    env_config = (SofaEnvironmentConfig, dict(environment_class=ArmadilloPrediction,
+                                       as_tcp_ip_client=False))
 
     # UNet config
     nb_hidden_layers = 2
     nb_neurons = parameters.p_model.nb_nodes * 3
     layers_dim = [nb_neurons] + [nb_neurons for _ in range(nb_hidden_layers + 1)] + [nb_neurons]
-    net_config = FCConfig(network_name='armadillo_FC',
+    net_config = (FCConfig, dict(network_name='armadillo_FC',
                           dim_output=3,
-                          dim_layers=layers_dim)
+                          dim_layers=layers_dim))
 
     # Dataset config
-    dataset_config = BaseDatasetConfig(partition_size=1, shuffle_dataset=True)
+    dataset_config = (BaseDatasetConfig, dict(partition_size=1, shuffle_dataset=True))
 
     # Runner
     return SofaRunner(session_dir="sessions/armadillo",
