@@ -100,7 +100,7 @@ class ArmadilloSofa(SofaEnvironment):
         self.root.addChild('fem')
 
         # Surrounding box
-        self.root.fem.addObject('BoxROI', box=p_grid.b_box, drawBoxes=True, drawSize='1.0')
+        self.root.fem.addObject('BoxROI', box=p_grid.b_box, drawBoxes=True, drawSize=1.)
 
         # ODE solver + Static solver
         self.solver = self.root.fem.addObject('StaticODESolver', name='ODESolver', newton_iterations=20,
@@ -138,7 +138,7 @@ class ArmadilloSofa(SofaEnvironment):
 
         # Visual
         self.root.fem.addChild('visual')
-        self.f_visu = self.root.fem.visual.addObject('OglModel', name="OGL", src='@../../Mesh', color='green')
+        self.f_visu = self.root.fem.visual.addObject('OglModel', src='@../../Mesh', color='green')
         self.root.fem.visual.addObject('BarycentricMapping', input='@../SparseGridMO', output='@./')
 
     def createNN(self):
@@ -152,7 +152,7 @@ class ArmadilloSofa(SofaEnvironment):
         # Surrounding box
         if not self.create_model['fem']:
             self.root.nn.addObject('MechanicalObject')
-            self.root.nn.addObject('BoxROI', name='FixedBox', box=p_grid.b_box, drawBoxes=True, drawSize=1.)
+            self.root.nn.addObject('BoxROI', box=p_grid.b_box, drawBoxes=True, drawSize=1.)
 
         # Surface
         self.root.nn.addChild('surface')
@@ -172,7 +172,7 @@ class ArmadilloSofa(SofaEnvironment):
 
         # Visual
         self.root.nn.addChild('visual')
-        self.n_visu = self.root.nn.visual.addObject('OglModel', name="OGL", src='@../../MeshCoarse', color='orange')
+        self.n_visu = self.root.nn.visual.addObject('OglModel', src='@../../MeshCoarse', color='orange')
         self.root.nn.visual.addObject('BarycentricMapping', input='@../surface/SurfaceMO', output='@./')
 
     def create_forces(self):

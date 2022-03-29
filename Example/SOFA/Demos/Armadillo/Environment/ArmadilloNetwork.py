@@ -110,7 +110,7 @@ class ArmadilloNetwork(ArmadilloTraining):
         U = np.reshape(prediction, self.data_size) * p_model.size
         self.n_surface_mo.position.value = self.n_surface_mo.rest_position.array() + U
 
-    def check_sample(self, check_input=True, check_output=True):
+    def check_sample(self):
         """
         Check if the produced sample is correct. Automatically called by DeepPhysX to check sample validity.
         """
