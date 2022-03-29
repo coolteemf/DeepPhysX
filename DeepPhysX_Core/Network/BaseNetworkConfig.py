@@ -160,8 +160,7 @@ class BaseNetworkConfig:
             data_transformation = self.data_transformation_class(config=self.data_transformation_config)
         except:
             raise ValueError(
-                f"[{self.__class__.__name__}] Given 'data_transformation_class' got an unexpected keyword argument "
-                f"'config'")
+                f"[{self.__class__.__name__}] Could not build data_transformation {self.data_transformation_class}")
         if not isinstance(data_transformation, DataTransformation):
             raise TypeError(
                 f"[{self.__class__.__name__}] Wrong 'data_transformation_class' type: DataTransformation required, "
