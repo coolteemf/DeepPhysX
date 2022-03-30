@@ -4,6 +4,7 @@ Launch the training session with a VedoVisualizer.
 """
 
 # Python related imports
+import os
 import sys
 import torch
 
@@ -31,8 +32,7 @@ def launch_trainer():
     env_config = SofaEnvironmentConfig(environment_class=ArmadilloTraining,
                                        visualizer=VedoVisualizer,
                                        number_of_thread=int(sys.argv[1]),
-                                       always_create_data=False,
-                                       use_prediction_in_environment=False)
+                                       always_create_data=False)
 
     # UNet config
     nb_hidden_layers = 2
@@ -49,7 +49,8 @@ def launch_trainer():
     dataset_config = BaseDatasetConfig(partition_size=1, shuffle_dataset=True)
 
     # Trainer
-    trainer = BaseTrainer(session_name="sessions/armadillo",
+    trainer = BaseTrainer(session_dir=os.getcwd(),
+                          session_name="sessions/armadillo",
                           dataset_config=dataset_config,
                           environment_config=env_config,
                           network_config=net_config,

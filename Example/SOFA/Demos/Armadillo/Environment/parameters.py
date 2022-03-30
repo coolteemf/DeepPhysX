@@ -12,7 +12,8 @@ from numpy import array
 from collections import namedtuple
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-from utils import define_bbox, compute_grid_resolution, find_fixed_box, find_extremities, get_nb_nodes, \
+from DeepPhysX.Example.SOFA.Demos.Armadillo.Environment.utils import define_bbox, compute_grid_resolution, \
+    find_fixed_box, find_extremities, get_nb_nodes, \
     get_object_max_size
 
 # Model
