@@ -1,32 +1,44 @@
-# # Automatically download and setup the missing libraries
-# from setuptools import find_packages, setup
-#
-# setup(
-#     name='DeepPhysX_Core',
-#     packages=find_packages(include=['DeepPhysX_Core', 'DeepPhysX_PyTorch', 'DeepPhysX_Sofa']),
-#     version='20.12.00',
-#     description='Core project of the DeepPhysX_Core environment',
-#     author='Mimesis',
-#     license='',
-#     #install_requires=["setuptools", "numpy", "wheel", "twine"]
-# )
-#
-#
-# # Automatically add DeepPhysX_Core modules to the python user site
-# import os
-# deep_physix_directory = f"{os.path.dirname(os.path.realpath(__file__))}"
-# for path in os.listdir(deep_physix_directory):
-#     if os.path.isdir(path) and 'DeepPhysX_Core' in path:
-#         print(f"Linking {deep_physix_directory}/{str(path)} to site package")
-#         os.system(f'ln -sFfv {deep_physix_directory}/{str(path)} $(python3 -m site --user-site)')
+from setuptools import setup, find_packages
+from config import PACKAGES
 
-from pathlib import Path
-from os import listdir, system
-from os.path import join
-import site
-current_absolute_path = Path(__file__).parent.absolute()
 
-for dir in listdir(current_absolute_path):
-    if "DeepPhysX_" in dir:
-        system(f'ln -sFfv {join(current_absolute_path,dir)} {site.USER_SITE}')
-system(f'ln -sFfv {current_absolute_path} {site.USER_SITE}')
+# Init DeepPhysX packages and dependencies to install
+roots = ['Core']
+available = {'ai': ['PyTorch'],
+             'simu': ['Sofa']}
+dependencies = {'Core': ['numpy', 'vedo', 'tensorboard', 'tensorboardX', 'pyDataverse'],
+                'Sofa': [],
+                'PyTorch': ['torch', 'psutil']}
+packages = []
+requires = []
+
+# Include user config
+user_ai_packages = []
+user_simu_packages = []
+for user_packages, key in zip([user_ai_packages, user_simu_packages], ['ai', 'simu']):
+    for root in available[key]:
+        if PACKAGES[root.lower()]:
+            user_packages.append(root)
+
+# Define the main packages to install
+roots += user_ai_packages
+roots += user_simu_packages
+
+# Configure packages and subpackages list and dependencies list
+prefix = 'DeepPhysX_'
+packages = [f'{prefix + root}' for root in roots]
+requires = []
+for root in roots:
+    sub_packages = find_packages(where=prefix + root)
+    packages += [f'{prefix + root}.{sub_package}' for sub_package in sub_packages]
+    requires += dependencies[root]
+
+# Installation
+setup(name='DeepPhysX',
+      version='1.0',
+      description='A Python framework interfacing AI with numerical simulation.',
+      author='Mimesis',
+      author_email='robin.enjalbert@inria.fr',
+      packages=packages,
+      install_requires=requires,
+      )
