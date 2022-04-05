@@ -27,6 +27,7 @@ class BaseDataGenerator:
                  dataset_config: BaseDatasetConfig,
                  environment_config: BaseEnvironmentConfig,
                  session_name: str = 'default',
+                 session_dir: str = None,
                  nb_batches: int = 0,
                  batch_size: int = 0,
                  record_input: bool = True,
@@ -34,15 +35,19 @@ class BaseDataGenerator:
 
         # todo: inherit from Pipeline
         # Init session repository
-        session_dir = create_dir(osPathJoin(get_first_caller(), session_name), dir_name=session_name)
-        session_name = (session_name if session_name is not None else basename(session_dir)).split("/")[-1]
+        if session_dir is None:
+            # Create manager directory from the session name
+            self.session_dir: str = create_dir(osPathJoin(get_first_caller(), session_name), dir_name=session_name)
+        else:
+            self.session_dir: str = osPathJoin(session_dir, session_name)
+        session_name = basename(self.session_dir).split("/")[-1]
 
         # Create a DataManager directly
         self.data_manager = DataManager(manager=self,
                                         dataset_config=dataset_config,
                                         environment_config=environment_config,
                                         session_name=session_name,
-                                        session_dir=session_dir,
+                                        session_dir=self.session_dir,
                                         new_session=True,
                                         record_data={'input': record_input, 'output': record_output},
                                         batch_size=batch_size)
