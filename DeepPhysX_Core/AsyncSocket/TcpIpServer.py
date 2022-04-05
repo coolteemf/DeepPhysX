@@ -151,7 +151,7 @@ class TcpIpServer(TcpIpObject):
         async_run(self.__request_data_to_clients(get_inputs=get_inputs, get_outputs=get_outputs, animate=animate))
 
         # Sort stored data between following fields
-        data_sorter = {'input': [], 'dataset_in': {}, 'output': [], 'dataset_out': {}, 'loss': {}}
+        data_sorter = {'input': [], 'dataset_in': {}, 'output': [], 'dataset_out': {}, 'loss': {}, 'additional_fields':{}}
         # Map produced samples with clients ID
         self.sample_to_client_id = []
 

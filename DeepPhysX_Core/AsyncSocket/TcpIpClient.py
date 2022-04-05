@@ -44,6 +44,8 @@ class TcpIpClient(TcpIpObject, AbstractEnvironment):
                                         send_read_command=False)
         # Flag to trigger client's shutdown
         self.close_client: bool = False
+        self.additional_inputs = None
+        self.additional_outputs = None
 
     ##########################################################################################
     ##########################################################################################
