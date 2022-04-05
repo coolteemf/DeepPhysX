@@ -130,6 +130,14 @@ class Manager:
         prediction, loss_dict = self.network_manager.compute_prediction_and_loss(self.data_manager.data, optimize=False)
         return prediction, loss_dict
 
+    def set_eval(self) -> None:
+        self.network_manager.set_eval()
+        self.data_manager.set_eval()
+
+    def set_train(self) -> None:
+        self.network_manager.set_train()
+        self.data_manager.set_train()
+
     def save_network(self) -> None:
         """
         | Save network weights as a pth file

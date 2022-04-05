@@ -224,6 +224,12 @@ class NetworkManager:
             print(f"[{self.name}] Saving intermediate network at {path}.")
             self.network.save_parameters(path)
 
+    def set_eval(self) -> None:
+        self.network.set_eval()
+
+    def set_train(self) -> None:
+        self.network.set_train()
+
     def close(self) -> None:
         """
         | Closing procedure.
