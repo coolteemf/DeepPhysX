@@ -68,7 +68,7 @@ class Manager:
         else:
             raise ValueError("[Manager] The pipeline must be either training or prediction.")
 
-        self.session_name: str = (session_name if session_name is not None else basename(session_dir)).split("/")[-1]
+        self.session_name: str = basename(self.session_dir).split("/")[-1]
         # Always create the NetworkMmanager
         self.network_manager = NetworkManager(manager=self,
                                               network_config=network_config,
