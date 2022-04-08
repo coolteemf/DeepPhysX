@@ -1,8 +1,8 @@
 """
 validation.py
 Launch the prediction session in a SOFA GUI. Compare the two models.
-Use 'python3 validation.py -e' to run the pipeline with newly created samples in Environment (default).
-Use 'python3 validation.py -d' to run the pipeline with existing samples from a Dataset.
+Use 'python3 validation.py' to run the pipeline with existing samples from a Dataset (default).
+Use 'python3 validation.py -e' to run the pipeline with newly created samples in Environment.
 """
 
 # Python related imports
@@ -46,11 +46,9 @@ def create_runner(dataset_dir):
                                        use_mode=None if dataset_dir is None else 'Validation')
 
     # Define trained network session
-    dpx_session, user_session = 'sessions/liver_training_dpx', 'sessions/liver_training_user_3'
-    if not os.path.exists(dpx_session) and not os.path.exists(user_session):
-        from download import download_training
-        print('Downloading Demo trained network to launch validation...')
-        download_training()
+    dpx_session = 'sessions/liver_training_dpx'
+    user_session = 'sessions/liver_training_user'
+    # Take user session by default
     session_dir = user_session if os.path.exists(user_session) else dpx_session
 
     # Runner
@@ -63,24 +61,27 @@ def create_runner(dataset_dir):
 
 if __name__ == '__main__':
 
-    # Get dataset option
-    dataset = None
+    # Check data
+    if not os.path.exists('Environment/models'):
+        from download import download_all
+        print('Downloading Demo data...')
+        download_all()
+
+    # Define dataset
+    dpx_session = 'sessions/liver_data_dpx'
+    user_session = 'sessions/liver_data_user'
+    # Take user dataset by default
+    dataset = user_session if os.path.exists(user_session) else dpx_session
+
+    # Get option
     if len(sys.argv) > 1:
 
         # Check script option
-        if sys.argv[1] not in ['-e', '-d']:
-            print("Script option must be either '-e' for samples produced in Environment (default) or '-d' for samples "
-                  "loaded from an existing Dataset.")
+        if sys.argv[1] != '-e':
+            print("Script option must be '-e' for samples produced in Environment(s)."
+                  "Without option, samples are loaded from an existing Dataset.")
             quit(0)
-
-        # Check Dataset existence for normalization coefficients
-        dpx_session = 'sessions/liver_data_dpx'
-        # if not os.path.exists(dpx_session):
-        #     from download import download_dataset
-        #     print('Downloading Demo dataset to launch training...')
-        #     download_dataset()
-
-        dataset = dpx_session if sys.argv[1] == '-d' else None
+        dataset = None
 
     # Create SOFA runner
     runner = create_runner(dataset)
