@@ -4,6 +4,7 @@ This script provides automatic download methods to get the training materials as
 Methods will be called within training and predictions scripts if repositories are missing.
 Running this script directly will download the full set of data.
 """
+
 import os.path
 
 from DeepPhysX_Core.Utils.data_downloader import DataDownloader
