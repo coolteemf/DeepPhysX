@@ -6,6 +6,7 @@ Use 'python3 dataset.py -v' to produce validation Dataset.
 """
 
 # Python related imports
+import os
 import sys
 
 # DeepPhysX related imports
