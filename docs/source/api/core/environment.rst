@@ -1,6 +1,8 @@
 Environment
 ===========
 
+.. _environment.baseenvironment:
+
 BaseEnvironment
 ---------------
 
@@ -10,6 +12,7 @@ Bases:
 .. autoclass:: BaseEnvironment.BaseEnvironment
     :members:
 
+.. _environment.baseenvironmentconfig:
 
 BaseEnvironmentConfig
 ---------------------

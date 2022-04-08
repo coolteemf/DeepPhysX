@@ -1,6 +1,8 @@
 UNet
 ====
 
+.. _unet.unet:
+
 UNet
 ----
 
@@ -10,6 +12,7 @@ Base:
 .. autoclass:: UNet.UNet
     :members:
 
+.. _unet.unetconfig:
 
 UNetConfig
 ----------
@@ -20,6 +23,7 @@ Base:
 .. autoclass:: UNetConfig.UNetConfig
     :members:
 
+.. _unet.unetdatatransformation:
 
 UNetDataTransformation
 ----------------------

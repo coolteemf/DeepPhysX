@@ -1,6 +1,8 @@
 Environment
 ===========
 
+.. _environment.sofaenvironment:
+
 SofaEnvironment
 ---------------
 
@@ -12,6 +14,7 @@ Base:
               close, set_training_data, set_loss_data, set_additional_dataset, reset_additional_datasets,
               get_prediction, update_visualisation
 
+.. _environment.sofaenvironmentconfig:
 
 SofaEnvironmentConfig
 ---------------------

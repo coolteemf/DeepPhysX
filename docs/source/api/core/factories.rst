@@ -1,3 +1,8 @@
+.. _factories:
+
+Factories
+=========
+
 ArrowsFactory
 -------------
 

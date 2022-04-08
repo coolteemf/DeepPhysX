@@ -1,12 +1,15 @@
 AsyncSocket
 ===========
 
+.. _asyncsocket.abstractenvironment:
+
 AbstractEnvironment
 ___________________
 
 .. autoclass:: AbstractEnvironment.AbstractEnvironment
     :members:
 
+.. _asyncsocket.bytesconverter:
 
 BytesConverter
 ______________
@@ -14,6 +17,7 @@ ______________
 .. autoclass:: BytesConverter.BytesConverter
     :members:
 
+.. _asyncsocket.tcpipclient:
 
 TcpIpClient
 ___________
@@ -26,6 +30,7 @@ Bases:
     :members:
     :private-members:
 
+.. _asyncsocket.tcpipobject:
 
 TcpIpObject
 ___________
@@ -34,6 +39,7 @@ ___________
     :members:
     :private-members:
 
+.. _asyncsocket.tcpipserver:
 
 TcpIpServer
 ___________
