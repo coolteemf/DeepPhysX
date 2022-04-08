@@ -30,7 +30,7 @@ def create_runner(dataset_dir):
                                        param_dict={'compute_sample': dataset_dir is None},
                                        as_tcp_ip_client=False)
 
-    # UNet config
+    # FC config
     nb_hidden_layers = 2
     nb_neurons = parameters.p_liver.nb_nodes * 3
     layers_dim = [nb_neurons] + [nb_neurons for _ in range(nb_hidden_layers + 1)] + [nb_neurons]

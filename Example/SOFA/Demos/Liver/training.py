@@ -35,7 +35,7 @@ def launch_trainer(dataset_dir, nb_env):
                                        visualizer=VedoVisualizer,
                                        number_of_thread=nb_env)
 
-    # UNet config
+    # FC config
     nb_hidden_layers = 2
     nb_neurons = parameters.p_liver.nb_nodes * 3
     layers_dim = [nb_neurons] + [nb_neurons for _ in range(nb_hidden_layers + 1)] + [nb_neurons]
