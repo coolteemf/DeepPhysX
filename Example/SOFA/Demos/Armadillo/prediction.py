@@ -39,11 +39,9 @@ def create_runner():
     dataset_config = BaseDatasetConfig(normalize=True)
 
     # Define trained network session
-    dpx_session, user_session = 'sessions/armadillo_training_dpx', 'sessions/armadillo_training_user'
-    if not os.path.exists(dpx_session) and not os.path.exists(user_session):
-        from download import download_training
-        print('Downloading Demo trained network to launch prediction...')
-        download_training()
+    dpx_session = 'sessions/armadillo_training_dpx'
+    user_session = 'sessions/armadillo_training_user'
+    # Take user session by default
     session_dir = user_session if os.path.exists(user_session) else dpx_session
 
     # Runner
@@ -55,6 +53,12 @@ def create_runner():
 
 
 if __name__ == '__main__':
+
+    # Check data
+    if not os.path.exists('Environment/models'):
+        from download import download_all
+        print('Downloading Demo data...')
+        download_all()
 
     # Create SOFA runner
     runner = create_runner()

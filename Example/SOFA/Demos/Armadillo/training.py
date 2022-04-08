@@ -1,8 +1,8 @@
 """
 training.py
 Launch the training session with a VedoVisualizer.
-Use 'python3 training.py <nb_thread>' to run the pipeline with newly created samples in Environment (default).
-Use 'python3 training.py -d' to run the pipeline with existing samples from a Dataset.
+Use 'python3 training.py' to run the pipeline with existing samples from a Dataset (default).
+Use 'python3 training.py <nb_thread>' to run the pipeline with newly created samples in Environment.
 """
 
 # Python related imports
@@ -68,28 +68,27 @@ def launch_trainer(dataset_dir, nb_env):
 
 if __name__ == '__main__':
 
-    # Get dataset and nb_thread options
-    dataset, nb_thread = None, 1
+    # Check data
+    if not os.path.exists('Environment/models'):
+        from download import download_all
+        print('Downloading Demo data...')
+        download_all()
+
+    # Define dataset
+    dpx_session = 'sessions/armadillo_data_dpx'
+    user_session = 'sessions/armadillo_data_user'
+    # Take user dataset by default
+    dataset = user_session if os.path.exists(user_session) else dpx_session
+
+    # Get nb_thread options
+    nb_thread = 1
     if len(sys.argv) > 1:
-
-        # Run with Dataset
-        if sys.argv[1] == '-d':
-            # Check dataset existence
-            dpx_session, user_session = 'sessions/armadillo_data_dpx', 'sessions/armadillo_data_user'
-            if not os.path.exists(dpx_session) and not os.path.exists(user_session):
-                from download import download_dataset
-                print('Downloading Demo dataset to launch training...')
-                download_dataset()
-            dataset = dpx_session if os.path.exists(dpx_session) else user_session
-
-        # Run with Environment(s)
-        else:
-            try:
-                nb_thread = int(sys.argv[1])
-            except ValueError:
-                print("Script option must be either an integer <nb_sample> for samples produced in Environment(s) "
-                      "(default) or '-d' for samples loaded from an existing Dataset.")
-                quit(0)
+        try:
+            nb_thread = int(sys.argv[1])
+        except ValueError:
+            print("Script option must be an integer <nb_sample> for samples produced in Environment(s)."
+                  "Without option, samples are loaded from an existing Dataset.")
+            quit(0)
 
     # Launch pipeline
     launch_trainer(dataset, nb_thread)

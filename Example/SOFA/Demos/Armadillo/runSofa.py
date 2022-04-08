@@ -30,6 +30,12 @@ def create_environment():
 
 if __name__ == '__main__':
 
+    # Check data
+    if not os.path.exists('Environment/models'):
+        from download import download_all
+        print('Downloading Demo data...')
+        download_all()
+
     # Create Environment
     environment = create_environment()
 
