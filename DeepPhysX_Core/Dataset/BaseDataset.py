@@ -1,3 +1,5 @@
+import gzip
+
 from typing import Dict, List, Optional, Tuple
 from numpy import array, ndarray, concatenate, save, arange
 from numpy.random import shuffle
@@ -183,8 +185,12 @@ class BaseDataset:
         :param str field: Name of the data field
         :param str file: Path to the file in which to write the data
         """
-
-        save(file, self.data[field])
+        if file.split('.')[-1] == 'gz':
+            f = gzip.GzipFile(file, "w")
+            save(f, self.data[field])
+            f.close()
+        else:
+            save(file, self.data[field])
 
     def set(self, field: str, data: ndarray) -> None:
         """
