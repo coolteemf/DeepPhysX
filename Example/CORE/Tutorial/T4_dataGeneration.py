@@ -16,8 +16,8 @@ def launch_data_generation():
     # Create the Pipeline
     pipeline = BaseDataGenerator(session_dir=os.getcwd(),
                                  session_name='sessions/tutorial_data_generation',
-                                 dataset_config=dataset_config,
-                                 environment_config=env_config,
+                                 dataset_config=dataset_config[0](**dataset_config[1]),
+                                 environment_config=env_config[0](**env_config[1]),
                                  nb_batches=100,
                                  batch_size=10)
     # Launch the Pipeline
