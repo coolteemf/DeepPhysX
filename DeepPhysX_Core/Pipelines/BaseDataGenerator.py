@@ -39,7 +39,7 @@ class BaseDataGenerator:
             # Create manager directory from the session name
             self.session_dir: str = create_dir(osPathJoin(get_first_caller(), session_name), dir_name=session_name)
         else:
-            self.session_dir: str = osPathJoin(session_dir, session_name)
+            self.session_dir = session_dir
         session_name = basename(self.session_dir).split("/")[-1]
 
         # Create a DataManager directly
