@@ -67,7 +67,7 @@ class BytesConverter:
         # Shape and datatype for list and array
         if type(data) in [list, ndarray]:
             # Get python native datatype of array
-            dtype = type(zeros(1, dtype=array(data).dtype).item()).__name__
+            dtype = str(zeros(1, dtype=array(data).dtype).dtype)
             # Convert datatype of array from str to bytes
             dtype_bytes = self.__data_to_bytes_conversion[str](dtype)
             # Convert data shape from array to bytes
