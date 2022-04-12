@@ -158,7 +158,7 @@ class DatasetManager:
         # 2. Add network data
         for field in ['input', 'output']:
             if self.record_data[field]:
-                self.dataset.add(field, data[field], self.current_partition_path[field])
+                self.dataset.add(field, data[field])
 
         # 3. Add additional data
         # 3.1 If there is additional data, convert field names then add each field
@@ -169,7 +169,7 @@ class DatasetManager:
                     raise ValueError(f"[{self.name}] No data received for the additional field {field}.")
             # Add each field to the dataset
             for field in data['additional_fields']:
-                self.dataset.add(field, data['additional_fields'][field], self.current_partition_path[field])
+                self.dataset.add(field, data['additional_fields'][field])
         # 3.2 If there is no additional data but registered additional data
         elif 'additional_fields' not in data.keys() and len(self.fields) > 2:
             raise ValueError(f"[{self.name}] No data received for the additional fields {self.fields[:2]}")
