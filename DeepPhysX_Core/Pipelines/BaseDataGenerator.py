@@ -31,8 +31,7 @@ class BaseDataGenerator:
                  nb_batches: int = 0,
                  batch_size: int = 0,
                  record_input: bool = True,
-                 record_output: bool = True,
-                 compress_data: bool = False):
+                 record_output: bool = True):
 
         # todo: inherit from Pipeline
         # Init session repository
@@ -51,7 +50,6 @@ class BaseDataGenerator:
                                         session_dir=self.session_dir,
                                         new_session=True,
                                         record_data={'input': record_input, 'output': record_output},
-                                        compress_data=compress_data,
                                         batch_size=batch_size)
         self.nb_batch: int = nb_batches
         self.progress_bar = Progressbar(start=0, stop=self.nb_batch, c='orange', title="Data Generation")

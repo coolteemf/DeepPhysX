@@ -33,8 +33,7 @@ class DatasetManager:
                  session_dir: str = None,
                  new_session: bool = True,
                  train: bool = True,
-                 record_data: Optional[Dict[str, bool]] = None,
-                 compress_data = False):
+                 record_data: Optional[Dict[str, bool]] = None):
 
         self.name: str = self.__class__.__name__
         self.data_manager: Optional[Any] = data_manager
@@ -76,7 +75,6 @@ class DatasetManager:
         self.partitions_templates: Tuple[str, str, str] = (session_name + '_training_{}_{}.npy',
                                                            session_name + '_validation_{}_{}.npy',
                                                            session_name + '_running_{}_{}.npy')
-        self.partitions_templates = tuple(p + '.gz' if compress_data else '' for p in self.partitions_templates)
         self.fields: List[str] = ['input', 'output']
         self.list_partitions: Dict[str, Optional[List[List[ndarray]]]] = {
             'input': [[], [], []] if self.record_data['input'] else None,

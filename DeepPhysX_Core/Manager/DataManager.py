@@ -33,7 +33,6 @@ class DataManager:
                  new_session: bool = True,
                  training: bool = True,
                  record_data: Dict[str, bool] = None,
-                 compress_data = False,
                  batch_size: int = 1):
 
         self.name: str = self.__class__.__name__
@@ -75,7 +74,7 @@ class DataManager:
             self.dataset_manager = DatasetManager(data_manager=self, dataset_config=data_config,
                                                   session_name=session_name, session_dir=session_dir,
                                                   new_session=new_session, train=self.is_training,
-                                                  record_data=record_data, compress_data=compress_data)
+                                                  record_data=record_data)
         # Create environment if required
         if create_environment is None:  # If None then the dataset_manager exists
             create_environment = self.dataset_manager.new_dataset()
