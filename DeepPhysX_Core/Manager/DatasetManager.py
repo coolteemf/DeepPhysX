@@ -1,5 +1,3 @@
-import gzip
-
 from typing import Any, Dict, Tuple, List, Optional, Union
 from os.path import join as osPathJoin
 from os.path import isfile, isdir
@@ -487,12 +485,7 @@ class DatasetManager:
 
         for field in self.fields:
             self.current_partition_path[field] = self.dataset_dir + self.list_partitions[field][self.mode][-1]
-            if self.current_partition_path[field].split('.')[-1] == 'gz':
-                f = gzip.GzipFile(self.current_partition_path[field], "r")
-                data = load(f)
-                f.close()
-            else:
-                data = load(self.current_partition_path[field])
+            data = load(self.current_partition_path[field])
             self.dataset.set(field, data)
 
     def load_multiple_partitions(self, modes: List[int]) -> None:
@@ -541,12 +534,7 @@ class DatasetManager:
 
         for i, partitions in enumerate(self.mul_part_list_path):
             for field in partitions.keys():
-                if partitions[field].split('.')[-1] == 'gz':
-                    f = gzip.GzipFile(partitions[field], "r")
-                    dataset = load(f, allow_pickle=True)
-                    f.close()
-                else:
-                    dataset = load(partitions[field])
+                dataset = load(partitions[field])
                 samples = slice(self.mul_part_slices[i][self.mul_part_idx],
                                 self.mul_part_slices[i][self.mul_part_idx + 1])
                 self.dataset.add(field, dataset[samples])
