@@ -490,8 +490,8 @@ class DatasetManager:
         for field in self.fields:
             self.current_partition_path[field] = self.dataset_dir + self.list_partitions[field][self.mode][-1]
             if self.current_partition_path[field].split('.')[-1] == 'gz':
-                f = gzip.GzipFile(self.current_partition_path[field], "w")
-                data = load(self.current_partition_path[field])
+                f = gzip.GzipFile(self.current_partition_path[field], "r")
+                data = load(f)
                 f.close()
             else:
                 data = load(self.current_partition_path[field])
@@ -544,8 +544,8 @@ class DatasetManager:
         for i, partitions in enumerate(self.mul_part_list_path):
             for field in partitions.keys():
                 if partitions[field].split('.')[-1] == 'gz':
-                    f = gzip.GzipFile(partitions[field], "w")
-                    dataset = load(partitions[field])
+                    f = gzip.GzipFile(partitions[field], "r")
+                    dataset = load(f, allow_pickle=True)
                     f.close()
                 else:
                     dataset = load(partitions[field])
