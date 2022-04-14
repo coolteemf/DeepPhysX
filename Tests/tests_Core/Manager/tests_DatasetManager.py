@@ -31,7 +31,7 @@ class TestDatasetManager(TestCase):
         self.assertFalse(False in [partitions == [[], [], []] for partitions in self.manager.list_partitions.values()])
         self.assertFalse(False in [idx == 0 for idx in self.manager.idx_partitions])
         self.assertFalse(False in [current is None for current in self.manager.current_partition_path.values()])
-        for attribute in [self.manager.mul_part_idx, self.manager.mul_part_slices, self.manager.mul_part_list_path]:
+        for attribute in [self.manager.mul_part_idx, self.manager.mul_part_list_path]:
             self.assertEqual(attribute, None)
         self.assertEqual(self.manager.dataset_dir, os.path.join(os.getcwd(), 'dataset/'))
         self.assertEqual(self.manager.new_session, True)

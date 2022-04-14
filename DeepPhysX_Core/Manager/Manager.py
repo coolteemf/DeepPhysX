@@ -27,6 +27,7 @@ class Manager:
     :param str session_dir: Name of the directory in which to write all of the necessary data
     :param bool new_session: Define the creation of new directories to store data
     :param int batch_size: Number of samples in a batch
+    :param int num_partitions_to_read: Number of partitions to read (load into memory) on init and ont get_data.
     """
 
     def __init__(self,
@@ -37,7 +38,8 @@ class Manager:
                  session_name: str = 'default',
                  session_dir: str = None,
                  new_session: bool = True,
-                 batch_size: int = 1):
+                 batch_size: int = 1,
+                 num_partitions_to_read: int = -1):
 
         self.pipeline: Any = pipeline
         # Trainer: must create a new session to avoid overwriting
@@ -85,7 +87,8 @@ class Manager:
                                         new_session=new_session,
                                         training=train,
                                         record_data=pipeline.record_data,
-                                        batch_size=batch_size)
+                                        batch_size=batch_size,
+                                        num_partitions_to_read=num_partitions_to_read)
         # Create the StatsManager for training
         self.stats_manager = StatsManager(manager=self,
                                           log_dir=osPathJoin(self.session_dir, 'stats/')) if train else None
