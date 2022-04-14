@@ -22,6 +22,7 @@ class DatasetManager:
     :param bool new_session: Define the creation of new directories to store data
     :param bool train: True if this session is a network training
     :param Optional[Dict[str, bool]] record_data: Format {\'in\': bool, \'out\': bool} save the tensor when bool is True
+    :param int num_partitions_to_read: Number of partitions to read (load into memory) on init and ont get_data.
     """
 
     def __init__(self,
@@ -31,7 +32,8 @@ class DatasetManager:
                  session_dir: str = None,
                  new_session: bool = True,
                  train: bool = True,
-                 record_data: Optional[Dict[str, bool]] = None):
+                 record_data: Optional[Dict[str, bool]] = None,
+                 num_partitions_to_read: int = -1):
 
         self.name: str = self.__class__.__name__
         self.data_manager: Optional[Any] = data_manager
@@ -81,8 +83,8 @@ class DatasetManager:
         self.current_partition_path: Dict[str, Optional[str]] = {'input': None, 'output': None}
 
         # Dataset loading with multiple partitions variables
+        self.num_partitions_to_read = num_partitions_to_read
         self.mul_part_list_path: Optional[List[Dict[str, str]]] = None
-        self.mul_part_slices: Optional[List[List[int]]] = None
         self.mul_part_idx: Optional[int] = None
 
         # Dataset Json file
@@ -497,7 +499,6 @@ class DatasetManager:
 
         # 1. Initialize multiple partition loading variables
         self.mul_part_list_path = {field: [] for field in self.fields}
-        self.mul_part_slices = []
         self.mul_part_idx = 0
         nb_sample_per_partition = {field: [] for field in self.fields}
 
@@ -517,30 +518,27 @@ class DatasetManager:
             for field in self.fields:
                 inverted_list[i][field] = self.mul_part_list_path[field][i]
         self.mul_part_list_path = inverted_list
-        print(self.mul_part_list_path)
-
-        # 4. Define the slicing pattern of reading for partitions
-        for idx in nb_sample_per_partition[self.fields[0]]:
-            idx_slicing = [0]
-            for _ in range(nb_partition - 1):
-                idx_slicing.append(idx_slicing[-1] + idx // nb_partition + 1)
-            idx_slicing.append(idx)
-            self.mul_part_slices.append(idx_slicing)
 
     def read_multiple_partitions(self) -> None:
         """
-        | Read data in a list of partitions.
-        """
+        | Read data in a list of partitions and store the index of the last read partition.
 
-        for i, partitions in enumerate(self.mul_part_list_path):
+        :param int n: Number of partitions to read. Default -1 to read all remaining partitions in self.mul_part_list_path.
+        """
+        if self.num_partitions_to_read == -1:
+            max_part_idx = len(self.mul_part_list_path)
+        else:
+            max_part_idx = (self.mul_part_idx + self.num_partitions_to_read)%len(self.mul_part_list_path)
+        partitions_indices = range(self.mul_part_idx, max_part_idx)
+        dataset = {k:[] for k in self.mul_part_list_path[0].keys()}
+        for p_idx in partitions_indices:
+            partitions = self.mul_part_list_path[p_idx]
             for field in partitions.keys():
-                dataset = load(partitions[field])
-                samples = slice(self.mul_part_slices[i][self.mul_part_idx],
-                                self.mul_part_slices[i][self.mul_part_idx + 1])
-                self.dataset.add(field, dataset[samples])
-                del dataset
-        self.mul_part_idx = (self.mul_part_idx + 1) % (len(self.mul_part_slices[0]) - 1)
-        self.current_partition_path['input'] = self.mul_part_list_path[0][self.fields[0]]
+                dataset[field].append(load(partitions[field]))
+            self.mul_part_idx = p_idx
+        for field, data in dataset.items():
+            self.dataset.set(field, concatenate(data))
+        self.current_partition_path['input'] = self.mul_part_list_path[self.mul_part_idx][self.fields[0]]
         self.dataset.current_sample = 0
 
     def update_json(self, update_shapes: bool = False, update_nb_samples: bool = False,

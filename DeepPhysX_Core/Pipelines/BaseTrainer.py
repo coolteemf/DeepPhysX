@@ -25,6 +25,9 @@ class BaseTrainer(BasePipeline):
     :param int nb_batches: Number of batches
     :param int batch_size: Size of a batch
     :param bool debug: If True, main training features will not be launched
+    :param bool do_validation: Wether to compute network prediction on validation data.
+    :param int num_validation_batches: Number of validation data batches to use.
+    :param int num_partitions_to_read: Number of partitions of the dataset to load into memory at a time.
     """
 
     def __init__(self,
@@ -39,7 +42,8 @@ class BaseTrainer(BasePipeline):
                  batch_size: int = 0,
                  debug: bool = False,
                  do_validation: bool = False,
-                 nb_validation_batches: int = 0):
+                 num_validation_batches: int = 0,
+                 num_partitions_to_read: int = -1):
 
         BasePipeline.__init__(self,
                               network_config=network_config,
@@ -77,7 +81,7 @@ class BaseTrainer(BasePipeline):
                                             title=f'Epoch n°{id_epoch}/{nb_epoch} - Batch n°{id_batch}/{nb_batch} ')
 
         self.do_validation = do_validation
-        self.nb_validation_batches = nb_validation_batches
+        self.nb_validation_batches = num_validation_batches
 
         self.manager = Manager(pipeline=self,
                                network_config=self.network_config,
@@ -86,7 +90,8 @@ class BaseTrainer(BasePipeline):
                                session_name=session_name,
                                session_dir=session_dir,
                                new_session=new_session,
-                               batch_size=batch_size)
+                               batch_size=batch_size,
+                               num_partitions_to_read=num_partitions_to_read)
 
         self.manager.save_info_file()
 

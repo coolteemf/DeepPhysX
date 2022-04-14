@@ -21,6 +21,7 @@ class DataManager:
     :param bool new_session: Define the creation of new directories to store data
     :param bool training: True if this session is a network training
     :param Dict[str, bool] record_data: Format {\'in\': bool, \'out\': bool} save the tensor when bool is True
+    :param int num_partitions_to_read: Number of partitions to read (load into memory) on init and ont get_data.
     :param int batch_size: Number of samples in a batch
     """
 
@@ -33,6 +34,7 @@ class DataManager:
                  new_session: bool = True,
                  training: bool = True,
                  record_data: Dict[str, bool] = None,
+                 num_partitions_to_read: int = -1,
                  batch_size: int = 1):
 
         self.name: str = self.__class__.__name__
@@ -74,7 +76,7 @@ class DataManager:
             self.dataset_manager = DatasetManager(data_manager=self, dataset_config=data_config,
                                                   session_name=session_name, session_dir=session_dir,
                                                   new_session=new_session, train=self.is_training,
-                                                  record_data=record_data)
+                                                  record_data=record_data, num_partitions_to_read=num_partitions_to_read)
         # Create environment if required
         if create_environment is None:  # If None then the dataset_manager exists
             create_environment = self.dataset_manager.new_dataset()
