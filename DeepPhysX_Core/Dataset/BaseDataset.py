@@ -129,17 +129,22 @@ class BaseDataset:
         # Return the memory size for the specified field
         return self.data[field].nbytes
 
-    def check_data(self, field: str, data: ndarray) -> None:
+    def check_data(self, field: str, data: ndarray, allow_dtype_broadcast: bool = False) -> None:
         """
         | Check if the data is a numpy array.
 
         :param str field: Values at 'input' or anything else. Define if the associated shape is correspond to input
                           shape or output one.
         :param ndarray data: New data
+        :param bool allow_dtype_broadcast: Wether to return an error if the dtype of the data is differrent from the
+                                           dtype of the field.
         """
 
         if type(data) != self.data_type:
             raise TypeError(f"[{self.name}] Wrong data type in field '{field}': numpy array required, got {type(data)}")
+
+        if data.dtype != self.data[field].dtype and not allow_dtype_broadcast:
+            raise TypeError(f"[{self.name}] Wrong data dtype in field '{field}': {self.data[field].dtype} required, got {data.dtype}")
 
     def add(self, field: str, data: ndarray, partition_file: Optional[str] = None) -> None:
         """
@@ -195,7 +200,8 @@ class BaseDataset:
         """
 
         # Check data type
-        self.check_data(field, data)
+        self.check_data(field, data, allow_dtype_broadcast=True) # We don't check for dtype broadcast because
+                                                                 # the field will be replaced by data.
 
         # Check if field is registered
         if field not in self.fields:
