@@ -208,8 +208,6 @@ class DatasetManager:
             # if not force_partition_reload:
             #     return None
             self.load_partitions()
-            if self.shuffle_dataset:
-                self.dataset.shuffle()
             self.dataset.current_sample = 0
 
         # 2. Update dataset indices with batch size
@@ -326,7 +324,6 @@ class DatasetManager:
     def load_directory(self, load_data: bool = True) -> None:
         """
         | Load the desired directory. Try to find partition list and upload it.
-        | No data loading here.
         """
 
         # 1. Check the directory exists
@@ -366,7 +363,7 @@ class DatasetManager:
         # 4. Load data from partitions
         if load_data:
             self.idx_partitions = [len(partitions_list) for partitions_list in self.list_partitions['input']]
-            self.load_partitions(force_reload=True)
+            self.load_partitions(shuffle_only=False)
 
     def search_partitions(self, mode: str) -> Dict[str, List[str]]:
         """
@@ -447,15 +444,15 @@ class DatasetManager:
         # Store the data shapes
         self.json_dict['data_shape'] = data_shape
 
-    def load_partitions(self, force_reload: bool = False) -> None:
+    def load_partitions(self, shuffle_only: bool = False) -> None:
         """
         | Load data from partitions.
 
-        :param bool force_reload: If True, force partitions reload
+        :param bool shuffle_only: If True, force partitions reload
         """
 
         # 1. If there is only one partition for the current mode for input field at least, don't need to reload it
-        if self.last_loaded_dataset_mode == self.mode and self.idx_partitions[self.mode] == 1 and not force_reload:
+        if self.last_loaded_dataset_mode == self.mode and self.idx_partitions[self.mode] == 1 and shuffle_only:
             if self.shuffle_dataset:
                 self.dataset.shuffle()
             return
@@ -479,6 +476,8 @@ class DatasetManager:
             if self.mul_part_idx is None:
                 self.load_multiple_partitions([self.mode])
             self.read_multiple_partitions()
+        if self.shuffle_dataset:
+                self.dataset.shuffle()
 
     def read_last_partitions(self) -> None:
         """
