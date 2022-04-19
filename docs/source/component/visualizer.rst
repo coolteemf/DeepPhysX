@@ -1,6 +1,8 @@
 CORE - Using a Visualizer
 =========================
 
+Dedicated code in :guilabel:`Core/Visualizer` module.
+
 .. _visualizer-howto:
 
 How to use

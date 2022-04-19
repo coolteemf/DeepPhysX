@@ -287,6 +287,7 @@ with several *TcpIpClients* using a **TcpIp protocol**.
 
 .. figure:: ../_static/image/environment_tcpip.png
     :alt: environment_tcpip.png
+    :width: 80%
     :align: center
 
     Client-Server Architecture

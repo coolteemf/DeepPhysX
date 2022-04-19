@@ -19,6 +19,7 @@ Each partition will have a unique name: ``<session_name>_<dataset_mode>_<field>_
     :align: center
     :width: 80%
 
+    Dataset repository organisation.
 
 When adding a batch to the *Dataset*, a new partition is created for each data field if the current *Dataset* size
 exceeds the threshold.

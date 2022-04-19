@@ -4,11 +4,11 @@ DeepPhysX
 Interfacing AI with simulation
 ------------------------------
 
-The **DeepPhysX** project provides Python modules allowing users to easily interface their **numerical simulations**
+The **DeepPhysX** project provides Python packages allowing users to easily interface their **numerical simulations**
 with **learning algorithms**.
 
-**DeepPhysX** is mainly designed for :SOFA:`SOFA <>` and :PyTorch:`PyTorch <>`
-frameworks, but other simulation and AI frameworks can also be used.
+**DeepPhysX** is mainly designed for :SOFA:`SOFA <>` and :PyTorch:`PyTorch <>` frameworks, but other simulation and AI
+frameworks can also be used.
 
 
 Let's get started
