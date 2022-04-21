@@ -23,10 +23,10 @@
 from pathlib import Path
 from os import listdir, system
 from os.path import join
-import site
+from distutils.sysconfig import get_python_lib
 current_absolute_path = Path(__file__).parent.absolute()
 
 for dir in listdir(current_absolute_path):
     if "DeepPhysX_" in dir:
-        system(f'ln -sFfv {join(current_absolute_path,dir)} {site.USER_SITE}')
-system(f'ln -sFfv {current_absolute_path} {site.USER_SITE}')
+        system(f'ln -sFfv {join(current_absolute_path,dir)} {get_python_lib()}')
+system(f'ln -sFfv {current_absolute_path} {get_python_lib()}')
