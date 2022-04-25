@@ -16,8 +16,8 @@ from DeepPhysX_PyTorch.FC.FCConfig import FCConfig
 
 # Session related imports
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-from Environment.Armadillo import Armadillo
-from Environment.parameters import p_model
+from Example.CORE.Demos.Armadillo.FC.Environment import Armadillo
+from Example.CORE.Demos.Armadillo.FC.Environment.parameters import p_model
 
 
 def launch_runner():
