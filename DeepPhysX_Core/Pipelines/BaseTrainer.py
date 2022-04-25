@@ -180,6 +180,7 @@ class BaseTrainer(BasePipeline):
         self.manager.stats_manager.add_train_epoch_loss(self.loss_dict['loss'], self.id_epoch)
         if self.do_validation:
             self.execute_validation()
+            self.manager.stats_manager.add_test_loss(self.loss_dict['loss'], self.id_epoch)
 
     def epoch_condition(self) -> bool:
         """

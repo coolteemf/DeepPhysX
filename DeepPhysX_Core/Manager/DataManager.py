@@ -103,10 +103,9 @@ class DataManager:
 
         :return: Newly computed data
         """
-
+        data = None
         # Training
         if self.is_training:
-            data = None
             # Get data from environment if used and if the data should be created at this epoch
             if data is None and self.environment_manager is not None and \
                     (epoch == 0 or self.environment_manager.always_create_data) and self.dataset_manager.new_dataset():
@@ -132,7 +131,23 @@ class DataManager:
         # Prediction
         else:
             # Get data from environment
-            data = self.environment_manager.get_data(animate=animate, get_inputs=True, get_outputs=True)
+            if data is None and self.environment_manager is not None:
+                self.allow_dataset_fetch = False
+                data = self.environment_manager.get_data(animate=animate, get_inputs=True, get_outputs=True)
+            else:
+                data = self.dataset_manager.get_data(batch_size=batch_size, get_inputs=True, get_outputs=True)
+                if self.environment_manager is not None and self.environment_manager.use_dataset_in_environment:
+                    new_data = self.environment_manager.dispatch_batch(batch=data)
+                    if len(new_data['input']) != 0:
+                        data['input'] = new_data['input']
+                    if len(new_data['output']) != 0:
+                        data['output'] = new_data['output']
+                    if 'loss' in new_data:
+                        data['loss'] = new_data['loss']
+                elif self.environment_manager is not None:
+                    # EnvironmentManager is no longer used
+                    self.environment_manager.close()
+                    self.environment_manager = None
             # Record data
             if self.dataset_manager is not None:
                 self.dataset_manager.add_data(data)
