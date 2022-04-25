@@ -65,7 +65,7 @@ Here is a description of attributes related to *Dataset* configuration.
       - Specify the *Dataset* mode between "Training", "Validation" and "Running".
 
     * - ``normalize_data``
-      - If True, normalization parameters are computed and applied to data.
+      - If True, normalization parameters are computed from training data and applied to any loaded data.
 
 .. highlight:: python
 

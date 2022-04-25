@@ -379,6 +379,8 @@ class DatasetManager:
         if not self.json_found or self.empty_json_fields():
             self.search_partitions_info()
             self.update_json(update_partitions_lists=True)
+        if self.normalize:
+            self.update_json(update_normalization=True)
 
         # 4. Load data from partitions
         if load_data:
@@ -594,6 +596,7 @@ class DatasetManager:
         # Update normalization coefficients
         if update_normalization:
             for field in ['input', 'output']:
+                # Normalization is only done on training data (mode = 0)
                 if len(self.list_partitions[field][0]) > 0:
                     self.json_dict['normalization'][field] = self.compute_normalization(field)
 
