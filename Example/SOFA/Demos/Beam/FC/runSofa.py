@@ -23,17 +23,17 @@ def create_environment():
     environment_config = SofaEnvironmentConfig(environment_class=BeamSofa,
                                                as_tcp_ip_client=False)
 
-    # Create Armadillo Environment within EnvironmentManager
+    # Create Beam Environment within EnvironmentManager
     environment_manager = EnvironmentManager(environment_config=environment_config)
     return environment_manager.environment
 
 
 if __name__ == '__main__':
 
-    # Check data
+    # Check demo data
     if not os.path.exists('sessions/beam_data_dpx'):
         from download import download_all
-        print('Downloading Demo data...')
+        print('Downloading Beam demo data...')
         download_all()
 
     # Create Environment

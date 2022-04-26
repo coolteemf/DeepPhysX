@@ -48,7 +48,7 @@ class ArmadilloValidation(ArmadilloTraining):
         Exploit received parameters before scene creation. Automatically called when creating Environment.
         """
 
-        # Compute samples in no Dataset is used
+        # Compute samples if no Dataset is used
         self.compute_sample = param_dict['compute_sample'] if 'compute_sample' in param_dict else self.compute_sample
 
     def createFEM(self):
@@ -124,7 +124,7 @@ class ArmadilloValidation(ArmadilloTraining):
 
     def onAnimateEndEvent(self, event):
         """
-        Called within the Sofa pipeline at the end of the time step. Compute training data and apply prediction.
+        Called within the Sofa pipeline at the end of the time step. Compute training data.
         """
 
         # Compute training data

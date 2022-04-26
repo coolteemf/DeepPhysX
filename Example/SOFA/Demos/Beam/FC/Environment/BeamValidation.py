@@ -38,28 +38,28 @@ class BeamValidation(BeamTraining):
                               as_tcp_ip_client=as_tcp_ip_client,
                               environment_manager=environment_manager)
 
-        self.l2_error = []
-        self.MSE_error = []
-        self.l2_deformation = []
-        self.MSE_deformation = []
-
+        self.l2_error, self.MSE_error = [], []
+        self.l2_deformation, self.MSE_deformation = [], []
         self.compute_sample = True
 
     def recv_parameters(self, param_dict):
         """
-        Exploit received parameters before scene creation.
+        Exploit received parameters before scene creation. Automatically called when creating Environment.
         """
 
+        # Compute samples if no Dataset is used
         self.compute_sample = param_dict['compute_sample'] if 'compute_sample' in param_dict else self.compute_sample
 
     def createFEM(self):
         """
-        FEM model of Liver. Used to apply forces and compute deformations.
+        FEM model of Beam. Used to apply forces and compute deformations.
         """
 
+        # To compute samples, use default scene graph creation
         if self.compute_sample:
             BeamTraining.createFEM(self)
 
+        # To read samples from Dataset, no need for physic laws nor solvers
         else:
             # Create child node
             self.root.addChild('fem')
@@ -85,14 +85,14 @@ class BeamValidation(BeamTraining):
             self.root.fem.addObject('FixedConstraint', indices='@FixedBox.indices')
 
             # Forces
-            self.cff_box = self.root.fem.addObject('BoxROI', name='ForceBox', box=p_grid.size, drawBoxes=True,
+            self.cff_box = self.root.fem.addObject('BoxROI', name='ForceBox', box=p_grid.size, drawBoxes=False,
                                                    drawSize=1)
             self.cff = self.root.fem.addObject('ConstantForceField', name='CFF', showArrowSize=0.1,
                                                force=[0., 0., 0.], indices=list(iter(range(p_grid.nb_nodes))))
 
             # Visual
             self.root.fem.addChild('visual')
-            self.f_visu = self.root.fem.visual.addObject('OglModel', src='@../GridTopo', color='yellow')
+            self.f_visu = self.root.fem.visual.addObject('OglModel', src='@../GridTopo', color='green')
             self.root.fem.visual.addObject('BarycentricMapping', input='@../GridMO', output='@./')
 
     def send_visualization(self):
@@ -109,44 +109,31 @@ class BeamValidation(BeamTraining):
         """
 
         if self.compute_sample:
+            # Reset positions and compute new forces
             BeamTraining.onAnimateBeginEvent(self, event)
 
         else:
             # Reset positions
-            if self.create_model['fem']:
-                self.f_grid_mo.position.value = self.f_grid_mo.rest_position.value
-            if self.create_model['nn']:
-                self.n_grid_mo.position.value = self.n_grid_mo.rest_position.value
+            self.f_grid_mo.position.value = self.f_grid_mo.rest_position.value
+            self.n_grid_mo.position.value = self.n_grid_mo.rest_position.value
 
     def onAnimateEndEvent(self, event):
         """
-        Called within the Sofa pipeline at the end of the time step. Compute training data and apply prediction.
+        Called within the Sofa pipeline at the end of the time step. Compute training data.
         """
 
-        if self.sample_in is not None:
-            input_array = self.sample_in
-            output_array = self.sample_out
-        else:
-            input_array = self.compute_input()
-            output_array = self.compute_output()
+        # Compute training data
+        input_array = self.compute_input() if self.sample_in is None else self.sample_in
+        output_array = self.compute_output() if self.sample_in is None else self.sample_out
 
-        if self.sample_out is not None:
+        # Manually update FEM model if sample from Dataset
+        if self.sample_in is not None:
             U = np.reshape(self.sample_out, self.data_size)
             self.f_grid_mo.position.value = self.f_grid_mo.rest_position.value + U
 
         # Send training data
         self.set_training_data(input_array=input_array,
                                output_array=output_array)
-
-    def apply_prediction(self, prediction):
-        """
-        Apply the predicted displacement to the NN model.
-        """
-
-        # Reshape to correspond regular grid, transform to sparse grid
-        U = np.reshape(prediction, self.data_size)
-        self.n_grid_mo.position.value = self.n_grid_mo.rest_position.array() + U
-        self.compute_metrics()
 
     def check_sample(self):
         """
@@ -155,6 +142,14 @@ class BeamValidation(BeamTraining):
 
         # See the network prediction even if the solver diverged.
         return True
+
+    def apply_prediction(self, prediction):
+        """
+        Apply the predicted displacement to the NN model.
+        """
+
+        BeamTraining.apply_prediction(self, prediction)
+        self.compute_metrics()
 
     def compute_metrics(self):
         """
@@ -165,7 +160,7 @@ class BeamValidation(BeamTraining):
         gt = self.f_grid_mo.position.value - self.f_grid_mo.rest_position.value
 
         # Compute metrics only for non-zero displacements
-        if np.linalg.norm(gt) != 0.:
+        if np.linalg.norm(gt) > 1:
             if self.solver is not None and not self.solver.converged.value:
                 return
             error = (gt - pred).reshape(-1)

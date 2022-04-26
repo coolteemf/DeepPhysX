@@ -9,9 +9,12 @@ The SOFA simulation contains two models of a Beam:
 # Python related imports
 import os
 import sys
+
+os.environ['OPENBLAS_NUM_THREADS'] = '1'
+os.environ['MKL_NUM_THREADS'] = '1'
 import numpy as np
 
-# Sofa & Caribou related imports
+# Sofa related imports
 import Sofa.Simulation
 import SofaRuntime
 
@@ -20,7 +23,7 @@ from DeepPhysX_Sofa.Environment.SofaEnvironment import SofaEnvironment
 
 # Working session related imports
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-from parameters import p_grid, p_forces
+from parameters import p_grid
 
 
 class BeamSofa(SofaEnvironment):
@@ -72,7 +75,7 @@ class BeamSofa(SofaEnvironment):
         # Add required plugins
         SofaRuntime.PluginRepository.addFirstPath(os.environ['CARIBOU_INSTALL'])
         plugins = ['SofaComponentAll', 'SofaCaribou', 'SofaBaseTopology', 'SofaGeneralEngine',
-                   'SofaEngine', 'SofaOpenglVisual', 'SofaBoundaryCondition', 'SofaBaseCollision']
+                   'SofaEngine', 'SofaOpenglVisual', 'SofaBoundaryCondition']
         self.root.addObject('RequiredPlugin', pluginName=plugins)
 
         # Scene visual style
@@ -86,10 +89,10 @@ class BeamSofa(SofaEnvironment):
 
     def createFEM(self):
         """
-        FEM model of Liver. Used to apply forces and compute deformations.
+        FEM model of Beam. Used to apply forces and compute deformations.
         """
 
-        # Create child node
+        # Create FEM node
         self.root.addChild('fem')
 
         # ODE solver + Static solver
@@ -131,7 +134,7 @@ class BeamSofa(SofaEnvironment):
 
         # Visual
         self.root.fem.addChild('visual')
-        self.f_visu = self.root.fem.visual.addObject('OglModel', src='@../GridTopo', color='yellow')
+        self.f_visu = self.root.fem.visual.addObject('OglModel', src='@../GridTopo', color='green')
         self.root.fem.visual.addObject('BarycentricMapping', input='@../GridMO', output='@./')
 
     def createNN(self):
@@ -141,6 +144,10 @@ class BeamSofa(SofaEnvironment):
 
         # Create child node
         self.root.addChild('nn')
+
+        # Fake solvers (required to compute forces on the grid)
+        self.root.nn.addObject('StaticODESolver', name='ODESolver', newton_iterations=0)
+        self.root.nn.addObject('ConjugateGradientSolver', name='StaticSolver', maximum_number_of_iterations=0)
 
         # Grid topology of the model
         self.n_grid_topo = self.root.nn.addObject('RegularGridTopology', name='GridTopo', min=p_grid.min.tolist(),
@@ -165,7 +172,7 @@ class BeamSofa(SofaEnvironment):
 
         # Forces
         if not self.create_model['fem']:
-            self.cff_box = self.root.nn.addObject('BoxROI', name='ForceBox', box=p_grid.size, drawBoxes=True,
+            self.cff_box = self.root.nn.addObject('BoxROI', name='ForceBox', box=p_grid.size, drawBoxes=False,
                                                   drawSize=1)
             self.cff = self.root.nn.addObject('ConstantForceField', name='CFF', showArrowSize=0.1,
                                               force=[0., 0., 0.], indices=list(iter(range(p_grid.nb_nodes))))
@@ -195,11 +202,12 @@ class BeamSofa(SofaEnvironment):
         if self.create_model['nn']:
             self.n_grid_mo.position.value = self.n_grid_mo.rest_position.value
 
-        # Create a random box ROI, select nodes of the surface
         force_node = self.root.fem if self.create_model['fem'] else self.root.nn
         indices = []
-        # Avoid empty box
+
+        # Create a random non-empty box ROI, select nodes of the surface
         while len(indices) == 0:
+
             # Define random box
             x_min = np.random.randint(p_grid.min[0], p_grid.max[0] - 10)
             x_max = np.random.randint(x_min + 10, p_grid.max[0])
@@ -207,11 +215,13 @@ class BeamSofa(SofaEnvironment):
             y_max = np.random.randint(y_min + 10, p_grid.max[1])
             z_min = np.random.randint(p_grid.min[2], p_grid.max[2] - 10)
             z_max = np.random.randint(z_min + 10, p_grid.max[2])
+
             # Set the new bounding box
             force_node.removeObject(self.cff_box)
             self.cff_box = force_node.addObject('BoxROI', name='ForceBox', drawBoxes=False, drawSize=1,
                                                 box=[x_min, y_min, z_min, x_max, y_max, z_max])
             self.cff_box.init()
+
             # Get the intersection with the surface
             indices = list(self.cff_box.indices.value)
             indices = list(set(indices).intersection(set(self.idx_surface)))

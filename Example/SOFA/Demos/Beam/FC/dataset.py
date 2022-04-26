@@ -1,7 +1,7 @@
 """
 dataset.py
-Run the pipeline DataGenerator to produce a Dataset only.
-Use 'python3 dataset.py -t' to produce training Dataset (default).
+Run the data generation session to produce a Dataset only.
+Use 'python3 dataset.py' to produce training Dataset (default).
 Use 'python3 dataset.py -v' to produce validation Dataset.
 """
 
@@ -50,16 +50,17 @@ if __name__ == '__main__':
     # Check data
     if not os.path.exists('sessions/beam_data_dpx'):
         from download import download_all
-        print('Downloading Demo data...')
+        print('Downloading Beam demo data...')
         download_all()
 
     # Get dataset mode
     mode = 'Training'
     if len(sys.argv) > 1:
-        if sys.argv[1] not in ['-t', '-v']:
-            print("Script option must be either '-t' for training dataset (default) or '-v' for validation dataset.")
+        if sys.argv[1] != '-v':
+            print("Script option must be '-v' to produce validation dataset."
+                  "By default, training dataset is produced.")
             quit(0)
-        mode = 'Validation' if sys.argv[1] == '-v' else 'Training'
+        mode = 'Validation'
 
     # Launch pipeline
     launch_data_generation(mode)

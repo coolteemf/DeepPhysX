@@ -37,19 +37,45 @@ class BeamPrediction(BeamTraining):
                               environment_manager=environment_manager)
 
         self.create_model['fem'] = False
-        self.range = np.concatenate((np.arange(0, 1, 0.01),
-                                     np.arange(1, -1, -0.01),
-                                     np.arange(-1, 0, 0.01)))
+        self.visualizer = False
+
+        # Force pattern
+        self.amplitudes = None
         self.idx_range = 0
         self.force_value = None
         self.indices_value = None
 
-    def send_visualization(self):
+    def recv_parameters(self, param_dict):
         """
-        Define and send the initial visualization data dictionary. Automatically called whn creating Environment.
+        Exploit received parameters before scene creation.
         """
 
-        # Nothing to visualize since the predictions are run in SOFA GUI.
+        # Receive visualizer option (either True for Vedo, False for SOFA GUI)
+        self.visualizer = param_dict['visualizer'] if 'visualizer' in param_dict else self.visualizer
+        step = 0.1 if self.visualizer else 0.02
+        self.amplitudes = np.concatenate((np.arange(0, 1, step),
+                                          np.arange(1, -1, -step),
+                                          np.arange(-1, 0, step)))
+
+    def send_visualization(self):
+        """
+        Define and send the initial visualization data dictionary. Automatically called when creating Environment.
+        """
+
+        # Nothing to visualize if the predictions are run in SOFA GUI.
+        if self.visualizer:
+            # Add the FEM model (object will have id = 0)
+            self.factory.add_object(object_type='Mesh', data_dict={'positions': self.n_visu.position.value.copy(),
+                                                                   'cells': self.n_visu.triangles.value.copy(),
+                                                                   'at': self.instance_id,
+                                                                   'c': 'green'})
+
+            # Arrows representing the force fields (object will have id = 1)
+            self.factory.add_object(object_type='Arrows', data_dict={'positions': [0, 0, 0],
+                                                                     'vectors': [0., 0., 0.],
+                                                                     'c': 'green',
+                                                                     'at': self.instance_id})
+
         return self.factory.objects_dict
 
     def onAnimateBeginEvent(self, event):
@@ -57,18 +83,15 @@ class BeamPrediction(BeamTraining):
         Called within the Sofa pipeline at the beginning of the time step. Define force vector.
         """
 
-        # Reset positions
-        self.n_grid_mo.position.value = self.n_grid_mo.rest_position.value
-
         # Reset force amplitude index
-        if self.idx_range == len(self.range):
+        if self.idx_range == len(self.amplitudes):
             self.idx_range = 0
 
-        # Create a random box ROI, select nodes of the surface
+        # Create a new non-empty random box ROI, select nodes of the surface
         if self.idx_range == 0:
             indices = []
-            # Avoid empty box
             while len(indices) == 0:
+
                 # Define random box
                 x_min = np.random.randint(p_grid.min[0], p_grid.max[0] - 10)
                 x_max = np.random.randint(x_min + 10, p_grid.max[0])
@@ -76,14 +99,17 @@ class BeamPrediction(BeamTraining):
                 y_max = np.random.randint(y_min + 10, p_grid.max[1])
                 z_min = np.random.randint(p_grid.min[2], p_grid.max[2] - 10)
                 z_max = np.random.randint(z_min + 10, p_grid.max[2])
+
                 # Set the new bounding box
                 self.root.nn.removeObject(self.cff_box)
                 self.cff_box = self.root.nn.addObject('BoxROI', name='ForceBox', drawBoxes=False, drawSize=1,
                                                       box=[x_min, y_min, z_min, x_max, y_max, z_max])
                 self.cff_box.init()
+
                 # Get the intersection with the surface
                 indices = list(self.cff_box.indices.value)
                 indices = list(set(indices).intersection(set(self.idx_surface)))
+
             # Create a random force vector
             F = 15 * np.random.uniform(low=-1, high=1, size=(3,))
             # Keep value
@@ -91,11 +117,10 @@ class BeamPrediction(BeamTraining):
             self.indices_value = indices
 
         # Update force field
-        F = self.range[self.idx_range] * self.force_value
+        F = self.amplitudes[self.idx_range] * self.force_value
         self.root.nn.removeObject(self.cff)
         self.cff = self.root.nn.addObject('ConstantForceField', name='CFF', showArrowSize=0.5,
-                                          indices=self.indices_value,
-                                          force=list(F))
+                                          indices=self.indices_value, force=list(F))
         self.cff.init()
         self.idx_range += 1
 
@@ -104,7 +129,7 @@ class BeamPrediction(BeamTraining):
         Called within the Sofa pipeline at the end of the time step. Compute training data and apply prediction.
         """
 
-        # Get a prediction and apply it on NN model
+        # Compute training data
         input_array = self.compute_input()
 
         # Send training data
@@ -118,3 +143,27 @@ class BeamPrediction(BeamTraining):
 
         # See the network prediction even if the solver diverged.
         return True
+
+    def apply_prediction(self, prediction):
+        """
+        Apply the predicted displacement to the NN model.
+        """
+
+        BeamTraining.apply_prediction(self, prediction)
+        # Update visualization if required
+        if self.visualizer:
+            self.update_visual()
+
+    def update_visual(self):
+        """
+        Update the visualization data dict.
+        """
+
+        # Update visualization data
+        self.factory.update_object_dict(object_id=0, new_data_dict={'position': self.n_visu.position.value.copy()})
+        position = list(self.n_visu.position.value[self.cff.indices.value])
+        vector = list(0.25 * self.cff.forces.value)
+        self.factory.update_object_dict(object_id=1, new_data_dict={'positions': position,
+                                                                    'vectors': vector})
+        # Send updated data
+        self.update_visualisation(visu_dict=self.factory.updated_object_dict)

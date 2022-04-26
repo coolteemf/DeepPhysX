@@ -46,7 +46,7 @@ class BeamTraining(BeamSofa):
         Define and send the initial visualization data dictionary. Automatically called when creating Environment.
         """
 
-        # Add the FEM model
+        # Add the FEM model (object will have id = 0)
         self.factory.add_object(object_type='Mesh', data_dict={'positions': self.f_visu.position.value.copy(),
                                                                'cells': self.f_visu.triangles.value.copy(),
                                                                'at': self.instance_id,
@@ -56,7 +56,7 @@ class BeamTraining(BeamSofa):
 
     def onAnimateEndEvent(self, event):
         """
-        Called within the Sofa pipeline at the end of the time step. Compute training data and apply prediction.
+        Called within the Sofa pipeline at the end of the time step. Compute training data.
         """
 
         # Compute training data
@@ -66,20 +66,22 @@ class BeamTraining(BeamSofa):
         # Send training data
         self.set_training_data(input_array=input_array,
                                output_array=output_array)
-        self.update_visualization()
+
+        # Update visualization
+        self.update_visu()
 
     def compute_input(self):
         """
-        Compute force vector for the whole surface.
+        Compute force field on the grid.
         """
 
-        F = np.zeros(self.data_size)
-        F[self.cff.indices.value.copy()] = self.cff.forces.value.copy()
-        return F.copy()
+        # Compute applied force on volume
+        grid_mo = self.f_grid_mo if self.create_model['fem'] else self.n_grid_mo
+        return grid_mo.force.value.copy()
 
     def compute_output(self):
         """
-        Compute displacement vector for the whole surface.
+        Compute displacement field on the grid.
         """
 
         # Compute generated displacement
@@ -88,15 +90,19 @@ class BeamTraining(BeamSofa):
 
     def apply_prediction(self, prediction):
         """
-        Apply the predicted displacement to the NN model, update visualization data.
+        Apply the predicted displacement to the NN model.
         """
 
         # Reshape to correspond regular grid
         U = np.reshape(prediction, self.data_size)
         self.n_grid_mo.position.value = self.n_grid_mo.rest_position.array() + U
 
-    def update_visualization(self):
-        # Update visualization data
+    def update_visual(self):
+        """
+        Update the visualization data dict.
+        """
+
+        # Update mesh positions
         self.factory.update_object_dict(object_id=0, new_data_dict={'position': self.f_visu.position.value.copy()})
         # Send updated data
         self.update_visualisation(visu_dict=self.factory.updated_object_dict)

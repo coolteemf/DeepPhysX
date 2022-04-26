@@ -64,7 +64,7 @@ class ArmadilloTraining(ArmadilloSofa):
 
     def onAnimateEndEvent(self, event):
         """
-        Called within the Sofa pipeline at the end of the time step. Compute training data and apply prediction.
+        Called within the Sofa pipeline at the end of the time step. Compute training data.
         """
 
         # Compute training data

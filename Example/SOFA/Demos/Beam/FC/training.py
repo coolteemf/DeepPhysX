@@ -70,8 +70,7 @@ if __name__ == '__main__':
     # Check data
     if not os.path.exists('sessions/beam_data_dpx'):
         from download import download_all
-
-        print('Downloading Demo data...')
+        print('Downloading Beam demo data...')
         download_all()
 
     # Define dataset

@@ -57,12 +57,13 @@ class ArmadilloPrediction(ArmadilloTraining):
         # Receive visualizer option (either True for Vedo, False for SOFA GUI)
         self.visualizer = param_dict['visualizer'] if 'visualizer' in param_dict else self.visualizer
         step = 0.1 if self.visualizer else 0.02
-        self.amplitudes = np.arange(0, 1, step).tolist() + np.arange(1, -1, -step).tolist() + \
-                          np.arange(-1, 0, step).tolist()
+        self.amplitudes = np.concatenate((np.arange(0, 1, step),
+                                          np.arange(1, -1, -step),
+                                          np.arange(-1, 0, step)))
 
     def send_visualization(self):
         """
-        Define and send the initial visualization data dictionary. Automatically called whn creating Environment.
+        Define and send the initial visualization data dictionary. Automatically called when creating Environment.
         """
 
         # Nothing to visualize if the predictions are run in SOFA GUI.
@@ -132,10 +133,7 @@ class ArmadilloPrediction(ArmadilloTraining):
         Apply the predicted displacement to the NN model. Automatically called by DeepPhysX.
         """
 
-        # Reshape to correspond regular grid, transform to sparse grid
-        U = np.reshape(prediction, self.data_size)
-        self.n_sparse_grid_mo.position.value = self.n_sparse_grid_mo.rest_position.value + U
-
+        ArmadilloTraining.apply_prediction(self, prediction)
         # Update visualization if required
         if self.visualizer:
             self.update_visual()

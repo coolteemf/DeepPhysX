@@ -69,7 +69,7 @@ if __name__ == '__main__':
     # Check data
     if not os.path.exists('Environment/models'):
         from download import download_all
-        print('Downloading Demo data...')
+        print('Downloading Armadillo demo data...')
         download_all()
 
     # Define dataset
