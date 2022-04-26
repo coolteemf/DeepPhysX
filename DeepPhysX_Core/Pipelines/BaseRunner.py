@@ -49,10 +49,10 @@ class BaseRunner(BasePipeline):
         self.nb_samples = nb_steps
         self.idx_step = 0
 
-        # Tell if data is recording while predicting (output is recorded only if input too)
+        # Tell if data is recording while predicting
         self.record_data = {'input': False, 'output': False}
         if dataset_config is not None:
-            self.record_data = {'input': record_inputs, 'output': record_outputs and record_inputs}
+            self.record_data = {'input': record_inputs, 'output': record_outputs}
 
         self.manager = Manager(pipeline=self,
                                network_config=self.network_config,
