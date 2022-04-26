@@ -17,6 +17,7 @@ import numpy as np
 # Sofa & Caribou related imports
 import Sofa.Simulation
 import SofaRuntime
+from Caribou.Topology import Grid3D
 
 # DeepPhysX related imports
 from DeepPhysX_Sofa.Environment.SofaEnvironment import SofaEnvironment
@@ -24,6 +25,7 @@ from DeepPhysX_Sofa.Environment.SofaEnvironment import SofaEnvironment
 # Session related imports
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from parameters import p_model, p_grid, p_forces
+from utils import from_sparse_to_regular_grid
 
 
 class ArmadilloSofa(SofaEnvironment):
@@ -49,6 +51,15 @@ class ArmadilloSofa(SofaEnvironment):
         # With flag set to True, the model is created
         self.create_model = {'fem': True, 'nn': False}
 
+        # UNet regular grid
+        self.regular_grid = None
+        self.nb_nodes_regular_grid = None
+        self.nb_nodes_sparse_grid = None
+        self.idx_sparse_to_regular = None
+        self.idx_regular_to_sparse = None
+        self.regular_grid_rest_shape = None
+        self.data_size = None
+
         # FEM objects
         self.solver = None
         self.f_sparse_grid_topo = None
@@ -58,6 +69,8 @@ class ArmadilloSofa(SofaEnvironment):
         self.f_visu = None
 
         # Network objects
+        self.n_sparse_grid_topo = None
+        self.n_sparse_grid_mo = None
         self.n_surface_topo = None
         self.n_surface_mo = None
         self.n_visu = None
@@ -85,6 +98,11 @@ class ArmadilloSofa(SofaEnvironment):
         self.root.addObject('MeshObjLoader', name='MeshCoarse', filename=p_model.mesh_coarse,
                             scale3d=p_model.scale3d)
 
+        # UNet regular grid
+        self.regular_grid = Grid3D(anchor_position=p_grid.bbox_anchor, n=p_grid.nb_cells, size=p_grid.bbox_size)
+        self.root.addObject('MechanicalObject')
+        self.root.addObject('BoxROI', name='RegularGridBox', box=p_grid.b_box, drawBoxes=True, drawSize=1.)
+
         # Create FEM and / or NN models
         if self.create_model['fem']:
             self.createFEM()
@@ -98,9 +116,6 @@ class ArmadilloSofa(SofaEnvironment):
 
         # Create child node
         self.root.addChild('fem')
-
-        # Surrounding box
-        self.root.fem.addObject('BoxROI', box=p_grid.b_box, drawBoxes=True, drawSize=1.)
 
         # ODE solver + Static solver
         self.solver = self.root.fem.addObject('StaticODESolver', name='ODESolver', newton_iterations=20,
@@ -149,22 +164,22 @@ class ArmadilloSofa(SofaEnvironment):
         # Create child node
         self.root.addChild('nn')
 
-        # Surrounding box
+        # Grid topology
+        self.n_sparse_grid_topo = self.root.nn.addObject('SparseGridTopology', name='SparseGrid', src='@../MeshCoarse',
+                                                         n=p_grid.grid_resolution)
+        self.n_sparse_grid_mo = self.root.nn.addObject('MechanicalObject', name='SparseGridMO', showObject=False,
+                                                       src='@SparseGrid')
+
+        # Fixed section
         if not self.create_model['fem']:
-            self.root.nn.addObject('MechanicalObject')
-            self.root.nn.addObject('BoxROI', box=p_grid.b_box, drawBoxes=True, drawSize=1.)
+            self.root.nn.addObject('BoxROI', name='FixedBox', box=p_model.fixed_box, drawBoxes=True)
+            self.root.nn.addObject('FixedConstraint', indices='@FixedBox.indices')
 
         # Surface
         self.root.nn.addChild('surface')
         self.n_surface_topo = self.root.nn.surface.addObject('TriangleSetTopologyContainer', name='SurfaceTopo',
                                                              src='@../../MeshCoarse')
-        self.n_surface_mo = self.root.nn.surface.addObject('MechanicalObject', name='SurfaceMO',
-                                                           src='@../../MeshCoarse', showObject=False)
-
-        # Fixed section
-        if not self.create_model['fem']:
-            self.root.nn.surface.addObject('BoxROI', name='FixedBox', box=p_model.fixed_box, drawBoxes=True)
-            self.root.nn.surface.addObject('FixedConstraint', indices='@FixedBox.indices')
+        self.n_surface_mo = self.root.nn.surface.addObject('MechanicalObject', name='SurfaceMO', src='@SurfaceTopo')
 
         # Forces
         if not self.create_model['fem']:
@@ -172,8 +187,8 @@ class ArmadilloSofa(SofaEnvironment):
 
         # Visual
         self.root.nn.addChild('visual')
-        self.n_visu = self.root.nn.visual.addObject('OglModel', src='@../../MeshCoarse', color='orange')
-        self.root.nn.visual.addObject('BarycentricMapping', input='@../surface/SurfaceMO', output='@./')
+        self.n_visu = self.root.nn.visual.addObject('OglModel', src='@../../Mesh', color='orange')
+        self.root.nn.visual.addObject('BarycentricMapping', input='@../SparseGridMO', output='@./')
 
     def create_forces(self):
         """
@@ -189,6 +204,25 @@ class ArmadilloSofa(SofaEnvironment):
                                    centers=p_forces.centers[zone], drawPoints=True, drawSize=1)
             self.cff.append(surface_node.addObject('ConstantForceField', name=f'cff_{zone}', force=[0., 0., 0.],
                                                    indices=f'@Sphere_{zone}.indices'))
+
+    def onSimulationInitDoneEvent(self, event):
+        """
+        Called within the Sofa pipeline at the end of the scene graph initialisation.
+        """
+
+        # Correspondences between sparse grid and regular grid
+        sparse_grid_mo = self.f_sparse_grid_mo if self.create_model['fem'] else self.n_sparse_grid_mo
+        sparse_grid_topo = self.f_sparse_grid_topo if self.create_model['fem'] else self.n_sparse_grid_topo
+        self.nb_nodes_regular_grid = self.regular_grid.number_of_nodes()
+        self.nb_nodes_sparse_grid = len(sparse_grid_mo.rest_position.value)
+        correspondence = from_sparse_to_regular_grid(self.nb_nodes_regular_grid, sparse_grid_topo, sparse_grid_mo)
+        self.idx_sparse_to_regular = correspondence[0]
+        self.idx_regular_to_sparse = correspondence[1]
+        self.regular_grid_rest_shape = correspondence[2]
+
+        # Get the data sizes
+        self.data_size = (self.nb_nodes_regular_grid, 3)
+
 
     def onAnimateBeginEvent(self, event):
         """

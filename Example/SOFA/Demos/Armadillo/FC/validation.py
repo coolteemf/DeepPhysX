@@ -19,8 +19,7 @@ from DeepPhysX_PyTorch.FC.FCConfig import FCConfig
 from DeepPhysX_Sofa.Environment.SofaEnvironmentConfig import SofaEnvironmentConfig
 
 # Session related imports
-from Environment.ArmadilloValidation import ArmadilloValidation
-import Environment.parameters as parameters
+from Environment.ArmadilloValidation import ArmadilloValidation, np
 
 
 def create_runner(dataset_dir):
@@ -30,9 +29,15 @@ def create_runner(dataset_dir):
                                        param_dict={'compute_sample': dataset_dir is None},
                                        as_tcp_ip_client=False)
 
+    # Get the data size
+    env_instance = env_config.create_environment(None)
+    data_size = env_instance.data_size
+    env_instance.close()
+    del env_instance
+
     # FC config
     nb_hidden_layers = 2
-    nb_neurons = parameters.p_model.nb_nodes * 3
+    nb_neurons = np.multiply(*data_size)
     layers_dim = [nb_neurons] + [nb_neurons for _ in range(nb_hidden_layers + 1)] + [nb_neurons]
     net_config = FCConfig(network_name='armadillo_FC',
                           dim_output=3,
@@ -79,7 +84,7 @@ if __name__ == '__main__':
         # Check script option
         if sys.argv[1] != '-e':
             print("Script option must be '-e' for samples produced in Environment(s)."
-                  "Without option, samples are loaded from an existing Dataset.")
+                  "By default, samples are loaded from an existing Dataset.")
             quit(0)
         dataset = None
 

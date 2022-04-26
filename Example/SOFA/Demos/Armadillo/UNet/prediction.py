@@ -5,6 +5,7 @@ Launch the prediction session in a SOFA GUI with only predictions of the network
 
 # Python related imports
 import os
+import torch
 
 # Sofa related imports
 import Sofa.Gui
@@ -12,28 +13,31 @@ import Sofa.Gui
 # DeepPhysX related imports
 from DeepPhysX_Core.Dataset.BaseDatasetConfig import BaseDatasetConfig
 from DeepPhysX_Sofa.Pipeline.SofaRunner import SofaRunner
-from DeepPhysX_PyTorch.FC.FCConfig import FCConfig
+from DeepPhysX_PyTorch.UNet.UNetConfig import UNetConfig
 from DeepPhysX_Sofa.Environment.SofaEnvironmentConfig import SofaEnvironmentConfig
 
 # Session related imports
-from Environment.ArmadilloNetwork import ArmadilloNetwork
+from Environment.ArmadilloPrediction import ArmadilloPrediction
 import Environment.parameters as parameters
 
 
 def create_runner():
 
     # Environment config
-    env_config = SofaEnvironmentConfig(environment_class=ArmadilloNetwork,
+    env_config = SofaEnvironmentConfig(environment_class=ArmadilloPrediction,
                                        as_tcp_ip_client=False)
 
-    # FC config
-    nb_hidden_layers = 2
-    nb_neurons = parameters.p_model.nb_nodes * 3
-    layers_dim = [nb_neurons] + [nb_neurons for _ in range(nb_hidden_layers + 1)] + [nb_neurons]
-    net_config = FCConfig(network_name='armadillo_FC',
-                          dim_output=3,
-                          dim_layers=layers_dim,
-                          biases=True)
+    # UNet config
+    net_config = UNetConfig(network_name='armadillo_UNet',
+                            input_size=parameters.grid_resolution,
+                            nb_dims=3,
+                            nb_input_channels=3,
+                            nb_first_layer_channels=128,
+                            nb_output_channels=3,
+                            nb_steps=3,
+                            two_sublayers=True,
+                            border_mode='same',
+                            skip_merge=False)
 
     # Dataset config
     dataset_config = BaseDatasetConfig(normalize=True)

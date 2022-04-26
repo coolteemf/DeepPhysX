@@ -19,13 +19,13 @@ class ArmadilloDownloader(DataDownloader):
                          'train': 'armadillo_training_dpx',
                          'model': 'models'}
         self.tree = {'armadillo_data_dpx': [[],
-                                            {'dataset': [101, 102, 103, 107, 108]}],
-                     'armadillo_training_dpx': [[104],
+                                            {'dataset': [156, 157, 158, 159, 160, 161, 162]}],
+                     'armadillo_training_dpx': [[164],
                                                 {'dataset': [],
-                                                 'network': [105],
-                                                 'stats': [106]}],
+                                                 'network': [163],
+                                                 'stats': [155]}],
                      'models': [[111, 112], {}]}
-        self.nb_files = {'data': 5, 'train': 3, 'model': 2}
+        self.nb_files = {'data': 7, 'train': 3, 'model': 2}
 
 
 def download_all():

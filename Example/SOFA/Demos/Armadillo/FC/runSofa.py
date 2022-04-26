@@ -30,10 +30,10 @@ def create_environment():
 
 if __name__ == '__main__':
 
-    # Check data
+    # Check demo data
     if not os.path.exists('Environment/models'):
         from download import download_all
-        print('Downloading Demo data...')
+        print('Downloading Armadillo demo data...')
         download_all()
 
     # Create Environment

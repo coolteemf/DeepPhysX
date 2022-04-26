@@ -31,7 +31,7 @@ def create_runner(dataset_dir):
                                        as_tcp_ip_client=False)
 
     # UNet config
-    net_config = UNetConfig(network_name='liver_UNet',
+    net_config = UNetConfig(network_name='armadillo_UNet',
                             input_size=parameters.grid_resolution,
                             nb_dims=3,
                             nb_input_channels=3,

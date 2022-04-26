@@ -35,7 +35,7 @@ def launch_trainer(dataset_dir, nb_env):
                                        number_of_thread=nb_env)
 
     # UNet config
-    net_config = UNetConfig(network_name='liver_UNet',
+    net_config = UNetConfig(network_name='armadillo_UNet',
                             loss=torch.nn.MSELoss,
                             lr=lr,
                             optimizer=torch.optim.Adam,

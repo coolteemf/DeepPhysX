@@ -18,8 +18,7 @@ from DeepPhysX_PyTorch.FC.FCConfig import FCConfig
 from DeepPhysX_Sofa.Environment.SofaEnvironmentConfig import SofaEnvironmentConfig
 
 # Working session imports
-from Environment.ArmadilloTraining import ArmadilloTraining
-import Environment.parameters as parameters
+from Environment.ArmadilloTraining import ArmadilloTraining, np
 
 # Training parameters
 nb_epochs = 200
@@ -35,9 +34,15 @@ def launch_trainer(dataset_dir, nb_env):
                                        visualizer=VedoVisualizer,
                                        number_of_thread=nb_env)
 
+    # Get the data size
+    env_instance = env_config.create_environment(None)
+    data_size = env_instance.data_size
+    env_instance.close()
+    del env_instance
+
     # FC config
     nb_hidden_layers = 2
-    nb_neurons = parameters.p_model.nb_nodes * 3
+    nb_neurons = np.multiply(*data_size)
     layers_dim = [nb_neurons] + [nb_neurons for _ in range(nb_hidden_layers + 1)] + [nb_neurons]
     net_config = FCConfig(network_name='armadillo_FC',
                           loss=torch.nn.MSELoss,

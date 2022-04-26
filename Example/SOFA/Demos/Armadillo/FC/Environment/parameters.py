@@ -1,6 +1,6 @@
 """
 Parameters
-Define the sets of parameters :
+Define the following sets of parameters :
     * model parameters
     * grid parameters
     * forces parameters
@@ -12,33 +12,28 @@ from numpy import array
 from collections import namedtuple
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-from utils import define_bbox, compute_grid_resolution, find_fixed_box, find_extremities, get_nb_nodes, \
-    get_object_max_size
+from utils import compute_grid_resolution, define_bbox, find_extremities, find_fixed_box
 
 # Model
 mesh = os.path.dirname(os.path.abspath(__file__)) + '/models/armadillo.obj'
 coarse_mesh = os.path.dirname(os.path.abspath(__file__)) + '/models/armadillo_coarse.obj'
 scale = 1e-3
 scale3d = 3 * [scale]
-size = get_object_max_size(mesh, scale)
 fixed_box = find_fixed_box(mesh, scale)
-nb_nodes = get_nb_nodes(coarse_mesh)
 model = {'mesh': mesh,
          'mesh_coarse': coarse_mesh,
          'scale': scale,
          'scale3d': scale3d,
-         'size': size,
-         'fixed_box': fixed_box,
-         'nb_nodes': nb_nodes}
+         'fixed_box': fixed_box}
 p_model = namedtuple('p_model', model)(**model)
 
 # Grid
-margin_scale = 0.1
+margin_scale = 0.2
 cell_size = 0.06
-min_bbox, max_bbox, b_box = define_bbox(mesh, margin_scale, scale)
+min_bbox, max_bbox, bbox = define_bbox(mesh, margin_scale, scale)
 grid_resolution = compute_grid_resolution(max_bbox, min_bbox, cell_size)
-grid = {'b_box': b_box,
-        'grid_resolution': grid_resolution}
+grid = {'bbox': bbox,
+        'resolution': grid_resolution}
 p_grid = namedtuple('p_grid', grid)(**grid)
 
 # Forces

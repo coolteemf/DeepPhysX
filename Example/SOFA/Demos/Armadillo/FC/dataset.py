@@ -1,7 +1,7 @@
 """
 dataset.py
-Run the pipeline DataGenerator to produce a Dataset only.
-Use 'python3 dataset.py -t' to produce training Dataset (default).
+Run the data generation session to produce a Dataset only.
+Use 'python3 dataset.py' to produce training Dataset (default).
 Use 'python3 dataset.py -v' to produce validation Dataset.
 """
 
@@ -28,7 +28,6 @@ def launch_data_generation(dataset_mode):
     # Environment configuration
     environment_config = SofaEnvironmentConfig(environment_class=ArmadilloTraining,
                                                visualizer=VedoVisualizer,
-                                               param_dict={'is_network': False},
                                                as_tcp_ip_client=True,
                                                number_of_thread=4)
 
@@ -57,10 +56,11 @@ if __name__ == '__main__':
     # Get dataset mode
     mode = 'Training'
     if len(sys.argv) > 1:
-        if sys.argv[1] not in ['-t', '-v']:
-            print("Script option must be either '-t' for training dataset (default) or '-v' for validation dataset.")
+        if sys.argv[1] != '-v':
+            print("Script option must be '-v' to produce validation dataset."
+                  "By default, training dataset is produced.")
             quit(0)
-        mode = 'Validation' if sys.argv[1] == '-v' else 'Training'
+        mode = 'Validation'
 
     # Launch pipeline
     launch_data_generation(mode)

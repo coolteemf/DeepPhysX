@@ -39,7 +39,6 @@ class ArmadilloTraining(ArmadilloSofa):
                                environment_manager=environment_manager)
 
         self.create_model['nn'] = True
-        self.data_size = (p_model.nb_nodes, 3)
         self.is_network = True
 
     def recv_parameters(self, param_dict):
@@ -66,17 +65,10 @@ class ArmadilloTraining(ArmadilloSofa):
         """
         Called within the Sofa pipeline at the end of the time step. Compute training data and apply prediction.
         """
-
         # Compute training data
         input_array = self.compute_input()
         output_array = self.compute_output()
-
-        # If requests are allowed,
-        if self.is_network:
-            self.apply_prediction(self.get_prediction(input_array=input_array))
-
-        else:
-            self.update_visualization()
+        self.update_visualization()
 
         # Send training data
         self.set_training_data(input_array=input_array,
@@ -87,24 +79,31 @@ class ArmadilloTraining(ArmadilloSofa):
         Compute force vector for the whole surface.
         """
 
-        F = np.zeros(self.data_size)
-        # Add each force vector to the network input
+        # Init encoded force vector to zero
+        F = np.zeros(self.data_size, dtype=np.double)
+
+        # Encode each force field
+        surface_mo = self.f_surface_mo if self.create_model['fem'] else self.n_surface_mo
         for force_field in self.cff:
-            f = force_field.forces.value.copy()
-            idx = force_field.indices.value.copy()
-            F[idx] = f
-        in_array = F.copy() / p_model.scale
-        return in_array
+            for i in force_field.indices.value:
+                # Get the lis of nodes composing a cell containing a point from the force field
+                p = surface_mo.position.value[i]
+                cell = self.regular_grid.cell_index_containing(p)
+                # For each node of the cell, encode the force value
+                for node in self.regular_grid.node_indices_of(cell):
+                    if node < self.nb_nodes_regular_grid and np.linalg.norm(F[node]) == 0.:
+                        F[node] = force_field.force.value
+        return F.copy()
 
     def compute_output(self):
         """
         Compute displacement vector for the whole surface.
         """
 
-        # Compute generated displacement
-        U = self.f_surface_mo.position.value - self.f_surface_mo.rest_position.value
-        out_array = U.copy() / p_model.size
-        return out_array
+        # Write the position of each point from the sparse grid to the regular grid
+        actual_positions_on_regular_grid = np.zeros(self.data_size, dtype=np.double)
+        actual_positions_on_regular_grid[self.idx_sparse_to_regular] = self.f_sparse_grid_mo.position.array()
+        return np.subtract(actual_positions_on_regular_grid, self.regular_grid_rest_shape).copy()
 
     def apply_prediction(self, prediction):
         """
@@ -112,8 +111,9 @@ class ArmadilloTraining(ArmadilloSofa):
         """
 
         # Reshape to correspond regular grid, transform to sparse grid
-        U = np.reshape(prediction, self.data_size) * p_model.size
-        self.n_surface_mo.position.value = self.n_surface_mo.rest_position.array() + U
+        U = np.reshape(prediction, self.data_size)
+        U_sparse = U[self.idx_sparse_to_regular]
+        self.n_sparse_grid_mo.position.value = self.n_sparse_grid_mo.rest_position.array() + U_sparse
         self.update_visualization()
 
     def update_visualization(self):
