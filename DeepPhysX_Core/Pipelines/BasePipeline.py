@@ -25,12 +25,14 @@ class BasePipeline:
     """
 
     def __init__(self,
-                 network_config: Union[tuple[2], BaseNetworkConfig],
-                 environment_config: Union[tuple[2], BaseEnvironmentConfig],
-                 dataset_config: Union[tuple[2], BaseDatasetConfig],
+                 network_config: Union[tuple, BaseNetworkConfig],
+                 environment_config: Union[tuple, BaseEnvironmentConfig],
+                 dataset_config: Union[tuple, BaseDatasetConfig],
                  session_name: str = 'default',
                  session_dir: Optional[str] = None,
                  pipeline: Optional[str] = None):
+
+        self.name: str = self.__class__.__name__
 
         # Check the arguments
         # Network variables
@@ -38,26 +40,26 @@ class BasePipeline:
             self.network_config = network_config[0](**network_config[1])
         else:
             self.network_config = network_config
-        if not isinstance(self.network_config, BaseNetworkConfig):
-            raise TypeError("[BaseRunner] The network configuration must be a BaseNetworkConfig")
+        if network_config is not None and not isinstance(network_config, BaseNetworkConfig):
+            raise TypeError(f"[{self.name}] The network configuration must be a BaseNetworkConfig")
         # Simulation variables
         if isinstance(environment_config, tuple):
             self.environment_config = environment_config[0](**environment_config[1])
         else:
             self.environment_config = environment_config
-        if self.environment_config is not None and not isinstance(self.environment_config, BaseEnvironmentConfig):
-            raise TypeError("[BaseRunner] The environment configuration must be a BaseEnvironmentConfig")
+        if environment_config is not None and not isinstance(environment_config, BaseEnvironmentConfig):
+            raise TypeError(f"[{self.name}] The environment configuration must be a BaseEnvironmentConfig")
         # Dataset variables
         if isinstance(dataset_config, tuple):
             self.dataset_config = dataset_config[0](**dataset_config[1])
         else:
             self.dataset_config = dataset_config
-        if self.dataset_config is not None and not isinstance(self.dataset_config, BaseDatasetConfig):
-            raise TypeError("[BaseRunner] The dataset configuration must be a BaseDatasetConfig")
+        if dataset_config is not None and not isinstance(dataset_config, BaseDatasetConfig):
+            raise TypeError(f"[{self.name}] The dataset configuration must be a BaseDatasetConfig")
         if type(session_name) != str:
-            raise TypeError("[BaseRunner] The network config must be a BaseNetworkConfig object.")
+            raise TypeError(f"[{self.name}] The network config must be a BaseNetworkConfig object.")
         if session_dir is not None and type(session_dir) != str:
-            raise TypeError("[BaseRunner] The session directory must be a str.")
+            raise TypeError(f"[{self.name}] The session directory must be a str.")
 
         self.type: str = pipeline    # Either training or prediction
         self.debug: bool = False
@@ -70,6 +72,8 @@ class BasePipeline:
     def get_any_manager(self, manager_names: Union[str, List[str]]) -> Optional[Any]:
         """
         | Return the desired Manager associated with the pipeline if it exists.
+
+        self.manager = None
 
         :param Union[str, List[str]] manager_names: Name of the desired Manager or order of access to the desired
                                                     Manager

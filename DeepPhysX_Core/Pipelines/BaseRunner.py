@@ -24,9 +24,9 @@ class BaseRunner(BasePipeline):
     """
 
     def __init__(self,
-                 network_config: Union[tuple[2], BaseNetworkConfig],
-                 environment_config: Union[tuple[2], BaseEnvironmentConfig],
-                 dataset_config: Optional[Union[tuple[2], BaseDatasetConfig]] = None,
+                 network_config: Union[tuple, BaseNetworkConfig],
+                 environment_config: Union[tuple, BaseEnvironmentConfig],
+                 dataset_config: Optional[Union[tuple, BaseDatasetConfig]] = None,
                  session_name: str = 'default',
                  session_dir: Optional[str] = None,
                  nb_steps: int = 0,
@@ -49,10 +49,10 @@ class BaseRunner(BasePipeline):
         self.nb_samples = nb_steps
         self.idx_step = 0
 
-        # Tell if data is recording while predicting (output is recorded only if input too)
+        # Tell if data is recording while predicting
         self.record_data = {'input': False, 'output': False}
         if dataset_config is not None:
-            self.record_data = {'input': record_inputs, 'output': record_outputs and record_inputs}
+            self.record_data = {'input': record_inputs, 'output': record_outputs}
 
         self.manager = Manager(pipeline=self,
                                network_config=self.network_config,
@@ -74,7 +74,7 @@ class BaseRunner(BasePipeline):
         while self.running_condition():
             self.sample_begin()
             prediction = self.predict()
-            self.manager.data_manager.environment_manager.environment.apply_prediction(prediction)
+            self.manager.data_manager.apply_prediction(prediction)
             self.sample_end()
         self.run_end()
 
@@ -87,7 +87,9 @@ class BaseRunner(BasePipeline):
         """
 
         self.manager.get_data(animate=animate)
-        return self.manager.network_manager.compute_online_prediction(self.manager.data_manager.data['input'])
+        data = self.manager.data_manager.data['input']
+        data = self.manager.data_manager.normalize_data(data, 'input')
+        return self.manager.network_manager.compute_online_prediction(data)
 
     def run_begin(self) -> None:
         """

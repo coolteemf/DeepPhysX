@@ -23,15 +23,15 @@ def create_runner(session_path):
     nb_points = 30
     dimension = 3
     # Environment configuration
-    environment_config = (SofaEnvironmentConfig, dict(environment_class=MeanEnvironmentPrediction,
+    environment_config = SofaEnvironmentConfig(environment_class=MeanEnvironmentPrediction,
                                                param_dict={'constant': False,
                                                            'data_size': [nb_points, dimension],
                                                            'sleep': True},
-                                               as_tcp_ip_client=False))
+                                               as_tcp_ip_client=False)
     # Fully Connected configuration (the number of neurones on the first and last layer is defined by the total amount
     # of parameters in the input and the output vectors respectively)
-    network_config = (FCConfig, dict(dim_layers=[nb_points * dimension, nb_points * dimension, dimension],
-                              dim_output=dimension))
+    network_config = FCConfig(dim_layers=[nb_points * dimension, nb_points * dimension, dimension],
+                              dim_output=dimension)
     # Create SofaRunner
     return SofaRunner(session_dir=os.path.join(os.getcwd(), session_path),
                       environment_config=environment_config,

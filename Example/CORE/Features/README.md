@@ -6,7 +6,7 @@ These examples illustrate the main features of DeepPhysX framework.
 > :warning: **PyTorch usage**: This working session uses the Fully Connected implementation from DeepPhysX_Torch 
 package, please make sure it is installed if you want to run training scripts.
 
-###Content
+### Content
 
 Examples of an Environment: how to create it, how to send and receive data, 
 how to initialize and update visualization data, how to send requests.

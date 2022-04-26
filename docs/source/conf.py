@@ -15,25 +15,16 @@ import sys
 
 # DeepPhysX root
 root = os.path.abspath(os.path.join(os.path.abspath(__file__), '..', '..', '..'))
+all_modules = {'DeepPhysX_Core': ['AsyncSocket', 'Dataset', 'Environment', 'Manager', 'Network', 'Pipelines',
+                                  'Visualizer'],
+               'DeepPhysX_Sofa': ['Environment', 'Pipeline'],
+               'DeepPhysX_PyTorch': ['Network', 'FC', 'UNet']}
 
-# Import CORE modules
-sys.path.append(os.path.join(root, 'DeepPhysX_Core'))
-core_modules = ['AsyncSocket', 'Dataset', 'Environment', 'Manager', 'Network', 'Pipelines', 'Visualizer']
-for module in core_modules:
-    sys.path.append(os.path.join(root, 'DeepPhysX_Core', module))
-
-# Import SOFA modules
-sys.path.append(os.path.join(root, 'DeepPhysX_Sofa'))
-sofa_modules = ['Environment', 'Pipeline']
-for module in sofa_modules:
-    sys.path.append(os.path.join(root, 'DeepPhysX_Sofa', module))
-
-# Import TORCH modules
-sys.path.append(os.path.join(root, 'DeepPhysX_PyTorch'))
-torch_modules = ['Network', 'FC', 'UNet']
-for module in torch_modules:
-    sys.path.append(os.path.join(root, 'DeepPhysX_PyTorch', module))
-
+# Import all modules
+for package, modules in all_modules.items():
+    sys.path.append(os.path.join(root, package))
+    for module in modules:
+        sys.path.append(os.path.join(root, package, module))
 
 # -- Project information -----------------------------------------------------
 
@@ -52,7 +43,8 @@ extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.intersphinx',
     'sphinx.ext.autosummary',
-    'sphinx.ext.viewcode'
+    'sphinx.ext.viewcode',
+    'sphinx.ext.extlinks'
 ]
 
 intersphinx_mapping = {
@@ -84,3 +76,15 @@ html_theme_options = {
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
 html_css_files = ['theme.css']
+
+extlinks = {'Caribou': ('https://caribou.readthedocs.io/', None),
+            'CaribouI': ('https://caribou.readthedocs.io/en/latest/Building.html#', None),
+            'Numpy': ('https://numpy.org/', None),
+            'PyTorch': ('https://pytorch.org/', None),
+            'SOFA': ('https://www.sofa-framework.org/%s', None),
+            'SOFAI': ('https://www.sofa-framework.org/community/doc/getting-started/build/linux/', None),
+            'SP3': ('https://sofapython3.readthedocs.io/en/latest/', None),
+            'SP3I': ('https://sofapython3.readthedocs.io/en/latest/menu/Compilation.html', None),
+            'Tensorboard': ('https://www.tensorflow.org/tensorboard/', None),
+            'Vedo': ('https://vedo.embl.es/', None),
+            'VedoObject': ('https://vedo.embl.es/autodocs/content/vedo/%s', '%s')}

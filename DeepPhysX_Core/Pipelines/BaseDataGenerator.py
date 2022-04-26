@@ -2,6 +2,7 @@ from os.path import join as osPathJoin
 from os.path import basename
 from sys import stdout
 
+from DeepPhysX_Core.Pipelines.BasePipeline import BasePipeline
 from DeepPhysX_Core.Manager.DataManager import DataManager
 from DeepPhysX_Core.Dataset.BaseDatasetConfig import BaseDatasetConfig
 from DeepPhysX_Core.Environment.BaseEnvironmentConfig import BaseEnvironmentConfig
@@ -9,7 +10,7 @@ from DeepPhysX_Core.Utils.progressbar import Progressbar
 from DeepPhysX_Core.Utils.pathUtils import create_dir, get_first_caller
 
 
-class BaseDataGenerator:
+class BaseDataGenerator(BasePipeline):
     """
     | BaseDataGenerator implement a minimalist execute function that simply produce and store data without
       training a neural network.
@@ -33,7 +34,12 @@ class BaseDataGenerator:
                  record_input: bool = True,
                  record_output: bool = True):
 
-        # todo: inherit from Pipeline
+        BasePipeline.__init__(self,
+                              dataset_config=dataset_config,
+                              environment_config=environment_config,
+                              session_name=session_name,
+                              pipeline='dataset')
+
         # Init session repository
         if session_dir is None:
             # Create manager directory from the session name
@@ -49,6 +55,7 @@ class BaseDataGenerator:
                                         session_name=session_name,
                                         session_dir=self.session_dir,
                                         new_session=True,
+                                        offline=True,
                                         record_data={'input': record_input, 'output': record_output},
                                         batch_size=batch_size)
         self.nb_batch: int = nb_batches
@@ -60,10 +67,10 @@ class BaseDataGenerator:
         """
 
         for i in range(self.nb_batch):
+            # Produce a batch
+            self.data_manager.get_data()
             # Update progress bar
             stdout.write("\033[K")
             self.progress_bar.print(counts=i + 1)
-            # Produce a batch
-            self.data_manager.get_data()
         # Close manager
         self.data_manager.close()

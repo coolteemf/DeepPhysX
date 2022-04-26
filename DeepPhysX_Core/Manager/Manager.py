@@ -70,7 +70,7 @@ class Manager:
         else:
             raise ValueError("[Manager] The pipeline must be either training or prediction.")
 
-        self.session_name: str = basename(self.session_dir).split("/")[-1]
+        self.session_name: str = session_name
         # Always create the NetworkMmanager
         self.network_manager = NetworkManager(manager=self,
                                               network_config=network_config,
@@ -120,17 +120,13 @@ class Manager:
         :return: The network prediction and the associated loss value
         """
 
-        prediction, loss_dict = self.network_manager.compute_prediction_and_loss(self.data_manager.data, optimize=True)
-        return prediction, loss_dict
-
-    def get_prediction(self) -> Tuple[ndarray, Dict[str, float]]:
-        """
-        | Compute a prediction with the current batch.
-
-        :return: The network prediction and the associated loss value
-        """
-
-        prediction, loss_dict = self.network_manager.compute_prediction_and_loss(self.data_manager.data, optimize=False)
+        # Normalize input and output data
+        data = self.data_manager.data
+        for field in ['input', 'output']:
+            if field in data:
+                data[field] = self.data_manager.normalize_data(data[field], field)
+        # Forward pass and optimization step
+        prediction, loss_dict = self.network_manager.compute_prediction_and_loss(data, optimize=True)
         return prediction, loss_dict
 
     def set_eval(self) -> None:

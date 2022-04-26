@@ -1,12 +1,15 @@
 Manager
 =======
 
+.. _manager.datamanager:
+
 DataManager
 -----------
 
 .. autoclass:: DataManager.DataManager
     :members:
 
+.. _manager.datasetmanager:
 
 DatasetManager
 --------------
@@ -14,6 +17,7 @@ DatasetManager
 .. autoclass:: DatasetManager.DatasetManager
     :members:
 
+.. _manager.environmentmanager:
 
 EnvironmentManager
 ------------------
@@ -21,6 +25,7 @@ EnvironmentManager
 .. autoclass:: EnvironmentManager.EnvironmentManager
     :members:
 
+.. _manager.manager:
 
 Manager
 -------
@@ -28,6 +33,7 @@ Manager
 .. autoclass:: Manager.Manager
     :members:
 
+.. _manager.networkmanager:
 
 NetworkManager
 --------------
@@ -35,6 +41,7 @@ NetworkManager
 .. autoclass:: NetworkManager.NetworkManager
     :members:
 
+.. _manager.statsmanager:
 
 StatsManager
 ------------
@@ -42,6 +49,7 @@ StatsManager
 .. autoclass:: StatsManager.StatsManager
     :members:
 
+.. _manager.visualizermanager:
 
 VisualizerManager
 -----------------

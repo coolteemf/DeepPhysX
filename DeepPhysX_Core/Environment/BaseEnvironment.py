@@ -217,8 +217,7 @@ class BaseEnvironment(TcpIpClient):
         elif self.environment_manager.data_manager.manager.network_manager is None:
             raise ValueError("Cannot request prediction if NetworkManager does not exist")
         # Get a prediction
-        return self.environment_manager.data_manager.manager.network_manager.compute_online_prediction(
-            network_input=input_array[None, ])
+        return self.environment_manager.data_manager.get_prediction(network_input=input_array[None, ])
 
     def update_visualisation(self, visu_dict: Dict[int, Dict[str, Any]]) -> None:
         """

@@ -1,6 +1,8 @@
 Pipelines
 =========
 
+.. _pipelines.basedatagenerator:
+
 BaseDataGenerator
 -----------------
 
@@ -10,6 +12,7 @@ Bases:
 .. autoclass:: BaseDataGenerator.BaseDataGenerator
     :members:
 
+.. _pipelines.basepipeline:
 
 BasePipeline
 ------------
@@ -17,6 +20,7 @@ BasePipeline
 .. autoclass:: BasePipeline.BasePipeline
     :members:
 
+.. _pipelines.baserunner:
 
 BaseRunner
 ----------
@@ -27,6 +31,7 @@ Bases:
 .. autoclass:: BaseRunner.BaseRunner
     :members:
 
+.. _pipelines.basetrainer:
 
 BaseTrainer
 -----------

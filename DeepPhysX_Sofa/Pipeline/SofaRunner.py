@@ -23,9 +23,9 @@ class SofaRunner(Sofa.Core.Controller, BaseRunner):
     """
 
     def __init__(self,
-                 network_config: Union[tuple[2], BaseNetworkConfig],
-                 environment_config: Union[tuple[2], SofaEnvironmentConfig],
-                 dataset_config: Optional[Union[tuple[2], BaseDatasetConfig]] = None,
+                 network_config: Union[tuple, BaseNetworkConfig],
+                 environment_config: Union[tuple, SofaEnvironmentConfig],
+                 dataset_config: Optional[Union[tuple, BaseDatasetConfig]] = None,
                  session_name: str = 'default',
                  session_dir: Optional[str] = None,
                  nb_steps: int = 0,
@@ -57,7 +57,7 @@ class SofaRunner(Sofa.Core.Controller, BaseRunner):
         if self.running_condition():
             self.sample_begin()
             prediction = self.predict(animate=False)
-            self.manager.data_manager.environment_manager.environment.apply_prediction(prediction)
+            self.manager.data_manager.apply_prediction(prediction)
             self.sample_end()
         else:
             self.run_end()

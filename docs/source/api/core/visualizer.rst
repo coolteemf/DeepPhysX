@@ -1,17 +1,27 @@
 Visualizer
 ==========
 
-Visualization Rendering
------------------------
-
 .. toctree::
+    :hidden:
 
-    visualizer/rendering.rst
+    factories.rst
+
+.. _visualizer.vedoobjects:
+
+VedoObjects
+-----------
+
+.. autoclass:: VedoObjects.VedoObjects
+    :members:
+
+.. _visualizer.vedovisualizer:
+
+VedoVisualizer
+--------------
+
+.. autoclass:: VedoVisualizer.VedoVisualizer
+    :members:
 
 
-Visualization Factories
------------------------
 
-.. toctree::
 
-    visualizer/factories.rst

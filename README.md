@@ -1,16 +1,37 @@
 ## DeepPhysX
 
-Core project of the DeepPhysX environment.
+### Interfacing AI with simulation
 
-### Install Python library 
-In your own Python environment, make sure you have pip installed:
-* `pip install wheel`
-* `pip install setuptools`
-* `pip install twine`
+The **DeepPhysX** project provides Python packages allowing users to easily interface their **numerical simulations**
+with **learning algorithms**.
 
-Go trough the following command lines:
-* `cd DeepPhysX`
-* `python3 -m pip install -e .`
+**DeepPhysX** provides a **Core** package with no dependency on any **simulation** or **AI** framework.
+Then other modules are compatible with this **Core** and a specific **simulation** or **AI** framework.
 
-Once you have installed your Python library, you can import it using:
-`import DeepPhysX`
+
+### Quick install
+
+The project was initially developed using [SOFA](https://www.sofa-framework.org/) as the **simulation package** and
+[PyTorch](https://pytorch.org/) as the **AI framework**. 
+Thus, **DeepPhysX** is mainly designed for these frameworks, but obviously **other frameworks** can also be used.
+The packages corresponding to these frameworks will therefore be used for the default installation.
+For further instructions, please refer to the **documentation**.
+
+``` bash
+$ git clone https://github.com/mimesis/deepphysx.git
+$ cd DeepPhysX
+$ pip install .
+```
+
+
+### Documentation
+
+Documentation is not yet uploaded.
+Build it yourself using the following instructions:
+
+``` bash
+$ cd DeepPhysX/docs
+$ make html
+$ cd build/html
+$ firefox index.html
+```
