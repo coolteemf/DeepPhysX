@@ -254,8 +254,8 @@ class BaseTrainer(BasePipeline):
         description += f"    Session directory: {self.manager.session_dir}\n"
         description += f"    Number of epochs: {self.nb_epochs}\n"
         description += f"    Number of batches per epoch: {self.nb_batches}\n"
-        description += f"    Number of samples per epoch: {self.nb_batches * self.batch_size}\n"
         description += f"    Number of samples per batch: {self.batch_size}\n"
+        description += f"    Number of samples per epoch: {self.nb_batches * self.batch_size}\n"
         description += f"    Total: Number of batches : {self.nb_batches * self.nb_epochs}\n"
         description += f"           Number of samples : {self.nb_samples}\n"
         return description

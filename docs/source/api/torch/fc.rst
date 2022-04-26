@@ -1,6 +1,8 @@
 Fully Connected
 ===============
 
+.. _fc.fc:
+
 FC
 --
 
@@ -10,6 +12,7 @@ Base:
 .. autoclass:: FC.FC
     :members:
 
+.. _fc.fcconfig:
 
 FCConfig
 --------

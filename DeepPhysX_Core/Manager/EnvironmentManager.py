@@ -19,7 +19,7 @@ class EnvironmentManager:
     """
 
     def __init__(self,
-                 environment_config: Union[BaseEnvironmentConfig, tuple[2]],
+                 environment_config: Union[BaseEnvironmentConfig, tuple],
                  data_manager: Any = None,
                  batch_size: int = 1,
                  train: bool = True):
@@ -212,11 +212,13 @@ class EnvironmentManager:
 
         return training_data
 
-    def dispatch_batch_to_server(self, batch: Dict[str, Union[ndarray, dict]]) -> Dict[str, Union[ndarray, dict]]:
+    def dispatch_batch_to_server(self, batch: Dict[str, Union[ndarray, dict]],
+                                 animate: bool = True) -> Dict[str, Union[ndarray, dict]]:
         """
         | Send samples from dataset to the Environments. Get back the training data.
 
         :param Dict[str, Union[ndarray, dict]] batch: Batch of samples.
+        :param bool animate: If True, triggers an environment step
         :return: Batch of training data.
         """
 
@@ -226,20 +228,22 @@ class EnvironmentManager:
         while not self.server.data_fifo.empty():
             self.server.data_fifo.get()
         # Get data
-        return self.get_data()
+        return self.get_data(animate=animate)
 
-    def dispatch_batch_to_environment(self, batch: Dict[str, Union[ndarray, dict]]) -> Dict[str, Union[ndarray, dict]]:
+    def dispatch_batch_to_environment(self, batch: Dict[str, Union[ndarray, dict]],
+                                      animate: bool = True) -> Dict[str, Union[ndarray, dict]]:
         """
         | Send samples from dataset to the Environments. Get back the training data.
 
         :param Dict[str, Union[ndarray, dict]] batch: Batch of samples.
+        :param bool animate: If True, triggers an environment step
         :return: Batch of training data.
         """
 
         # Define the batch to dispatch
         self.dataset_batch = copy(batch)
         # Get data
-        return self.get_data()
+        return self.get_data(animate=animate)
 
     def close(self) -> None:
         """

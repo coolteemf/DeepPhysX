@@ -13,13 +13,18 @@ class BaseDatasetConfig:
     :param Optional[str] dataset_dir: Name of an existing dataset repository
     :param float partition_size: Maximum size in Gb of a single dataset partition
     :param bool shuffle_dataset: Specify if existing dataset should be shuffled
+    :param Optional[str] use_mode: Specify the Dataset mode that should be used between 'Training', 'Validation' and
+                                   'Running'
+    :param bool normalize: If True, normalizing dataset using standard score
     """
 
     def __init__(self,
                  dataset_class: Type[BaseDataset] = BaseDataset,
                  dataset_dir: Optional[str] = None,
                  partition_size: float = 1.,
-                 shuffle_dataset: bool = True):
+                 shuffle_dataset: bool = True,
+                 use_mode: Optional[str] = None,
+                 normalize: bool = True):
 
         self.name: str = self.__class__.__name__
 
@@ -37,6 +42,13 @@ class BaseDatasetConfig:
         # Check shuffle_dataset type
         if type(shuffle_dataset) != bool:
             raise TypeError(f"[{self.name}] Wrong shuffle_dataset type: bool required, get {type(shuffle_dataset)}")
+        # Check use_mode type and value
+        if use_mode is not None:
+            if type(use_mode) != str:
+                raise TypeError(f"[{self.name}] Wrong use_mode type: str required, get {type(dataset_dir)}")
+            if use_mode not in ['Training', 'Validation', 'Running']:
+                raise ValueError(f"[{self.name}] Wrong use_mode value, must be in "
+                                 f"{['Training', 'Validation', 'Running']}")
 
         # BaseDataset parameterization
         self.dataset_class: Type[BaseDataset] = dataset_class
@@ -45,6 +57,8 @@ class BaseDatasetConfig:
         # DatasetManager parameterization
         self.dataset_dir: str = dataset_dir
         self.shuffle_dataset: bool = shuffle_dataset
+        self.use_mode: Optional[str] = use_mode
+        self.normalize: bool = normalize
 
     def make_config(self, **kwargs) -> namedtuple:
         """

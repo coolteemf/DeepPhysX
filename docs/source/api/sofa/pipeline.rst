@@ -1,6 +1,7 @@
 Pipeline
 ========
 
+.. _pipeline.sofarunner:
 
 SofaRunner
 ----------

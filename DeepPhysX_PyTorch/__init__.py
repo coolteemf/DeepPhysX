@@ -1,14 +1,10 @@
-# from pathlib import Path
-# from os import walk
-# from os.path import sep
-# current_absolute_path = Path(__file__).parent.absolute()
-#
-# for rootdir, dirs, files in walk(current_absolute_path):
-#     if "__pycache__" not in rootdir and files != ["__init__.py"]:
-#         for file in files:
-#             if "pyc" not in file and file != "__init__.py":
-#                 splitted_path = str(rootdir).split(sep)
-#                 main_lib = splitted_path[-2]        # DeepPhysX_Core
-#                 sub_lib = splitted_path[-1]         # Pipeline, Utils, Network...
-#                 filename = str(file).split(".")[0]  # BaseNetwork, TcpIpClient, DatasetManager...
-#                 exec(f"from {main_lib}.{sub_lib}.{filename} import *")
+from os.path import dirname
+from os import listdir
+
+package = dirname(__file__)
+exceptions = [__file__.split('/')[-1], '__pycache__']
+modules = [module for module in listdir(package) if module not in exceptions]
+__all__ = []
+for module in sorted(modules):
+    exec(f"from DeepPhysX_PyTorch import {module}")
+    __all__.append(module)

@@ -1,21 +1,32 @@
 Overview
 ========
 
+.. _overview-packages:
+
 Packages
 --------
 
-The DeepPhysX project is divided into several python packages: a Core package which is able to communicate with a
-simulation package and a learning package.
-This way, the Core has no dependencies neither to a simulation framework nor an AI framework, and any of those
-frameworks could be compatible with DeepPhysX.
+.. role:: core
+.. role:: simu
+.. role:: ai
 
-*Add the packages overview doc*
+The **DeepPhysX** project is divided into several **Python packages**: a :core:`CORE` package which is able to
+communicate with a :simu:`SIMULATION` package and an :ai:`AI` package.
+This way, the :core:`CORE` has no dependencies neither to a :simu:`SIMULATION` framework nor an :ai:`AI` framework,
+and any of those frameworks can be compatible with **DeepPhysX**.
+
+.. figure:: ../_static/image/overview_packages.png
+    :alt: overview_packages.png
+    :align: center
+
+    Package organization
 
 Core
 """"
 
-This package rules the communications and the data flow between the AI side and the simulation side, the storage of the
-Dataset, the visualization tools.
+This package rules the **data flow** and the **communication** between the AI components and the simulation components.
+Data flow also involves the **storage** and **loading** of datasets and neural networks, the **management** of the
+visualization tool and the **analysis** of the training sessions.
 This package is named :guilabel:`DeepPhysX_Core`.
 
 .. admonition:: Dependencies
@@ -25,108 +36,117 @@ This package is named :guilabel:`DeepPhysX_Core`.
 Simulation
 """"""""""
 
-This package provides a DeepPhysX compatible API for your simulations.
-For DeepPhysX, each simulation package is written for a particular simulation framework (written in python or providing
+A **simulation package** provides a **DeepPhysX** compatible API for a **specific simulation framework**.
+For **DeepPhysX**, each simulation package dedicated to a specific simulation framework (written in python or providing
 python bindings).
-Thus, each package will be named :guilabel:`DeepPhysX_` + :guilabel:`Simulation_framework_name`.
+Thus, each package will be named according to the framework with a common prefix, for instance
+:guilabel:`DeepPhysX_Simulation`.
 
 .. admonition:: Available simulation packages
 
-    :guilabel:`DeepPhysX_Sofa` designed for `SOFA <https://www.sofa-framework.org/>`_
+    :guilabel:`DeepPhysX_Sofa` designed for :SOFA:`SOFA <>`
 
-Learning
-""""""""
+AI
+""
 
-This package provides a DeepPhysX compatible API for your Deep Learning Algorithms.
-In the same way, each learning package is written for a particular AI python framework.
-Thus, each package will be named :guilabel:`DeepPhysX_` + :guilabel:`AI_framework_name`.
+An **AI package** provides a **DeepPhysX** compatible API for a **specific AI framework**.
+In the same way, each learning package is dedicated to a specific AI Python framework.
+Thus, each package will be named according to the framework with the same common prefix, for instance
+:guilabel:`DeepPhysX_AI`.
 
 .. admonition:: Available learning packages
 
-    :guilabel:`DeepPhysX_Torch` designed for `PyTorch <https://pytorch.org/>`_
+    :guilabel:`DeepPhysX_Torch` designed for :PyTorch:`PyTorch <>`
 
 
 Architecture
 ------------
 
-This section describes both the links between the components of Core package and the links between Core package and
-the other packages.
+This section describes both the links between the components of :core:`CORE` package and the links to :ai:`AI` and
+:simu:`SIMULATION` packages.
 
-Users might use one of the provided pipelines for their **data generation**, their **training session** or their
-**predictions**.
-These pipelines triggers a **loop** which defines the number of samples to produce, the number of epochs needed for the
-training session or the number of steps of prediction.
+Users might use one of the provided *Pipelines* for their **data generation**, their **training session** or their
+**prediction session**.
+These *Pipelines* trigger a **loop** which defines the number of samples to produce, the number of epochs to perform
+during a training session or the number of steps of prediction.
 
-*Add the project overview doc*
+.. figure:: ../_static/image/overview_architecture.png
+    :alt: overview_architecture.png
+    :width: 80%
+    :align: center
 
-The pipeline will involve several components (some producing data, some consuming data), but the pipeline will
-communicate with their **Managers** first.
-A main **Manager** will provide the pipeline an intermediary with all the existing managers:
+    Components architecture
 
-* The Environment Manager will manage the Environment component to create it, to trigger steps of simulations, to
-  produce synthetic training data, to provide predictions of the network if required, and to finally shutdown the
-  Environment.
+The *Pipeline* will involve several components (data producers and data consumers), but the *Pipeline* will always
+communicate with their *Manager* first.
+A main *Manager* will provide the *Pipeline* an intermediary with all the existing *Managers*:
 
-  .. note::
-    This Manager can communicate directly with a single Environment or with a Server which shares information with
-    several Environments in parallel launched as Client through a custom TCP-IP protocol (see Environment section).
+:``DatasetManager``: It will manage the *Dataset* component to create **storage** partitions, to fill these partitions
+ with the synthetic training data produced by the *Environment* and to **reload** an existing *Dataset* for training or
+ prediction sessions.
 
-* The Dataset Manager will manage the Dataset component to create storage partitions, to fill these partitions with the
-  synthetic training data produced by the Environment and to reload an existing Dataset for training sessions.
+ .. note::
+    If training and data generation are done simultaneously (by default for the training *Pipeline*), the *Dataset*
+    can be built only during the first epoch and then reloaded for the remaining epochs.
 
-  .. note::
-    If you choose to generate data and train your network simultaneously (by default for the training pipeline), you
-    can generate the Dataset only during the first epoch and then reload this Dataset for the remaining epochs.
+:``EnvironmentManager``: It will manage the *Environment* (the numerical simulation) component to **create** it, to
+ trigger **steps** of simulations, to **produce** synthetic training data, to provide **predictions** of the network
+ if required, and to finally **shutdown** the *Environment*.
 
-  .. note::
-    The two above Managers are managed by the Data Manager since both the Environment and the Dataset component can
-    provide training data for the network.
-    This Data Manager is the one who decides if this data should be requested from the Environment or from the
-    Dataset depending on your pipeline configuration.
+ .. note::
+    This *Manager* can communicate directly with a single *Environment* or with a *Server* which shares information
+    with several *Environments* in multiprocessing launched as *Clients* through a custom TCP-IP protocol (see
+    :ref:`dedicated section <environment-tcpip>`).
 
-* The Network Manager will manage several objects to train your neural network:
+.. note::
+    The two above *Managers* are managed by the ``DataManager`` since both the *Environment* and the *Dataset*
+    components provide training data to the *Network*.
+    This ``DataManager`` is the one who decides if data should be requested from the *Environment* or from the
+    *Dataset* depending on the current state of the *Pipeline* and on the components configurations.
 
-    * The Network to produce a prediction from an input, to save a set of parameters or to reload a trained network.
+:``NetworkManager``: It will manage several objects to **train** or **exploit** your *Network*:
 
-    * The Optimizer to compute the loss function and to optimize the parameters of the Network. This component uses
-      existing loss functions and optimizers in the chosen AI framework.
+ * The *Network* to produce a **prediction** from an input, to **save** a set of parameters or to **reload** one.
+ * The *Optimizer* to compute the **loss** value and to **optimize** the parameters of the *Network*.
+   This component uses existing loss functions and optimizers in the chosen AI framework.
+ * The *DataTransformation* to **convert** the type of training data sent from *Environment* to a compatible type for
+   the AI framework you use and vice versa, to **transform** training data before a prediction, before the loss
+   computation and before sending the prediction to the *Environment*.
 
-    * The Data Transformation to convert the type of training data sent from Environment to a compatible type for the
-      AI framework you use and vice versa, to transform training data before a prediction, before the loss computation
-      and before sending the prediction to the Environment.
+ .. note::
+    The above components are designed to be easily inherited and upgradable if the content of AI packages is not enough.
+    Users are thus free to define their own *Network* architecture, to create a custom loss or optimizer to feed the
+    *Optimizer* and to compute the required tensor transformations in the *DataTransformation*.
 
-  .. note::
-    You can define your own learning algorithm if the stuff provided in the learning packages is not enough for you.
-    You are free to define your own Network architecture, to create your custom loss or optimizer to feed the
-    Optimizer, and to compute your required tensor transformations in the Data Transformation component.
+:``StatsManager``: It will manage the **analysis** of the **evolution** of a training session.
+ These analytical data will be saved in an **event log file** interpreted by :Tensorboard:`Tensorboard <>`.
 
-* The Visualizer Manager which manages the Visualizer to gather the simulated objects you want to render.
-  Factories are provided to create a wide variety of objects (meshes, point clouds, markers, etc).
-
-  .. note::
-    You have to specify in your Environment which object you want to create and when you want to update them in the
-    rendering window.
-    In the case where you run several Environments in parallel, the rendering windows will be split in several
-    sub-windows to gather the rendering of your simulations.
-
-* The Stats Manager which manages the analysis of the evolution of a training session.
-  These analytical data will be saved as a file readable by Tensorboard.
-
-  .. note::
-    Common curves will be automatically provided in the board (such as the evolution of the loss value, the smoothed
-    mean and the variance of this loss value per batch and per epoch), but you can add and fill other custom fields
+ .. note::
+    Usual curves will be automatically provided in the board (such as the evolution of the loss value, the smoothed
+    mean and the variance of this loss value per batch and per epoch), but other custom fields can be added and filled
     as well.
 
+:``VisualizerManager``: It will manage the *Visualizer* which **initialize** and **update** visualization data.
+ Then, it updates the **render** of the simulated objects defined in the visualization data.
+ *Factories* are provided to easily **template** visualization data for a wide variety of objects (meshes, point clouds,
+ etc.).
+
+ .. note::
+    It must be specified in an *Environment* which objects to add in the *Visualizer* and when they must be updated.
+    In the case where several *Environments* are running in parallel, the rendering windows will be split in several
+    sub-windows to gather all the renderings.
+
 .. warning::
-    If you try to use the default Network or Environment provided in the Core package, you will quickly see that they
+    It is not possible to use the default *Network* and *Environment* provided in the :core:`CORE` package, since they
     are not implemented at all.
-    The reason is that you need to choose an AI and a simulation python framework to implement them.
-    The aim of DeepPhysX learning and simulation packages is to provide a compatible implementation both for DeepPhysX
-    and both for the AI and the simulation framework.
+    The reason is that you need to choose an :ai:`AI` and a :simu:`SIMULATION` Python framework to implement them.
+    The aim of **DeepPhysX** additional packages is to provide a compatible implementation both for **DeepPhysX**
+    and these frameworks.
 
-.. admonition:: Example
+    Example
+     If you choose :PyTorch:`PyTorch <>` as your :ai:`AI` framework, you can use or implement a *TorchNetwork* which
+     inherits from both the :core:`CORE` *Network* and ``Torch.nn.module`` (available in :guilabel:`DeepPhysX_Torch`).
 
-    If you choose PyTorch as your AI framework, you can use or implement a TorchNetwork which inherits from DeepPhysX
-    Network and from Torch.nn.module (available in :guilabel:`DeepPhysX_Torch`).
-    If you choose SOFA as your simulation framework, you can implement a SofaEnvironment which inherits from DeepPhysX
-    Environment and from Sofa.Core.Controller (available in :guilabel:`DeepPhysX_Sofa`).
+     If you choose :SOFA:`SOFA <>` as your :simu:`SIMULATION` framework, you can implement a *SofaEnvironment* which
+     inherits from both the :core:`CORE` *Environment* and ``Sofa.Core.Controller`` (available in
+     :guilabel:`DeepPhysX_Sofa`).

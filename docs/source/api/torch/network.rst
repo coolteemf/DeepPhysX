@@ -1,6 +1,8 @@
 Network
 =======
 
+.. _network.torchdatatransformation:
+
 TorchDataTransformation
 -----------------------
 
@@ -10,6 +12,7 @@ Base:
 .. autoclass:: TorchDataTransformation.TorchDataTransformation
     :members:
 
+.. _network.torchnetwork:
 
 TorchNetwork
 ------------
@@ -20,6 +23,7 @@ Base:
 .. autoclass:: TorchNetwork.TorchNetwork
     :members:
 
+.. _network.torchnetworkconfig:
 
 TorchNetworkConfig
 ---------------------
@@ -30,6 +34,7 @@ Base:
 .. autoclass:: TorchNetworkConfig.TorchNetworkConfig
     :members:
 
+.. _network.torchoptimization:
 
 TorchOptimization
 -----------------
