@@ -123,8 +123,13 @@ class DatasetManager:
                     if dataset_dir[-8:] != "dataset/":
                         dataset_dir += "dataset/"
                     self.dataset_dir = dataset_dir
-                    symlink(abspath(self.dataset_dir), osPathJoin(self.session_dir, 'dataset'))
-                    self.load_directory()
+                    if abspath(self.dataset_dir) != osPathJoin(self.session_dir, 'dataset'):
+                        symlink(abspath(self.dataset_dir), osPathJoin(self.session_dir, 'dataset'))
+                        self.load_directory()
+                    # Special case: adding data in existing Dataset with DataGeneration
+                    else:
+                        self.load_directory(load_data=False)
+                        self.__new_dataset = True
             # Existing training session
             else:
                 self.dataset_dir = osPathJoin(self.session_dir, 'dataset/')
@@ -383,8 +388,8 @@ class DatasetManager:
             self.update_json(update_normalization=True)
 
         # 4. Load data from partitions
+        self.idx_partitions = [len(partitions_list) for partitions_list in self.list_partitions['input']]
         if load_data:
-            self.idx_partitions = [len(partitions_list) for partitions_list in self.list_partitions['input']]
             self.load_partitions(force_reload=True)
 
     def search_partitions(self, mode: str) -> Dict[str, List[str]]:
