@@ -19,13 +19,13 @@ class LiverDownloader(DataDownloader):
                          'train': 'liver_training_dpx',
                          'model': 'models'}
         self.tree = {'liver_data_dpx': [[],
-                                        {'dataset': [114, 121, 122, 123, 124]}],
-                     'liver_training_dpx': [[119],
+                                        {'dataset': [171, 172, 173, 174, 175, 176, 179, 181, 182]}],
+                     'liver_training_dpx': [[178],
                                             {'dataset': [],
-                                             'network': [115],
-                                             'stats': [116]}],
+                                             'network': [177],
+                                             'stats': [180]}],
                      'models': [[117, 118, 120], {}]}
-        self.nb_files = {'data': 5, 'train': 3, 'model': 3}
+        self.nb_files = {'data': 9, 'train': 3, 'model': 3}
 
 
 def download_all():
