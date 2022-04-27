@@ -13,8 +13,8 @@ import sys
 
 # Working session imports
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-from parameters import p_forces, p_liver
 from LiverTraining import LiverTraining, np
+from parameters import p_forces, p_model
 
 
 class LiverPrediction(LiverTraining):
@@ -38,11 +38,11 @@ class LiverPrediction(LiverTraining):
                                environment_manager=environment_manager)
 
         self.create_model['fem'] = False
+        self.visualizer = False
 
-        self.nb_forces = 3
-        self.range = np.concatenate((np.arange(0, 1, 0.01),
-                                     np.arange(1, -1, -0.01),
-                                     np.arange(-1, 0, 0.01)))
+        # Force pattern
+        self.amplitudes = None
+        self.nb_forces = p_forces.nb_simultaneous_forces
         self.idx_range = 0
         self.forces = []
 
@@ -51,16 +51,36 @@ class LiverPrediction(LiverTraining):
         Exploit received parameters before scene creation.
         """
 
-        self.nb_forces = min(param_dict['nb_forces'],
-                             p_forces.nb_simultaneous_forces - 1) if 'nb_forces' in param_dict else self.nb_forces
+        # Receive number of forces option
+        self.nb_forces = min(param_dict['nb_forces'], self.nb_forces) if 'nb_forces' in param_dict else self.nb_forces
         self.forces = [None] * self.nb_forces
+
+        # Receive visualizer option (either True for Vedo, False for SOFA GUI)
+        self.visualizer = param_dict['visualizer'] if 'visualizer' in param_dict else self.visualizer
+        step = 0.1 if self.visualizer else 0.02
+        self.amplitudes = np.concatenate((np.arange(0, 1, step),
+                                          np.arange(1, -1, -step),
+                                          np.arange(-1, 0, step)))
 
     def send_visualization(self):
         """
         Define and send the initial visualization data dictionary. Automatically called whn creating Environment.
         """
 
-        # Nothing to visualize since the predictions are run in SOFA GUI.
+        # Nothing to visualize if the predictions are run in SOFA GUI.
+        if self.visualizer:
+            # Add the FEM model (object will have id = 0)
+            self.factory.add_object(object_type='Mesh', data_dict={'positions': self.n_visu.position.value.copy(),
+                                                                   'cells': self.n_visu.triangles.value.copy(),
+                                                                   'at': self.instance_id,
+                                                                   'c': 'green'})
+
+            # Arrows representing the force fields (object will have id = 1)
+            self.factory.add_object(object_type='Arrows', data_dict={'positions': p_model.fixed_point,
+                                                                     'vectors': [0., 0., 0.],
+                                                                     'c': 'green',
+                                                                     'at': self.instance_id})
+
         return self.factory.objects_dict
 
     def onAnimateBeginEvent(self, event):
@@ -69,15 +89,17 @@ class LiverPrediction(LiverTraining):
         """
 
         # Reset force amplitude index
-        if self.idx_range == len(self.range):
+        if self.idx_range == len(self.amplitudes):
             self.idx_range = 0
             self.n_surface_mo.position.value = self.n_surface_mo.rest_position.value
 
-        # Build and set forces vectors
+        # Generate new forces
         if self.idx_range == 0:
+
             # Pick up a random visible surface point, select the points in a centered sphere
             selected_centers = np.empty([0, 3])
             for i in range(self.nb_forces):
+
                 # Pick up a random visible surface point, select the points in a centered sphere
                 current_point = self.n_surface_mo.position.value[np.random.randint(len(self.n_surface_mo.position.value))]
                 # Check distance to other points
@@ -88,6 +110,7 @@ class LiverPrediction(LiverTraining):
                         distance_check = False
                         break
                 empty_indices = False
+
                 if distance_check:
                     # Add center to the selection
                     selected_centers = np.concatenate((selected_centers, np.array([current_point])))
@@ -98,42 +121,35 @@ class LiverPrediction(LiverTraining):
                         f = np.random.uniform(low=-1, high=1, size=(3,))
                         self.forces[i] = (f / np.linalg.norm(f)) * p_forces.amplitude
                         self.force_field[i].indices.value = self.sphere[i].indices.array()
-                        self.force_field[i].force.value = self.forces[i] * self.range[self.idx_range]
+                        self.force_field[i].force.value = self.forces[i] * self.amplitudes[self.idx_range]
                     else:
                         empty_indices = True
+
                 if not distance_check or empty_indices:
                     # Reset sphere position
-                    self.sphere[i].centers.value = [p_liver.fixed_point.tolist()]
+                    self.sphere[i].centers.value = [p_model.fixed_point.tolist()]
                     # Reset force field
                     self.force_field[i].indices.value = [0]
                     self.force_field[i].force.value = np.array([0.0, 0.0, 0.0])
                     self.forces[i] = np.array([0., 0., 0.])
+
         # Change force amplitude
         else:
             for i in range(self.nb_forces):
-                self.force_field[i].force.value = self.forces[i] * self.range[self.idx_range]
+                self.force_field[i].force.value = self.forces[i] * self.amplitudes[self.idx_range]
         self.idx_range += 1
 
     def onAnimateEndEvent(self, event):
         """
-        Called within the Sofa pipeline at the end of the time step. Compute training data and apply prediction.
+        Called within the Sofa pipeline at the end of the time step. Compute training data.
         """
 
-        # Get a prediction and apply it on NN model
+        # Compute training data
         input_array = self.compute_input()
 
         # Send training data
         self.set_training_data(input_array=input_array,
                                output_array=np.array([]))
-
-    def apply_prediction(self, prediction):
-        """
-        Apply the predicted displacement to the NN model.
-        """
-
-        # Reshape to correspond regular grid, transform to sparse grid
-        U = np.reshape(prediction, self.data_size)
-        self.n_surface_mo.position.value = self.n_surface_mo.rest_position.array() + U
 
     def check_sample(self):
         """
@@ -142,3 +158,29 @@ class LiverPrediction(LiverTraining):
 
         # See the network prediction even if the solver diverged.
         return True
+
+    def apply_prediction(self, prediction):
+        """
+        Apply the predicted displacement to the NN model. Automatically called by DeepPhysX.
+        """
+
+        LiverTraining.apply_prediction(self, prediction)
+        # Update visualization if required
+        if self.visualizer:
+            self.update_visual()
+
+    def update_visual(self):
+        """
+        Update the visualization data dict.
+        """
+
+        # Update visualization data
+        self.factory.update_object_dict(object_id=0, new_data_dict={'position': self.n_visu.position.value.copy()})
+        position, vector = [], []
+        for cff in self.force_field:
+            position += list(self.n_surface_mo.position.value[cff.indices.value])
+            vector += list(cff.forces.value)
+        self.factory.update_object_dict(object_id=1, new_data_dict={'positions': position,
+                                                                    'vectors': vector})
+        # Send updated data
+        self.update_visualisation(visu_dict=self.factory.updated_object_dict)

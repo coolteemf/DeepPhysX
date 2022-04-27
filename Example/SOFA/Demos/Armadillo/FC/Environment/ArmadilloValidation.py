@@ -60,17 +60,16 @@ class ArmadilloValidation(ArmadilloTraining):
         if self.compute_sample:
             ArmadilloTraining.createFEM(self)
 
-        # To read samples from Dataset, no need for physic laws nor solvers
+        # To read Dataset samples, no need for physical laws or solvers
         else:
-            # Create child node
+            # Create FEM node
             self.root.addChild('fem')
 
             # Grid topology of the model
             self.root.fem.addObject('SparseGridTopology', name='SparseGridTopo', src='@../MeshCoarse',
                                     n=p_grid.resolution)
             self.f_sparse_grid_mo = self.root.fem.addObject('MechanicalObject', name='SparseGridMO',
-                                                            src='@SparseGridTopo',
-                                                            showObject=False)
+                                                            src='@SparseGridTopo')
 
             # Fixed section
             self.root.fem.addObject('BoxROI', name='FixedBox', box=p_model.fixed_box, drawBoxes=True, drawSize=1.)
@@ -97,12 +96,12 @@ class ArmadilloValidation(ArmadilloTraining):
 
             # Visual
             self.root.fem.addChild('visual')
-            self.f_visu = self.root.fem.visual.addObject('OglModel', name="OGL", src='@../../Mesh', color='green')
+            self.f_visu = self.root.fem.visual.addObject('OglModel', src='@../../Mesh', color='green')
             self.root.fem.visual.addObject('BarycentricMapping', input='@../SparseGridMO', output='@./')
 
     def send_visualization(self):
         """
-        Define and send the initial visualization data dictionary. Automatically called whn creating Environment.
+        Define and send the initial visualization data dictionary. Automatically called when creating Environment.
         """
 
         # Nothing to visualize since the predictions are run in SOFA GUI.

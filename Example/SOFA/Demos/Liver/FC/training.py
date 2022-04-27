@@ -18,8 +18,7 @@ from DeepPhysX_PyTorch.FC.FCConfig import FCConfig
 from DeepPhysX_Sofa.Environment.SofaEnvironmentConfig import SofaEnvironmentConfig
 
 # Working session imports
-from Environment.LiverTraining import LiverTraining
-import Environment.parameters as parameters
+from Environment.LiverTraining import LiverTraining, np
 
 # Training parameters
 nb_epochs = 400
@@ -35,9 +34,15 @@ def launch_trainer(dataset_dir, nb_env):
                                        visualizer=VedoVisualizer,
                                        number_of_thread=nb_env)
 
+    # Get the data size
+    env_instance = env_config.create_environment(None)
+    data_size = env_instance.data_size
+    env_instance.close()
+    del env_instance
+
     # FC config
     nb_hidden_layers = 2
-    nb_neurons = parameters.p_liver.nb_nodes * 3
+    nb_neurons = np.multiply(*data_size)
     layers_dim = [nb_neurons] + [nb_neurons for _ in range(nb_hidden_layers + 1)] + [nb_neurons]
     net_config = FCConfig(network_name='liver_FC',
                           loss=torch.nn.MSELoss,
@@ -71,8 +76,7 @@ if __name__ == '__main__':
     # Check data
     if not os.path.exists('Environment/models'):
         from download import download_all
-
-        print('Downloading Demo data...')
+        print('Downloading Liver demo data...')
         download_all()
 
     # Define dataset
@@ -88,7 +92,7 @@ if __name__ == '__main__':
             nb_thread = int(sys.argv[1])
         except ValueError:
             print("Script option must be an integer <nb_sample> for samples produced in Environment(s)."
-                  "Without option, samples are loaded from an existing Dataset.")
+                  "By default, samples are loaded from an existing Dataset.")
             quit(0)
 
     # Launch pipeline

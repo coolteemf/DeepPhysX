@@ -58,7 +58,6 @@ class ArmadilloSofa(SofaEnvironment):
 
         # Network objects
         self.n_sparse_grid_mo = None
-        self.n_force_grid_mo = None
         self.n_surface_mo = None
         self.n_visu = None
 

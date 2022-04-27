@@ -15,7 +15,7 @@ import sys
 
 # Session related imports
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-from LiverSofa import LiverSofa, p_liver, np
+from LiverSofa import LiverSofa, np
 
 
 class LiverTraining(LiverSofa):
@@ -39,15 +39,14 @@ class LiverTraining(LiverSofa):
                            environment_manager=environment_manager)
 
         self.create_model['nn'] = True
-        self.data_size = (p_liver.nb_nodes, 3)
-        self.is_network = True
+        self.data_size = None
 
     def send_visualization(self):
         """
         Define and send the initial visualization data dictionary. Automatically called when creating Environment.
         """
 
-        # Add the FEM model
+        # Add the FEM model (object will have id = 0)
         self.factory.add_object(object_type='Mesh', data_dict={'positions': self.f_visu.position.value.copy(),
                                                                'cells': self.f_visu.triangles.value.copy(),
                                                                'at': self.instance_id,
@@ -55,9 +54,17 @@ class LiverTraining(LiverSofa):
         # Return the initial visualization data
         return self.factory.objects_dict
 
+    def onSimulationInitDoneEvent(self, event):
+        """
+        Called within the Sofa pipeline at the end of the scene graph initialisation.
+        """
+
+        # Get the data shape
+        self.data_size = self.n_sparse_grid_mo.position.value.shape
+
     def onAnimateEndEvent(self, event):
         """
-        Called within the Sofa pipeline at the end of the time step. Compute training data and apply prediction.
+        Called within the Sofa pipeline at the end of the time step. Compute training data.
         """
 
         # Compute training data
@@ -67,20 +74,18 @@ class LiverTraining(LiverSofa):
         # Send training data
         self.set_training_data(input_array=input_array,
                                output_array=output_array)
-        self.update_visualization()
+
+        # Update visualization
+        self.update_visual()
 
     def compute_input(self):
         """
-        Compute force vector for the whole surface.
+        Compute force field on the grid.
         """
 
-        F = np.zeros(self.data_size)
-        # Add each force vector to the network input
-        for force_field in self.force_field:
-            f = force_field.forces.value.copy()
-            idx = force_field.indices.value.copy()
-            F[idx] = f
-        return F.copy()
+        # Compute applied force on volume
+        force_grid_mo = self.f_force_grid_mo if self.create_model['fem'] else self.n_sparse_grid_mo
+        return force_grid_mo.force.value.copy()
 
     def compute_output(self):
         """
@@ -88,20 +93,24 @@ class LiverTraining(LiverSofa):
         """
 
         # Compute generated displacement
-        U = self.f_surface_mo.position.value - self.f_surface_mo.rest_position.value
+        U = self.f_sparse_grid_mo.position.value - self.f_sparse_grid_mo.rest_position.value
         return U.copy()
 
     def apply_prediction(self, prediction):
         """
-        Apply the predicted displacement to the NN model, update visualization data.
+        Apply the predicted displacement to the NN model.
         """
 
-        # Reshape to correspond regular grid, transform to sparse grid
+        # Reshape to correspond sparse grid
         U = np.reshape(prediction, self.data_size)
-        self.n_surface_mo.position.value = self.n_surface_mo.rest_position.array() + U
+        self.n_sparse_grid_mo.position.value = self.n_sparse_grid_mo.rest_position.array() + U
 
-    def update_visualization(self):
-        # Update visualization data
+    def update_visual(self):
+        """
+        Update the visualization data dict.
+        """
+
+        # Update mesh positions
         self.factory.update_object_dict(object_id=0, new_data_dict={'position': self.f_visu.position.value.copy()})
         # Send updated data
         self.update_visualisation(visu_dict=self.factory.updated_object_dict)

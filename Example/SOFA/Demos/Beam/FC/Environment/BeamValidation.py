@@ -59,17 +59,16 @@ class BeamValidation(BeamTraining):
         if self.compute_sample:
             BeamTraining.createFEM(self)
 
-        # To read samples from Dataset, no need for physic laws nor solvers
+        # To read Dataset samples, no need for physical laws or solvers
         else:
-            # Create child node
+            # Create FEM node
             self.root.addChild('fem')
 
             # Grid topology of the model
             self.f_grid_topo = self.root.fem.addObject('RegularGridTopology', name='GridTopo', min=p_grid.min.tolist(),
                                                        max=p_grid.max.tolist(), nx=p_grid.res[0], ny=p_grid.res[1],
                                                        nz=p_grid.res[2])
-            self.f_grid_mo = self.root.fem.addObject('MechanicalObject', name='GridMO', src='@GridTopo',
-                                                     showObject=False)
+            self.f_grid_mo = self.root.fem.addObject('MechanicalObject', name='GridMO', src='@GridTopo')
             self.root.fem.addObject('HexahedronSetTopologyContainer', name='HexaTopo', src='@GridTopo')
             self.root.fem.addObject('HexahedronSetGeometryAlgorithms', template='Vec3d')
             self.root.fem.addObject('HexahedronSetTopologyModifier')

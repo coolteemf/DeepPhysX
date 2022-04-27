@@ -21,14 +21,14 @@ from DeepPhysX_Sofa.Pipeline.SofaRunner import SofaRunner
 from DeepPhysX_PyTorch.FC.FCConfig import FCConfig
 
 # Session related imports
-from Environment.ArmadilloPrediction import ArmadilloPrediction, np
+from Environment.LiverPrediction import LiverPrediction, np
 
 
 def create_runner(visualizer=False):
 
     # Environment config
-    env_config = SofaEnvironmentConfig(environment_class=ArmadilloPrediction,
-                                       param_dict={'visualizer': visualizer},
+    env_config = SofaEnvironmentConfig(environment_class=LiverPrediction,
+                                       param_dict={'nb_forces': 3, 'visualizer': visualizer},
                                        visualizer=VedoVisualizer if visualizer else None,
                                        as_tcp_ip_client=False)
 
@@ -51,8 +51,8 @@ def create_runner(visualizer=False):
     dataset_config = BaseDatasetConfig(normalize=True)
 
     # Define trained network session
-    dpx_session = 'sessions/armadillo_training_dpx'
-    user_session = 'sessions/armadillo_training_user'
+    dpx_session = 'sessions/liver_training_dpx'
+    user_session = 'sessions/liver_training_user'
     # Take user session by default
     session_dir = user_session if os.path.exists(user_session) else dpx_session
 
@@ -76,7 +76,7 @@ if __name__ == '__main__':
     # Check data
     if not os.path.exists('Environment/models'):
         from download import download_all
-        print('Downloading Armadillo demo data...')
+        print('Downloading Liver demo data...')
         download_all()
 
     # Get option

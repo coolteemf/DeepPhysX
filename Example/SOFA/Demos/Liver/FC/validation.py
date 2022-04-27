@@ -1,10 +1,13 @@
 """
-prediction.py
-Launch the prediction session in a SOFA GUI with only predictions of the network.
+validation.py
+Launch the prediction session in a SOFA GUI. Compare the two models.
+Use 'python3 validation.py' to run the pipeline with existing samples from a Dataset (default).
+Use 'python3 validation.py -e' to run the pipeline with newly created samples in Environment.
 """
 
 # Python related imports
 import os
+import sys
 
 # Sofa related imports
 import Sofa.Gui
@@ -16,28 +19,36 @@ from DeepPhysX_PyTorch.FC.FCConfig import FCConfig
 from DeepPhysX_Sofa.Environment.SofaEnvironmentConfig import SofaEnvironmentConfig
 
 # Session related imports
-from Environment.LiverPrediction import LiverPrediction
-import Environment.parameters as parameters
+from Environment.LiverValidation import LiverValidation, np
 
 
-def create_runner():
+def create_runner(dataset_dir):
 
     # Environment config
-    env_config = SofaEnvironmentConfig(environment_class=LiverPrediction,
-                                       param_dict={'nb_forces': 2},
+    env_config = SofaEnvironmentConfig(environment_class=LiverValidation,
+                                       param_dict={'compute_sample': dataset_dir is None},
                                        as_tcp_ip_client=False)
+
+    # Get the data size
+    env_instance = env_config.create_environment(None)
+    data_size = env_instance.data_size
+    env_instance.close()
+    del env_instance
 
     # FC config
     nb_hidden_layers = 2
-    nb_neurons = parameters.p_liver.nb_nodes * 3
+    nb_neurons = np.multiply(*data_size)
     layers_dim = [nb_neurons] + [nb_neurons for _ in range(nb_hidden_layers + 1)] + [nb_neurons]
-    net_config = FCConfig(network_name='armadillo_FC',
+    net_config = FCConfig(network_name='liver_FC',
                           dim_output=3,
                           dim_layers=layers_dim,
                           biases=True)
 
     # Dataset config
-    dataset_config = BaseDatasetConfig(normalize=True)
+    dataset_config = BaseDatasetConfig(shuffle_dataset=True,
+                                       normalize=True,
+                                       dataset_dir=dataset_dir,
+                                       use_mode=None if dataset_dir is None else 'Validation')
 
     # Define trained network session
     dpx_session = 'sessions/liver_training_dpx'
@@ -50,7 +61,7 @@ def create_runner():
                       dataset_config=dataset_config,
                       environment_config=env_config,
                       network_config=net_config,
-                      nb_steps=0)
+                      nb_steps=500)
 
 
 if __name__ == '__main__':
@@ -58,11 +69,26 @@ if __name__ == '__main__':
     # Check data
     if not os.path.exists('Environment/models'):
         from download import download_all
-        print('Downloading Demo data...')
+        print('Downloading Liver demo data...')
         download_all()
 
+    # Define dataset
+    dpx_session = 'sessions/liver_data_dpx'
+    user_session = 'sessions/liver_data_user'
+    # Take user dataset by default
+    dataset = user_session if os.path.exists(user_session) else dpx_session
+
+    # Get option
+    if len(sys.argv) > 1:
+        # Check script option
+        if sys.argv[1] != '-e':
+            print("Script option must be '-e' for samples produced in Environment(s)."
+                  "By default, samples are loaded from an existing Dataset.")
+            quit(0)
+        dataset = None
+
     # Create SOFA runner
-    runner = create_runner()
+    runner = create_runner(dataset)
 
     # Launch SOFA GUI
     Sofa.Gui.GUIManager.Init("main", "qglviewer")

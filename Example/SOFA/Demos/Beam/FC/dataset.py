@@ -29,7 +29,7 @@ def launch_data_generation(dataset_mode):
     environment_config = SofaEnvironmentConfig(environment_class=BeamTraining,
                                                visualizer=VedoVisualizer,
                                                as_tcp_ip_client=True,
-                                               number_of_thread=1)
+                                               number_of_thread=4)
 
     # Dataset configuration
     dataset_config = BaseDatasetConfig(partition_size=1, shuffle_dataset=True, use_mode=dataset_mode)

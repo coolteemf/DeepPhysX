@@ -19,7 +19,7 @@ from DeepPhysX_Sofa.Environment.SofaEnvironment import SofaEnvironment
 
 # Working session related imports
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-from parameters import np, p_liver, p_grid, p_forces
+from parameters import np, p_model, p_grid, p_forces
 
 
 class LiverSofa(SofaEnvironment):
@@ -47,14 +47,13 @@ class LiverSofa(SofaEnvironment):
 
         # FEM objects
         self.solver = None
-        self.f_sparse_grid_topo = None
         self.f_sparse_grid_mo = None
-        self.f_surface_topo = None
+        self.f_force_grid_mo = None
         self.f_surface_mo = None
         self.f_visu = None
 
         # Network objects
-        self.n_surface_topo = None
+        self.n_sparse_grid_mo = None
         self.n_surface_mo = None
         self.n_visu = None
 
@@ -77,8 +76,8 @@ class LiverSofa(SofaEnvironment):
         self.root.addObject('VisualStyle', displayFlags="showVisualModels showWireframe")
 
         # Meshes
-        self.root.addObject('MeshObjLoader', name='Mesh', filename=p_liver.mesh, scale3d=p_liver.scale3d)
-        self.root.addObject('MeshObjLoader', name='MeshCoarse', filename=p_liver.mesh_coarse, scale3d=p_liver.scale3d)
+        self.root.addObject('MeshObjLoader', name='Mesh', filename=p_model.mesh, scale3d=p_model.scale3d)
+        self.root.addObject('MeshObjLoader', name='MeshCoarse', filename=p_model.mesh_coarse, scale3d=p_model.scale3d)
 
         # Create FEM and / or NN models
         if self.create_model['fem']:
@@ -91,11 +90,8 @@ class LiverSofa(SofaEnvironment):
         FEM model of Liver. Used to apply forces and compute deformations.
         """
 
-        # Create child node
+        # Create FEM node
         self.root.addChild('fem')
-
-        # Surrounding box
-        self.root.fem.addObject('BoxROI', box=p_grid.b_box, drawBoxes=True, drawSize=1.)
 
         # ODE solver + Static solver
         self.solver = self.root.fem.addObject('StaticODESolver', name='ODESolver', newton_iterations=20,
@@ -105,8 +101,8 @@ class LiverSofa(SofaEnvironment):
                                 maximum_number_of_iterations=2000, residual_tolerance_threshold=1e-8, printLog=False)
 
         # Grid topology of the model
-        self.f_sparse_grid_topo = self.root.fem.addObject('SparseGridTopology', name='SparseGridTopo',
-                                                          src='@../MeshCoarse', n=p_grid.grid_resolution)
+        self.root.fem.addObject('SparseGridTopology', name='SparseGridTopo', src='@../MeshCoarse',
+                                n=p_grid.resolution)
         self.f_sparse_grid_mo = self.root.fem.addObject('MechanicalObject', name='SparseGridMO', src='@SparseGridTopo',
                                                         showObject=False)
 
@@ -116,23 +112,31 @@ class LiverSofa(SofaEnvironment):
                                 topology='@SparseGridTopo', printLog=False)
 
         # Fixed section
-        self.root.fem.addObject('BoxROI', name='FixedBox', box=p_liver.fixed_box, drawBoxes=True, drawSize=1.)
+        self.root.fem.addObject('BoxROI', name='FixedBox', box=p_model.fixed_box, drawBoxes=True, drawSize=1.)
         self.root.fem.addObject('FixedConstraint', indices='@FixedBox.indices')
 
+        # Force grid
+        self.root.fem.addChild('forces')
+        self.root.fem.forces.addObject('SparseGridTopology', name='ForceGridTopo', src='@../../MeshCoarse',
+                                       n=p_grid.resolution)
+        self.f_force_grid_mo = self.root.fem.forces.addObject('MechanicalObject', name='ForceGridMO',
+                                                              src='@ForceGridTopo')
+        self.root.fem.forces.addObject('BarycentricMapping', input='@../SparseGridMO', output='@./')
+
         # Surface
-        self.root.fem.addChild('surface')
-        self.f_surface_topo = self.root.fem.surface.addObject('TriangleSetTopologyContainer', name='SurfaceTopo',
-                                                              src='@../../MeshCoarse')
-        self.f_surface_mo = self.root.fem.surface.addObject('MechanicalObject', name='SurfaceMO',
-                                                            src='@SurfaceTopo', showObject=False)
-        self.root.fem.surface.addObject('BarycentricMapping', input='@../SparseGridMO', output='@./')
+        self.root.fem.forces.addChild('surface')
+        self.root.fem.forces.surface.addObject('TriangleSetTopologyContainer', name='SurfaceTopo',
+                                               src='@../../../MeshCoarse')
+        self.f_surface_mo = self.root.fem.forces.surface.addObject('MechanicalObject', name='SurfaceMO',
+                                                                   src='@SurfaceTopo', showObject=False)
+        self.root.fem.forces.surface.addObject('BarycentricMapping', input='@../ForceGridMO', output='@./')
 
         # Forces
-        self.create_forces()
+        self.create_forces(self.root.fem.forces.surface)
 
         # Visual
         self.root.fem.addChild('visual')
-        self.f_visu = self.root.fem.visual.addObject('OglModel', src='@../../Mesh', color='yellow')
+        self.f_visu = self.root.fem.visual.addObject('OglModel', src='@../../Mesh', color='green')
         self.root.fem.visual.addObject('BarycentricMapping', input='@../SparseGridMO', output='@./')
 
     def createNN(self):
@@ -140,47 +144,47 @@ class LiverSofa(SofaEnvironment):
         Network model of Liver. Used to apply predictions.
         """
 
-        # Create child node
+        # Create Neural Network node
         self.root.addChild('nn')
 
-        # Surrounding box
+        # Fake solvers (required to compute forces on the grid)
+        self.root.nn.addObject('StaticODESolver', name='ODESolver', newton_iterations=0)
+        self.root.nn.addObject('ConjugateGradientSolver', name='StaticSolver', maximum_number_of_iterations=0)
+
+        # Grid topology
+        self.root.nn.addObject('SparseGridTopology', name='SparseGridTopo', src='@../MeshCoarse', n=p_grid.resolution)
+        self.n_sparse_grid_mo = self.root.nn.addObject('MechanicalObject', name='SparseGridMO', src='@SparseGridTopo')
+
+        # Fixed section
         if not self.create_model['fem']:
-            self.root.nn.addObject('MechanicalObject')
-            self.root.nn.addObject('BoxROI', box=p_grid.b_box, drawBoxes=True, drawSize=1.)
+            self.root.nn.addObject('BoxROI', name='fixed_box', box=p_model.fixed_box, drawBoxes=True)
+            self.root.nn.addObject('FixedConstraint', indices='@fixed_box.indices')
 
         # Surface
         self.root.nn.addChild('surface')
-        self.n_surface_topo = self.root.nn.surface.addObject('TriangleSetTopologyContainer', name='SurfaceTopo',
-                                                             src='@../../MeshCoarse')
-        self.n_surface_mo = self.root.nn.surface.addObject('MechanicalObject', name='SurfaceMO',
-                                                           src='@SurfaceTopo')
-
-        # Fixed section of the t_liver_1
-        if not self.create_model['fem']:
-            self.root.nn.addObject('BoxROI', name='fixed_box', box=p_liver.fixed_box, drawBoxes=True)
-            self.root.nn.addObject('FixedConstraint', indices='@fixed_box.indices')
+        self.root.nn.surface.addObject('TriangleSetTopologyContainer', name='SurfaceTopo', src='@../../MeshCoarse')
+        self.n_surface_mo = self.root.nn.surface.addObject('MechanicalObject', name='SurfaceMO', src='@SurfaceTopo')
+        self.root.nn.surface.addObject('BarycentricMapping', input='@../SparseGridMO', output='@./')
 
         # Forces
         if not self.create_model['fem']:
-            self.create_forces()
+            self.create_forces(self.root.nn.surface)
 
         # Visual
         self.root.nn.addChild('visual')
-        self.n_visu = self.root.nn.visual.addObject('OglModel', src='@../../Mesh', color='orange')
-        self.root.nn.visual.addObject('BarycentricMapping', input='@../surface/SurfaceMO', output='@./')
+        self.n_visu = self.root.nn.visual.addObject('OglModel', src='@../../Mesh', color='red')
+        self.root.nn.visual.addObject('BarycentricMapping', input='@../SparseGridMO', output='@./')
 
-    def create_forces(self):
+    def create_forces(self, node):
         """
         Generate the force fields on surface.
         """
 
-        surface_node = self.root.fem.surface if self.create_model['fem'] else self.root.nn.surface
         for i in range(p_forces.nb_simultaneous_forces):
-            self.sphere.append(surface_node.addObject('SphereROI', name=f'Sphere_{i}', radii=25 * p_liver.scale,
-                                                      drawSphere=True, drawSize='1.0',
-                                                      centers=p_liver.fixed_point.tolist()))
-            self.force_field.append(surface_node.addObject('ConstantForceField', name=f'CFF_{i}', indices='0',
-                                                           force=[0., 0., 0.], showArrowSize=0.4))
+            self.sphere.append(node.addObject('SphereROI', name=f'Sphere_{i}', radii=25 * p_model.scale,
+                                              drawSphere=True, drawSize='1.0', centers=p_model.fixed_point.tolist()))
+            self.force_field.append(node.addObject('ConstantForceField', name=f'CFF_{i}', indices='0',
+                                                   force=[0., 0., 0.], showArrowSize=0.4))
 
     def onAnimateBeginEvent(self, event):
         """
@@ -191,7 +195,7 @@ class LiverSofa(SofaEnvironment):
         if self.create_model['fem']:
             self.f_sparse_grid_mo.position.value = self.f_sparse_grid_mo.rest_position.value
         if self.create_model['nn']:
-            self.n_surface_mo.position.value = self.n_surface_mo.rest_position.value
+            self.n_sparse_grid_mo.position.value = self.n_sparse_grid_mo.rest_position.value
 
         # Build and set forces vectors
         selected_centers = np.empty([0, 3])
@@ -224,7 +228,7 @@ class LiverSofa(SofaEnvironment):
                     empty_indices = True
             if not distance_check or empty_indices:
                 # Reset sphere position
-                self.sphere[i].centers.value = [p_liver.fixed_point.tolist()]
+                self.sphere[i].centers.value = [p_model.fixed_point.tolist()]
                 # Reset force field
                 self.force_field[i].indices.value = [0]
                 self.force_field[i].force.value = [0.0, 0.0, 0.0]

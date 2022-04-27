@@ -14,27 +14,22 @@ scale3d = np.array([scale, scale, scale])
 fixed_box = find_boundaries(mesh, boundary_files, scale3d)
 fixed_point = find_center(mesh, scale)
 nb_nodes = get_nb_nodes(mesh_coarse)
-liver = {'mesh': mesh,
+model = {'mesh': mesh,
          'mesh_coarse': mesh_coarse,
          'scale': scale,
          'scale3d': scale3d.tolist(),
          'fixed_box': fixed_box,
          'fixed_point': fixed_point,
          'nb_nodes': nb_nodes}
-p_liver = namedtuple('p_liver', liver)(**liver)
+p_model = namedtuple('p_liver', model)(**model)
 
 # Grid parameters
 margin_scale = 0.1
 min_bbox, max_bbox, b_box = define_bbox(mesh, margin_scale, scale3d)
-bbox_size = max_bbox - min_bbox
 cell_size = 0.06
 grid_resolution = compute_grid_resolution(max_bbox, min_bbox, cell_size)
-nb_cells = [g_r - 1 for g_r in grid_resolution]
-grid = {'b_box': b_box,
-        'bbox_anchor': min_bbox.tolist(),
-        'bbox_size': bbox_size,
-        'nb_cells': nb_cells,
-        'grid_resolution': grid_resolution}
+grid = {'bbox': b_box,
+        'resolution': grid_resolution}
 p_grid = namedtuple('p_grid', grid)(**grid)
 
 # Forces parameters

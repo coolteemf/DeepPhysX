@@ -23,17 +23,17 @@ def create_environment():
     environment_config = SofaEnvironmentConfig(environment_class=LiverSofa,
                                                as_tcp_ip_client=False)
 
-    # Create Armadillo Environment within EnvironmentManager
+    # Create Liver Environment within EnvironmentManager
     environment_manager = EnvironmentManager(environment_config=environment_config)
     return environment_manager.environment
 
 
 if __name__ == '__main__':
 
-    # Check data
+    # Check demo data
     if not os.path.exists('Environment/models'):
         from download import download_all
-        print('Downloading Demo data...')
+        print('Downloading Liver demo data...')
         download_all()
 
     # Create Environment
