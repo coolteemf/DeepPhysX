@@ -26,6 +26,7 @@ class Manager:
     :param str session_name: Name of the newly created directory if session_dir is not defined
     :param str session_dir: Name of the directory in which to write all of the necessary data
     :param bool new_session: Define the creation of new directories to store data
+    :param bool offline: True if the DataManager use an existing dataset
     :param int batch_size: Number of samples in a batch
     :param int num_partitions_to_read: Number of partitions to read (load into memory) on init and ont get_data.
     """
@@ -38,6 +39,7 @@ class Manager:
                  session_name: str = 'default',
                  session_dir: str = None,
                  new_session: bool = True,
+                 offline: bool = False,
                  batch_size: int = 1,
                  num_partitions_to_read: int = -1):
 
@@ -86,6 +88,7 @@ class Manager:
                                         session_dir=self.session_dir,
                                         new_session=new_session,
                                         training=train,
+                                        offline=offline,
                                         record_data=pipeline.record_data,
                                         batch_size=batch_size,
                                         num_partitions_to_read=num_partitions_to_read)

@@ -18,6 +18,7 @@ class BaseRunner(BasePipeline):
     :param Optional[BaseDatasetConfig] dataset_config: Specialisation containing the parameters of the dataset manager
     :param str session_name: Name of the newly created directory if session_dir is not defined
     :param Optional[str] session_dir: Name of the directory in which to write all the necessary data
+    :param bool offline: True if the DataManager use an existing dataset
     :param int nb_steps: Number of simulation step to play
     :param bool record_inputs: Save or not the input in a numpy file
     :param bool record_outputs: Save or not the output in a numpy file
@@ -29,6 +30,7 @@ class BaseRunner(BasePipeline):
                  dataset_config: Optional[Union[tuple, BaseDatasetConfig]] = None,
                  session_name: str = 'default',
                  session_dir: Optional[str] = None,
+                 offline: bool = False,
                  nb_steps: int = 0,
                  record_inputs: bool = False,
                  record_outputs: bool = False):
@@ -60,7 +62,8 @@ class BaseRunner(BasePipeline):
                                environment_config=self.environment_config,
                                session_name=session_name,
                                session_dir=session_dir,
-                               new_session=True)
+                               new_session=True,
+                               offline=offline)
 
     def execute(self) -> None:
         """

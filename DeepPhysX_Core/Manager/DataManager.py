@@ -66,14 +66,14 @@ class DataManager:
         # Data normalization coefficients (default: mean = 0, standard deviation = 1)
         self.normalization: Dict[str, List[float]] = {'input': [0., 1.], 'output': [0., 1.]}
         # If normalization flag is set to True, try to load existing coefficients
-        if dataset_config is not None and dataset_config.normalize:
+        if data_config is not None and data_config.normalize:
             json_file_path = None
             # Existing Dataset in the current session
             if session_dir is not None and os.path.exists(os.path.join(session_dir, 'dataset')):
                 json_file_path = os.path.join(session_dir, 'dataset', 'dataset.json')
             # Dataset provided by config
-            elif dataset_config.dataset_dir is not None:
-                dataset_dir = dataset_config.dataset_dir
+            elif data_config.dataset_dir is not None:
+                dataset_dir = data_config.dataset_dir
                 if dataset_dir[-1] != "/":
                     dataset_dir += "/"
                 if dataset_dir[-8:] != "dataset/":
@@ -104,7 +104,7 @@ class DataManager:
             # Create a dataset if data will be stored from environment during prediction
             create_dataset = record_data is not None and (record_data['input'] or record_data['output'])
             # Create a dataset also if data should be loaded from any partition
-            create_dataset = create_dataset or (dataset_config is not None and dataset_config.dataset_dir is not None)
+            create_dataset = create_dataset or (data_config is not None and data_config.dataset_dir is not None)
 
         # Create dataset if required
         if create_dataset:
