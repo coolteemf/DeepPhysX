@@ -377,9 +377,7 @@ class DatasetManager:
         # 4. Update Json file if not found
         if not self.json_found:
             self.search_partitions_info()
-            self.update_json(update_partitions_lists=True)
-        if self.normalize:
-            self.update_json(update_normalization=True)
+            self.update_json(update_partitions_lists=True, update_normalization=self.normalize)
 
         # 4. Load data from partitions
         if load_data:
