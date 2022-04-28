@@ -374,8 +374,8 @@ class DatasetManager:
                     raise ValueError(f"[{self.name}] The number of partitions is different for {field} with "
                                      f"{len(self.list_partitions[field][self.modes[mode]])} partitions found.")
 
-        # 4. Update Json file if not found or partially empty
-        if not self.json_found or self.empty_json_fields():
+        # 4. Update Json file if not found
+        if not self.json_found:
             self.search_partitions_info()
             self.update_json(update_partitions_lists=True)
         if self.normalize:
