@@ -4,7 +4,7 @@ from os.path import isfile, isdir, abspath
 from os import listdir, symlink
 from json import dump as json_dump
 from json import load as json_load
-from numpy import load, squeeze, ndarray, concatenate
+from numpy import load, squeeze, ndarray, concatenate, float64
 
 from DeepPhysX_Core.Dataset.BaseDatasetConfig import BaseDatasetConfig
 from DeepPhysX_Core.Utils.pathUtils import get_first_caller, create_dir
@@ -666,13 +666,18 @@ class DatasetManager:
         :return: List containing normalization coefficients (mean, standard deviation)
         """
 
-        partitions_content = []
-        for partition in self.list_partitions[field][0]:
-            partitions_content.append(load(self.dataset_dir + partition))
-        full_field = concatenate(partitions_content).reshape((-1))
+        partitions_content = [0., 0.]
+        for i, partition in enumerate(self.list_partitions[field][0]):
+            loaded = load(self.dataset_dir + partition).astype(float64)
+            partitions_content[0] += loaded.mean() #Computing the mean
+            partitions_content[1] += (loaded**2).mean() #Computing the variance
+        if len(self.list_partitions[field][0]) > 0:
+            partitions_content[0] /= len(self.list_partitions[field][0]) #Computing the global mean
+            # Computing the global std
+            partitions_content[1] = (partitions_content[1] / len(self.list_partitions[field][0]) - partitions_content[0]**2)**(0.5)
         if self.data_manager is not None:
-            self.data_manager.normalization[field] = [full_field.mean(), full_field.std()]
-        return [full_field.mean(), full_field.std()]
+            self.data_manager.normalization[field] = partitions_content
+        return partitions_content
 
     def new_dataset(self) -> bool:
         """
