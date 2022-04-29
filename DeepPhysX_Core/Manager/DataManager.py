@@ -168,7 +168,7 @@ class DataManager:
         else:
             if self.dataset_manager is not None and not self.dataset_manager.new_dataset():
                 # Get data from dataset
-                data = self.dataset_manager.get_data(batch_size=1, get_inputs=True, get_outputs=True)
+                data = self.dataset_manager.get_data(batch_size=batch_size, get_inputs=True, get_outputs=True)
                 if self.environment_manager is not None:
                     new_data = self.environment_manager.dispatch_batch(batch=data, animate=animate)
                 else:

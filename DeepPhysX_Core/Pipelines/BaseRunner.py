@@ -35,7 +35,8 @@ class BaseRunner(BasePipeline):
                  num_partitions_to_read: int = -1,
                  nb_steps: int = 0,
                  record_inputs: bool = False,
-                 record_outputs: bool = False):
+                 record_outputs: bool = False,
+                 batch_size: int = 1):
 
         BasePipeline.__init__(self,
                               network_config=network_config,
@@ -52,6 +53,7 @@ class BaseRunner(BasePipeline):
 
         self.nb_samples = nb_steps
         self.idx_step = 0
+        self.batch_size = batch_size
 
         # Tell if data is recording while predicting
         self.record_data = {'input': False, 'output': False}
@@ -91,7 +93,7 @@ class BaseRunner(BasePipeline):
         :return: Prediction from the Network
         """
 
-        self.manager.get_data(animate=animate)
+        self.manager.get_data(batch_size=self.batch_size, animate=animate)
         data = self.manager.data_manager.data['input']
         data = self.manager.data_manager.normalize_data(data, 'input')
         return self.manager.network_manager.compute_online_prediction(data)

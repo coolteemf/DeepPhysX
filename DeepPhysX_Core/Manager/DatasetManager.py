@@ -656,7 +656,7 @@ class DatasetManager:
         :param str field: Field for which normalization coefficients should be computed
         :return: List containing normalization coefficients (mean, standard deviation)
         """
-
+        #TODO check this computation
         partitions_content = [0., 0.]
         for i, partition in enumerate(self.list_partitions[field][0]):
             loaded = load(self.dataset_dir + partition).astype(float64)
