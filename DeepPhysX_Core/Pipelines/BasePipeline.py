@@ -40,21 +40,21 @@ class BasePipeline:
             self.network_config = network_config[0](**network_config[1])
         else:
             self.network_config = network_config
-        if network_config is not None and not isinstance(network_config, BaseNetworkConfig):
+        if self.network_config is not None and not isinstance(self.network_config, BaseNetworkConfig):
             raise TypeError(f"[{self.name}] The network configuration must be a BaseNetworkConfig")
         # Simulation variables
         if isinstance(environment_config, tuple):
             self.environment_config = environment_config[0](**environment_config[1])
         else:
             self.environment_config = environment_config
-        if environment_config is not None and not isinstance(environment_config, BaseEnvironmentConfig):
+        if self.environment_config is not None and not isinstance(self.environment_config, BaseEnvironmentConfig):
             raise TypeError(f"[{self.name}] The environment configuration must be a BaseEnvironmentConfig")
         # Dataset variables
         if isinstance(dataset_config, tuple):
             self.dataset_config = dataset_config[0](**dataset_config[1])
         else:
             self.dataset_config = dataset_config
-        if dataset_config is not None and not isinstance(dataset_config, BaseDatasetConfig):
+        if self.dataset_config is not None and not isinstance(self.dataset_config, BaseDatasetConfig):
             raise TypeError(f"[{self.name}] The dataset configuration must be a BaseDatasetConfig")
         if type(session_name) != str:
             raise TypeError(f"[{self.name}] The network config must be a BaseNetworkConfig object.")

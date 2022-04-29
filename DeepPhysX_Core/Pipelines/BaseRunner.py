@@ -18,6 +18,8 @@ class BaseRunner(BasePipeline):
     :param Optional[BaseDatasetConfig] dataset_config: Specialisation containing the parameters of the dataset manager
     :param str session_name: Name of the newly created directory if session_dir is not defined
     :param Optional[str] session_dir: Name of the directory in which to write all the necessary data
+    :param bool offline: True if the DataManager use an existing dataset
+    :param int num_partitions_to_read: Number of partitions to read (load into memory) on init and on get_data.
     :param int nb_steps: Number of simulation step to play
     :param bool record_inputs: Save or not the input in a numpy file
     :param bool record_outputs: Save or not the output in a numpy file
@@ -25,13 +27,16 @@ class BaseRunner(BasePipeline):
 
     def __init__(self,
                  network_config: Union[tuple, BaseNetworkConfig],
-                 environment_config: Union[tuple, BaseEnvironmentConfig],
+                 environment_config: Optional[Union[tuple, BaseEnvironmentConfig]] = None,
                  dataset_config: Optional[Union[tuple, BaseDatasetConfig]] = None,
                  session_name: str = 'default',
                  session_dir: Optional[str] = None,
+                 offline: bool = False,
+                 num_partitions_to_read: int = -1,
                  nb_steps: int = 0,
                  record_inputs: bool = False,
-                 record_outputs: bool = False):
+                 record_outputs: bool = False,
+                 batch_size: int = 1):
 
         BasePipeline.__init__(self,
                               network_config=network_config,
@@ -48,11 +53,13 @@ class BaseRunner(BasePipeline):
 
         self.nb_samples = nb_steps
         self.idx_step = 0
+        self.batch_size = batch_size
 
         # Tell if data is recording while predicting
         self.record_data = {'input': False, 'output': False}
         if dataset_config is not None:
             self.record_data = {'input': record_inputs, 'output': record_outputs}
+        self.is_environment = environment_config is not None
 
         self.manager = Manager(pipeline=self,
                                network_config=self.network_config,
@@ -60,7 +67,9 @@ class BaseRunner(BasePipeline):
                                environment_config=self.environment_config,
                                session_name=session_name,
                                session_dir=session_dir,
-                               new_session=True)
+                               new_session=True,
+                               offline=offline,
+                               num_partitions_to_read=num_partitions_to_read)
 
     def execute(self) -> None:
         """
@@ -73,9 +82,7 @@ class BaseRunner(BasePipeline):
         self.run_begin()
         while self.running_condition():
             self.sample_begin()
-            prediction = self.predict()
-            self.manager.data_manager.apply_prediction(prediction)
-            self.sample_end()
+            self.sample_end(self.predict())
         self.run_end()
 
     def predict(self, animate: bool = True) -> ndarray:
@@ -86,7 +93,7 @@ class BaseRunner(BasePipeline):
         :return: Prediction from the Network
         """
 
-        self.manager.get_data(animate=animate)
+        self.manager.get_data(batch_size=self.batch_size, animate=animate)
         data = self.manager.data_manager.data['input']
         data = self.manager.data_manager.normalize_data(data, 'input')
         return self.manager.network_manager.compute_online_prediction(data)
@@ -126,13 +133,16 @@ class BaseRunner(BasePipeline):
 
         pass
 
-    def sample_end(self) -> None:
+    def sample_end(self, prediction: ndarray) -> None:
         """
         | Called one at the end of each step.
         | Allows the user to run some post-step computations.
+
+        :param ndarray prediction: Prediction of the Network.
         """
 
-        pass
+        if self.is_environment:
+            self.manager.data_manager.apply_prediction(prediction)
 
     def close(self) -> None:
         """

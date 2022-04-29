@@ -4,7 +4,7 @@ from os.path import isfile, isdir, abspath
 from os import listdir, symlink
 from json import dump as json_dump
 from json import load as json_load
-from numpy import load, squeeze, ndarray, concatenate
+from numpy import load, squeeze, ndarray, concatenate, float64
 
 from DeepPhysX_Core.Dataset.BaseDatasetConfig import BaseDatasetConfig
 from DeepPhysX_Core.Utils.pathUtils import get_first_caller, create_dir
@@ -34,7 +34,7 @@ class DatasetManager:
                  new_session: bool = True,
                  train: bool = True,
                  offline: bool = False,
-                 record_data: Optional[Dict[str, bool]] = None
+                 record_data: Optional[Dict[str, bool]] = None,
                  num_partitions_to_read: int = -1):
 
         self.name: str = self.__class__.__name__
@@ -137,7 +137,8 @@ class DatasetManager:
             if dataset_dir is None:
                 self.dataset_dir = osPathJoin(self.session_dir, 'dataset/')
                 self.__new_dataset = True
-                self.create_running_partitions()
+                # self.create_running_partitions()
+                self.load_directory(load_data=False)
             # Loading partitions
             else:
                 if dataset_dir[-1] != "/":
@@ -196,7 +197,7 @@ class DatasetManager:
         if self.first_add:
             self.update_json(update_partitions_lists=True, update_shapes=True)
             self.first_add = False
-        if self.normalize and not self.offline:
+        if self.normalize and not self.offline and self.mode == 0:
             self.update_json(update_normalization=True)
 
         # 5. Check the size of the dataset
@@ -374,12 +375,10 @@ class DatasetManager:
                     raise ValueError(f"[{self.name}] The number of partitions is different for {field} with "
                                      f"{len(self.list_partitions[field][self.modes[mode]])} partitions found.")
 
-        # 4. Update Json file if not found or partially empty
-        if not self.json_found or self.empty_json_fields():
+        # 4. Update Json file if not found
+        if not self.json_found:
             self.search_partitions_info()
-            self.update_json(update_partitions_lists=True)
-        if self.normalize:
-            self.update_json(update_normalization=True)
+            self.update_json(update_partitions_lists=True, update_normalization=self.normalize)
 
         # 4. Load data from partitions
         if load_data:
@@ -657,14 +656,19 @@ class DatasetManager:
         :param str field: Field for which normalization coefficients should be computed
         :return: List containing normalization coefficients (mean, standard deviation)
         """
-
-        partitions_content = []
-        for partition in self.list_partitions[field][0]:
-            partitions_content.append(load(self.dataset_dir + partition))
-        full_field = concatenate(partitions_content).reshape((-1))
+        #TODO check this computation
+        partitions_content = [0., 0.]
+        for i, partition in enumerate(self.list_partitions[field][0]):
+            loaded = load(self.dataset_dir + partition).astype(float64)
+            partitions_content[0] += loaded.mean() #Computing the mean
+            partitions_content[1] += (loaded**2).mean() #Computing the variance
+        if len(self.list_partitions[field][0]) > 0:
+            partitions_content[0] /= len(self.list_partitions[field][0]) #Computing the global mean
+            # Computing the global std
+            partitions_content[1] = (partitions_content[1] / len(self.list_partitions[field][0]) - partitions_content[0]**2)**(0.5)
         if self.data_manager is not None:
-            self.data_manager.normalization[field] = [full_field.mean(), full_field.std()]
-        return [full_field.mean(), full_field.std()]
+            self.data_manager.normalization[field] = partitions_content
+        return partitions_content
 
     def new_dataset(self) -> bool:
         """

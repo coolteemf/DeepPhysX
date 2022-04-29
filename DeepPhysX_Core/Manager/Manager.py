@@ -26,6 +26,7 @@ class Manager:
     :param str session_name: Name of the newly created directory if session_dir is not defined
     :param str session_dir: Name of the directory in which to write all of the necessary data
     :param bool new_session: Define the creation of new directories to store data
+    :param bool offline: True if the DataManager use an existing dataset
     :param int batch_size: Number of samples in a batch
     :param int num_partitions_to_read: Number of partitions to read (load into memory) on init and ont get_data.
     """
@@ -38,35 +39,31 @@ class Manager:
                  session_name: str = 'default',
                  session_dir: str = None,
                  new_session: bool = True,
+                 offline: bool = False,
                  batch_size: int = 1,
                  num_partitions_to_read: int = -1):
 
         self.pipeline: Any = pipeline
+        #Constructing the session_dir with the provided arguments
+        if session_name is None:
+            raise ValueError("[Manager] The session name cannot be set to None (will raise error).")
+        if session_dir is None:
+            # Create manager directory from the session name
+            self.session_dir: str = osPathJoin(get_first_caller(), session_name)
+        else:
+            self.session_dir: str = osPathJoin(session_dir, session_name)
+
         # Trainer: must create a new session to avoid overwriting
         if pipeline.type == 'training':
             train = True
-            if session_dir is None:
-                # Create manager directory from the session name
-                self.session_dir: str = osPathJoin(get_first_caller(), session_name)
-            else:
-                self.session_dir: str = osPathJoin(session_dir, session_name)
             # Avoid unwanted overwritten data
             if new_session:
                 self.session_dir: str = create_dir(self.session_dir, dir_name=session_name)
         # Prediction: work in an existing session
         elif pipeline.type == 'prediction':
             train = False
-            # Find the session directory with the name
-            if session_dir is None:
-                if session_name is None:
-                    raise ValueError("[Manager] Prediction needs at least the session directory or the session name.")
-                self.session_dir: str = osPathJoin(get_first_caller(), session_name)
-            # Find the session name with the directory
-            else:
-                self.session_dir: str = session_dir
             if not exists(self.session_dir):
                 raise ValueError("[Manager] The session directory {} does not exists.".format(self.session_dir))
-
         else:
             raise ValueError("[Manager] The pipeline must be either training or prediction.")
 
@@ -86,6 +83,7 @@ class Manager:
                                         session_dir=self.session_dir,
                                         new_session=new_session,
                                         training=train,
+                                        offline=offline,
                                         record_data=pipeline.record_data,
                                         batch_size=batch_size,
                                         num_partitions_to_read=num_partitions_to_read)

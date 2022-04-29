@@ -24,7 +24,7 @@ class DataManager:
     :param bool training: True if this session is a network training
     :param bool offline: True if the session is done offline
     :param Dict[str, bool] record_data: Format {\'in\': bool, \'out\': bool} save the tensor when bool is True
-    :param int num_partitions_to_read: Number of partitions to read (load into memory) on init and ont get_data.
+    :param int num_partitions_to_read: Number of partitions to read (load into memory) on init and on get_data.
     :param int batch_size: Number of samples in a batch
     """
 
@@ -66,14 +66,14 @@ class DataManager:
         # Data normalization coefficients (default: mean = 0, standard deviation = 1)
         self.normalization: Dict[str, List[float]] = {'input': [0., 1.], 'output': [0., 1.]}
         # If normalization flag is set to True, try to load existing coefficients
-        if dataset_config is not None and dataset_config.normalize:
+        if data_config is not None and data_config.normalize:
             json_file_path = None
             # Existing Dataset in the current session
             if session_dir is not None and os.path.exists(os.path.join(session_dir, 'dataset')):
                 json_file_path = os.path.join(session_dir, 'dataset', 'dataset.json')
             # Dataset provided by config
-            elif dataset_config.dataset_dir is not None:
-                dataset_dir = dataset_config.dataset_dir
+            elif data_config.dataset_dir is not None:
+                dataset_dir = data_config.dataset_dir
                 if dataset_dir[-1] != "/":
                     dataset_dir += "/"
                 if dataset_dir[-8:] != "dataset/":
@@ -99,12 +99,12 @@ class DataManager:
                 create_environment = None if not environment_config.use_dataset_in_environment else True
         # Prediction
         else:
-            # Always create an environment for prediction
-            create_environment = True
+            # Create an environment for prediction if an environment config is provided
+            create_environment = environment_config is not None
             # Create a dataset if data will be stored from environment during prediction
             create_dataset = record_data is not None and (record_data['input'] or record_data['output'])
             # Create a dataset also if data should be loaded from any partition
-            create_dataset = create_dataset or (dataset_config is not None and dataset_config.dataset_dir is not None)
+            create_dataset = create_dataset or (data_config is not None and data_config.dataset_dir is not None)
 
         # Create dataset if required
         if create_dataset:
@@ -168,8 +168,11 @@ class DataManager:
         else:
             if self.dataset_manager is not None and not self.dataset_manager.new_dataset():
                 # Get data from dataset
-                data = self.dataset_manager.get_data(batch_size=1, get_inputs=True, get_outputs=True)
-                new_data = self.environment_manager.dispatch_batch(batch=data, animate=animate)
+                data = self.dataset_manager.get_data(batch_size=batch_size, get_inputs=True, get_outputs=True)
+                if self.environment_manager is not None:
+                    new_data = self.environment_manager.dispatch_batch(batch=data, animate=animate)
+                else:
+                    new_data = data
                 if len(new_data['input']) != 0:
                     data['input'] = new_data['input']
                 if len(new_data['output']) != 0:
@@ -215,11 +218,11 @@ class DataManager:
 
         :param ndarray prediction: Prediction of the Network to apply
         """
-
-        # Unapply normalization on prediction
-        prediction = self.normalize_data(prediction, 'output', reverse=True)
-        # Apply prediction
-        self.environment_manager.environment.apply_prediction(prediction)
+        if self.environment_manager is not None:
+            # Unapply normalization on prediction
+            prediction = self.normalize_data(prediction, 'output', reverse=True)
+            # Apply prediction
+            self.environment_manager.environment.apply_prediction(prediction)
 
     def normalize_data(self, data: ndarray, field: str, reverse: bool = False) -> ndarray:
         """
