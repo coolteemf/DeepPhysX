@@ -9,7 +9,9 @@ Training data are produced at each time step:
 # Python related imports
 import os
 import sys
-from vedo import Mesh
+
+import numpy as np
+from vedo import Mesh, Points
 from math import pow
 from numpy import array, zeros, reshape, arange
 from numpy.random import choice, uniform
@@ -21,7 +23,7 @@ from DeepPhysX_Core.Environment.BaseEnvironment import BaseEnvironment
 # Session related imports
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from parameters import p_model, p_forces
-from BarycentricMapping import BarycentricMapping
+from GridMapping import GridMapping
 
 
 # Create an Environment as a BaseEnvironment child class
@@ -45,14 +47,18 @@ class Armadillo(BaseEnvironment):
 
         # Topology
         self.mesh = None
-        self.detailed = True
+        self.sparse_grid = None
+        # self.regular_grid = None
+        # self.cell_corner =
         self.mapping = None
 
         # Force fields
         self.forces = []
         self.areas = []
+        self.grid_areas = []
         self.compute_forces = None
         self.current_forces = []
+        self.force_on_grid = []
 
         # Amplitudes pattern
         step = 0.2
@@ -74,36 +80,37 @@ class Armadillo(BaseEnvironment):
     def recv_parameters(self, param_dict):
 
         # Get the model definition parameters
-        self.detailed = param_dict['detailed'] if 'detailed' in param_dict else self.detailed
         follow_pattern = param_dict['pattern'] if 'pattern' in param_dict else True
         self.compute_forces = self.compute_pattern_forces if follow_pattern else self.compute_random_forces
 
     def create(self):
 
-        # Load the coarse mesh and init the barycentric mapping with the detailed mesh
-        self.mesh = Mesh(p_model.mesh_coarse).scale(p_model.scale)
-        if self.detailed:
-            mapped_mesh = Mesh(p_model.mesh).scale(p_model.scale)
-            self.mapping = BarycentricMapping(self.mesh, mapped_mesh)
+        # Load the mesh and the sparse grid, init the mapping between them
+        self.mesh = Mesh(p_model.mesh).scale(p_model.scale)
+        self.sparse_grid = Mesh(p_model.sparse_grid)
+        self.mapping = GridMapping(self.sparse_grid, self.mesh)
 
         # Define force fields
         sphere = lambda x, y: sum([pow(x_i - y_i, 2) for x_i, y_i in zip(x, y)])
         for zone in p_forces.zones:
             # Find the spherical area
             self.areas.append([])
+            self.grid_areas.append([])
             for i, pts in enumerate(self.mesh.points()):
                 if sphere(pts, p_forces.centers[zone]) <= pow(p_forces.radius[zone], 2):
                     self.areas[-1].append(i)
+                    self.grid_areas[-1] += list(self.mapping.cells[i])
+            self.grid_areas[-1] = np.unique(self.grid_areas[-1])
             # Init force value
             self.forces.append(zeros((len(self.areas[-1]), 3)))
 
     def send_visualization(self):
 
         # Mesh representing detailed Armadillo (object will have id = 0)
-        mapped_mesh = self.mapping.apply(self.mesh.points().copy()) if self.detailed else self.mesh.clone()
+        # mapped_mesh = self.mapping.apply(self.sparse_grid.points())
         self.factory.add_object(object_type="Mesh",
-                                data_dict={"positions": mapped_mesh.points(),
-                                           'cells': mapped_mesh.cells(),
+                                data_dict={"positions": self.mesh.points(),
+                                           'cells': self.mesh.cells(),
                                            'wireframe': True,
                                            "c": "orange",
                                            "at": self.instance_id})
@@ -114,6 +121,18 @@ class Armadillo(BaseEnvironment):
                                            'vectors': [0., 0., 0.],
                                            'c': 'green',
                                            'at': self.instance_id})
+
+        # Points representing the grid (object will have id = 2)
+        self.factory.add_object(object_type='Points',
+                                data_dict={'positions': self.sparse_grid.points(),
+                                           'at': self.instance_id})
+
+        # # Force areas
+        # for area in self.grid_areas:
+        #     self.factory.add_object(object_type='Points',
+        #                             data_dict={'positions': self.sparse_grid.points()[area],
+        #                                        'at': self.instance_id,
+        #                                        'r': 10})
 
         # Return the visualization data
         return self.factory.objects_dict
@@ -126,20 +145,24 @@ class Armadillo(BaseEnvironment):
 
     async def step(self):
 
-        # Reset forces
-        for i in range(len(self.forces)):
-            self.forces[i] = zeros((len(self.areas[i]), 3))
-
-        # Build force vector
-        self.compute_forces()
-
-        # Compute input
-        F = zeros(self.data_size)
-        for area, force in zip(self.areas, self.forces):
-            F[array(area).copy()] = array(force).copy()
+        if self.sample_in is None:
+            F = zeros(self.data_size)
+        else:
+            F = self.sample_in
+        # # Reset forces
+        # for i in range(len(self.forces)):
+        #     self.forces[i] = zeros((len(self.areas[i]), 3))
+        #
+        # # Build force vector
+        # self.compute_forces()
+        #
+        # # Compute input
+        # F = zeros(self.data_size)
+        # for area, force in zip(self.grid_areas, self.forces):
+        #     F[area] = array(force)[0]
 
         # Set training data
-        self.set_training_data(input_array=F.copy() / p_model.scale,
+        self.set_training_data(input_array=F.copy(),
                                output_array=zeros(self.data_size))
 
     def compute_pattern_forces(self):
@@ -178,26 +201,26 @@ class Armadillo(BaseEnvironment):
 
     def apply_prediction(self, prediction):
 
-        # Reshape prediction
-        U = reshape(prediction, self.data_size) * p_model.size
+        # Reshape to correspond to sparse grid
+        U = reshape(prediction, self.data_size)
+        self.update_visual(U)
 
-        # Update detailed mesh visualization
-        updated_mesh = self.mesh.clone().points(self.mesh.points().copy() + U)
-        mapped_mesh = self.mapping.apply(updated_mesh.points()) if self.detailed else updated_mesh
+    def update_visual(self, U):
+
+        # Update surface mesh
+        updated_mesh = self.sparse_grid.clone().points(self.sparse_grid.points().copy() + U)
+        mapped_mesh = self.mapping.apply(updated_mesh.points())
         self.factory.update_object_dict(object_id=0,
                                         new_data_dict={'positions': mapped_mesh.points().copy()})
 
         # Update arrows representing force fields
-        position, vec = [], []
-        for area, force in zip(self.areas, self.forces):
-            if list(force[0]) != [0., 0., 0.]:
-                position += list(updated_mesh.points()[array(area)])
-                vec += list(0.25 * array(force) / p_model.scale)
-        if len(position) == 0 or len(vec) == 0:
-            position, vec = [0., 0., 0.], [0., 0., 0.]
         self.factory.update_object_dict(object_id=1,
-                                        new_data_dict={'positions': position,
-                                                       'vectors': vec})
+                                        new_data_dict={'positions': updated_mesh.points().copy(),
+                                                       'vectors': 0.25 * self.sample_in / p_model.scale})
+
+        # Update sparse grid positions
+        self.factory.update_object_dict(object_id=2,
+                                        new_data_dict={'positions': updated_mesh.points().copy()})
 
         # Send visualization data to update
         self.update_visualisation(visu_dict=self.factory.updated_object_dict)

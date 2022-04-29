@@ -1,6 +1,28 @@
 from vedo import Mesh
 
 
+def define_bbox(source_file, margin_scale, scale):
+    """
+    Find the bounding box of the model.
+
+    :param str source_file: Mesh file
+    :param float scale: Scale to apply
+    :param float margin_scale: Margin in percents of the bounding box
+    :return: List of coordinates defined by xmin, ymin, zmin, xmax, ymax, zmax
+    """
+
+    # Find min and max corners of the bounding box
+    mesh = Mesh(source_file).scale(scale)
+    bbox_min = mesh.points().min(0)
+    bbox_max = mesh.points().max(0)
+
+    # Apply a margin scale to the bounding box
+    bbox_min -= margin_scale * (bbox_max - bbox_min)
+    bbox_max += margin_scale * (bbox_max - bbox_min)
+
+    return bbox_min, bbox_max, bbox_min.tolist() + bbox_max.tolist()
+
+
 def find_extremities(source_file, scale):
     """
     Find the different extremities of the model.
@@ -41,28 +63,6 @@ def find_extremities(source_file, scale):
     return [tail, r_hand, l_hand, r_ear, l_ear, muzzle]
 
 
-def define_bbox(source_file, margin_scale, scale):
-    """
-    Find the bounding box of the model.
-
-    :param str source_file: Mesh file
-    :param float scale: Scale to apply
-    :param float margin_scale: Margin in percents of the bounding box
-    :return: List of coordinates defined by xmin, ymin, zmin, xmax, ymax, zmax
-    """
-
-    # Find min and max corners of the bounding box
-    mesh = Mesh(source_file).scale(scale)
-    bbox_min = mesh.points().min(0)
-    bbox_max = mesh.points().max(0)
-
-    # Apply a margin scale to the bounding box
-    bbox_min -= margin_scale * (bbox_max - bbox_min)
-    bbox_max += margin_scale * (bbox_max - bbox_min)
-
-    return bbox_min, bbox_max, bbox_min.tolist() + bbox_max.tolist()
-
-
 def get_nb_nodes(source_file):
     """
     Get the number of nodes of a mesh.
@@ -72,15 +72,3 @@ def get_nb_nodes(source_file):
     """
 
     return Mesh(source_file).N()
-
-
-def get_object_max_size(source_file, scale):
-    """
-    Get the max size of the object along x, y, z axis.
-
-    :param str source_file: Mesh file
-    :param float scale: Scale to apply to the mesh
-    :return: Max size of the object
-    """
-
-    return Mesh(source_file).scale(scale).maxBoundSize()

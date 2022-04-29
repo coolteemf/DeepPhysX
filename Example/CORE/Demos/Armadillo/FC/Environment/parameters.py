@@ -11,18 +11,16 @@ from numpy import array
 from collections import namedtuple
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-from utils import get_nb_nodes, find_extremities, get_object_max_size
+from utils import find_extremities, get_nb_nodes
 
 # Model
 mesh = os.path.dirname(os.path.abspath(__file__)) + '/models/armadillo.obj'
-coarse_mesh = os.path.dirname(os.path.abspath(__file__)) + '/models/armadillo_coarse.obj'
+sparse_grid = os.path.dirname(os.path.abspath(__file__)) + '/models/sparse_grid.obj'
 scale = 1e-3
-size = get_object_max_size(mesh, scale)
-nb_nodes = get_nb_nodes(coarse_mesh)
+nb_nodes = get_nb_nodes(sparse_grid)
 model = {'mesh': mesh,
-         'mesh_coarse': coarse_mesh,
+         'sparse_grid': sparse_grid,
          'scale': scale,
-         'size': size,
          'nb_nodes': nb_nodes}
 p_model = namedtuple('p_model', model)(**model)
 

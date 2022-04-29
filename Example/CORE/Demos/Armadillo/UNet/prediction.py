@@ -12,12 +12,12 @@ from DeepPhysX_Core.Dataset.BaseDatasetConfig import BaseDatasetConfig
 from DeepPhysX_Core.Environment.BaseEnvironmentConfig import BaseEnvironmentConfig
 from DeepPhysX_Core.Visualizer.VedoVisualizer import VedoVisualizer
 from DeepPhysX_Core.Pipelines.BaseRunner import BaseRunner
-from DeepPhysX_PyTorch.FC.FCConfig import FCConfig
+from DeepPhysX_PyTorch.UNet.UNetConfig import UNetConfig
 
 # Session related imports
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from Environment.Armadillo import Armadillo
-from Environment.parameters import p_model
+from Environment.parameters import grid_resolution
 
 
 def launch_runner():
@@ -26,29 +26,30 @@ def launch_runner():
     env_config = BaseEnvironmentConfig(environment_class=Armadillo,
                                        visualizer=VedoVisualizer,
                                        as_tcp_ip_client=False,
-                                       param_dict={'detailed': True,
+                                       param_dict={'detailed': False,
                                                    'pattern': True})
 
     # UNet config
-    nb_hidden_layers = 2
-    nb_neurons = p_model.nb_nodes * 3
-    layers_dim = [nb_neurons] + [nb_neurons for _ in range(nb_hidden_layers + 1)] + [nb_neurons]
-    net_config = FCConfig(network_name='armadillo_FC',
-                          dim_output=3,
-                          dim_layers=layers_dim,
-                          biases=True)
+    net_config = UNetConfig(network_name='armadillo_UNet',
+                            input_size=grid_resolution,
+                            nb_dims=3,
+                            nb_input_channels=3,
+                            nb_first_layer_channels=128,
+                            nb_output_channels=3,
+                            nb_steps=3,
+                            two_sublayers=True,
+                            border_mode='same',
+                            skip_merge=False)
 
     # Dataset config
-    dataset_config = BaseDatasetConfig(normalize=True,
-                                       dataset_dir='sessions/armadillo_data_dpx',
-                                       use_mode='Validation')
+    dataset_config = BaseDatasetConfig(normalize=True)
 
     # Runner
     runner = BaseRunner(session_dir="sessions/armadillo_training_dpx",
                         dataset_config=dataset_config,
                         environment_config=env_config,
                         network_config=net_config,
-                        nb_steps=100)
+                        nb_steps=0)
     runner.execute()
     runner.close()
 
