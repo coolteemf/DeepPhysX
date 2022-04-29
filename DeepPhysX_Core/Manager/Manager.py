@@ -44,31 +44,26 @@ class Manager:
                  num_partitions_to_read: int = -1):
 
         self.pipeline: Any = pipeline
+        #Constructing the session_dir with the provided arguments
+        if session_name is None:
+            raise ValueError("[Manager] The session name cannot be set to None (will raise error).")
+        if session_dir is None:
+            # Create manager directory from the session name
+            self.session_dir: str = osPathJoin(get_first_caller(), session_name)
+        else:
+            self.session_dir: str = osPathJoin(session_dir, session_name)
+
         # Trainer: must create a new session to avoid overwriting
         if pipeline.type == 'training':
             train = True
-            if session_dir is None:
-                # Create manager directory from the session name
-                self.session_dir: str = osPathJoin(get_first_caller(), session_name)
-            else:
-                self.session_dir: str = osPathJoin(session_dir, session_name)
             # Avoid unwanted overwritten data
             if new_session:
                 self.session_dir: str = create_dir(self.session_dir, dir_name=session_name)
         # Prediction: work in an existing session
         elif pipeline.type == 'prediction':
             train = False
-            # Find the session directory with the name
-            if session_dir is None:
-                if session_name is None:
-                    raise ValueError("[Manager] Prediction needs at least the session directory or the session name.")
-                self.session_dir: str = osPathJoin(get_first_caller(), session_name)
-            # Find the session name with the directory
-            else:
-                self.session_dir: str = session_dir
             if not exists(self.session_dir):
                 raise ValueError("[Manager] The session directory {} does not exists.".format(self.session_dir))
-
         else:
             raise ValueError("[Manager] The pipeline must be either training or prediction.")
 
