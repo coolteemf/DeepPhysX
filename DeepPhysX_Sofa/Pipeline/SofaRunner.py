@@ -57,7 +57,6 @@ class SofaRunner(Sofa.Core.Controller, BaseRunner):
         if self.running_condition():
             self.sample_begin()
             prediction = self.predict(animate=False)
-            self.manager.data_manager.apply_prediction(prediction)
-            self.sample_end()
+            self.sample_end(prediction)
         else:
             self.run_end()
