@@ -40,32 +40,30 @@ class Manager:
                  batch_size: int = 1):
 
         self.pipeline: Any = pipeline
+        #Constructing the session_dir with the provided arguments
+        if session_name is None:
+            raise ValueError("[Manager] The session name cannot be set to None (will raise error).")
+        if session_dir is None:
+            # Create manager directory from the session name
+            self.session_dir: str = osPathJoin(get_first_caller(), session_name)
+        else:
+            self.session_dir: str = osPathJoin(session_dir, session_name)
+
         # Trainer: must create a new session to avoid overwriting
         if pipeline.type == 'training':
             train = True
-            # Create manager directory from the session name
-            self.session_dir: str = osPathJoin(get_first_caller(), session_name)
             # Avoid unwanted overwritten data
             if new_session:
                 self.session_dir: str = create_dir(self.session_dir, dir_name=session_name)
         # Prediction: work in an existing session
         elif pipeline.type == 'prediction':
             train = False
-            # Find the session directory with the name
-            if session_dir is None:
-                if session_name is None:
-                    raise ValueError("[Manager] Prediction needs at least the session directory or the session name.")
-                self.session_dir: str = osPathJoin(get_first_caller(), session_name)
-            # Find the session name with the directory
-            else:
-                self.session_dir: str = session_dir
             if not exists(self.session_dir):
                 raise ValueError("[Manager] The session directory {} does not exists.".format(self.session_dir))
-
         else:
             raise ValueError("[Manager] The pipeline must be either training or prediction.")
 
-        self.session_name: str = (session_name if session_name is not None else basename(session_dir)).split("/")[-1]
+        self.session_name: str = session_name
         # Always create the NetworkMmanager
         self.network_manager = NetworkManager(manager=self,
                                               network_config=network_config,
@@ -81,8 +79,10 @@ class Manager:
                                         session_dir=self.session_dir,
                                         new_session=new_session,
                                         training=train,
+                                        offline=offline,
                                         record_data=pipeline.record_data,
-                                        batch_size=batch_size)
+                                        batch_size=batch_size,
+                                        num_partitions_to_read=num_partitions_to_read)
         # Create the StatsManager for training
         self.stats_manager = StatsManager(manager=self,
                                           log_dir=osPathJoin(self.session_dir, 'stats/')) if train else None
@@ -122,6 +122,14 @@ class Manager:
         # Forward pass and optimization step
         prediction, loss_dict = self.network_manager.compute_prediction_and_loss(data, optimize=True)
         return prediction, loss_dict
+
+    def set_eval(self) -> None:
+        self.network_manager.set_eval()
+        self.data_manager.set_eval()
+
+    def set_train(self) -> None:
+        self.network_manager.set_train()
+        self.data_manager.set_train()
 
     def save_network(self) -> None:
         """
