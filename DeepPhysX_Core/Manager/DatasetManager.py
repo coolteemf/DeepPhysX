@@ -137,7 +137,8 @@ class DatasetManager:
             if dataset_dir is None:
                 self.dataset_dir = osPathJoin(self.session_dir, 'dataset/')
                 self.__new_dataset = True
-                self.create_running_partitions()
+                # self.create_running_partitions()
+                self.load_directory(load_data=False)
             # Loading partitions
             else:
                 if dataset_dir[-1] != "/":
@@ -196,7 +197,7 @@ class DatasetManager:
         if self.first_add:
             self.update_json(update_partitions_lists=True, update_shapes=True)
             self.first_add = False
-        if self.normalize and not self.offline:
+        if self.normalize and not self.offline and self.mode == 0:
             self.update_json(update_normalization=True)
 
         # 5. Check the size of the dataset
