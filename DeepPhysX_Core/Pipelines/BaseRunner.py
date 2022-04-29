@@ -19,6 +19,7 @@ class BaseRunner(BasePipeline):
     :param str session_name: Name of the newly created directory if session_dir is not defined
     :param Optional[str] session_dir: Name of the directory in which to write all the necessary data
     :param bool offline: True if the DataManager use an existing dataset
+    :param int num_partitions_to_read: Number of partitions to read (load into memory) on init and on get_data.
     :param int nb_steps: Number of simulation step to play
     :param bool record_inputs: Save or not the input in a numpy file
     :param bool record_outputs: Save or not the output in a numpy file
@@ -31,6 +32,7 @@ class BaseRunner(BasePipeline):
                  session_name: str = 'default',
                  session_dir: Optional[str] = None,
                  offline: bool = False,
+                 num_partitions_to_read: int = -1,
                  nb_steps: int = 0,
                  record_inputs: bool = False,
                  record_outputs: bool = False):
@@ -63,7 +65,8 @@ class BaseRunner(BasePipeline):
                                session_name=session_name,
                                session_dir=session_dir,
                                new_session=True,
-                               offline=offline)
+                               offline=offline,
+                               num_partitions_to_read=num_partitions_to_read)
 
     def execute(self) -> None:
         """

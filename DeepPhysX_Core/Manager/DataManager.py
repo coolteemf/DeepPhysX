@@ -24,7 +24,7 @@ class DataManager:
     :param bool training: True if this session is a network training
     :param bool offline: True if the session is done offline
     :param Dict[str, bool] record_data: Format {\'in\': bool, \'out\': bool} save the tensor when bool is True
-    :param int num_partitions_to_read: Number of partitions to read (load into memory) on init and ont get_data.
+    :param int num_partitions_to_read: Number of partitions to read (load into memory) on init and on get_data.
     :param int batch_size: Number of samples in a batch
     """
 
