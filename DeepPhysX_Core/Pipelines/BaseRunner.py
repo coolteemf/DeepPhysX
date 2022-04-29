@@ -27,7 +27,7 @@ class BaseRunner(BasePipeline):
 
     def __init__(self,
                  network_config: Union[tuple, BaseNetworkConfig],
-                 environment_config: Union[tuple, BaseEnvironmentConfig],
+                 environment_config: Optional[Union[tuple, BaseEnvironmentConfig]] = None,
                  dataset_config: Optional[Union[tuple, BaseDatasetConfig]] = None,
                  session_name: str = 'default',
                  session_dir: Optional[str] = None,
@@ -57,6 +57,7 @@ class BaseRunner(BasePipeline):
         self.record_data = {'input': False, 'output': False}
         if dataset_config is not None:
             self.record_data = {'input': record_inputs, 'output': record_outputs}
+        self.is_environment = environment_config is not None
 
         self.manager = Manager(pipeline=self,
                                network_config=self.network_config,
@@ -79,9 +80,7 @@ class BaseRunner(BasePipeline):
         self.run_begin()
         while self.running_condition():
             self.sample_begin()
-            prediction = self.predict()
-            self.manager.data_manager.apply_prediction(prediction)
-            self.sample_end()
+            self.sample_end(self.predict())
         self.run_end()
 
     def predict(self, animate: bool = True) -> ndarray:
@@ -132,13 +131,16 @@ class BaseRunner(BasePipeline):
 
         pass
 
-    def sample_end(self) -> None:
+    def sample_end(self, prediction: ndarray) -> None:
         """
         | Called one at the end of each step.
         | Allows the user to run some post-step computations.
+
+        :param ndarray prediction: Prediction of the Network.
         """
 
-        pass
+        if self.is_environment:
+            self.manager.data_manager.apply_prediction(prediction)
 
     def close(self) -> None:
         """
