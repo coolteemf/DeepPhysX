@@ -28,9 +28,8 @@ class BeamDownloader(DataDownloader):
 
 def download_all():
     downloader = BeamDownloader('doi:10.5072/FK2/8JZ8HO')
-    downloader.show_content()
-    # downloader.get_session('data')
-    # downloader.get_session('train')
+    downloader.get_session('data')
+    downloader.get_session('train')
 
 
 if __name__ == '__main__':
