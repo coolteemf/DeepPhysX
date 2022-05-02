@@ -136,7 +136,10 @@ class BaseTrainer(BasePipeline):
         | Pulls data from the manager and run a prediction step.
         """
         self.manager.get_data(epoch=0, batch_size=self.batch_size)
-        prediction, self.loss_dict = self.manager.get_prediction()
+        data = self.manager.data_manager.data
+        data['input'] = self.manager.data_manager.normalize_data(data, 'input')
+        data['output'] = self.manager.data_manager.normalize_data(data, 'output')
+        prediction, self.loss_dict = self.manager.network_manager.compute_prediction_and_loss(data)
 
     def save_network(self) -> None:
         """
