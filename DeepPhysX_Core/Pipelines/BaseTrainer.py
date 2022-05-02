@@ -137,9 +137,9 @@ class BaseTrainer(BasePipeline):
         """
         self.manager.get_data(epoch=0, batch_size=self.batch_size)
         data = self.manager.data_manager.data
-        data['input'] = self.manager.data_manager.normalize_data(data, 'input')
-        data['output'] = self.manager.data_manager.normalize_data(data, 'output')
-        prediction, self.loss_dict = self.manager.network_manager.compute_prediction_and_loss(data)
+        data['input'] = self.manager.data_manager.normalize_data(data['input'], 'input')
+        data['output'] = self.manager.data_manager.normalize_data(data['output'], 'output')
+        prediction, self.loss_dict = self.manager.network_manager.compute_prediction_and_loss(data, optimize=False)
 
     def save_network(self) -> None:
         """
