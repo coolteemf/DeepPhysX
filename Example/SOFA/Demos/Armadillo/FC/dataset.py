@@ -56,10 +56,8 @@ if __name__ == '__main__':
         download_all()
 
     # Define dataset
-    dpx_session = 'sessions/armadillo_data_dpx'
     user_session = 'sessions/armadillo_data_user'
-    # Take user dataset by default
-    dataset = user_session if os.path.exists(user_session) else dpx_session if os.path.exists(dpx_session) else None
+    dataset = user_session if os.path.exists(user_session) else None
 
     # Get dataset mode
     mode = 'Training'

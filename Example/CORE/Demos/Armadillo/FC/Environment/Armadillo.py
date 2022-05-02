@@ -13,8 +13,6 @@ import sys
 import numpy as np
 from vedo import Mesh
 from math import pow
-from numpy import zeros, reshape, arange, concatenate
-from numpy.linalg import norm
 from time import sleep
 
 # DeepPhysX related imports
@@ -24,7 +22,6 @@ from DeepPhysX_Core.Utils.Visualizer.GridMapping import GridMapping
 # Session related imports
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from parameters import p_model, p_forces
-from GridMapping import GridMapping
 
 
 # Create an Environment as a BaseEnvironment child class
@@ -60,12 +57,13 @@ class Armadillo(BaseEnvironment):
 
         # Force pattern
         step = 0.3
-        self.amplitudes = concatenate((arange(0, 1, step),
-                                       arange(1, -1, -step),
-                                       arange(-1, 0, step)))
+        self.amplitudes = np.concatenate((np.arange(0, 1, step),
+                                          np.arange(1, -1, -step),
+                                          np.arange(-1, 0, step)))
         self.idx_amplitude = 0
         self.force_value = None
         self.idx_zone = 0
+        self.F = None
 
         # Data sizes
         self.input_size = (p_model.nb_nodes_mesh, 3)
@@ -100,7 +98,7 @@ class Armadillo(BaseEnvironment):
                 if sphere(pts, p_forces.centers[zone]) <= pow(p_forces.radius[zone], 2):
                     self.areas[-1].append(i)
             # Init force value
-            self.forces.append(zeros(3,))
+            self.forces.append(np.zeros(3, ))
 
     def send_visualization(self):
 
@@ -152,28 +150,23 @@ class Armadillo(BaseEnvironment):
             self.idx_amplitude = (self.idx_amplitude + 1) % len(self.amplitudes)
 
             # Create input array
-            F = zeros(self.input_size)
-            for area, force in zip(self.areas, self.forces):
-                F[area] = force
+            F = np.zeros(self.input_size)
+            F[self.areas[self.idx_zone]] = self.forces[self.idx_zone]
 
         # Load a force sample from Dataset
         else:
             sleep(0.5)
-            F = zeros(self.input_size) if self.sample_in is None else self.sample_in
-            self.force_value = F[0]
-            for i, area in enumerate(self.areas):
-                if norm(F[area[0]]) != 0:
-                    self.idx_zone = i
-                    self.force_value = F[area[0]]
+            F = np.zeros(self.input_size) if self.sample_in is None else self.sample_in
 
         # Set training data
+        self.F = F
         self.set_training_data(input_array=F.copy(),
-                               output_array=zeros(self.output_size))
+                               output_array=np.zeros(self.output_size))
 
     def apply_prediction(self, prediction):
 
         # Reshape to correspond to sparse grid
-        U = reshape(prediction, self.output_size)
+        U = np.reshape(prediction, self.output_size)
         self.update_visual(U)
 
     def update_visual(self, U):
@@ -186,11 +179,9 @@ class Armadillo(BaseEnvironment):
 
         # Update arrows representing force fields
         mapped_mesh_coarse = self.mapping_coarse.apply(updated_mesh.points())
-        position = mapped_mesh_coarse.points()[self.areas[self.idx_zone]]
-        vector = [0.25 * self.force_value * self.amplitudes[self.idx_amplitude] / p_model.scale] * len(position)
         self.factory.update_object_dict(object_id=1,
-                                        new_data_dict={'positions': position,
-                                                       'vectors': vector})
+                                        new_data_dict={'positions': mapped_mesh_coarse.points(),
+                                                       'vectors': 0.25 * self.F / p_model.scale})
 
         # Update sparse grid positions
         self.factory.update_object_dict(object_id=2,

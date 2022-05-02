@@ -30,11 +30,10 @@ class ArmadilloDownloader(DataDownloader):
 
 def download_all():
     downloader = ArmadilloDownloader('doi:10.5072/FK2/B1NUY0')
-    downloader.show_content()
-    # downloader.get_session('data')
-    # downloader.get_session('train')
-    # downloader.root = os.path.abspath(os.path.join(downloader.root, os.path.pardir, 'Environment'))
-    # downloader.get_session('model')
+    downloader.get_session('data')
+    downloader.get_session('train')
+    downloader.root = os.path.abspath(os.path.join(downloader.root, os.path.pardir, 'Environment'))
+    downloader.get_session('model')
 
 
 if __name__ == '__main__':
