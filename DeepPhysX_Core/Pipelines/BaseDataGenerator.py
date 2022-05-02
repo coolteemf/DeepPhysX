@@ -49,7 +49,7 @@ class BaseDataGenerator(BasePipeline):
                 dataset_dir = dataset_dir[:-8]
             if osPathJoin(get_first_caller(), session_name) != osPathJoin(get_first_caller(), dataset_dir):
                 dataset_dir = None
-            if not os.path.exists(osPathJoin(get_first_caller(), dataset_dir)):
+            elif not os.path.exists(osPathJoin(get_first_caller(), dataset_dir)):
                 dataset_dir = None
         if dataset_dir is None:
             session_dir = create_dir(osPathJoin(get_first_caller(), session_name), dir_name=session_name)

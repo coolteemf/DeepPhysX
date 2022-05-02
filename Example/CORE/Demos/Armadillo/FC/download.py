@@ -19,21 +19,22 @@ class ArmadilloDownloader(DataDownloader):
                          'train': 'armadillo_training_dpx',
                          'model': 'models'}
         self.tree = {'armadillo_data_dpx': [[],
-                                            {'dataset': [101, 102, 103, 107, 108]}],
-                     'armadillo_training_dpx': [[104],
+                                            {'dataset': [187, 191, 188, 186, 190]}],
+                     'armadillo_training_dpx': [[189],
                                                 {'dataset': [],
-                                                 'network': [105],
-                                                 'stats': [106]}],
-                     'models': [[111, 112], {}]}
-        self.nb_files = {'data': 5, 'train': 3, 'model': 2}
+                                                 'network': [193],
+                                                 'stats': [192]}],
+                     'models': [[111, 112, 210], {}]}
+        self.nb_files = {'data': 5, 'train': 3, 'model': 3}
 
 
 def download_all():
     downloader = ArmadilloDownloader('doi:10.5072/FK2/B1NUY0')
-    downloader.get_session('data')
-    downloader.get_session('train')
-    downloader.root = os.path.abspath(os.path.join(downloader.root, os.path.pardir, 'Environment'))
-    downloader.get_session('model')
+    downloader.show_content()
+    # downloader.get_session('data')
+    # downloader.get_session('train')
+    # downloader.root = os.path.abspath(os.path.join(downloader.root, os.path.pardir, 'Environment'))
+    # downloader.get_session('model')
 
 
 if __name__ == '__main__':
