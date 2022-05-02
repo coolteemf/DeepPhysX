@@ -23,16 +23,19 @@ nb_batches = {'Training': 500, 'Validation': 50}
 batch_size = {'Training': 32, 'Validation': 10}
 
 
-def launch_data_generation(dataset_mode):
+def launch_data_generation(dataset_dir, dataset_mode):
 
     # Environment configuration
     environment_config = SofaEnvironmentConfig(environment_class=LiverTraining,
                                                visualizer=VedoVisualizer,
                                                as_tcp_ip_client=True,
-                                               number_of_thread=4)
+                                               number_of_thread=4,
+                                               port=11111)
 
     # Dataset configuration
-    dataset_config = BaseDatasetConfig(partition_size=1, shuffle_dataset=True, use_mode=dataset_mode)
+    dataset_config = BaseDatasetConfig(dataset_dir=dataset_dir,
+                                       partition_size=1,
+                                       use_mode=dataset_mode)
 
     # Create DataGenerator
     data_generator = BaseDataGenerator(session_name='sessions/liver_data_user',
@@ -53,6 +56,12 @@ if __name__ == '__main__':
         print('Downloading Liver demo data...')
         download_all()
 
+    # Define dataset
+    dpx_session = 'sessions/liver_data_dpx'
+    user_session = 'sessions/liver_data_user'
+    # Take user dataset by default
+    dataset = user_session if os.path.exists(user_session) else dpx_session if os.path.exists(dpx_session) else None
+
     # Get dataset mode
     mode = 'Training'
     if len(sys.argv) > 1:
@@ -63,4 +72,4 @@ if __name__ == '__main__':
         mode = 'Validation'
 
     # Launch pipeline
-    launch_data_generation(mode)
+    launch_data_generation(dataset, mode)

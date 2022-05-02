@@ -39,14 +39,15 @@ class LiverTraining(LiverSofa):
                            environment_manager=environment_manager)
 
         self.create_model['nn'] = True
-        self.data_size = None
+        self.input_size = None
+        self.output_size = None
 
     def send_visualization(self):
         """
         Define and send the initial visualization data dictionary. Automatically called when creating Environment.
         """
 
-        # Add the FEM model (object will have id = 0)
+        # Add the mesh model (object will have id = 0)
         self.factory.add_object(object_type='Mesh', data_dict={'positions': self.f_visu.position.value.copy(),
                                                                'cells': self.f_visu.triangles.value.copy(),
                                                                'at': self.instance_id,
@@ -60,7 +61,8 @@ class LiverTraining(LiverSofa):
         """
 
         # Get the data shape
-        self.data_size = self.n_sparse_grid_mo.position.value.shape
+        self.input_size = self.n_surface_mo.position.value.shape
+        self.output_size = self.n_sparse_grid_mo.position.value.shape
 
     def onAnimateEndEvent(self, event):
         """
@@ -80,21 +82,23 @@ class LiverTraining(LiverSofa):
 
     def compute_input(self):
         """
-        Compute force field on the grid.
+        Compute force field on the surface.
         """
 
-        # Compute applied force on volume
-        force_grid_mo = self.f_force_grid_mo if self.create_model['fem'] else self.n_sparse_grid_mo
-        return force_grid_mo.force.value.copy()
+        # Compute applied force on the surface
+        F = np.zeros(self.input_size)
+        for cff in self.force_field:
+            F[cff.indices.value.copy()] = cff.forces.value.copy()
+        return F
 
     def compute_output(self):
         """
         Compute displacement vector for the whole surface.
         """
 
-        # Compute generated displacement
-        U = self.f_sparse_grid_mo.position.value - self.f_sparse_grid_mo.rest_position.value
-        return U.copy()
+        # Compute generated displacement on the grid
+        U = self.f_sparse_grid_mo.position.value.copy() - self.f_sparse_grid_mo.rest_position.value.copy()
+        return U
 
     def apply_prediction(self, prediction):
         """
@@ -102,7 +106,7 @@ class LiverTraining(LiverSofa):
         """
 
         # Reshape to correspond sparse grid
-        U = np.reshape(prediction, self.data_size)
+        U = np.reshape(prediction, self.output_size)
         self.n_sparse_grid_mo.position.value = self.n_sparse_grid_mo.rest_position.array() + U
 
     def update_visual(self):
