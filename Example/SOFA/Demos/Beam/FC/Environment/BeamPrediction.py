@@ -52,7 +52,7 @@ class BeamPrediction(BeamTraining):
 
         # Receive visualizer option (either True for Vedo, False for SOFA GUI)
         self.visualizer = param_dict['visualizer'] if 'visualizer' in param_dict else self.visualizer
-        step = 0.1 if self.visualizer else 0.02
+        step = 0.1 if self.visualizer else 0.03
         self.amplitudes = np.concatenate((np.arange(0, 1, step),
                                           np.arange(1, -1, -step),
                                           np.arange(-1, 0, step)))
@@ -64,11 +64,11 @@ class BeamPrediction(BeamTraining):
 
         # Nothing to visualize if the predictions are run in SOFA GUI.
         if self.visualizer:
-            # Add the FEM model (object will have id = 0)
+            # Add the mesh model (object will have id = 0)
             self.factory.add_object(object_type='Mesh', data_dict={'positions': self.n_visu.position.value.copy(),
                                                                    'cells': self.n_visu.triangles.value.copy(),
                                                                    'at': self.instance_id,
-                                                                   'c': 'green'})
+                                                                   'c': 'orange'})
 
             # Arrows representing the force fields (object will have id = 1)
             self.factory.add_object(object_type='Arrows', data_dict={'positions': [0, 0, 0],
@@ -111,7 +111,9 @@ class BeamPrediction(BeamTraining):
                 indices = list(set(indices).intersection(set(self.idx_surface)))
 
             # Create a random force vector
-            F = 15 * np.random.uniform(low=-1, high=1, size=(3,))
+            F = np.random.uniform(low=-1, high=1, size=(3,))
+            K = np.random.randint(20, 30)
+            F = K * (F / np.linalg.norm(F))
             # Keep value
             self.force_value = F
             self.indices_value = indices
@@ -159,8 +161,10 @@ class BeamPrediction(BeamTraining):
         Update the visualization data dict.
         """
 
-        # Update visualization data
+        # Update mesh positions
         self.factory.update_object_dict(object_id=0, new_data_dict={'position': self.n_visu.position.value.copy()})
+
+        # Update force field
         position = list(self.n_visu.position.value[self.cff.indices.value])
         vector = list(0.25 * self.cff.forces.value)
         self.factory.update_object_dict(object_id=1, new_data_dict={'positions': position,

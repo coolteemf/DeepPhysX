@@ -46,11 +46,11 @@ class BeamTraining(BeamSofa):
         Define and send the initial visualization data dictionary. Automatically called when creating Environment.
         """
 
-        # Add the FEM model (object will have id = 0)
+        # Add the mesh model (object will have id = 0)
         self.factory.add_object(object_type='Mesh', data_dict={'positions': self.f_visu.position.value.copy(),
                                                                'cells': self.f_visu.triangles.value.copy(),
                                                                'at': self.instance_id,
-                                                               'c': 'orange'})
+                                                               'c': 'green'})
         # Return the initial visualization data
         return self.factory.objects_dict
 
@@ -75,18 +75,19 @@ class BeamTraining(BeamSofa):
         Compute force field on the grid.
         """
 
-        # Compute applied force on volume
-        grid_mo = self.f_grid_mo if self.create_model['fem'] else self.n_grid_mo
-        return grid_mo.force.value.copy()
+        # Compute applied force on surface
+        F = np.zeros(self.data_size)
+        F[self.cff.indices.value.copy()] = self.cff.forces.value.copy()
+        return F
 
     def compute_output(self):
         """
         Compute displacement field on the grid.
         """
 
-        # Compute generated displacement
-        U = self.f_grid_mo.position.value - self.f_grid_mo.rest_position.value
-        return U.copy()
+        # Compute generated displacement on the grid
+        U = self.f_grid_mo.position.value.copy() - self.f_grid_mo.rest_position.value.copy()
+        return U
 
     def apply_prediction(self, prediction):
         """

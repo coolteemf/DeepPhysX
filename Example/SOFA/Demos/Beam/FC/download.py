@@ -18,7 +18,7 @@ class BeamDownloader(DataDownloader):
         self.sessions = {'data': 'beam_data_dpx',
                          'train': 'beam_training_dpx'}
         self.tree = {'beam_data_dpx': [[],
-                                       {'dataset': [165, 166, 167, 168, 170]}],
+                                       {'dataset': [166, 165, 168, 167, 170]}],
                      'beam_training_dpx': [[169],
                                            {'dataset': [],
                                             'network': [132],
@@ -28,8 +28,9 @@ class BeamDownloader(DataDownloader):
 
 def download_all():
     downloader = BeamDownloader('doi:10.5072/FK2/8JZ8HO')
-    downloader.get_session('data')
-    downloader.get_session('train')
+    downloader.show_content()
+    # downloader.get_session('data')
+    # downloader.get_session('train')
 
 
 if __name__ == '__main__':
