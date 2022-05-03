@@ -66,6 +66,7 @@ class DatasetManager:
         self.first_add: bool = True
         self.__writing: bool = False
         self.normalize: bool = dataset_config.normalize
+        self.normalization_security = dataset_config.recompute_normalization
         self.offline = offline
 
         # Dataset modes
@@ -385,7 +386,7 @@ class DatasetManager:
         if not self.json_found or self.empty_json_fields():
             self.search_partitions_info()
             self.update_json(update_partitions_lists=True)
-        if self.normalize:
+        if self.normalization_security:
             self.update_json(update_normalization=True)
 
         # 4. Load data from partitions
