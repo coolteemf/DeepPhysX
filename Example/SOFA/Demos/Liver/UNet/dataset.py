@@ -29,7 +29,8 @@ def launch_data_generation(dataset_dir, dataset_mode):
     environment_config = SofaEnvironmentConfig(environment_class=LiverTraining,
                                                visualizer=VedoVisualizer,
                                                as_tcp_ip_client=True,
-                                               number_of_thread=4)
+                                               number_of_thread=10,
+                                               port=11111)
 
     # Dataset configuration
     dataset_config = BaseDatasetConfig(dataset_dir=dataset_dir,
