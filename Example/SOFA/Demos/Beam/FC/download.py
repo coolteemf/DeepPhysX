@@ -18,11 +18,11 @@ class BeamDownloader(DataDownloader):
         self.sessions = {'data': 'beam_data_dpx',
                          'train': 'beam_training_dpx'}
         self.tree = {'beam_data_dpx': [[],
-                                       {'dataset': [166, 165, 168, 167, 170]}],
-                     'beam_training_dpx': [[169],
+                                       {'dataset': [218, 217, 220, 214, 213]}],
+                     'beam_training_dpx': [[215],
                                            {'dataset': [],
-                                            'network': [132],
-                                            'stats': [126]}]}
+                                            'network': [219],
+                                            'stats': [216]}]}
         self.nb_files = {'data': 5, 'train': 3}
 
 

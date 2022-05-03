@@ -89,26 +89,25 @@ class BeamPrediction(BeamTraining):
 
         # Create a new non-empty random box ROI, select nodes of the surface
         if self.idx_range == 0:
-            indices = []
-            while len(indices) == 0:
 
-                # Define random box
-                x_min = np.random.randint(p_grid.min[0], p_grid.max[0] - 10)
-                x_max = np.random.randint(x_min + 10, p_grid.max[0])
-                y_min = np.random.randint(p_grid.min[1], p_grid.max[1] - 10)
-                y_max = np.random.randint(y_min + 10, p_grid.max[1])
-                z_min = np.random.randint(p_grid.min[2], p_grid.max[2] - 10)
-                z_max = np.random.randint(z_min + 10, p_grid.max[2])
+            # Define random box
+            side = np.random.randint(0, 6)
+            x_min = p_grid.min[0] if side == 0 else np.random.randint(p_grid.min[0], p_grid.max[0] - 10)
+            x_max = p_grid.max[0] if side == 1 else np.random.randint(x_min + 10, p_grid.max[0] + 1)
+            y_min = p_grid.min[1] if side == 2 else np.random.randint(p_grid.min[1], p_grid.max[1] - 10)
+            y_max = p_grid.max[1] if side == 3 else np.random.randint(y_min + 10, p_grid.max[1] + 1)
+            z_min = p_grid.min[2] if side == 4 else np.random.randint(p_grid.min[2], p_grid.max[2] - 10)
+            z_max = p_grid.max[2] if side == 5 else np.random.randint(z_min + 10, p_grid.max[2] + 1)
 
-                # Set the new bounding box
-                self.root.nn.removeObject(self.cff_box)
-                self.cff_box = self.root.nn.addObject('BoxROI', name='ForceBox', drawBoxes=False, drawSize=1,
-                                                      box=[x_min, y_min, z_min, x_max, y_max, z_max])
-                self.cff_box.init()
+            # Set the new bounding box
+            self.root.nn.removeObject(self.cff_box)
+            self.cff_box = self.root.nn.addObject('BoxROI', name='ForceBox', drawBoxes=False, drawSize=1,
+                                                  box=[x_min, y_min, z_min, x_max, y_max, z_max])
+            self.cff_box.init()
 
-                # Get the intersection with the surface
-                indices = list(self.cff_box.indices.value)
-                indices = list(set(indices).intersection(set(self.idx_surface)))
+            # Get the intersection with the surface
+            indices = list(self.cff_box.indices.value)
+            indices = list(set(indices).intersection(set(self.idx_surface)))
 
             # Create a random force vector
             F = np.random.uniform(low=-1, high=1, size=(3,))

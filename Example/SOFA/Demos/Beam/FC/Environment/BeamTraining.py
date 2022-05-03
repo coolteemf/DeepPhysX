@@ -68,7 +68,7 @@ class BeamTraining(BeamSofa):
                                output_array=output_array)
 
         # Update visualization
-        self.update_visu()
+        self.update_visual()
 
     def compute_input(self):
         """
