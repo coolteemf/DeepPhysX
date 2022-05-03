@@ -76,7 +76,9 @@ class ArmadilloSofa(SofaEnvironment):
         self.n_visu = None
 
         # Forces
-        self.cff = None
+        self.surface_node = None
+        self.cff = []
+        self.sphere = []
         self.zone_idx = 0
 
     def create(self):
@@ -127,8 +129,7 @@ class ArmadilloSofa(SofaEnvironment):
         # Grid topology of the model
         self.f_sparse_grid_topo = self.root.fem.addObject('SparseGridTopology', name='SparseGridTopo',
                                                           src='@../MeshCoarse', n=p_grid.grid_resolution)
-        self.f_sparse_grid_mo = self.root.fem.addObject('MechanicalObject', name='SparseGridMO', src='@SparseGridTopo',
-                                                        showObject=False)
+        self.f_sparse_grid_mo = self.root.fem.addObject('MechanicalObject', name='SparseGridMO', src='@SparseGridTopo')
 
         # Material
         self.root.fem.addObject('SaintVenantKirchhoffMaterial', name='StVK', young_modulus=1000, poisson_ratio=0.45)
@@ -145,11 +146,11 @@ class ArmadilloSofa(SofaEnvironment):
         self.f_surface_topo = self.root.fem.surface.addObject('TriangleSetTopologyContainer', name='SurfaceTopo',
                                                               src='@../../MeshCoarse')
         self.f_surface_mo = self.root.fem.surface.addObject('MechanicalObject', name='SurfaceMO',
-                                                            src='@../../MeshCoarse', showObject=False)
+                                                            src='@../../MeshCoarse')
         self.root.fem.surface.addObject('BarycentricMapping', input='@../SparseGridMO', output='@./')
 
         # Forces
-        self.create_forces()
+        self.create_forces(self.root.fem.surface)
 
         # Visual
         self.root.fem.addChild('visual')
@@ -164,15 +165,18 @@ class ArmadilloSofa(SofaEnvironment):
         # Create child node
         self.root.addChild('nn')
 
+        # Fake solvers (required to compute forces on the grid)
+        self.root.nn.addObject('StaticODESolver', name='ODESolver', newton_iterations=0)
+        self.root.nn.addObject('ConjugateGradientSolver', name='StaticSolver', maximum_number_of_iterations=0)
+
         # Grid topology
         self.n_sparse_grid_topo = self.root.nn.addObject('SparseGridTopology', name='SparseGrid', src='@../MeshCoarse',
                                                          n=p_grid.grid_resolution)
-        self.n_sparse_grid_mo = self.root.nn.addObject('MechanicalObject', name='SparseGridMO', showObject=False,
-                                                       src='@SparseGrid')
+        self.n_sparse_grid_mo = self.root.nn.addObject('MechanicalObject', name='SparseGridMO', src='@SparseGrid')
 
         # Fixed section
         if not self.create_model['fem']:
-            self.root.nn.addObject('BoxROI', name='FixedBox', box=p_model.fixed_box, drawBoxes=True)
+            self.root.nn.addObject('BoxROI', name='FixedBox', box=p_model.fixed_box, drawBoxes=True, drawSize=1.)
             self.root.nn.addObject('FixedConstraint', indices='@FixedBox.indices')
 
         # Surface
@@ -180,30 +184,29 @@ class ArmadilloSofa(SofaEnvironment):
         self.n_surface_topo = self.root.nn.surface.addObject('TriangleSetTopologyContainer', name='SurfaceTopo',
                                                              src='@../../MeshCoarse')
         self.n_surface_mo = self.root.nn.surface.addObject('MechanicalObject', name='SurfaceMO', src='@SurfaceTopo')
+        self.root.nn.surface.addObject('BarycentricMapping', input='@../SparseGridMO', output='@./')
 
         # Forces
         if not self.create_model['fem']:
-            self.create_forces()
+            self.create_forces(self.root.nn.surface)
 
         # Visual
         self.root.nn.addChild('visual')
-        self.n_visu = self.root.nn.visual.addObject('OglModel', src='@../../Mesh', color='orange')
+        self.n_visu = self.root.nn.visual.addObject('OglModel', src='@../../Mesh', color=(1, 0.6, 0.1, 1))
         self.root.nn.visual.addObject('BarycentricMapping', input='@../SparseGridMO', output='@./')
 
-    def create_forces(self):
+    def create_forces(self, node):
         """
         Generate the force fields on specific areas.
         """
 
         # ConstantForceFields will be applied on the surface of the object
-        self.cff = []
-        surface_node = self.root.fem.surface if self.create_model['fem'] else self.root.nn.surface
-        # Target areas
+        self.surface_node = node
         for zone in p_forces.zones:
-            surface_node.addObject('SphereROI', name=f'Sphere_{zone}', radii=p_forces.radius[zone],
-                                   centers=p_forces.centers[zone], drawPoints=True, drawSize=1)
-            self.cff.append(surface_node.addObject('ConstantForceField', name=f'cff_{zone}', force=[0., 0., 0.],
-                                                   indices=f'@Sphere_{zone}.indices'))
+            self.sphere.append(node.addObject('SphereROI', name=f'Sphere_{zone}', radii=p_forces.radius[zone],
+                                              centers=p_forces.centers[zone], drawPoints=True, drawSize=1))
+            self.cff.append(node.addObject('ConstantForceField', name=f'cff_{zone}', force=[0., 0., 0.],
+                                           indices=f'@Sphere_{zone}.indices'))
 
     def onSimulationInitDoneEvent(self, event):
         """
@@ -223,6 +226,9 @@ class ArmadilloSofa(SofaEnvironment):
         # Get the data sizes
         self.data_size = (self.nb_nodes_regular_grid, 3)
 
+        # Delete ROI spheres
+        for sphere in self.sphere:
+            self.surface_node.removeObject(sphere)
 
     def onAnimateBeginEvent(self, event):
         """
@@ -233,7 +239,7 @@ class ArmadilloSofa(SofaEnvironment):
         if self.create_model['fem']:
             self.f_sparse_grid_mo.position.value = self.f_sparse_grid_mo.rest_position.value
         if self.create_model['nn']:
-            self.n_surface_mo.position.value = self.n_surface_mo.rest_position.value
+            self.n_sparse_grid_mo.position.value = self.n_sparse_grid_mo.rest_position.value
 
         # Reset forces
         for cff in self.cff:

@@ -15,8 +15,8 @@ import sys
 
 # Session related imports
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-from ArmadilloTraining import ArmadilloTraining, p_model, np
-from parameters import p_grid
+from ArmadilloTraining import ArmadilloTraining, np
+from parameters import p_grid, p_model
 
 
 class ArmadilloValidation(ArmadilloTraining):
@@ -41,7 +41,6 @@ class ArmadilloValidation(ArmadilloTraining):
 
         self.l2_error, self.MSE_error = [], []
         self.l2_deformation, self.MSE_deformation = [], []
-
         self.compute_sample = True
 
     def recv_parameters(self, param_dict):
@@ -56,9 +55,11 @@ class ArmadilloValidation(ArmadilloTraining):
         FEM model of Armadillo. Used to apply forces and compute deformations.
         """
 
+        # To compute samples, use default scene graph creation
         if self.compute_sample:
             ArmadilloTraining.createFEM(self)
 
+        # To read Dataset samples, no need for physical laws or solvers
         else:
             # Create child node
             self.root.addChild('fem')
@@ -67,7 +68,7 @@ class ArmadilloValidation(ArmadilloTraining):
             self.f_sparse_grid_topo = self.root.fem.addObject('SparseGridTopology', name='SparseGridTopo',
                                                               src='@../MeshCoarse', n=p_grid.grid_resolution)
             self.f_sparse_grid_mo = self.root.fem.addObject('MechanicalObject', name='SparseGridMO',
-                                                            src='@SparseGridTopo', showObject=False)
+                                                            src='@SparseGridTopo')
 
             # Fixed section
             self.root.fem.addObject('BoxROI', name='FixedBox', box=p_model.fixed_box, drawBoxes=True, drawSize=1.)
@@ -78,15 +79,15 @@ class ArmadilloValidation(ArmadilloTraining):
             self.f_surface_topo = self.root.fem.surface.addObject('TriangleSetTopologyContainer', name='SurfaceTopo',
                                                                   src='@../../MeshCoarse')
             self.f_surface_mo = self.root.fem.surface.addObject('MechanicalObject', name='SurfaceMO',
-                                                                src='@SurfaceTopo', showObject=False)
+                                                                src='@SurfaceTopo')
             self.root.fem.surface.addObject('BarycentricMapping', input='@../SparseGridMO', output='@./')
 
             # Forces
-            self.create_forces()
+            self.create_forces(self.root.fem.surface)
 
             # Visual
             self.root.fem.addChild('visual')
-            self.f_visu = self.root.fem.visual.addObject('OglModel', name="OGL", src='@../../Mesh', color='green')
+            self.f_visu = self.root.fem.visual.addObject('OglModel', name='OGL', src='@../../Mesh', color='green')
             self.root.fem.visual.addObject('BarycentricMapping', input='@../SparseGridMO', output='@./')
 
     def send_visualization(self):
@@ -103,28 +104,25 @@ class ArmadilloValidation(ArmadilloTraining):
         """
 
         if self.compute_sample:
+            # Reset positions and compute new forces
             ArmadilloTraining.onAnimateBeginEvent(self, event)
 
         else:
             # Reset positions
-            if self.create_model['fem']:
-                self.f_sparse_grid_mo.position.value = self.f_sparse_grid_mo.rest_position.value
-            if self.create_model['nn']:
-                self.n_sparse_grid_mo.position.value = self.n_sparse_grid_mo.rest_position.value
+            self.f_sparse_grid_mo.position.value = self.f_sparse_grid_mo.rest_position.value
+            self.n_sparse_grid_mo.position.value = self.n_sparse_grid_mo.rest_position.value
 
     def onAnimateEndEvent(self, event):
         """
         Called within the Sofa pipeline at the end of the time step. Compute training data and apply prediction.
         """
 
-        if self.sample_in is not None:
-            input_array = self.sample_in
-            output_array = self.sample_out
-        else:
-            input_array = self.compute_input()
-            output_array = self.compute_output()
+        # Compute training data
+        input_array = self.compute_input() if self.sample_in is None else self.sample_in
+        output_array = self.compute_output() if self.sample_in is None else self.sample_out
 
-        if self.sample_out is not None:
+        # Manually update FEM model if sample from Dataset
+        if self.sample_in is not None:
             U = np.reshape(self.sample_out, self.data_size)
             U_sparse = U[self.idx_sparse_to_regular]
             self.f_sparse_grid_mo.position.value = self.f_sparse_grid_mo.rest_position.value + U_sparse
@@ -133,17 +131,6 @@ class ArmadilloValidation(ArmadilloTraining):
         self.set_training_data(input_array=input_array,
                                output_array=output_array)
 
-    def apply_prediction(self, prediction):
-        """
-        Apply the predicted displacement to the NN model.
-        """
-
-        # Reshape to correspond regular grid, transform to sparse grid
-        U = np.reshape(prediction, self.data_size)
-        U_sparse = U[self.idx_sparse_to_regular]
-        self.n_sparse_grid_mo.position.value = self.n_sparse_grid_mo.rest_position.array() + U_sparse
-        self.compute_metrics()
-
     def check_sample(self):
         """
         Check if the produced sample is correct. Automatically called by DeepPhysX to check sample validity.
@@ -151,6 +138,14 @@ class ArmadilloValidation(ArmadilloTraining):
 
         # See the network prediction even if the solver diverged.
         return True
+
+    def apply_prediction(self, prediction):
+        """
+        Apply the predicted displacement to the NN model.
+        """
+
+        ArmadilloTraining.apply_prediction(self, prediction)
+        self.compute_metrics()
 
     def compute_metrics(self):
         """
