@@ -31,9 +31,9 @@ class BaseTrainer(BasePipeline):
     """
 
     def __init__(self,
-                 network_config: Union[tuple[2], BaseNetworkConfig],
-                 environment_config: Optional[Union[tuple[2], BaseEnvironmentConfig]],
-                 dataset_config: Union[tuple[2], BaseDatasetConfig],
+                 network_config: Union[tuple, BaseNetworkConfig],
+                 environment_config: Optional[Union[tuple, BaseEnvironmentConfig]],
+                 dataset_config: Union[tuple, BaseDatasetConfig],
                  session_name: str = 'default',
                  session_dir: Optional[str] = None,
                  new_session: bool = True,
