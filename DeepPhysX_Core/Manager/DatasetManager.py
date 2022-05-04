@@ -219,7 +219,8 @@ class DatasetManager:
 
         :return: Dict of format {'input':numpy.ndarray, 'output':numpy.ndarray} filled with desired data
         """
-
+        if not get_inputs and not get_outputs:
+            raise ValueError(f"[{self.name}] At least one of get_inputs or get_outputs need to be set to True in get_data.")
         # Do not allow overwriting partitions
         self.__writing = False
 
@@ -236,7 +237,7 @@ class DatasetManager:
 
         # 3. Get a batch of each data field
         data = {}
-        fields = self.fields[2:]
+        fields = []
         fields += ['input'] if get_inputs else []
         fields += ['output'] if get_outputs else []
         for field in fields:
@@ -254,27 +255,29 @@ class DatasetManager:
                     data['additional_fields'][field] = squeeze(data['additional_fields'][field], axis=0)
 
         # 4. Ensure each field received the same batch size
-        if data['input'].shape[0] != data['output'].shape[0]:
-            raise ValueError(f"[{self.name}] Size of loaded batch mismatch for input and output "
-                             f"(in: {data['input'].shape} / out: {data['output'].shape}")
-        if 'additional_data' in data.keys():
-            for field in data['additional_fields'].keys():
-                if data['additional_fields'][field].shape[0] != data['input'].shape[0]:
-                    raise ValueError(f"[{self.name}] Size of loaded batch mismatch for additional field {field} "
-                                     f"(net: {data['input'].shape} / {field}: {data['additional_fields'][field].shape}")
+        if get_inputs and get_outputs:
+            if data['input'].shape[0] != data['output'].shape[0]:
+                raise ValueError(f"[{self.name}] Size of loaded batch mismatch for input and output "
+                                 f"(in: {data['input'].shape} / out: {data['output'].shape}")
+            if 'additional_data' in data.keys():
+                for field in data['additional_fields'].keys():
+                    if data['additional_fields'][field].shape[0] != data['input'].shape[0]:
+                        raise ValueError(f"[{self.name}] Size of loaded batch mismatch for additional field {field} "
+                                         f"(net: {data['input'].shape} / {field}: {data['additional_fields'][field].shape}")
 
         # 5. Ensure the batch has the good size, otherwise load new data to complete it
-        if data['input'].shape[0] < batch_size:
+        check_field = 'input' if get_inputs else 'output'
+        if data[check_field].shape[0] < batch_size:
             # Load next samples from the dataset
             self.load_partitions()
             if self.shuffle_dataset:
                 self.dataset.shuffle()
             self.dataset.current_sample = 0
             # Get the remaining samples
-            missing_samples = batch_size - data['input'].shape[0]
+            missing_samples = batch_size - data[check_field].shape[0]
             missing_data = self.get_data(get_inputs=get_inputs, get_outputs=get_outputs, batch_size=missing_samples)
             # Merge fields
-            for field in ['input', 'output']:
+            for field in fields:
                 data[field] = concatenate((data[field], missing_data[field]))
             if 'additional_fields' in data.keys():
                 for field in data['additional_fields'].keys():
