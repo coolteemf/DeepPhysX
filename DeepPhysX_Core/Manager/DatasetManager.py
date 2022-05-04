@@ -382,10 +382,10 @@ class DatasetManager:
                                      f"{len(self.list_partitions[field][self.modes[mode]])} partitions found.")
 
         # 4. Update Json file if not found
-        if not self.json_found:
+        if not self.json_found or self.empty_json_fields():
             self.search_partitions_info()
             self.update_json(update_partitions_lists=True)
-        if self.normalize:
+        if self.normalization_security or (self.normalize and self.json_dict['normalization'] == self.json_empty['normalization']):
             self.update_json(update_normalization=True)
 
         # 4. Load data from partitions
