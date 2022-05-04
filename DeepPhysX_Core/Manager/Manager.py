@@ -79,10 +79,8 @@ class Manager:
                                         session_dir=self.session_dir,
                                         new_session=new_session,
                                         training=train,
-                                        offline=offline,
                                         record_data=pipeline.record_data,
-                                        batch_size=batch_size,
-                                        num_partitions_to_read=num_partitions_to_read)
+                                        batch_size=batch_size)
         # Create the StatsManager for training
         self.stats_manager = StatsManager(manager=self,
                                           log_dir=osPathJoin(self.session_dir, 'stats/')) if train else None
