@@ -23,7 +23,7 @@ nb_batches = {'Training': 500, 'Validation': 50}
 batch_size = {'Training': 32, 'Validation': 10}
 
 
-def launch_data_generation(dataset_mode):
+def launch_data_generation(dataset_dir, dataset_mode):
 
     # Environment configuration
     environment_config = SofaEnvironmentConfig(environment_class=BeamTraining,
@@ -32,7 +32,9 @@ def launch_data_generation(dataset_mode):
                                                number_of_thread=4)
 
     # Dataset configuration
-    dataset_config = BaseDatasetConfig(partition_size=1, shuffle_dataset=True, use_mode=dataset_mode)
+    dataset_config = BaseDatasetConfig(dataset_dir=dataset_dir,
+                                       partition_size=1,
+                                       use_mode=dataset_mode)
 
     # Create DataGenerator
     data_generator = BaseDataGenerator(session_name='sessions/beam_data_user',
@@ -53,6 +55,10 @@ if __name__ == '__main__':
         print('Downloading Beam demo data...')
         download_all()
 
+    # Define dataset
+    user_session = 'sessions/beam_data_user'
+    dataset = user_session if os.path.exists(user_session) else None
+
     # Get dataset mode
     mode = 'Training'
     if len(sys.argv) > 1:
@@ -63,4 +69,4 @@ if __name__ == '__main__':
         mode = 'Validation'
 
     # Launch pipeline
-    launch_data_generation(mode)
+    launch_data_generation(dataset, mode)

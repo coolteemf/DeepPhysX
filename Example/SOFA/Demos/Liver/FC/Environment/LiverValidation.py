@@ -75,24 +75,15 @@ class LiverValidation(LiverTraining):
             self.root.fem.addObject('BoxROI', name='FixedBox', box=p_model.fixed_box, drawBoxes=True, drawSize=1.)
             self.root.fem.addObject('FixedConstraint', indices='@FixedBox.indices')
 
-            # Force grid
-            self.root.fem.addChild('forces')
-            self.root.fem.forces.addObject('SparseGridTopology', name='ForceGridTopo', src='@../../MeshCoarse',
-                                           n=p_grid.resolution)
-            self.f_force_grid_mo = self.root.fem.forces.addObject('MechanicalObject', name='ForceGridMO',
-                                                                  src='@ForceGridTopo')
-            self.root.fem.forces.addObject('BarycentricMapping', input='@../SparseGridMO', output='@./')
-
             # Surface
-            self.root.fem.forces.addChild('surface')
-            self.root.fem.forces.surface.addObject('TriangleSetTopologyContainer', name='SurfaceTopo',
-                                                   src='@../../../MeshCoarse')
-            self.f_surface_mo = self.root.fem.forces.surface.addObject('MechanicalObject', name='SurfaceMO',
-                                                                       src='@SurfaceTopo')
-            self.root.fem.forces.surface.addObject('BarycentricMapping', input='@../ForceGridMO', output='@./')
+            self.root.fem.addChild('surface')
+            self.root.fem.surface.addObject('TriangleSetTopologyContainer', name='SurfaceTopo', src='@../../MeshCoarse')
+            self.f_surface_mo = self.root.fem.surface.addObject('MechanicalObject', name='SurfaceMO',
+                                                                src='@SurfaceTopo')
+            self.root.fem.surface.addObject('BarycentricMapping', input='@../SparseGridMO', output='@./')
 
             # Forces
-            self.create_forces(self.root.fem.forces.surface)
+            self.create_forces(self.root.fem.surface)
 
             # Visual
             self.root.fem.addChild('visual')
@@ -118,8 +109,8 @@ class LiverValidation(LiverTraining):
 
         else:
             # Reset positions
-            self.f_surface_mo.position.value = self.f_surface_mo.rest_position.value
-            self.n_surface_mo.position.value = self.n_surface_mo.rest_position.value
+            self.f_sparse_grid_mo.position.value = self.f_sparse_grid_mo.rest_position.value
+            self.n_sparse_grid_mo.position.value = self.n_sparse_grid_mo.rest_position.value
 
     def onAnimateEndEvent(self, event):
         """
@@ -132,7 +123,7 @@ class LiverValidation(LiverTraining):
 
         # Manually update FEM model if sample from Dataset
         if self.sample_in is not None:
-            U = np.reshape(self.sample_out, self.data_size)
+            U = np.reshape(self.sample_out, self.output_size)
             self.f_sparse_grid_mo.position.value = self.f_sparse_grid_mo.rest_position.value + U
 
         # Send training data

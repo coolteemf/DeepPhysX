@@ -80,12 +80,12 @@ class BeamValidation(BeamTraining):
             self.root.fem.addObject('Hexa2QuadTopologicalMapping', input='@HexaTopo', output='@QuadTopo')
 
             # Fixed section
-            self.root.fem.addObject('BoxROI', name='FixedBox', box=p_grid.fixed_box, drawBoxes=True, drawSize=1.)
+            self.root.fem.addObject('BoxROI', name='FixedBox', box=p_grid.fixed_box.tolist(), drawBoxes=True,
+                                    drawSize=3.)
             self.root.fem.addObject('FixedConstraint', indices='@FixedBox.indices')
 
             # Forces
-            self.cff_box = self.root.fem.addObject('BoxROI', name='ForceBox', box=p_grid.size, drawBoxes=False,
-                                                   drawSize=1)
+            self.cff_box = self.root.fem.addObject('BoxROI', name='ForceBox', box=p_grid.size, drawBoxes=False)
             self.cff = self.root.fem.addObject('ConstantForceField', name='CFF', showArrowSize=0.1,
                                                force=[0., 0., 0.], indices=list(iter(range(p_grid.nb_nodes))))
 

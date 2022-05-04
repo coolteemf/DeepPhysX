@@ -15,7 +15,7 @@ import sys
 
 # Session related imports
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-from ArmadilloSofa import ArmadilloSofa, p_model, np
+from ArmadilloSofa import ArmadilloSofa, np
 
 
 class ArmadilloTraining(ArmadilloSofa):
@@ -39,21 +39,13 @@ class ArmadilloTraining(ArmadilloSofa):
                                environment_manager=environment_manager)
 
         self.create_model['nn'] = True
-        self.is_network = True
-
-    def recv_parameters(self, param_dict):
-        """
-        Exploit received parameters before scene creation.
-        """
-
-        self.is_network = param_dict['is_network'] if 'is_network' in param_dict else self.is_network
 
     def send_visualization(self):
         """
         Define and send the initial visualization data dictionary. Automatically called when creating Environment.
         """
 
-        # Add the FEM model
+        # Add the mesh model (object will have id = 0)
         self.factory.add_object(object_type='Mesh', data_dict={'positions': self.f_visu.position.value.copy(),
                                                                'cells': self.f_visu.triangles.value.copy(),
                                                                'at': self.instance_id,
@@ -65,14 +57,17 @@ class ArmadilloTraining(ArmadilloSofa):
         """
         Called within the Sofa pipeline at the end of the time step. Compute training data and apply prediction.
         """
+
         # Compute training data
         input_array = self.compute_input()
         output_array = self.compute_output()
-        self.update_visualization()
 
         # Send training data
         self.set_training_data(input_array=input_array,
                                output_array=output_array)
+
+        # Update visualization
+        self.update_visual()
 
     def compute_input(self):
         """
@@ -81,19 +76,18 @@ class ArmadilloTraining(ArmadilloSofa):
 
         # Init encoded force vector to zero
         F = np.zeros(self.data_size, dtype=np.double)
-
         # Encode each force field
         surface_mo = self.f_surface_mo if self.create_model['fem'] else self.n_surface_mo
         for force_field in self.cff:
             for i in force_field.indices.value:
-                # Get the lis of nodes composing a cell containing a point from the force field
+                # Get the list of nodes composing a cell containing a point from the force field
                 p = surface_mo.position.value[i]
                 cell = self.regular_grid.cell_index_containing(p)
                 # For each node of the cell, encode the force value
                 for node in self.regular_grid.node_indices_of(cell):
                     if node < self.nb_nodes_regular_grid and np.linalg.norm(F[node]) == 0.:
                         F[node] = force_field.force.value
-        return F.copy()
+        return F
 
     def compute_output(self):
         """
@@ -103,7 +97,7 @@ class ArmadilloTraining(ArmadilloSofa):
         # Write the position of each point from the sparse grid to the regular grid
         actual_positions_on_regular_grid = np.zeros(self.data_size, dtype=np.double)
         actual_positions_on_regular_grid[self.idx_sparse_to_regular] = self.f_sparse_grid_mo.position.array()
-        return np.subtract(actual_positions_on_regular_grid, self.regular_grid_rest_shape).copy()
+        return np.subtract(actual_positions_on_regular_grid, self.regular_grid_rest_shape)
 
     def apply_prediction(self, prediction):
         """
@@ -114,10 +108,13 @@ class ArmadilloTraining(ArmadilloSofa):
         U = np.reshape(prediction, self.data_size)
         U_sparse = U[self.idx_sparse_to_regular]
         self.n_sparse_grid_mo.position.value = self.n_sparse_grid_mo.rest_position.array() + U_sparse
-        self.update_visualization()
 
-    def update_visualization(self):
-        # Update visualization data
+    def update_visual(self):
+        """
+        Update the visualization data dict.
+        """
+
+        # Update mesh positions
         self.factory.update_object_dict(object_id=0, new_data_dict={'position': self.f_visu.position.value.copy()})
         # Send updated data
         self.update_visualisation(visu_dict=self.factory.updated_object_dict)

@@ -13,14 +13,13 @@ import sys
 import numpy as np
 from vedo import Mesh
 from math import pow
-from numpy import array, zeros, reshape, arange, mean
+from numpy import array, zeros, reshape, arange
 from numpy.random import choice, uniform
 from time import sleep
-import vedo
 
 # DeepPhysX related imports
 from DeepPhysX_Core.Environment.BaseEnvironment import BaseEnvironment
-from DeepPhysX_Core.Utils.barycentric_mapping import BarycentricMapping
+from DeepPhysX_Core.Utils.Visualizer.barycentric_mapping import BarycentricMapping
 
 # Session related imports
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))

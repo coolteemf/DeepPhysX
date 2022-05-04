@@ -1,7 +1,7 @@
 """
 dataset.py
-Run the pipeline DataGenerator to produce a Dataset only.
-Use 'python3 dataset.py -t' to produce training Dataset (default).
+Run the data generation session to produce a Dataset only.
+Use 'python3 dataset.py' to produce training Dataset (default).
 Use 'python3 dataset.py -v' to produce validation Dataset.
 """
 
@@ -19,21 +19,22 @@ from DeepPhysX_Sofa.Environment.SofaEnvironmentConfig import SofaEnvironmentConf
 from Environment.ArmadilloTraining import ArmadilloTraining
 
 # Dataset parameters
-nb_batches = {'Training': 500, 'Validation': 50}
+nb_batches = {'Training': 1000, 'Validation': 50}
 batch_size = {'Training': 32, 'Validation': 10}
 
 
-def launch_data_generation(dataset_mode):
+def launch_data_generation(dataset_dir, dataset_mode):
 
     # Environment configuration
     environment_config = SofaEnvironmentConfig(environment_class=ArmadilloTraining,
                                                visualizer=VedoVisualizer,
-                                               param_dict={'is_network': False},
                                                as_tcp_ip_client=True,
                                                number_of_thread=10)
 
     # Dataset configuration
-    dataset_config = BaseDatasetConfig(partition_size=1, shuffle_dataset=True, use_mode=dataset_mode)
+    dataset_config = BaseDatasetConfig(dataset_dir=dataset_dir,
+                                       partition_size=1,
+                                       use_mode=dataset_mode)
 
     # Create DataGenerator
     data_generator = BaseDataGenerator(session_name='sessions/armadillo_data_user',
@@ -51,16 +52,21 @@ if __name__ == '__main__':
     # Check data
     if not os.path.exists('Environment/models'):
         from download import download_all
-        print('Downloading Demo data...')
+        print('Downloading Armadillo demo data...')
         download_all()
+
+    # Define dataset
+    user_session = 'sessions/armadillo_data_user'
+    dataset = user_session if os.path.exists(user_session) else None
 
     # Get dataset mode
     mode = 'Training'
     if len(sys.argv) > 1:
-        if sys.argv[1] not in ['-t', '-v']:
-            print("Script option must be either '-t' for training dataset (default) or '-v' for validation dataset.")
+        if sys.argv[1] != '-v':
+            print("Script option must be '-v' to produce validation dataset."
+                  "By default, training dataset is produced.")
             quit(0)
-        mode = 'Validation' if sys.argv[1] == '-v' else 'Training'
+        mode = 'Validation'
 
     # Launch pipeline
-    launch_data_generation(mode)
+    launch_data_generation(dataset, mode)

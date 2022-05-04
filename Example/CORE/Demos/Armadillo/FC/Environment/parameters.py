@@ -15,13 +15,17 @@ from utils import find_extremities, get_nb_nodes
 
 # Model
 mesh = os.path.dirname(os.path.abspath(__file__)) + '/models/armadillo.obj'
+mesh_coarse = os.path.dirname(os.path.abspath(__file__)) + '/models/armadillo_coarse.obj'
 sparse_grid = os.path.dirname(os.path.abspath(__file__)) + '/models/sparse_grid.obj'
 scale = 1e-3
-nb_nodes = get_nb_nodes(sparse_grid)
+nb_nodes_mesh = get_nb_nodes(mesh_coarse)
+nb_nodes_grid = get_nb_nodes(sparse_grid)
 model = {'mesh': mesh,
+         'mesh_coarse': mesh_coarse,
          'sparse_grid': sparse_grid,
          'scale': scale,
-         'nb_nodes': nb_nodes}
+         'nb_nodes_mesh': nb_nodes_mesh,
+         'nb_nodes_grid': nb_nodes_grid}
 p_model = namedtuple('p_model', model)(**model)
 
 # Forces

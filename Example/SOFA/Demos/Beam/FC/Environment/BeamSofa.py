@@ -51,13 +51,11 @@ class BeamSofa(SofaEnvironment):
 
         # FEM objects
         self.solver = None
-        self.f_grid_topo = None
         self.f_grid_mo = None
         self.f_surface_topo = None
         self.f_visu = None
 
         # Network objects
-        self.n_grid_topo = None
         self.n_grid_mo = None
         self.n_surface_topo = None
         self.n_visu = None
@@ -103,9 +101,8 @@ class BeamSofa(SofaEnvironment):
                                 maximum_number_of_iterations=2000, residual_tolerance_threshold=1e-8, printLog=False)
 
         # Grid topology of the model
-        self.f_grid_topo = self.root.fem.addObject('RegularGridTopology', name='GridTopo', min=p_grid.min.tolist(),
-                                                   max=p_grid.max.tolist(), nx=p_grid.res[0], ny=p_grid.res[1],
-                                                   nz=p_grid.res[2])
+        self.root.fem.addObject('RegularGridTopology', name='GridTopo', min=p_grid.min.tolist(),
+                                max=p_grid.max.tolist(), nx=p_grid.res[0], ny=p_grid.res[1], nz=p_grid.res[2])
         self.f_grid_mo = self.root.fem.addObject('MechanicalObject', name='GridMO', src='@GridTopo', showObject=False)
         self.root.fem.addObject('HexahedronSetTopologyContainer', name='HexaTopo', src='@GridTopo')
         self.root.fem.addObject('HexahedronSetGeometryAlgorithms', template='Vec3d')
@@ -123,12 +120,11 @@ class BeamSofa(SofaEnvironment):
         self.root.fem.addObject('Hexa2QuadTopologicalMapping', input='@HexaTopo', output='@QuadTopo')
 
         # Fixed section
-        self.root.fem.addObject('BoxROI', name='FixedBox', box=p_grid.fixed_box.tolist(), drawBoxes=True, drawSize=1.)
+        self.root.fem.addObject('BoxROI', name='FixedBox', box=p_grid.fixed_box.tolist(), drawBoxes=True, drawSize=3.)
         self.root.fem.addObject('FixedConstraint', indices='@FixedBox.indices')
 
         # Forces
-        self.cff_box = self.root.fem.addObject('BoxROI', name='ForceBox', box=p_grid.size, drawBoxes=False,
-                                               drawSize=1)
+        self.cff_box = self.root.fem.addObject('BoxROI', name='ForceBox', box=p_grid.size, drawBoxes=False)
         self.cff = self.root.fem.addObject('ConstantForceField', name='CFF', showArrowSize=0.1,
                                            force=[0., 0., 0.], indices=list(iter(range(p_grid.nb_nodes))))
 
@@ -150,9 +146,8 @@ class BeamSofa(SofaEnvironment):
         self.root.nn.addObject('ConjugateGradientSolver', name='StaticSolver', maximum_number_of_iterations=0)
 
         # Grid topology of the model
-        self.n_grid_topo = self.root.nn.addObject('RegularGridTopology', name='GridTopo', min=p_grid.min.tolist(),
-                                                  max=p_grid.max.tolist(), nx=p_grid.res[0], ny=p_grid.res[1],
-                                                  nz=p_grid.res[2])
+        self.root.nn.addObject('RegularGridTopology', name='GridTopo', min=p_grid.min.tolist(),
+                               max=p_grid.max.tolist(), nx=p_grid.res[0], ny=p_grid.res[1], nz=p_grid.res[2])
         self.n_grid_mo = self.root.nn.addObject('MechanicalObject', name='GridMO', src='@GridTopo', showObject=False)
         self.root.nn.addObject('HexahedronSetTopologyContainer', name='HexaTopo', src='@GridTopo')
         self.root.nn.addObject('HexahedronSetGeometryAlgorithms', template='Vec3d')
@@ -166,20 +161,19 @@ class BeamSofa(SofaEnvironment):
 
         # Fixed section
         if not self.create_model['fem']:
-            self.root.nn.addObject('BoxROI', name='FixedBox', box=p_grid.fixed_box.tolist(), drawBoxes=False,
-                                   drawSize=1.)
+            self.root.nn.addObject('BoxROI', name='FixedBox', box=p_grid.fixed_box.tolist(), drawBoxes=True,
+                                   drawSize=3.)
             self.root.nn.addObject('FixedConstraint', indices='@FixedBox.indices')
 
         # Forces
         if not self.create_model['fem']:
-            self.cff_box = self.root.nn.addObject('BoxROI', name='ForceBox', box=p_grid.size, drawBoxes=False,
-                                                  drawSize=1)
+            self.cff_box = self.root.nn.addObject('BoxROI', name='ForceBox', box=p_grid.size, drawBoxes=False)
             self.cff = self.root.nn.addObject('ConstantForceField', name='CFF', showArrowSize=0.1,
                                               force=[0., 0., 0.], indices=list(iter(range(p_grid.nb_nodes))))
 
         # Visual
         self.root.nn.addChild('visual')
-        self.n_visu = self.root.nn.visual.addObject('OglModel', src='@../GridTopo', color='red')
+        self.n_visu = self.root.nn.visual.addObject('OglModel', src='@../GridTopo', color=(1, 0.6, 0.1, 1))
         self.root.nn.visual.addObject('BarycentricMapping', input='@../GridMO', output='@./')
 
     def onSimulationInitDoneEvent(self, event):
@@ -203,28 +197,25 @@ class BeamSofa(SofaEnvironment):
             self.n_grid_mo.position.value = self.n_grid_mo.rest_position.value
 
         force_node = self.root.fem if self.create_model['fem'] else self.root.nn
-        indices = []
 
-        # Create a random non-empty box ROI, select nodes of the surface
-        while len(indices) == 0:
+        # Define random box
+        side = np.random.randint(0, 6)
+        x_min = p_grid.min[0] if side == 0 else np.random.randint(p_grid.min[0], p_grid.max[0] - 10)
+        x_max = p_grid.max[0] if side == 1 else np.random.randint(x_min + 10, p_grid.max[0] + 1)
+        y_min = p_grid.min[1] if side == 2 else np.random.randint(p_grid.min[1], p_grid.max[1] - 10)
+        y_max = p_grid.max[1] if side == 3 else np.random.randint(y_min + 10, p_grid.max[1] + 1)
+        z_min = p_grid.min[2] if side == 4 else np.random.randint(p_grid.min[2], p_grid.max[2] - 10)
+        z_max = p_grid.max[2] if side == 5 else np.random.randint(z_min + 10, p_grid.max[2] + 1)
 
-            # Define random box
-            x_min = np.random.randint(p_grid.min[0], p_grid.max[0] - 10)
-            x_max = np.random.randint(x_min + 10, p_grid.max[0])
-            y_min = np.random.randint(p_grid.min[1], p_grid.max[1] - 10)
-            y_max = np.random.randint(y_min + 10, p_grid.max[1])
-            z_min = np.random.randint(p_grid.min[2], p_grid.max[2] - 10)
-            z_max = np.random.randint(z_min + 10, p_grid.max[2])
+        # Set the new bounding box
+        force_node.removeObject(self.cff_box)
+        self.cff_box = force_node.addObject('BoxROI', name='ForceBox', drawBoxes=False, drawSize=1,
+                                            box=[x_min, y_min, z_min, x_max, y_max, z_max])
+        self.cff_box.init()
 
-            # Set the new bounding box
-            force_node.removeObject(self.cff_box)
-            self.cff_box = force_node.addObject('BoxROI', name='ForceBox', drawBoxes=False, drawSize=1,
-                                                box=[x_min, y_min, z_min, x_max, y_max, z_max])
-            self.cff_box.init()
-
-            # Get the intersection with the surface
-            indices = list(self.cff_box.indices.value)
-            indices = list(set(indices).intersection(set(self.idx_surface)))
+        # Get the intersection with the surface
+        indices = list(self.cff_box.indices.value)
+        indices = list(set(indices).intersection(set(self.idx_surface)))
 
         # Create a random force vector
         F = np.random.uniform(low=-1, high=1, size=(3,))

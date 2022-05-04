@@ -57,7 +57,7 @@ class LiverPrediction(LiverTraining):
 
         # Receive visualizer option (either True for Vedo, False for SOFA GUI)
         self.visualizer = param_dict['visualizer'] if 'visualizer' in param_dict else self.visualizer
-        step = 0.1 if self.visualizer else 0.02
+        step = 0.1 if self.visualizer else 0.01
         self.amplitudes = np.concatenate((np.arange(0, 1, step),
                                           np.arange(1, -1, -step),
                                           np.arange(-1, 0, step)))
@@ -69,11 +69,11 @@ class LiverPrediction(LiverTraining):
 
         # Nothing to visualize if the predictions are run in SOFA GUI.
         if self.visualizer:
-            # Add the FEM model (object will have id = 0)
+            # Add the mesh model (object will have id = 0)
             self.factory.add_object(object_type='Mesh', data_dict={'positions': self.n_visu.position.value.copy(),
                                                                    'cells': self.n_visu.triangles.value.copy(),
                                                                    'at': self.instance_id,
-                                                                   'c': 'green'})
+                                                                   'c': 'orange'})
 
             # Arrows representing the force fields (object will have id = 1)
             self.factory.add_object(object_type='Arrows', data_dict={'positions': p_model.fixed_point,
@@ -174,8 +174,10 @@ class LiverPrediction(LiverTraining):
         Update the visualization data dict.
         """
 
-        # Update visualization data
+        # Update mesh positions
         self.factory.update_object_dict(object_id=0, new_data_dict={'position': self.n_visu.position.value.copy()})
+
+        # Update force fields
         position, vector = [], []
         for cff in self.force_field:
             position += list(self.n_surface_mo.position.value[cff.indices.value])

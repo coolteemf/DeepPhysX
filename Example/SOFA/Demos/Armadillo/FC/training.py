@@ -36,14 +36,15 @@ def launch_trainer(dataset_dir, nb_env):
 
     # Get the data size
     env_instance = env_config.create_environment(None)
-    data_size = env_instance.data_size
+    input_size, output_size = env_instance.input_size, env_instance.output_size
     env_instance.close()
     del env_instance
 
     # FC config
-    nb_hidden_layers = 2
-    nb_neurons = np.multiply(*data_size)
-    layers_dim = [nb_neurons] + [nb_neurons for _ in range(nb_hidden_layers + 1)] + [nb_neurons]
+    nb_hidden_layers = 3
+    nb_neurons = np.multiply(*input_size)
+    nb_final_neurons = np.multiply(*output_size)
+    layers_dim = [nb_neurons] + [nb_neurons for _ in range(nb_hidden_layers)] + [nb_final_neurons]
     net_config = FCConfig(network_name='armadillo_FC',
                           loss=torch.nn.MSELoss,
                           lr=lr,

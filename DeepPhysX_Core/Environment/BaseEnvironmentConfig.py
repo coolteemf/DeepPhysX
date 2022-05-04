@@ -3,7 +3,7 @@ from os import cpu_count
 from os.path import join, dirname
 from threading import Thread
 from subprocess import run as subprocessRun
-from sys import modules
+from sys import modules, executable
 
 from DeepPhysX_Core.AsyncSocket.TcpIpServer import TcpIpServer
 from DeepPhysX_Core.Environment.BaseEnvironment import BaseEnvironment
@@ -152,7 +152,7 @@ class BaseEnvironmentConfig:
 
         script = join(dirname(modules[BaseEnvironment.__module__].__file__), 'launcherBaseEnvironment.py')
         # Usage: python3 script.py <file_path> <environment_class> <ip_address> <port> <idx> <nb_threads>"
-        subprocessRun(['python3',
+        subprocessRun([executable,
                        script,
                        self.environment_file,
                        self.environment_class.__name__,

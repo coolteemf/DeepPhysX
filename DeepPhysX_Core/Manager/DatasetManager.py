@@ -66,6 +66,7 @@ class DatasetManager:
         self.first_add: bool = True
         self.__writing: bool = False
         self.normalize: bool = dataset_config.normalize
+        self.normalization_security = dataset_config.recompute_normalization
         self.offline = offline
 
         # Dataset modes

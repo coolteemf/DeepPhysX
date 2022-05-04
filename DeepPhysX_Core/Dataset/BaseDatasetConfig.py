@@ -16,6 +16,7 @@ class BaseDatasetConfig:
     :param Optional[str] use_mode: Specify the Dataset mode that should be used between 'Training', 'Validation' and
                                    'Running'
     :param bool normalize: If True, normalizing dataset using standard score
+    :param bool recompute_normalization: If True, triggers a normalization coefficients computation
     """
 
     def __init__(self,
@@ -24,7 +25,8 @@ class BaseDatasetConfig:
                  partition_size: float = 1.,
                  shuffle_dataset: bool = True,
                  use_mode: Optional[str] = None,
-                 normalize: bool = True):
+                 normalize: bool = True,
+                 recompute_normalization: bool = False):
 
         self.name: str = self.__class__.__name__
 
@@ -59,6 +61,7 @@ class BaseDatasetConfig:
         self.shuffle_dataset: bool = shuffle_dataset
         self.use_mode: Optional[str] = use_mode
         self.normalize: bool = normalize
+        self.recompute_normalization = recompute_normalization
 
     def make_config(self, **kwargs) -> namedtuple:
         """

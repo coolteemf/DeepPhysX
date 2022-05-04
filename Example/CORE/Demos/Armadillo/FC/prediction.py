@@ -26,21 +26,21 @@ def launch_runner():
     env_config = BaseEnvironmentConfig(environment_class=Armadillo,
                                        visualizer=VedoVisualizer,
                                        as_tcp_ip_client=False,
-                                       param_dict={'detailed': True,
-                                                   'pattern': True})
+                                       param_dict={'compute_sample': True})
 
-    # UNet config
-    nb_hidden_layers = 2
-    nb_neurons = p_model.nb_nodes * 3
-    layers_dim = [nb_neurons] + [nb_neurons for _ in range(nb_hidden_layers + 1)] + [nb_neurons]
+    # FC config
+    nb_hidden_layers = 3
+    nb_neurons = p_model.nb_nodes_mesh * 3
+    nb_final_neurons = p_model.nb_nodes_grid * 3
+    layers_dim = [nb_neurons] + [nb_neurons for _ in range(nb_hidden_layers)] + [nb_final_neurons]
     net_config = FCConfig(network_name='armadillo_FC',
                           dim_output=3,
                           dim_layers=layers_dim,
                           biases=True)
 
     # Dataset config
-    dataset_config = BaseDatasetConfig(normalize=True,
-                                       dataset_dir='sessions/armadillo_data_dpx',
+    dataset_config = BaseDatasetConfig(dataset_dir='sessions/armadillo_data_dpx',
+                                       normalize=True,
                                        use_mode='Validation')
 
     # Runner
