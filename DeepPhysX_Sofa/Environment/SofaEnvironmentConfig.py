@@ -1,6 +1,6 @@
 from typing import Type, Optional, Any, Dict
 from os.path import join, dirname
-from sys import modules
+from sys import modules, executable
 from subprocess import call as subprocesscall
 
 import Sofa
@@ -79,7 +79,7 @@ class SofaEnvironmentConfig(BaseEnvironmentConfig):
 
         script = join(dirname(modules[SofaEnvironment.__module__].__file__), 'launcherSofaEnvironment.py')
         # Usage: python3 script.py <file_path> <environment_class> <ip_address> <port> <idx> <nb_threads>"
-        subprocesscall(['python3',
+        subprocesscall([executable,
                         script,
                         self.environment_file,
                         self.environment_class.__name__,

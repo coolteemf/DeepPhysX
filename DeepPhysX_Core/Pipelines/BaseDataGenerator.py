@@ -1,3 +1,4 @@
+import os.path
 from os.path import join as osPathJoin
 from os.path import basename
 from sys import stdout
@@ -41,12 +42,22 @@ class BaseDataGenerator(BasePipeline):
                               pipeline='dataset')
 
         # Init session repository
-        if session_dir is None:
-            # Create manager directory from the session name
-            self.session_dir: str = create_dir(osPathJoin(get_first_caller(), session_name), dir_name=session_name)
+        dataset_dir = dataset_config.dataset_dir
+        if dataset_dir is not None:
+            if dataset_dir[-1] == "/":
+                dataset_dir = dataset_dir[:-1]
+            if dataset_dir[-8:] == "/dataset":
+                dataset_dir = dataset_dir[:-8]
+            if osPathJoin(get_first_caller(), session_name) != osPathJoin(get_first_caller(), dataset_dir):
+                dataset_dir = None
+            elif not os.path.exists(osPathJoin(get_first_caller(), dataset_dir)):
+                dataset_dir = None
+        if dataset_dir is None:
+            session_dir = create_dir(osPathJoin(get_first_caller(), session_name), dir_name=session_name)
+            session_name = (session_name if session_name is not None else basename(session_dir)).split("/")[-1]
         else:
-            self.session_dir = session_dir
-        session_name = basename(self.session_dir).split("/")[-1]
+            session_dir = osPathJoin(get_first_caller(), dataset_dir)
+            session_name = (session_name if session_name is not None else basename(session_dir)).split("/")[-1]
 
         # Create a DataManager directly
         self.data_manager = DataManager(manager=self,

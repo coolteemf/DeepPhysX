@@ -68,6 +68,7 @@ class DatasetManager:
         self.first_add: bool = True
         self.__writing: bool = False
         self.normalize: bool = dataset_config.normalize
+        self.normalization_security = dataset_config.recompute_normalization
         self.offline = offline
 
         # Dataset modes
@@ -125,8 +126,13 @@ class DatasetManager:
                     if dataset_dir[-8:] != "dataset/":
                         dataset_dir += "dataset/"
                     self.dataset_dir = dataset_dir
-                    symlink(abspath(self.dataset_dir), osPathJoin(self.session_dir, 'dataset'))
-                    self.load_directory()
+                    if abspath(self.dataset_dir) != osPathJoin(self.session_dir, 'dataset'):
+                        symlink(abspath(self.dataset_dir), osPathJoin(self.session_dir, 'dataset'))
+                        self.load_directory()
+                    # Special case: adding data in existing Dataset with DataGeneration
+                    else:
+                        self.load_directory(load_data=False)
+                        self.__new_dataset = True
             # Existing training session
             else:
                 self.dataset_dir = osPathJoin(self.session_dir, 'dataset/')
@@ -381,9 +387,12 @@ class DatasetManager:
         # 4. Update Json file if not found
         if not self.json_found:
             self.search_partitions_info()
-            self.update_json(update_partitions_lists=True, update_normalization=self.normalize)
+            self.update_json(update_partitions_lists=True)
+        if self.normalization_security:
+            self.update_json(update_normalization=True)
 
         # 4. Load data from partitions
+        self.idx_partitions = [len(partitions_list) for partitions_list in self.list_partitions['input']]
         if load_data:
             self.idx_partitions = [len(partitions_list) for partitions_list in self.list_partitions['input']]
             self.load_partitions(shuffle_only=False)

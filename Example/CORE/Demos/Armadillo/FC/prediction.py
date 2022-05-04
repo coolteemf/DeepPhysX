@@ -16,8 +16,8 @@ from DeepPhysX_PyTorch.FC.FCConfig import FCConfig
 
 # Session related imports
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-from Example.CORE.Demos.Armadillo.FC.Environment import Armadillo
-from Example.CORE.Demos.Armadillo.FC.Environment.parameters import p_model
+from Environment.Armadillo import Armadillo
+from Environment.parameters import p_model
 
 
 def launch_runner():
@@ -26,27 +26,29 @@ def launch_runner():
     env_config = BaseEnvironmentConfig(environment_class=Armadillo,
                                        visualizer=VedoVisualizer,
                                        as_tcp_ip_client=False,
-                                       param_dict={'detailed': True,
-                                                   'pattern': True})
+                                       param_dict={'compute_sample': True})
 
-    # UNet config
-    nb_hidden_layers = 2
-    nb_neurons = p_model.nb_nodes * 3
-    layers_dim = [nb_neurons] + [nb_neurons for _ in range(nb_hidden_layers + 1)] + [nb_neurons]
+    # FC config
+    nb_hidden_layers = 3
+    nb_neurons = p_model.nb_nodes_mesh * 3
+    nb_final_neurons = p_model.nb_nodes_grid * 3
+    layers_dim = [nb_neurons] + [nb_neurons for _ in range(nb_hidden_layers)] + [nb_final_neurons]
     net_config = FCConfig(network_name='armadillo_FC',
                           dim_output=3,
                           dim_layers=layers_dim,
                           biases=True)
 
     # Dataset config
-    dataset_config = BaseDatasetConfig(normalize=True)
+    dataset_config = BaseDatasetConfig(dataset_dir='sessions/armadillo_data_dpx',
+                                       normalize=True,
+                                       use_mode='Validation')
 
     # Runner
     runner = BaseRunner(session_dir="sessions/armadillo_training_dpx",
                         dataset_config=dataset_config,
                         environment_config=env_config,
                         network_config=net_config,
-                        nb_steps=0)
+                        nb_steps=100)
     runner.execute()
     runner.close()
 

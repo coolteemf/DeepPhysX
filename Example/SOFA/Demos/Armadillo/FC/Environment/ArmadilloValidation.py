@@ -48,7 +48,7 @@ class ArmadilloValidation(ArmadilloTraining):
         Exploit received parameters before scene creation. Automatically called when creating Environment.
         """
 
-        # Compute samples in no Dataset is used
+        # Compute samples if no Dataset is used
         self.compute_sample = param_dict['compute_sample'] if 'compute_sample' in param_dict else self.compute_sample
 
     def createFEM(self):
@@ -60,49 +60,39 @@ class ArmadilloValidation(ArmadilloTraining):
         if self.compute_sample:
             ArmadilloTraining.createFEM(self)
 
-        # To read samples from Dataset, no need for physic laws nor solvers
+        # To read Dataset samples, no need for physical laws or solvers
         else:
-            # Create child node
+            # Create FEM node
             self.root.addChild('fem')
 
             # Grid topology of the model
             self.root.fem.addObject('SparseGridTopology', name='SparseGridTopo', src='@../MeshCoarse',
                                     n=p_grid.resolution)
             self.f_sparse_grid_mo = self.root.fem.addObject('MechanicalObject', name='SparseGridMO',
-                                                            src='@SparseGridTopo',
-                                                            showObject=False)
+                                                            src='@SparseGridTopo')
 
             # Fixed section
-            self.root.fem.addObject('BoxROI', name='FixedBox', box=p_model.fixed_box, drawBoxes=True, drawSize=1.)
+            self.root.fem.addObject('BoxROI', name='FixedBox', box=p_model.fixed_box, drawBoxes=True)
             self.root.fem.addObject('FixedConstraint', indices='@FixedBox.indices')
 
-            # Force grid
-            self.root.fem.addChild('forces')
-            self.root.fem.forces.addObject('SparseGridTopology', name='ForceGridTopo', src='@../../MeshCoarse',
-                                           n=p_grid.resolution)
-            self.f_force_grid_mo = self.root.fem.forces.addObject('MechanicalObject', name='ForceGridMO',
-                                                                  src='@ForceGridTopo')
-            self.root.fem.forces.addObject('BarycentricMapping', input='@../SparseGridMO', output='@./')
-
             # Surface
-            self.root.fem.forces.addChild('surface')
-            self.root.fem.forces.surface.addObject('TriangleSetTopologyContainer', name='SurfaceTopo',
-                                                   src='@../../../MeshCoarse')
-            self.f_surface_mo = self.root.fem.forces.surface.addObject('MechanicalObject', name='SurfaceMO',
-                                                                       src='@SurfaceTopo')
-            self.root.fem.forces.surface.addObject('BarycentricMapping', input='@../ForceGridMO', output='@./')
+            self.root.fem.addChild('surface')
+            self.root.fem.surface.addObject('TriangleSetTopologyContainer', name='SurfaceTopo', src='@../../MeshCoarse')
+            self.f_surface_mo = self.root.fem.surface.addObject('MechanicalObject', name='SurfaceMO',
+                                                                src='@SurfaceTopo')
+            self.root.fem.surface.addObject('BarycentricMapping', input='@../SparseGridMO', output='@./')
 
             # Forces
-            self.create_forces(self.root.fem.forces.surface)
+            self.create_forces(self.root.fem.surface)
 
             # Visual
             self.root.fem.addChild('visual')
-            self.f_visu = self.root.fem.visual.addObject('OglModel', name="OGL", src='@../../Mesh', color='green')
+            self.f_visu = self.root.fem.visual.addObject('OglModel', src='@../../Mesh', color='green')
             self.root.fem.visual.addObject('BarycentricMapping', input='@../SparseGridMO', output='@./')
 
     def send_visualization(self):
         """
-        Define and send the initial visualization data dictionary. Automatically called whn creating Environment.
+        Define and send the initial visualization data dictionary. Automatically called when creating Environment.
         """
 
         # Nothing to visualize since the predictions are run in SOFA GUI.
@@ -124,7 +114,7 @@ class ArmadilloValidation(ArmadilloTraining):
 
     def onAnimateEndEvent(self, event):
         """
-        Called within the Sofa pipeline at the end of the time step. Compute training data and apply prediction.
+        Called within the Sofa pipeline at the end of the time step. Compute training data.
         """
 
         # Compute training data
@@ -133,7 +123,7 @@ class ArmadilloValidation(ArmadilloTraining):
 
         # Manually update FEM model if sample from Dataset
         if self.sample_in is not None:
-            U = np.reshape(self.sample_out, self.data_size)
+            U = np.reshape(self.sample_out, self.output_size)
             self.f_sparse_grid_mo.position.value = self.f_sparse_grid_mo.rest_position.value + U
 
         # Send training data

@@ -25,6 +25,7 @@ from Environment.ArmadilloPrediction import ArmadilloPrediction, np
 
 
 def create_runner(visualizer=False):
+
     # Environment config
     env_config = SofaEnvironmentConfig(environment_class=ArmadilloPrediction,
                                        param_dict={'visualizer': visualizer},
@@ -33,14 +34,15 @@ def create_runner(visualizer=False):
 
     # Get the data size
     env_instance = env_config.create_environment(None)
-    data_size = env_instance.data_size
+    input_size, output_size = env_instance.input_size, env_instance.output_size
     env_instance.close()
     del env_instance
 
     # FC config
-    nb_hidden_layers = 2
-    nb_neurons = np.multiply(*data_size)
-    layers_dim = [nb_neurons] + [nb_neurons for _ in range(nb_hidden_layers + 1)] + [nb_neurons]
+    nb_hidden_layers = 3
+    nb_neurons = np.multiply(*input_size)
+    nb_final_neurons = np.multiply(*output_size)
+    layers_dim = [nb_neurons] + [nb_neurons for _ in range(nb_hidden_layers)] + [nb_final_neurons]
     net_config = FCConfig(network_name='armadillo_FC',
                           dim_output=3,
                           dim_layers=layers_dim,
@@ -75,14 +77,12 @@ if __name__ == '__main__':
     # Check data
     if not os.path.exists('Environment/models'):
         from download import download_all
-
-        print('Downloading Demo data...')
+        print('Downloading Armadillo demo data...')
         download_all()
 
     # Get option
     visualizer = False
     if len(sys.argv) > 1:
-
         # Check script option
         if sys.argv[1] != '-v':
             print("Script option must be '-v' to visualize predictions in a Vedo window."
@@ -91,6 +91,8 @@ if __name__ == '__main__':
         visualizer = True
 
     if visualizer:
+
+        # Create and launch runner
         runner = create_runner(visualizer)
         runner.execute()
         runner.close()

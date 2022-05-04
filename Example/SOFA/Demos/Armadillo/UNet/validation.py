@@ -1,8 +1,8 @@
 """
 validation.py
 Launch the prediction session in a SOFA GUI. Compare the two models.
-Use 'python3 validation.py -e' to run the pipeline with newly created samples in Environment (default).
-Use 'python3 validation.py -d' to run the pipeline with existing samples from a Dataset.
+Use 'python3 validation.py' to run the pipeline with existing samples from a Dataset (default).
+Use 'python3 validation.py -e' to run the pipeline with newly created samples in Environment.
 """
 
 # Python related imports
@@ -20,7 +20,7 @@ from DeepPhysX_Sofa.Environment.SofaEnvironmentConfig import SofaEnvironmentConf
 
 # Session related imports
 from Environment.ArmadilloValidation import ArmadilloValidation
-import Environment.parameters as parameters
+from Environment.parameters import grid_resolution
 
 
 def create_runner(dataset_dir):
@@ -32,7 +32,7 @@ def create_runner(dataset_dir):
 
     # UNet config
     net_config = UNetConfig(network_name='armadillo_UNet',
-                            input_size=parameters.grid_resolution,
+                            input_size=grid_resolution,
                             nb_dims=3,
                             nb_input_channels=3,
                             nb_first_layer_channels=128,
@@ -67,7 +67,7 @@ if __name__ == '__main__':
     # Check data
     if not os.path.exists('Environment/models'):
         from download import download_all
-        print('Downloading Demo data...')
+        print('Downloading Armadillo demo data...')
         download_all()
 
     # Define dataset

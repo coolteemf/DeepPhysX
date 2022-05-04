@@ -1,8 +1,8 @@
 """
 training.py
 Launch the training session with a VedoVisualizer.
-Use 'python3 training.py <nb_thread>' to run the pipeline with newly created samples in Environment (default).
-Use 'python3 training.py -d' to run the pipeline with existing samples from a Dataset.
+Use 'python3 training.py' to run the pipeline with existing samples from a Dataset (default).
+Use 'python3 training.py <nb_thread>' to run the pipeline with newly created samples in Environment.
 """
 
 # Python related imports
@@ -19,7 +19,7 @@ from DeepPhysX_Sofa.Environment.SofaEnvironmentConfig import SofaEnvironmentConf
 
 # Working session imports
 from Environment.ArmadilloTraining import ArmadilloTraining
-import Environment.parameters as parameters
+from Environment.parameters import grid_resolution
 
 # Training parameters
 nb_epochs = 200
@@ -39,7 +39,7 @@ def launch_trainer(dataset_dir, nb_env):
                             loss=torch.nn.MSELoss,
                             lr=lr,
                             optimizer=torch.optim.Adam,
-                            input_size=parameters.grid_resolution,
+                            input_size=grid_resolution,
                             nb_dims=3,
                             nb_input_channels=3,
                             nb_first_layer_channels=128,
@@ -73,8 +73,7 @@ if __name__ == '__main__':
     # Check data
     if not os.path.exists('Environment/models'):
         from download import download_all
-
-        print('Downloading Demo data...')
+        print('Downloading Armadillo demo data...')
         download_all()
 
     # Define dataset
