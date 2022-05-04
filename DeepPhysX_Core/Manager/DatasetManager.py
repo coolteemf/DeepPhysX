@@ -388,7 +388,7 @@ class DatasetManager:
         if not self.json_found:
             self.search_partitions_info()
             self.update_json(update_partitions_lists=True)
-        if self.normalization_security:
+        if self.normalization_security or (self.normalize and self.json_dict['normalization'] == self.json_empty['normalization']):
             self.update_json(update_normalization=True)
 
         # 4. Load data from partitions
@@ -666,7 +666,7 @@ class DatasetManager:
         :param str field: Field for which normalization coefficients should be computed
         :return: List containing normalization coefficients (mean, standard deviation)
         """
-        #TODO check this computation
+
         partitions_content = [0., 0.]
         for i, partition in enumerate(self.list_partitions[field][0]):
             loaded = load(self.dataset_dir + partition).astype(float64)
