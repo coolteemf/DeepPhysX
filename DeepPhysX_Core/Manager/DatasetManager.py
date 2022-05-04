@@ -544,8 +544,6 @@ class DatasetManager:
     def read_multiple_partitions(self) -> None:
         """
         | Read data in a list of partitions and store the index of the last read partition.
-
-        :param int n: Number of partitions to read. Default -1 to read all remaining partitions in self.mul_part_list_path.
         """
         if self.num_partitions_to_read == -1:
             max_part_idx = len(self.mul_part_list_path)
