@@ -1,7 +1,7 @@
 from typing import List, Any, Dict, Union
 from os.path import join as osPathJoin
 from os import makedirs
-from vedo import Plotter
+from vedo import Plotter, Text2D
 
 from DeepPhysX_Core.Visualizer.VedoObjects import VedoObjects, ObjectDescription
 
@@ -25,6 +25,7 @@ class VedoVisualizer:
                                                           'sharecam': False,
                                                           'interactive': True}}
         self.objects_rendered_in: Dict[str, (int, int)] = {}
+        self.info = Text2D("Press 'q' to\nstart session")
 
         # Wrong samples parameters
         self.folder_path: str = ''
@@ -127,6 +128,7 @@ class VedoVisualizer:
                                                          axes=viewer_id,
                                                          sharecam=self.viewers[viewer_id]['sharecam'],
                                                          interactive=self.viewers[viewer_id]['interactive'])
+            self.viewers[viewer_id]['plotter'].add(self.info)
 
             # self.viewers[viewer_id]['instances'] is a list containing lists of instances
             # Each sublist contains all instances present in a window hence, each sublist has it own "at"
@@ -139,7 +141,8 @@ class VedoVisualizer:
                     self.objects_rendered_in[f'{scene_id}_{object_in_scene_id}'] = (viewer_id, at)
 
             # Render viewer
-            self.viewers[viewer_id]['plotter'].show(interactive=True)
+            self.viewers[viewer_id]['plotter'].show().interactive()
+            self.viewers[viewer_id]['plotter'].remove(self.info)
 
     def render(self) -> None:
         """
