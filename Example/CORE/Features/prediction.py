@@ -34,7 +34,7 @@ def launch_prediction(session_path):
                               dim_output=dimension)
     # Dataset configuration with the path to the existing Dataset
     # Create DataGenerator
-    trainer = BaseRunner(session_dir=os.path.join(os.getcwd(), 'sessions/online_training'),
+    trainer = BaseRunner(session_dir=os.path.join(os.getcwd(), session_path),
                          environment_config=environment_config,
                          network_config=network_config)
     # Launch the training session

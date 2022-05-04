@@ -6,6 +6,11 @@ from numpy import ndarray
 
 from DeepPhysX_Core.AsyncSocket.BytesConverter import BytesConverter
 
+import sys
+if sys.version_info[0] == 3 and sys.version_info[1] >= 8 and sys.platform.startswith('win'):
+    import asyncio
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+
 Convertible = Union[type(None), bytes, str, bool, int, float, List, ndarray]
 
 
