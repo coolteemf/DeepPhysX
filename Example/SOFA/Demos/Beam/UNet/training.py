@@ -18,28 +18,29 @@ from DeepPhysX_PyTorch.UNet.UNetConfig import UNetConfig
 from DeepPhysX_Sofa.Environment.SofaEnvironmentConfig import SofaEnvironmentConfig
 
 # Working session imports
-from Environment.LiverTraining import LiverTraining
+from Environment.BeamTraining import BeamTraining
 from Environment.parameters import grid_resolution
 
 # Training parameters
-nb_epochs = 200
+nb_epochs = 400
 nb_batch = 500
 batch_size = 32
 lr = 1e-5
 
 
 def launch_trainer(dataset_dir, nb_env):
+
     # Environment config
-    env_config = SofaEnvironmentConfig(environment_class=LiverTraining,
+    env_config = SofaEnvironmentConfig(environment_class=BeamTraining,
                                        visualizer=VedoVisualizer,
                                        number_of_thread=nb_env)
 
     # UNet config
-    net_config = UNetConfig(network_name='liver_UNet',
+    net_config = UNetConfig(network_name='beam_UNet',
                             loss=torch.nn.MSELoss,
                             lr=lr,
                             optimizer=torch.optim.Adam,
-                            input_size=grid_resolution,
+                            input_size=grid_resolution.tolist(),
                             nb_dims=3,
                             nb_input_channels=3,
                             nb_first_layer_channels=128,
@@ -47,7 +48,7 @@ def launch_trainer(dataset_dir, nb_env):
                             nb_steps=3,
                             two_sublayers=True,
                             border_mode='same',
-                            skip_merge=False,)
+                            skip_merge=False)
 
     # Dataset config
     dataset_config = BaseDatasetConfig(partition_size=1,
@@ -56,7 +57,7 @@ def launch_trainer(dataset_dir, nb_env):
                                        dataset_dir=dataset_dir)
 
     # Trainer
-    trainer = BaseTrainer(session_name="sessions/liver_training_user",
+    trainer = BaseTrainer(session_name="sessions/beam_training_user",
                           dataset_config=dataset_config,
                           environment_config=env_config,
                           network_config=net_config,
@@ -71,14 +72,14 @@ def launch_trainer(dataset_dir, nb_env):
 if __name__ == '__main__':
 
     # Check data
-    if not os.path.exists('Environment/models'):
+    if not os.path.exists('sessions/beam_data_dpx'):
         from download import download_all
-        print('Downloading Liver demo data...')
+        print('Downloading Beam demo data...')
         download_all()
 
     # Define dataset
-    dpx_session = 'sessions/liver_data_dpx'
-    user_session = 'sessions/liver_data_user'
+    dpx_session = 'sessions/beam_data_dpx'
+    user_session = 'sessions/beam_data_user'
     # Take user dataset by default
     dataset = user_session if os.path.exists(user_session) else dpx_session
 
@@ -89,7 +90,7 @@ if __name__ == '__main__':
             nb_thread = int(sys.argv[1])
         except ValueError:
             print("Script option must be an integer <nb_sample> for samples produced in Environment(s)."
-                  "By default, samples are loaded from an existing Dataset.")
+                  "Without option, samples are loaded from an existing Dataset.")
             quit(0)
 
     # Launch pipeline

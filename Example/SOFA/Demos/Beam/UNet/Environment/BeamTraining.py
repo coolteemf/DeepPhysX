@@ -1,7 +1,7 @@
 """
-ArmadilloTraining
-Simulation of an Armadillo with FEM computed simulations.
-The SOFA simulation contains two models of an Armadillo :
+BeamTraining
+Simulation of a Beam with FEM computed simulations.
+The SOFA simulation contains two models of a Beam:
     * one to apply forces and compute deformations
     * one to apply the network predictions
 Training data are produced at each time step :
@@ -15,10 +15,10 @@ import sys
 
 # Session related imports
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-from ArmadilloSofa import ArmadilloSofa, np
+from BeamSofa import BeamSofa, p_grid, np
 
 
-class ArmadilloTraining(ArmadilloSofa):
+class BeamTraining(BeamSofa):
 
     def __init__(self,
                  root_node,
@@ -29,16 +29,17 @@ class ArmadilloTraining(ArmadilloSofa):
                  as_tcp_ip_client=True,
                  environment_manager=None):
 
-        ArmadilloSofa.__init__(self,
-                               root_node=root_node,
-                               ip_address=ip_address,
-                               port=port,
-                               instance_id=instance_id,
-                               number_of_instances=number_of_instances,
-                               as_tcp_ip_client=as_tcp_ip_client,
-                               environment_manager=environment_manager)
+        BeamSofa.__init__(self,
+                          root_node=root_node,
+                          ip_address=ip_address,
+                          port=port,
+                          instance_id=instance_id,
+                          number_of_instances=number_of_instances,
+                          as_tcp_ip_client=as_tcp_ip_client,
+                          environment_manager=environment_manager)
 
         self.create_model['nn'] = True
+        self.data_size = (p_grid.nb_nodes, 3)
 
     def send_visualization(self):
         """
@@ -55,7 +56,7 @@ class ArmadilloTraining(ArmadilloSofa):
 
     def onAnimateEndEvent(self, event):
         """
-        Called within the Sofa pipeline at the end of the time step. Compute training data and apply prediction.
+        Called within the Sofa pipeline at the end of the time step. Compute training data.
         """
 
         # Compute training data
@@ -71,43 +72,31 @@ class ArmadilloTraining(ArmadilloSofa):
 
     def compute_input(self):
         """
-        Compute force vector for the whole surface.
+        Compute force field on the grid.
         """
 
-        # Init encoded force vector to zero
-        F = np.zeros(self.data_size, dtype=np.double)
-        # Encode each force field
-        surface_mo = self.f_surface_mo if self.create_model['fem'] else self.n_surface_mo
-        for force_field in self.cff:
-            for i in force_field.indices.value:
-                # Get the list of nodes composing a cell containing a point from the force field
-                p = surface_mo.rest_position.value[i]
-                cell = self.regular_grid.cell_index_containing(p)
-                # For each node of the cell, encode the force value
-                for node in self.regular_grid.node_indices_of(cell):
-                    if node < self.nb_nodes_regular_grid and np.linalg.norm(F[node]) == 0.:
-                        F[node] = force_field.force.value
+        # Compute applied force on surface
+        F = np.zeros(self.data_size)
+        F[self.cff.indices.value.copy()] = self.cff.forces.value.copy()
         return F
 
     def compute_output(self):
         """
-        Compute displacement vector for the whole surface.
+        Compute displacement field on the grid.
         """
 
-        # Write the position of each point from the sparse grid to the regular grid
-        actual_positions_on_regular_grid = np.zeros(self.data_size, dtype=np.double)
-        actual_positions_on_regular_grid[self.idx_sparse_to_regular] = self.f_sparse_grid_mo.position.array()
-        return np.subtract(actual_positions_on_regular_grid, self.regular_grid_rest_shape)
+        # Compute generated displacement on the grid
+        U = self.f_grid_mo.position.value.copy() - self.f_grid_mo.rest_position.value.copy()
+        return U
 
     def apply_prediction(self, prediction):
         """
-        Apply the predicted displacement to the NN model, update visualization data.
+        Apply the predicted displacement to the NN model.
         """
 
-        # Reshape to correspond regular grid, transform to sparse grid
+        # Reshape to correspond regular grid
         U = np.reshape(prediction, self.data_size)
-        U_sparse = U[self.idx_sparse_to_regular]
-        self.n_sparse_grid_mo.position.value = self.n_sparse_grid_mo.rest_position.array() + U_sparse
+        self.n_grid_mo.position.value = self.n_grid_mo.rest_position.array() + U
 
     def update_visual(self):
         """

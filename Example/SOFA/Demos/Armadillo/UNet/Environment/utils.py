@@ -141,7 +141,8 @@ def get_object_max_size(source_file, scale):
     :return: Max size of the object
     """
 
-    return Mesh(source_file).scale(scale).maxBoundSize()
+    b = Mesh(source_file).scale(scale).bounds()
+    return max(b[1]-b[0], b[3]-b[2], b[5]-b[4])
 
 
 def from_sparse_to_regular_grid(nb_nodes_regular_grid, sparse_grid, sparse_grid_mo):

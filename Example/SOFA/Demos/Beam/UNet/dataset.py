@@ -16,7 +16,7 @@ from DeepPhysX_Core.Visualizer.VedoVisualizer import VedoVisualizer
 from DeepPhysX_Sofa.Environment.SofaEnvironmentConfig import SofaEnvironmentConfig
 
 # Session related imports
-from Environment.ArmadilloTraining import ArmadilloTraining
+from Environment.BeamTraining import BeamTraining
 
 # Dataset parameters
 nb_batches = {'Training': 500, 'Validation': 50}
@@ -26,10 +26,10 @@ batch_size = {'Training': 32, 'Validation': 10}
 def launch_data_generation(dataset_dir, dataset_mode):
 
     # Environment configuration
-    environment_config = SofaEnvironmentConfig(environment_class=ArmadilloTraining,
+    environment_config = SofaEnvironmentConfig(environment_class=BeamTraining,
                                                visualizer=VedoVisualizer,
                                                as_tcp_ip_client=True,
-                                               number_of_thread=10)
+                                               number_of_thread=4)
 
     # Dataset configuration
     dataset_config = BaseDatasetConfig(dataset_dir=dataset_dir,
@@ -37,7 +37,7 @@ def launch_data_generation(dataset_dir, dataset_mode):
                                        use_mode=dataset_mode)
 
     # Create DataGenerator
-    data_generator = BaseDataGenerator(session_name='sessions/armadillo_data_user',
+    data_generator = BaseDataGenerator(session_name='sessions/beam_data_user',
                                        environment_config=environment_config,
                                        dataset_config=dataset_config,
                                        nb_batches=nb_batches[dataset_mode],
@@ -50,13 +50,13 @@ def launch_data_generation(dataset_dir, dataset_mode):
 if __name__ == '__main__':
 
     # Check data
-    if not os.path.exists('Environment/models'):
+    if not os.path.exists('sessions/beam_data_dpx'):
         from download import download_all
-        print('Downloading Armadillo demo data...')
+        print('Downloading Beam demo data...')
         download_all()
 
     # Define dataset
-    user_session = 'sessions/armadillo_data_user'
+    user_session = 'sessions/beam_data_user'
     dataset = user_session if os.path.exists(user_session) else None
 
     # Get dataset mode

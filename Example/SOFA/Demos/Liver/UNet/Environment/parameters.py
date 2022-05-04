@@ -25,8 +25,7 @@ liver = {'mesh': mesh,
 p_liver = namedtuple('p_liver', liver)(**liver)
 
 # Grid parameters
-margin_scale = 0.2
-min_bbox, max_bbox, b_box = define_bbox(mesh, margin_scale, scale3d)
+min_bbox, max_bbox, b_box = define_bbox(mesh, 0., scale3d)
 bbox_size = max_bbox - min_bbox
 cell_size = 0.06
 grid_resolution = compute_grid_resolution(max_bbox, min_bbox, cell_size)

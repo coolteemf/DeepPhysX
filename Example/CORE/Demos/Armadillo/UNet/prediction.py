@@ -26,8 +26,7 @@ def launch_runner():
     env_config = BaseEnvironmentConfig(environment_class=Armadillo,
                                        visualizer=VedoVisualizer,
                                        as_tcp_ip_client=False,
-                                       param_dict={'detailed': False,
-                                                   'pattern': True})
+                                       param_dict={'compute_sample': False})
 
     # UNet config
     net_config = UNetConfig(network_name='armadillo_UNet',
@@ -42,8 +41,9 @@ def launch_runner():
                             skip_merge=False)
 
     # Dataset config
-    dataset_config = BaseDatasetConfig(normalize=True)
-
+    dataset_config = BaseDatasetConfig(dataset_dir='sessions/armadillo_data_dpx',
+                                       normalize=True,
+                                       use_mode='Validation')
     # Runner
     runner = BaseRunner(session_dir="sessions/armadillo_training_dpx",
                         dataset_config=dataset_config,
