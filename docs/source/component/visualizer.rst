@@ -247,7 +247,7 @@ The *Factory* will only use templates to create an updated objects dictionary wh
         - Unnecessary
         - Arrows visual resolution.
 
-* Window -
+* Change window parameters
 
   .. list-table::
       :width: 95%
@@ -259,10 +259,30 @@ The *Factory* will only use templates to create an updated objects dictionary wh
         - Update
         - Description
 
-      * -
-        -
-        -
-        -
+      * - ``objects_id``
+        - **Required**
+        - Unnecessary
+        - Indices of objects to set in this particular window.
+
+      * - ``title``
+        - Optional
+        - Unnecessary
+        - Title of the window.
+
+      * - ``axes``
+        - Optional
+        - Unnecessary
+        - Type of axes to show.
+
+      * - ``sharecam``
+        - Optional
+        - Unnecessary
+        - If True (default), all subwindows will share the same camera parameters.
+
+      * - ``interactive``
+        - Optional
+        - Unnecessary
+        - If True (default), the window will be interactive.
 
 
 Configuration
