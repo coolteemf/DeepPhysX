@@ -733,9 +733,13 @@ class DatasetManager:
 
     def set_eval(self) -> None:
         self.mode = self.modes['Validation']
+        self.mul_part_idx = None
+        self.load_partitions()
 
     def set_train(self) -> None:
         self.mode = self.modes['Training']
+        self.mul_part_idx = None
+        self.load_partitions()
 
     def close(self) -> None:
         """
