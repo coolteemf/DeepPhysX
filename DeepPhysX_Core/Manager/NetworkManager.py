@@ -200,7 +200,6 @@ class NetworkManager:
         pred, _ = self.data_transformation.transform_before_loss(pred)
         pred = self.data_transformation.transform_before_apply(pred)
         pred = self.network.transform_to_numpy(pred)
-        pred = array(pred, dtype=float)
         return pred.reshape(-1)
 
     def save_network(self, last_save: bool = False) -> None:
