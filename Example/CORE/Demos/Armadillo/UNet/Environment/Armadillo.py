@@ -59,8 +59,7 @@ class Armadillo(BaseEnvironment):
         # Force pattern
         step = 0.5
         self.amplitudes = np.concatenate((np.arange(0, 1, step),
-                                          np.arange(1, -1, -step),
-                                          np.arange(-1, 0, step)))
+                                          np.arange(1, 0, -step)))
         self.idx_amplitude = 0
         self.force_value = None
         self.idx_zone = 0
@@ -144,8 +143,8 @@ class Armadillo(BaseEnvironment):
 
         # Mesh representing detailed Armadillo (object will have id = 0)
         self.factory.add_object(object_type="Mesh",
-                                data_dict={"positions": self.mesh.points(),
-                                           'cells': self.mesh.cells(),
+                                data_dict={"positions": self.mesh_coarse.points(),
+                                           'cells': self.mesh_coarse.cells(),
                                            'wireframe': True,
                                            "c": "orange",
                                            "at": self.instance_id})
@@ -247,7 +246,7 @@ class Armadillo(BaseEnvironment):
     def update_visual(self, U):
         # Update surface mesh
         updated_mesh = self.grid.clone().points(self.grid.points().copy() + U)
-        mapped_mesh = self.mapping.apply(updated_mesh.points())
+        mapped_mesh = self.mapping_coarse.apply(updated_mesh.points())
         self.factory.update_object_dict(object_id=0,
                                         new_data_dict={'positions': mapped_mesh.points().copy()})
 

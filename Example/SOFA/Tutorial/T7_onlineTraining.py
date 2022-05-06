@@ -12,7 +12,8 @@ from T3_configuration import env_config, net_config, dataset_config
 
 def launch_training():
     # Create the Pipeline
-    pipeline = BaseTrainer(session_name='sessions/online_training',
+    pipeline = BaseTrainer(session_dir='sessions',
+                           session_name='online_training',
                            environment_config=env_config,
                            dataset_config=dataset_config,
                            network_config=net_config,

@@ -18,6 +18,7 @@ from DeepPhysX_PyTorch.FC.FCConfig import FCConfig
 from DeepPhysX_Sofa.Environment.SofaEnvironmentConfig import SofaEnvironmentConfig
 
 # Working session imports
+from download import BeamDownloader
 from Environment.BeamTraining import BeamTraining, p_grid
 
 # Training parameters
@@ -53,7 +54,8 @@ def launch_trainer(dataset_dir, nb_env):
                                        dataset_dir=dataset_dir)
 
     # Trainer
-    trainer = BaseTrainer(session_name="sessions/beam_training_user",
+    trainer = BaseTrainer(session_dir='sessions',
+                          session_name='beam_training_user',
                           dataset_config=dataset_config,
                           environment_config=env_config,
                           network_config=net_config,
@@ -67,14 +69,8 @@ def launch_trainer(dataset_dir, nb_env):
 
 if __name__ == '__main__':
 
-    # Check data
-    if not os.path.exists('sessions/beam_data_dpx'):
-        from download import download_all
-        print('Downloading Beam demo data...')
-        download_all()
-
     # Define dataset
-    dpx_session = 'sessions/beam_data_dpx'
+    dpx_session = 'sessions/beam_dpx'
     user_session = 'sessions/beam_data_user'
     # Take user dataset by default
     dataset = user_session if os.path.exists(user_session) else dpx_session
@@ -82,12 +78,17 @@ if __name__ == '__main__':
     # Get nb_thread options
     nb_thread = 1
     if len(sys.argv) > 1:
+        dataset = None
         try:
             nb_thread = int(sys.argv[1])
         except ValueError:
             print("Script option must be an integer <nb_sample> for samples produced in Environment(s)."
                   "Without option, samples are loaded from an existing Dataset.")
             quit(0)
+
+    # Check missing data
+    session_name = 'train' if dataset is None else 'train_data'
+    BeamDownloader().get_session(session_name)
 
     # Launch pipeline
     launch_trainer(dataset, nb_thread)

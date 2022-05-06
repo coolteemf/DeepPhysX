@@ -30,12 +30,6 @@ def create_environment():
 
 if __name__ == '__main__':
 
-    # Check demo data
-    if not os.path.exists('sessions/beam_data_dpx'):
-        from download import download_all
-        print('Downloading Beam demo data...')
-        download_all()
-
     # Create Environment
     environment = create_environment()
 

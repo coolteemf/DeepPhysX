@@ -14,6 +14,8 @@ from DeepPhysX_Core.Manager.EnvironmentManager import EnvironmentManager
 from DeepPhysX_Sofa.Environment.SofaEnvironmentConfig import SofaEnvironmentConfig
 
 # Working session imports
+from download import ArmadilloDownloader
+ArmadilloDownloader().get_session('run')
 from Environment.ArmadilloSofa import ArmadilloSofa
 
 
@@ -29,12 +31,6 @@ def create_environment():
 
 
 if __name__ == '__main__':
-
-    # Check demo data
-    if not os.path.exists('Environment/models'):
-        from download import download_all
-        print('Downloading Armadillo demo data...')
-        download_all()
 
     # Create Environment
     environment = create_environment()

@@ -24,7 +24,7 @@ def launch_data_generation():
                                                            'allow_requests': False},
                                                as_tcp_ip_client=False)
     # Dataset configuration
-    dataset_config = BaseDatasetConfig()
+    dataset_config = BaseDatasetConfig(normalize=False)
     # Create DataGenerator
     data_generator = BaseDataGenerator(session_name='sessions/data_generation',
                                        environment_config=environment_config,

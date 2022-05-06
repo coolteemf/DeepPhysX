@@ -57,8 +57,7 @@ class Liver(BaseEnvironment):
         # Force pattern
         step = 0.2
         self.amplitudes = np.concatenate((np.arange(0, 1, step),
-                                          np.arange(1, -1, -step),
-                                          np.arange(-1, 0, step)))
+                                          np.arange(1, 0, -step)))
         self.nb_forces = p_forces.nb_simultaneous_forces
         self.idx_amplitude = 0
         self.force_value = None

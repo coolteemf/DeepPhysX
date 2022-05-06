@@ -49,12 +49,6 @@ def launch_data_generation(dataset_dir, dataset_mode):
 
 if __name__ == '__main__':
 
-    # Check data
-    if not os.path.exists('sessions/beam_data_dpx'):
-        from download import download_all
-        print('Downloading Beam demo data...')
-        download_all()
-
     # Define dataset
     user_session = 'sessions/beam_data_user'
     dataset = user_session if os.path.exists(user_session) else None

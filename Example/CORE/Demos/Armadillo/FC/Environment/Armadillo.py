@@ -58,8 +58,7 @@ class Armadillo(BaseEnvironment):
         # Force pattern
         step = 0.3
         self.amplitudes = np.concatenate((np.arange(0, 1, step),
-                                          np.arange(1, -1, -step),
-                                          np.arange(-1, 0, step)))
+                                          np.arange(1, 0, -step)))
         self.idx_amplitude = 0
         self.force_value = None
         self.idx_zone = 0

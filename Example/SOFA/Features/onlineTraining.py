@@ -37,10 +37,12 @@ def launch_training():
                               optimizer=Adam,
                               dim_layers=[nb_points * dimension, nb_points * dimension, dimension],
                               dim_output=dimension)
-    # Dataset configuration with the path to the existing Dataset
-    dataset_config = BaseDatasetConfig(shuffle_dataset=True)
+    # Dataset configuration
+    dataset_config = BaseDatasetConfig(shuffle_dataset=True,
+                                       normalize=False)
     # Create DataGenerator
-    trainer = BaseTrainer(session_name='sessions/online_training',
+    trainer = BaseTrainer(session_dir='sessions',
+                          session_name='online_training',
                           environment_config=environment_config,
                           dataset_config=dataset_config,
                           network_config=network_config,

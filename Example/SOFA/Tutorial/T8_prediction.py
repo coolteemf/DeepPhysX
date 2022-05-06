@@ -21,7 +21,8 @@ def create_runner():
     env_config.as_tcp_ip_client = False
 
     # Runner
-    return SofaRunner(session_dir="sessions/online_training",
+    return SofaRunner(session_dir='sessions',
+                      session_name='online_training',
                       environment_config=env_config,
                       network_config=net_config,
                       nb_steps=0)

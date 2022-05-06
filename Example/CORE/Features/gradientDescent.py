@@ -39,15 +39,17 @@ def launch_training():
                               dim_layers=[nb_points * dimension, nb_points * dimension, dimension],
                               dim_output=dimension)
     # Dataset configuration
-    dataset_config = BaseDatasetConfig()
+    dataset_config = BaseDatasetConfig(normalize=False)
     # Create Trainer
-    trainer = BaseTrainer(session_name='sessions/gradient_descent',
+    trainer = BaseTrainer(session_dir='sessions',
+                          session_name='gradient_descent',
                           environment_config=environment_config,
                           dataset_config=dataset_config,
                           network_config=network_config,
                           nb_epochs=1,
-                          nb_batches=150,
-                          batch_size=1)
+                          nb_batches=200,
+                          batch_size=1,
+                          debug=True)
     # Launch the training session
     trainer.execute()
 

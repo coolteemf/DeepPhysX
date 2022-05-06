@@ -75,18 +75,6 @@ def get_nb_nodes(source_file):
     return Mesh(source_file).N()
 
 
-def get_object_max_size(source_file, scale):
-    """
-    Get the max size of the object along x, y, z axis.
-
-    :param str source_file: Mesh file
-    :param float scale: Scale to apply to the mesh
-    :return: Max size of the object
-    """
-
-    return Mesh(source_file).scale(scale).maxBoundSize()
-
-
 def compute_grid_resolution(max_bbox, min_bbox, cell_size, print_log=False):
     """
     Compute the grid resolution from the desired cell size and the grid dimensions.

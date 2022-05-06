@@ -54,8 +54,7 @@ class BeamPrediction(BeamTraining):
         self.visualizer = param_dict['visualizer'] if 'visualizer' in param_dict else self.visualizer
         step = 0.1 if self.visualizer else 0.03
         self.amplitudes = np.concatenate((np.arange(0, 1, step),
-                                          np.arange(1, -1, -step),
-                                          np.arange(-1, 0, step)))
+                                          np.arange(1, 0, -step)))
 
     def send_visualization(self):
         """

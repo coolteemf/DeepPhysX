@@ -5,37 +5,27 @@ Methods will be called within training and predictions scripts if repositories a
 Running this script directly will download the full set of data.
 """
 
-import os.path
-
 from DeepPhysX_Core.Utils.data_downloader import DataDownloader
+
+DOI = 'doi:10.5072/FK2/MDQ46R'
+session_name = 'armadillo_dpx'
 
 
 class ArmadilloDownloader(DataDownloader):
 
-    def __init__(self, DOI):
-        DataDownloader.__init__(self, DOI)
+    def __init__(self):
+        DataDownloader.__init__(self, DOI, session_name)
 
-        self.sessions = {'data': 'armadillo_data_dpx',
-                         'train': 'armadillo_training_dpx',
-                         'model': 'models'}
-        self.tree = {'armadillo_data_dpx': [[],
-                                            {'dataset': [135, 136, 137, 138, 139, 140, 141, 143, 144, 146, 148, 149,
-                                                         150, 151, 153]}],
-                     'armadillo_training_dpx': [[152],
-                                                {'dataset': [],
-                                                 'network': [147],
-                                                 'stats': [154]}],
-                     'models': [[142, 145], {}]}
-        self.nb_files = {'data': 15, 'train': 3, 'model': 2}
-
-
-def download_all():
-    downloader = ArmadilloDownloader('doi:10.5072/FK2/MDQ46R')
-    downloader.get_session('data')
-    downloader.get_session('train')
-    downloader.root = os.path.abspath(os.path.join(downloader.root, os.path.pardir, 'Environment'))
-    downloader.get_session('model')
+        self.categories = {'models': [142, 145],
+                           'session': [247],
+                           'network': [230],
+                           'stats': [224],
+                           'dataset_info': [253],
+                           'dataset_valid': [245, 257],
+                           'dataset_train': [252, 255, 246, 256, 258, 251,
+                                             250, 248, 254, 249, 259, 260]}
 
 
 if __name__ == '__main__':
-    download_all()
+
+    ArmadilloDownloader().get_session('all')

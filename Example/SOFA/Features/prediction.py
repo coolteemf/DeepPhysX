@@ -13,12 +13,13 @@ import Sofa.Gui
 from DeepPhysX_Sofa.Pipeline.SofaRunner import SofaRunner
 from DeepPhysX_Sofa.Environment.SofaEnvironmentConfig import SofaEnvironmentConfig
 from DeepPhysX_PyTorch.FC.FCConfig import FCConfig
+from DeepPhysX_Core.Dataset.BaseDatasetConfig import BaseDatasetConfig
 
 # Session imports
 from Environment.EnvironmentPrediction import MeanEnvironmentPrediction
 
 
-def create_runner(session_path):
+def create_runner(session):
     # Define the number of points and the dimension
     nb_points = 30
     dimension = 3
@@ -32,10 +33,15 @@ def create_runner(session_path):
     # of parameters in the input and the output vectors respectively)
     network_config = FCConfig(dim_layers=[nb_points * dimension, nb_points * dimension, dimension],
                               dim_output=dimension)
+    # Dataset configuration
+    dataset_config = BaseDatasetConfig(shuffle_dataset=True,
+                                       normalize=False)
     # Create SofaRunner
-    return SofaRunner(session_dir=os.path.join(os.getcwd(), session_path),
+    return SofaRunner(session_dir='sessions',
+                      session_name=session,
                       environment_config=environment_config,
-                      network_config=network_config)
+                      network_config=network_config,
+                      dataset_config=dataset_config)
 
 
 if __name__ == '__main__':
@@ -48,12 +54,12 @@ if __name__ == '__main__':
               "Run onlineTraining.py script first.")
         from onlineTraining import launch_training
         launch_training()
-        session_dir = 'sessions/online_training'
+        session_name = 'online_training'
     else:
-        session_dir = 'sessions/online_training' if is_online_session else 'sessions/offline_training'
+        session_name = 'online_training' if is_online_session else 'offline_training'
 
     # Create SOFA runner
-    runner = create_runner(session_dir)
+    runner = create_runner(session_name)
 
     # Launch SOFA GUI
     Sofa.Gui.GUIManager.Init("main", "qglviewer")

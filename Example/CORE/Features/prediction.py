@@ -11,12 +11,13 @@ from DeepPhysX_Core.Pipelines.BaseRunner import BaseRunner
 from DeepPhysX_Core.Environment.BaseEnvironmentConfig import BaseEnvironmentConfig
 from DeepPhysX_PyTorch.FC.FCConfig import FCConfig
 from DeepPhysX_Core.Visualizer.VedoVisualizer import VedoVisualizer
+from DeepPhysX_Core.Dataset.BaseDatasetConfig import BaseDatasetConfig
 
 # Session imports
 from Environment import MeanEnvironment
 
 
-def launch_prediction(session_path):
+def launch_prediction(session):
     # Define the number of points and the dimension
     nb_points = 30
     dimension = 3
@@ -32,11 +33,15 @@ def launch_prediction(session_path):
     # of parameters in the input and the output vectors respectively)
     network_config = FCConfig(dim_layers=[nb_points * dimension, nb_points * dimension, dimension],
                               dim_output=dimension)
-    # Dataset configuration with the path to the existing Dataset
+    # Dataset configuration
+    dataset_config = BaseDatasetConfig(normalize=False)
     # Create DataGenerator
-    trainer = BaseRunner(session_dir=os.path.join(os.getcwd(), session_path),
+    trainer = BaseRunner(session_dir='sessions',
+                         session_name=session,
                          environment_config=environment_config,
-                         network_config=network_config)
+                         network_config=network_config,
+                         dataset_config=dataset_config,
+                         nb_steps=100)
     # Launch the training session
     trainer.execute()
 
@@ -51,8 +56,8 @@ if __name__ == '__main__':
               "Run onlineTraining.py script first.")
         from onlineTraining import launch_training
         launch_training()
-        session_dir = 'sessions/online_training'
+        session_name = 'online_training'
     else:
-        session_dir = 'sessions/online_training' if is_online_session else 'sessions/offline_training'
+        session_name = 'online_training' if is_online_session else 'offline_training'
 
-    launch_prediction(session_dir)
+    launch_prediction(session_name)

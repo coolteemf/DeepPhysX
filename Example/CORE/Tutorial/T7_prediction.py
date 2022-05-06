@@ -20,7 +20,8 @@ def launch_prediction():
                                        param_dict={'increment': 1},
                                        as_tcp_ip_client=False)
     # Create the Pipeline
-    pipeline = BaseRunner(session_dir='sessions/tutorial_online_training',
+    pipeline = BaseRunner(session_dir='sessions',
+                          session_name='tutorial_online_training',
                           environment_config=env_config,
                           dataset_config=dataset_config,
                           network_config=net_config,

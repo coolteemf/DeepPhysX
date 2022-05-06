@@ -20,7 +20,8 @@ def launch_training():
                                        partition_size=1,
                                        shuffle_dataset=False)
     # Create the Pipeline
-    pipeline = BaseTrainer(session_name='sessions/tutorial_offline_training',
+    pipeline = BaseTrainer(session_dir='sessions',
+                           session_name='tutorial_offline_training',
                            environment_config=env_config,
                            dataset_config=dataset_config,
                            network_config=net_config,

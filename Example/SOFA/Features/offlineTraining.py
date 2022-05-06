@@ -27,9 +27,11 @@ def launch_training():
                               dim_output=dimension)
     # Dataset configuration with the path to the existing Dataset
     dataset_config = BaseDatasetConfig(dataset_dir=os.path.join(os.getcwd(), 'sessions/data_generation'),
-                                       shuffle_dataset=True)
+                                       shuffle_dataset=True,
+                                       normalize=False)
     # Create DataGenerator
-    trainer = BaseTrainer(session_name='sessions/offline_training',
+    trainer = BaseTrainer(session_dir='sessions',
+                          session_name='offline_training',
                           dataset_config=dataset_config,
                           network_config=network_config,
                           nb_epochs=1,

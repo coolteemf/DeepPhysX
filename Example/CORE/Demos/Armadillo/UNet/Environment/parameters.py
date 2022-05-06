@@ -12,22 +12,19 @@ from numpy import array
 from collections import namedtuple
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-from utils import define_bbox, compute_grid_resolution, find_fixed_box, find_extremities, get_nb_nodes, \
-    get_object_max_size
+from utils import define_bbox, compute_grid_resolution, find_fixed_box, find_extremities, get_nb_nodes
 
 # Model
 mesh = os.path.dirname(os.path.abspath(__file__)) + '/models/armadillo.obj'
 coarse_mesh = os.path.dirname(os.path.abspath(__file__)) + '/models/armadillo_coarse.obj'
 scale = 1e-3
 scale3d = 3 * [scale]
-size = get_object_max_size(mesh, scale)
 fixed_box = find_fixed_box(mesh, scale)
 nb_nodes = get_nb_nodes(coarse_mesh)
 model = {'mesh': mesh,
          'mesh_coarse': coarse_mesh,
          'scale': scale,
          'scale3d': scale3d,
-         'size': size,
          'fixed_box': fixed_box,
          'nb_nodes': nb_nodes}
 p_model = namedtuple('p_model', model)(**model)

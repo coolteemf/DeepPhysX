@@ -16,6 +16,8 @@ from DeepPhysX_PyTorch.UNet.UNetConfig import UNetConfig
 
 # Session related imports
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+from download import ArmadilloDownloader
+ArmadilloDownloader().get_session('valid_data')
 from Environment.Armadillo import Armadillo
 from Environment.parameters import grid_resolution
 
@@ -41,11 +43,12 @@ def launch_runner():
                             skip_merge=False)
 
     # Dataset config
-    dataset_config = BaseDatasetConfig(dataset_dir='sessions/armadillo_data_dpx',
+    dataset_config = BaseDatasetConfig(dataset_dir='sessions/armadillo_dpx',
                                        normalize=True,
                                        use_mode='Validation')
     # Runner
-    runner = BaseRunner(session_dir="sessions/armadillo_training_dpx",
+    runner = BaseRunner(session_dir='sessions',
+                        session_name='armadillo_dpx',
                         dataset_config=dataset_config,
                         environment_config=env_config,
                         network_config=net_config,
@@ -55,11 +58,5 @@ def launch_runner():
 
 
 if __name__ == '__main__':
-
-    dpx_dataset, dpx_training = 'sessions/armadillo_data_dpx', 'sessions/armadillo_training_dpx'
-    if not os.path.exists(dpx_dataset) or not os.path.exists(dpx_training):
-        from download import download_all
-        print('Downloading Demo training data to launch prediction...')
-        download_all()
 
     launch_runner()
