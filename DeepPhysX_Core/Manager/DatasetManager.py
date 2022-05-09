@@ -564,7 +564,7 @@ class DatasetManager:
             partitions = self.mul_part_list_path[p_idx]
             for field in partitions.keys():
                 dataset[field].append(load(partitions[field]))
-            self.mul_part_idx = p_idx
+            self.mul_part_idx = p_idx + 1
         for field, data in dataset.items():
             self.dataset.set(field, concatenate(data))
         self.current_partition_path['input'] = self.mul_part_list_path[self.mul_part_idx][self.fields[0]]
