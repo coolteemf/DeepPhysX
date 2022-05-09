@@ -28,5 +28,4 @@ class ArmadilloDownloader(DataDownloader):
 
 if __name__ == '__main__':
 
-    # ArmadilloDownloader().get_session('valid_data')
-    ArmadilloDownloader().show_content()
+    ArmadilloDownloader().get_session('valid_data')
