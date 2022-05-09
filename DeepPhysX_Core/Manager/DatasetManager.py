@@ -557,14 +557,14 @@ class DatasetManager:
         if self.num_partitions_to_read == -1:
             max_part_idx = len(self.mul_part_list_path)
         else:
-            max_part_idx = (self.mul_part_idx + self.num_partitions_to_read)%len(self.mul_part_list_path)
+            max_part_idx = (self.mul_part_idx + self.num_partitions_to_read)%len(self.mul_part_list_path+1)
         partitions_indices = range(self.mul_part_idx, max_part_idx)
         dataset = {k:[] for k in self.mul_part_list_path[0].keys()}
         for p_idx in partitions_indices:
             partitions = self.mul_part_list_path[p_idx]
             for field in partitions.keys():
                 dataset[field].append(load(partitions[field]))
-            self.mul_part_idx = p_idx
+            self.mul_part_idx = p_idx + 1
         for field, data in dataset.items():
             self.dataset.set(field, concatenate(data))
         self.current_partition_path['input'] = self.mul_part_list_path[self.mul_part_idx][self.fields[0]]
