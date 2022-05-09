@@ -157,12 +157,12 @@ class Armadillo(BaseEnvironment):
     def send_visualization(self):
 
         # Mesh representing detailed Armadillo (object will have id = 0)
-        self.factory.add_object(object_type="Mesh",
-                                data_dict={"positions": self.mesh.points(),
+        self.factory.add_object(object_type='Mesh',
+                                data_dict={'positions': self.mesh.points(),
                                            'cells': self.mesh.cells(),
                                            'wireframe': True,
-                                           "c": "orange",
-                                           "at": self.instance_id})
+                                           'c': 'orange',
+                                           'at': self.instance_id})
 
         # Arrows representing the force fields (object will have id = 1)
         self.factory.add_object(object_type='Arrows',
