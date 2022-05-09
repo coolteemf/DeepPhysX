@@ -57,4 +57,4 @@ class GridMapping:
             ((H[:, 7].T * b[:, 0] + H[:, 3].T * (one - b[:, 0])) * b[:, 1] +
              (H[:, 4].T * b[:, 0] + H[:, 0].T * (one - b[:, 0])) * (one - b[:, 1])) * (one - b[:, 2])
 
-        return Mesh([P.T, self.slave.cells()])
+        return P.T
