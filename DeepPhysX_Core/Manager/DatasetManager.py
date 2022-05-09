@@ -557,7 +557,7 @@ class DatasetManager:
         if self.num_partitions_to_read == -1:
             max_part_idx = len(self.mul_part_list_path)
         else:
-            max_part_idx = (self.mul_part_idx + self.num_partitions_to_read)%len(self.mul_part_list_path+1)
+            max_part_idx = (self.mul_part_idx + self.num_partitions_to_read)%(len(self.mul_part_list_path)+1)
         partitions_indices = range(self.mul_part_idx, max_part_idx)
         dataset = {k:[] for k in self.mul_part_list_path[0].keys()}
         for p_idx in partitions_indices:
