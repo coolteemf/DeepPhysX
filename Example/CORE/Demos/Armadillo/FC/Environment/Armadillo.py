@@ -56,7 +56,7 @@ class Armadillo(BaseEnvironment):
         self.compute_sample = True
 
         # Force pattern
-        step = 0.3
+        step = 0.05
         self.amplitudes = np.concatenate((np.arange(0, 1, step),
                                           np.arange(1, 0, -step)))
         self.idx_amplitude = 0
@@ -170,21 +170,23 @@ class Armadillo(BaseEnvironment):
 
     def update_visual(self, U):
 
+        # Apply mappings
+        updated_position = self.sparse_grid.points().copy() + U
+        mesh_position = self.mapping.apply(updated_position)
+        mesh_coarse_position = self.mapping_coarse.apply(updated_position)
+
         # Update surface mesh
-        updated_mesh = self.sparse_grid.clone().points(self.sparse_grid.points().copy() + U)
-        mapped_mesh = self.mapping.apply(updated_mesh.points())
         self.factory.update_object_dict(object_id=0,
-                                        new_data_dict={'positions': mapped_mesh.points().copy()})
+                                        new_data_dict={'positions': mesh_position})
 
         # Update arrows representing force fields
-        mapped_mesh_coarse = self.mapping_coarse.apply(updated_mesh.points())
         self.factory.update_object_dict(object_id=1,
-                                        new_data_dict={'positions': mapped_mesh_coarse.points(),
+                                        new_data_dict={'positions': mesh_coarse_position,
                                                        'vectors': 0.25 * self.F / p_model.scale})
 
         # Update sparse grid positions
         self.factory.update_object_dict(object_id=2,
-                                        new_data_dict={'positions': updated_mesh.points().copy()})
+                                        new_data_dict={'positions': updated_position})
 
         # Send visualization data to update
         self.update_visualisation(visu_dict=self.factory.updated_object_dict)

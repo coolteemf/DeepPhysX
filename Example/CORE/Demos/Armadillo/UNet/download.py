@@ -16,7 +16,7 @@ class ArmadilloDownloader(DataDownloader):
     def __init__(self):
         DataDownloader.__init__(self, DOI, session_name)
 
-        self.categories = {'models': [142, 145],
+        self.categories = {'models': [142, 145, 306],
                            'session': [247],
                            'network': [230],
                            'stats': [224],
@@ -28,4 +28,5 @@ class ArmadilloDownloader(DataDownloader):
 
 if __name__ == '__main__':
 
-    ArmadilloDownloader().get_session('valid_data')
+    # ArmadilloDownloader().get_session('valid_data')
+    ArmadilloDownloader().show_content()

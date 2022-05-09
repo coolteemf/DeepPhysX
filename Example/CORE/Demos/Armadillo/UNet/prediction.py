@@ -6,6 +6,7 @@ Launch the prediction session in a VedoVisualizer.
 # Python related imports
 import os
 import sys
+from threading import Thread
 
 # DeepPhysX related imports
 from DeepPhysX_Core.Dataset.BaseDatasetConfig import BaseDatasetConfig
@@ -28,7 +29,7 @@ def launch_runner():
     env_config = BaseEnvironmentConfig(environment_class=Armadillo,
                                        visualizer=VedoVisualizer,
                                        as_tcp_ip_client=False,
-                                       param_dict={'compute_sample': False})
+                                       param_dict={'compute_sample': True})
 
     # UNet config
     net_config = UNetConfig(network_name='armadillo_UNet',

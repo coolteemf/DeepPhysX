@@ -64,17 +64,6 @@ def define_bbox(source_file, margin_scale, scale):
     return bbox_min, bbox_max, bbox_min.tolist() + bbox_max.tolist()
 
 
-def get_nb_nodes(source_file):
-    """
-    Get the number of nodes of a mesh.
-
-    :param str source_file: Mesh file
-    :return: Number of nodes in the mesh
-    """
-
-    return Mesh(source_file).N()
-
-
 def compute_grid_resolution(max_bbox, min_bbox, cell_size, print_log=False):
     """
     Compute the grid resolution from the desired cell size and the grid dimensions.
@@ -105,26 +94,3 @@ def compute_grid_resolution(max_bbox, min_bbox, cell_size, print_log=False):
         print(f"Number of nodes in regular grid = {number_of_nodes}")
 
     return [nx + 1, ny + 1, nz + 1]
-
-
-def find_fixed_box(source_file, scale):
-    """
-    Find the fixed box of the model.
-
-    :param str source_file: Mesh file
-    :param float scale: Scale to apply
-    :return: Min and max corners of the fixed box.
-    """
-
-    # Get the bounding box
-    b_min, b_max, _ = define_bbox(source_file, 0, scale)
-
-    # Fix along the largest dimension
-    sizes = b_max - b_min
-    dim = sizes.tolist().index(sizes.max(0))
-
-    # Fix the bottom of the Armadillo
-    b_min[dim] -= 0.05 * sizes[dim]
-    b_max[dim] = b_min[dim] + 0.1 * sizes[dim]
-
-    return b_min.tolist() + b_max.tolist()
