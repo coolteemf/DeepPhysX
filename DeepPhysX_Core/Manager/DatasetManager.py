@@ -564,11 +564,12 @@ class DatasetManager:
             partitions = self.mul_part_list_path[p_idx]
             for field in partitions.keys():
                 dataset[field].append(load(partitions[field]))
-            self.mul_part_idx = p_idx + 1
         for field, data in dataset.items():
             self.dataset.set(field, concatenate(data))
-        self.current_partition_path['input'] = self.mul_part_list_path[self.mul_part_idx][self.fields[0]]
+        for field in self.fields:
+            self.current_partition_path[field] = self.mul_part_list_path[self.mul_part_idx][field]
         self.dataset.current_sample = 0
+        self.mul_part_idx = max_part_idx
 
     def update_json(self, update_shapes: bool = False, update_nb_samples: bool = False,
                     update_partitions_lists: bool = False, update_normalization: bool = False) -> None:
