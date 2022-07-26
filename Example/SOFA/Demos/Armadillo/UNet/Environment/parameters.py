@@ -33,9 +33,8 @@ model = {'mesh': mesh,
 p_model = namedtuple('p_model', model)(**model)
 
 # Grid
-margin_scale = 0.2
 cell_size = 0.06
-min_bbox, max_bbox, b_box = define_bbox(mesh, margin_scale, scale)
+min_bbox, max_bbox, b_box = define_bbox(mesh, 0., scale)
 bbox_size = max_bbox - min_bbox
 grid_resolution = compute_grid_resolution(max_bbox, min_bbox, cell_size)
 nb_cells = [g_r - 1 for g_r in grid_resolution]

@@ -5,36 +5,26 @@ Methods will be called within training and predictions scripts if repositories a
 Running this script directly will download the full set of data.
 """
 
-import os.path
-
 from DeepPhysX_Core.Utils.data_downloader import DataDownloader
+
+DOI = 'doi:10.5072/FK2/B1NUY0'
+session_name = 'armadillo_dpx'
 
 
 class ArmadilloDownloader(DataDownloader):
 
-    def __init__(self, DOI):
-        DataDownloader.__init__(self, DOI)
+    def __init__(self):
+        DataDownloader.__init__(self, DOI, session_name)
 
-        self.sessions = {'data': 'armadillo_data_dpx',
-                         'train': 'armadillo_training_dpx',
-                         'model': 'models'}
-        self.tree = {'armadillo_data_dpx': [[],
-                                            {'dataset': [187, 191, 188, 186, 190]}],
-                     'armadillo_training_dpx': [[189],
-                                                {'dataset': [],
-                                                 'network': [193],
-                                                 'stats': [192]}],
-                     'models': [[111, 112], {}]}
-        self.nb_files = {'data': 5, 'train': 3, 'model': 2}
-
-
-def download_all():
-    downloader = ArmadilloDownloader('doi:10.5072/FK2/B1NUY0')
-    downloader.get_session('data')
-    downloader.get_session('train')
-    downloader.root = os.path.abspath(os.path.join(downloader.root, os.path.pardir, 'Environment'))
-    downloader.get_session('model')
+        self.categories = {'models':  [111, 112],
+                           'session': [240],
+                           'network': [193],
+                           'stats':   [192],
+                           'dataset_info':  [242],
+                           'dataset_valid': [244, 239],
+                           'dataset_train': [241, 243]}
 
 
 if __name__ == '__main__':
-    download_all()
+
+    ArmadilloDownloader().get_session('all')

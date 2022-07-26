@@ -19,6 +19,7 @@ from DeepPhysX_PyTorch.FC.FCConfig import FCConfig
 from DeepPhysX_Sofa.Environment.SofaEnvironmentConfig import SofaEnvironmentConfig
 
 # Session related imports
+from download import BeamDownloader
 from Environment.BeamValidation import BeamValidation, p_grid
 
 
@@ -45,13 +46,14 @@ def create_runner(dataset_dir):
                                        use_mode=None if dataset_dir is None else 'Validation')
 
     # Define trained network session
-    dpx_session = 'sessions/beam_training_dpx'
-    user_session = 'sessions/beam_training_user'
+    dpx_session = 'beam_dpx'
+    user_session = 'beam_training_user'
     # Take user session by default
-    session_dir = user_session if os.path.exists(user_session) else dpx_session
+    session_name = user_session if os.path.exists('sessions/' + user_session) else dpx_session
 
     # Runner
-    return SofaRunner(session_dir=session_dir,
+    return SofaRunner(session_dir='sessions',
+                      session_name=session_name,
                       dataset_config=dataset_config,
                       environment_config=env_config,
                       network_config=net_config,
@@ -60,14 +62,8 @@ def create_runner(dataset_dir):
 
 if __name__ == '__main__':
 
-    # Check data
-    if not os.path.exists('sessions/beam_data_dpx'):
-        from download import download_all
-        print('Downloading Demo data...')
-        download_all()
-
     # Define dataset
-    dpx_session = 'sessions/beam_data_dpx'
+    dpx_session = 'sessions/beam_dpx'
     user_session = 'sessions/beam_data_user'
     # Take user dataset by default
     dataset = user_session if os.path.exists(user_session) else dpx_session
@@ -81,6 +77,10 @@ if __name__ == '__main__':
                   "Without option, samples are loaded from an existing Dataset.")
             quit(0)
         dataset = None
+
+    # Check missing data
+    session_name = 'valid' if dataset is None else 'valid_data'
+    BeamDownloader().get_session(session_name)
 
     # Create SOFA runner
     runner = create_runner(dataset)

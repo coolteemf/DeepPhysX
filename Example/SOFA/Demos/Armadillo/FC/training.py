@@ -18,6 +18,8 @@ from DeepPhysX_PyTorch.FC.FCConfig import FCConfig
 from DeepPhysX_Sofa.Environment.SofaEnvironmentConfig import SofaEnvironmentConfig
 
 # Working session imports
+from download import ArmadilloDownloader
+ArmadilloDownloader().get_session('run')
 from Environment.ArmadilloTraining import ArmadilloTraining, np
 
 # Training parameters
@@ -60,7 +62,8 @@ def launch_trainer(dataset_dir, nb_env):
                                        dataset_dir=dataset_dir)
 
     # Trainer
-    trainer = BaseTrainer(session_name="sessions/armadillo_training_user",
+    trainer = BaseTrainer(session_dir='sessions',
+                          session_name='armadillo_training_user',
                           dataset_config=dataset_config,
                           environment_config=env_config,
                           network_config=net_config,
@@ -74,14 +77,8 @@ def launch_trainer(dataset_dir, nb_env):
 
 if __name__ == '__main__':
 
-    # Check data
-    if not os.path.exists('Environment/models'):
-        from download import download_all
-        print('Downloading Armadillo demo data...')
-        download_all()
-
     # Define dataset
-    dpx_session = 'sessions/armadillo_data_dpx'
+    dpx_session = 'sessions/armadillo_dpx'
     user_session = 'sessions/armadillo_data_user'
     # Take user dataset by default
     dataset = user_session if os.path.exists(user_session) else dpx_session
@@ -89,12 +86,17 @@ if __name__ == '__main__':
     # Get nb_thread options
     nb_thread = 1
     if len(sys.argv) > 1:
+        dataset = None
         try:
             nb_thread = int(sys.argv[1])
         except ValueError:
             print("Script option must be an integer <nb_sample> for samples produced in Environment(s)."
                   "Without option, samples are loaded from an existing Dataset.")
             quit(0)
+
+    # Check missing data
+    session_name = 'train' if dataset is None else 'train_data'
+    ArmadilloDownloader().get_session(session_name)
 
     # Launch pipeline
     launch_trainer(dataset, nb_thread)

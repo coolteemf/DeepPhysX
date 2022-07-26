@@ -16,6 +16,8 @@ from DeepPhysX_PyTorch.FC.FCConfig import FCConfig
 
 # Session related imports
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+from download import BeamDownloader
+BeamDownloader().get_session('valid_data')
 from Environment.Beam import Beam
 from Environment.parameters import p_model
 
@@ -28,7 +30,7 @@ def launch_runner():
                                        as_tcp_ip_client=False,
                                        param_dict={'compute_sample': True})
 
-    # UNet config
+    # FC config
     nb_hidden_layers = 3
     nb_neurons = p_model.nb_nodes * 3
     layers_dim = [nb_neurons] + [nb_neurons for _ in range(nb_hidden_layers)] + [nb_neurons]
@@ -39,25 +41,20 @@ def launch_runner():
 
     # Dataset config
     dataset_config = BaseDatasetConfig(normalize=True,
-                                       dataset_dir='sessions/beam_data_dpx',
+                                       dataset_dir='sessions/beam_dpx',
                                        use_mode='Validation')
 
     # Runner
-    runner = BaseRunner(session_dir="sessions/beam_training_dpx",
+    runner = BaseRunner(session_dir='sessions',
+                        session_name='beam_dpx',
                         dataset_config=dataset_config,
                         environment_config=env_config,
                         network_config=net_config,
-                        nb_steps=0)
+                        nb_steps=500)
     runner.execute()
     runner.close()
 
 
 if __name__ == '__main__':
-
-    dpx_dataset, dpx_training = 'sessions/beam_data_dpx', 'sessions/beam_training_dpx'
-    if not os.path.exists(dpx_dataset) or not os.path.exists(dpx_training):
-        from download import download_all
-        print('Downloading Demo training data to launch prediction...')
-        download_all()
 
     launch_runner()

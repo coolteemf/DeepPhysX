@@ -80,7 +80,7 @@ class LiverTraining(LiverSofa):
         for force_field in self.force_field:
             for i in force_field.indices.value:
                 # Get the list of nodes composing a cell containing a point from the force field
-                p = surface_mo.position.value[i]
+                p = surface_mo.rest_position.value[i]
                 cell = self.regular_grid.cell_index_containing(p)
                 # For each node of the cell, encode the force value
                 for node in self.regular_grid.node_indices_of(cell):

@@ -21,6 +21,8 @@ from DeepPhysX_Sofa.Pipeline.SofaRunner import SofaRunner
 from DeepPhysX_PyTorch.UNet.UNetConfig import UNetConfig
 
 # Session related imports
+from download import ArmadilloDownloader
+ArmadilloDownloader().get_session('run')
 from Environment.ArmadilloPrediction import ArmadilloPrediction
 from Environment.parameters import grid_resolution
 
@@ -49,20 +51,22 @@ def create_runner(visualizer=False):
     dataset_config = BaseDatasetConfig(normalize=True)
 
     # Define trained network session
-    dpx_session = 'sessions/armadillo_training_dpx'
-    user_session = 'sessions/armadillo_training_user'
+    dpx_session = 'armadillo_dpx'
+    user_session = 'armadillo_training_user'
     # Take user session by default
-    session_dir = user_session if os.path.exists(user_session) else dpx_session
+    session_name = user_session if os.path.exists('sessions/' + user_session) else dpx_session
 
     # Runner
     if visualizer:
-        return BaseRunner(session_dir=session_dir,
+        return BaseRunner(session_dir='sessions',
+                          session_name=session_name,
                           dataset_config=dataset_config,
                           environment_config=env_config,
                           network_config=net_config,
-                          nb_steps=0)
+                          nb_steps=100)
     else:
-        return SofaRunner(session_dir=session_dir,
+        return SofaRunner(session_dir='sessions',
+                          session_name=session_name,
                           dataset_config=dataset_config,
                           environment_config=env_config,
                           network_config=net_config,
@@ -71,11 +75,8 @@ def create_runner(visualizer=False):
 
 if __name__ == '__main__':
 
-    # Check data
-    if not os.path.exists('Environment/models'):
-        from download import download_all
-        print('Downloading Armadillo demo data...')
-        download_all()
+    # Check missing data
+    ArmadilloDownloader().get_session('predict')
 
     # Get option
     visualizer = False

@@ -30,7 +30,7 @@ def launch_data_generation(use_tcp_ip):
                                                as_tcp_ip_client=use_tcp_ip,
                                                number_of_thread=10)
     # Dataset configuration
-    dataset_config = BaseDatasetConfig()
+    dataset_config = BaseDatasetConfig(normalize=False)
     # Create DataGenerator
     data_generator = BaseDataGenerator(session_name='sessions/data_generation_compare',
                                        environment_config=environment_config,

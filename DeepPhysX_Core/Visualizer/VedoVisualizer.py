@@ -1,7 +1,7 @@
 from typing import List, Any, Dict, Union
 from os.path import join as osPathJoin
 from os import makedirs
-from vedo import Plotter
+from vedo import Plotter, Text2D, show
 
 from DeepPhysX_Core.Visualizer.VedoObjects import VedoObjects, ObjectDescription
 
@@ -22,9 +22,10 @@ class VedoVisualizer:
         self.default_viewer_id: int = 9
         self.viewers: Viewers = {self.default_viewer_id: {'title': f"Vedo_axes_{self.default_viewer_id}",
                                                           'instances': [],
-                                                          'sharecam': False,
+                                                          'sharecam': True,
                                                           'interactive': True}}
         self.objects_rendered_in: Dict[str, (int, int)] = {}
+        self.info = Text2D("Press 'q' to\nstart session")
 
         # Wrong samples parameters
         self.folder_path: str = ''
@@ -121,25 +122,43 @@ class VedoVisualizer:
                 del self.viewers[viewer_id]
                 continue
 
-            # Create plotter
-            self.viewers[viewer_id]['plotter'] = Plotter(N=len(self.viewers[viewer_id]['instances']),
-                                                         title=self.viewers[viewer_id]['title'],
-                                                         axes=viewer_id,
-                                                         sharecam=self.viewers[viewer_id]['sharecam'],
-                                                         interactive=self.viewers[viewer_id]['interactive'])
+            # # Create plotter
+            # self.viewers[viewer_id]['plotter'] = Plotter(N=len(self.viewers[viewer_id]['instances']),
+            #                                              title=self.viewers[viewer_id]['title'],
+            #                                              axes=viewer_id,
+            #                                              sharecam=self.viewers[viewer_id]['sharecam'],
+            #                                              interactive=self.viewers[viewer_id]['interactive'])
+            # self.viewers[viewer_id]['plotter'].add(self.info, at=0)
+            #
+            # # self.viewers[viewer_id]['instances'] is a list containing lists of instances
+            # # Each sublist contains all instances present in a window hence, each sublist has it own "at"
+            # for at, ids in enumerate(self.viewers[viewer_id]['instances']):
+            #     for scene_id, object_in_scene_id in ids:
+            #         # Add object instance in the actors list of plotter
+            #         self.viewers[viewer_id]['plotter'].add(
+            #             self.scene[scene_id].objects_instance[object_in_scene_id], at=at, render=False)
+            #         # Register the object rendering location
+            #         self.objects_rendered_in[f'{scene_id}_{object_in_scene_id}'] = (viewer_id, at)
+            #
+            # # Render viewer
+            # self.viewers[viewer_id]['plotter'].show(interactive=True)
+            # self.viewers[viewer_id]['plotter'].remove(self.info)
 
-            # self.viewers[viewer_id]['instances'] is a list containing lists of instances
-            # Each sublist contains all instances present in a window hence, each sublist has it own "at"
+            actors = []
             for at, ids in enumerate(self.viewers[viewer_id]['instances']):
+                actors.append([])
+                if at == 0:
+                    actors[-1].append(self.info)
                 for scene_id, object_in_scene_id in ids:
-                    # Add object instance in the actors list of plotter
-                    self.viewers[viewer_id]['plotter'].add(
-                        self.scene[scene_id].objects_instance[object_in_scene_id], at=at, render=False)
-                    # Register the object rendering location
+                    actors[-1].append(self.scene[scene_id].objects_instance[object_in_scene_id])
                     self.objects_rendered_in[f'{scene_id}_{object_in_scene_id}'] = (viewer_id, at)
-
-            # Render viewer
-            self.viewers[viewer_id]['plotter'].show(interactive=True)
+            self.viewers[viewer_id]['plotter'] = show(actors,
+                                                      N=len(actors),
+                                                      title=self.viewers[viewer_id]['title'],
+                                                      axes=viewer_id,
+                                                      sharecam=self.viewers[viewer_id]['sharecam'],
+                                                      interactive=self.viewers[viewer_id]['interactive'])
+            self.viewers[viewer_id]['plotter'].remove(self.info)
 
     def render(self) -> None:
         """

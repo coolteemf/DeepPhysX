@@ -21,6 +21,8 @@ from DeepPhysX_PyTorch.UNet.UNetConfig import UNetConfig
 from DeepPhysX_Sofa.Environment.SofaEnvironmentConfig import SofaEnvironmentConfig
 
 # Session related imports
+from download import LiverDownloader
+# LiverDownloader().get_session('run')
 from Environment.LiverPrediction import LiverPrediction
 from Environment.parameters import grid_resolution
 
@@ -50,20 +52,22 @@ def create_runner(visualizer=False):
     dataset_config = BaseDatasetConfig(normalize=True)
 
     # Define trained network session
-    dpx_session = 'sessions/liver_training_dpx'
-    user_session = 'sessions/liver_training_user'
+    dpx_session = 'liver_dpx'
+    user_session = 'liver_training_user'
     # Take user session by default
-    session_dir = user_session if os.path.exists(user_session) else dpx_session
+    session_name = user_session if os.path.exists('sessions/' + user_session) else dpx_session
 
     # Runner
     if visualizer:
-        return BaseRunner(session_dir=session_dir,
+        return BaseRunner(session_dir='sessions',
+                          session_name=session_name,
                           dataset_config=dataset_config,
                           environment_config=env_config,
                           network_config=net_config,
-                          nb_steps=0)
+                          nb_steps=100)
     else:
-        return SofaRunner(session_dir=session_dir,
+        return SofaRunner(session_dir='sessions',
+                          session_name=session_name,
                           dataset_config=dataset_config,
                           environment_config=env_config,
                           network_config=net_config,
@@ -72,11 +76,8 @@ def create_runner(visualizer=False):
 
 if __name__ == '__main__':
 
-    # Check data
-    if not os.path.exists('Environment/models'):
-        from download import download_all
-        print('Downloading Liver demo data...')
-        download_all()
+    # Check missing data
+    # LiverDownloader().get_session('predict')
 
     # Get option
     visualizer = False

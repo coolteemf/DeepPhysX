@@ -13,13 +13,11 @@ import sys
 import numpy as np
 from vedo import Mesh
 from math import pow
-from numpy import array, zeros, reshape, arange
-from numpy.random import choice, uniform
-from time import sleep
+from time import sleep, time
 
 # DeepPhysX related imports
 from DeepPhysX_Core.Environment.BaseEnvironment import BaseEnvironment
-from DeepPhysX_Core.Utils.Visualizer.barycentric_mapping import BarycentricMapping
+from DeepPhysX_Core.Utils.Visualizer.GridMapping import GridMapping
 
 # Session related imports
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -47,26 +45,27 @@ class Armadillo(BaseEnvironment):
 
         # Topology
         self.mesh = None
+        self.mesh_coarse = None
         self.grid = None
-        self.cell_corner = None
-        self.detailed = True
+        self.sparse_grid = None
         self.mapping = None
+        self.mapping_coarse = None
+        self.grid_correspondences = None
 
         # Force fields
         self.forces = []
         self.areas = []
-        self.compute_forces = None
-        self.current_forces = []
+        self.g_areas = []
+        self.compute_sample = None
 
-        # Amplitudes pattern
-        step = 0.2
-        self.amplitudes = arange(0, 1, step).tolist() + arange(1, -1, -step).tolist() + arange(-1, 0, step).tolist()
+        # Force pattern
+        step = 0.05
+        self.amplitudes = np.concatenate((np.arange(step, 1, step),
+                                          np.arange(1, step, -step)))
         self.idx_amplitude = 0
-        # Directions pattern
-        self.directions = [[0], [1], [2], [0, 1], [0, 2], [1, 2], [0, 1, 2]]
-        self.idx_direction = 0
-        # Zone index
+        self.force_value = None
         self.idx_zone = 0
+        self.F = None
 
         nb_cells = (p_grid.nb_cells[0] + 1) * (p_grid.nb_cells[1] + 1) * (p_grid.nb_cells[2] + 1)
         self.data_size = (nb_cells, 3)
@@ -79,54 +78,78 @@ class Armadillo(BaseEnvironment):
     def recv_parameters(self, param_dict):
 
         # Get the model definition parameters
-        self.detailed = param_dict['detailed'] if 'detailed' in param_dict else self.detailed
-        follow_pattern = param_dict['pattern'] if 'pattern' in param_dict else True
-        self.compute_forces = self.compute_pattern_forces if follow_pattern else self.compute_random_forces
+        self.compute_sample = param_dict['compute_sample'] if 'compute_sample' in param_dict else True
+        self.amplitudes[0] = 0 if self.compute_sample else 1
 
     def create(self):
 
-        # Load the coarse mesh and init the barycentric mapping with the detailed mesh
-        self.mesh = Mesh(p_model.mesh_coarse).scale(p_model.scale)
-        if self.detailed:
-            mapped_mesh = Mesh(p_model.mesh).scale(p_model.scale)
-            self.mapping = BarycentricMapping(self.mesh, mapped_mesh)
+        # Load the meshes
+        self.mesh = Mesh(p_model.mesh).scale(p_model.scale)
+        self.mesh_coarse = Mesh(p_model.mesh_coarse).scale(p_model.scale)
+        self.sparse_grid = Mesh(p_model.sparse_grid)
 
         # Define regular grid
-        self.grid = [[p_grid.bbox_anchor[0] + i * p_grid.bbox_size[0] / p_grid.nb_cells[0] for i in
-                      range(p_grid.nb_cells[0] + 1)],
-                     [p_grid.bbox_anchor[1] + i * p_grid.bbox_size[1] / p_grid.nb_cells[1] for i in
-                      range(p_grid.nb_cells[1] + 1)],
-                     [p_grid.bbox_anchor[2] + i * p_grid.bbox_size[2] / p_grid.nb_cells[2] for i in
-                      range(p_grid.nb_cells[2] + 1)]]
-        self.grid_positions = []
-        for z in self.grid[2]:
-            for y in self.grid[1]:
-                for x in self.grid[0]:
-                    self.grid_positions.append(array([x, y, z]))
-        self.grid_positions = array(self.grid_positions)
-        self.cell_corner = lambda x, y, z: z * len(self.grid[0]) * len(self.grid[1]) + y * len(self.grid[0]) + x
+        x_reg = [p_grid.origin[0] + i * p_grid.size[0] / p_grid.nb_cells[0] for i in range(p_grid.nb_cells[0] + 1)]
+        y_reg = [p_grid.origin[1] + i * p_grid.size[1] / p_grid.nb_cells[1] for i in range(p_grid.nb_cells[1] + 1)]
+        z_reg = [p_grid.origin[2] + i * p_grid.size[2] / p_grid.nb_cells[2] for i in range(p_grid.nb_cells[2] + 1)]
+        grid_positions = np.array([[[[x, y, z] for x in x_reg] for y in y_reg] for z in z_reg]).reshape(-1, 3)
+        cell_corner = lambda x, y, z: len(x_reg) * (len(y_reg) * z + y) + x
+        grid_cells = np.array([[[[[cell_corner(ix, iy, iz),
+                                   cell_corner(ix + 1, iy, iz),
+                                   cell_corner(ix + 1, iy + 1, iz),
+                                   cell_corner(ix, iy + 1, iz),
+                                   cell_corner(ix, iy, iz + 1),
+                                   cell_corner(ix + 1, iy, iz + 1),
+                                   cell_corner(ix + 1, iy + 1, iz + 1),
+                                   cell_corner(ix, iy + 1, iz + 1)]
+                                  for ix in range(p_grid.nb_cells[0])]
+                                 for iy in range(p_grid.nb_cells[1])]
+                                for iz in range(p_grid.nb_cells[2])]]).reshape(-1, 8)
+        self.grid = Mesh([grid_positions, grid_cells])
+
+        # Init mappings between meshes and sparse grid
+        self.mapping = GridMapping(self.sparse_grid, self.mesh)
+        self.mapping_coarse = GridMapping(self.sparse_grid, self.mesh_coarse)
+
+        # Init correspondences between sparse and regular grid
+        self.grid_correspondences = np.zeros(self.sparse_grid.N(), dtype=int)
+        x_sparse = np.unique(self.sparse_grid.points()[:, 0])
+        y_sparse = np.unique(self.sparse_grid.points()[:, 1])
+        z_sparse = np.unique(self.sparse_grid.points()[:, 2])
+        if len(x_reg) != len(x_sparse) or len(y_reg) != len(y_sparse) or len(z_reg) != len(z_sparse):
+            raise ValueError('Grids should have the same dimension')
+        d = [x_sparse[1] - x_sparse[0], y_sparse[1] - y_sparse[0], z_sparse[1] - z_sparse[0]]
+        origin = [x_sparse[0], y_sparse[0], z_sparse[0]]
+        for i, node in enumerate(self.sparse_grid.points()):
+            p = np.array(node) - np.array(origin)
+            ix = int(round(p[0] / d[0]))
+            iy = int(round(p[1] / d[1]))
+            iz = int(round(p[2] / d[2]))
+            idx = len(x_sparse) * (len(y_sparse) * iz + iy) + ix
+            self.grid_correspondences[i] = idx
 
         # Define force fields
-        sphere = lambda x, y: sum([pow(x_i - y_i, 2) for x_i, y_i in zip(x, y)])
+        sphere = lambda x, z: sum([pow(x_i - c_i, 2) for x_i, c_i in zip(x, p_forces.centers[z])]) <= pow(p_forces.radius[z], 2)
         for zone in p_forces.zones:
-            # Find the spherical area
             self.areas.append([])
-            for i, pts in enumerate(self.mesh.points()):
-                if sphere(pts, p_forces.centers[zone]) <= pow(p_forces.radius[zone], 2):
+            self.g_areas.append([])
+            for i, node in enumerate(self.mesh_coarse.points()):
+                if sphere(node, zone):
                     self.areas[-1].append(i)
-            # Init force value
-            self.forces.append(zeros((len(self.areas[-1]), 3)))
+                    self.g_areas[-1] += self.mapping_coarse.cells[i].tolist()
+            self.areas[-1] = np.array(self.areas[-1])
+            self.g_areas[-1] = np.unique(self.g_areas[-1])
+            self.forces.append(np.zeros((len(self.areas[-1]), 3)))
 
     def send_visualization(self):
 
         # Mesh representing detailed Armadillo (object will have id = 0)
-        mapped_mesh = self.mapping.apply(self.mesh.points().copy()) if self.detailed else self.mesh.clone()
-        self.factory.add_object(object_type="Mesh",
-                                data_dict={"positions": mapped_mesh.points(),
-                                           'cells': mapped_mesh.cells(),
+        self.factory.add_object(object_type='Mesh',
+                                data_dict={'positions': self.mesh.points(),
+                                           'cells': self.mesh.cells(),
                                            'wireframe': True,
-                                           "c": "orange",
-                                           "at": self.instance_id})
+                                           'c': 'orange',
+                                           'at': self.instance_id})
 
         # Arrows representing the force fields (object will have id = 1)
         self.factory.add_object(object_type='Arrows',
@@ -135,18 +158,11 @@ class Armadillo(BaseEnvironment):
                                            'c': 'green',
                                            'at': self.instance_id})
 
-        # Grid
+        # Sparse grid (object will have id = 2)
         self.factory.add_object(object_type='Points',
-                                data_dict={'positions': self.grid_positions,
-                                           'r': 3,
+                                data_dict={'positions': self.sparse_grid.points(),
+                                           'r': 2,
                                            'c': 'grey',
-                                           'at': self.instance_id})
-
-        # Prediction
-        self.factory.add_object(object_type='Arrows',
-                                data_dict={'positions': [0, 0, 0],
-                                           'vectors': [0., 0., 0.],
-                                           'c': 'red',
                                            'at': self.instance_id})
 
         # Return the visualization data
@@ -160,145 +176,64 @@ class Armadillo(BaseEnvironment):
 
     async def step(self):
 
-        # Reset forces
-        for i in range(len(self.forces)):
-            self.forces[i] = zeros((len(self.areas[i]), 3))
+        # Compute a force sample
+        if self.compute_sample:
+            # Generate a new force
+            if self.idx_amplitude == 0:
+                self.idx_zone = np.random.randint(0, len(self.forces))
+                zone = p_forces.zones[self.idx_zone]
+                self.force_value = np.random.uniform(low=-1, high=1, size=(3,)) * p_forces.amplitude[zone]
 
-        # Build force vector
-        self.compute_forces()
+            # Update current force amplitude
+            self.forces[self.idx_zone] = self.force_value * self.amplitudes[self.idx_amplitude]
+            self.idx_amplitude = (self.idx_amplitude + 1) % len(self.amplitudes)
 
-        # Compute input
-        areas = []
-        F = zeros(self.data_size)
-        for area, force in zip(self.areas, self.forces):
-            grid_area = []
-            for i in area:
-                position = self.mesh.points()[i]
-                x_cell = array(array(self.grid[0]) < position[0], dtype=int).tolist().index(0) - 1
-                y_cell = array(array(self.grid[1]) < position[1], dtype=int).tolist().index(0) - 1
-                z_cell = array(array(self.grid[2]) < position[2], dtype=int).tolist().index(0) - 1
-                cell = [self.cell_corner(x_cell, y_cell, z_cell),
-                        self.cell_corner(x_cell, y_cell, z_cell + 1),
-                        self.cell_corner(x_cell, y_cell + 1, z_cell),
-                        self.cell_corner(x_cell, y_cell + 1, z_cell + 1),
-                        self.cell_corner(x_cell + 1, y_cell, z_cell),
-                        self.cell_corner(x_cell + 1, y_cell, z_cell + 1),
-                        self.cell_corner(x_cell + 1, y_cell + 1, z_cell),
-                        self.cell_corner(x_cell + 1, y_cell + 1, z_cell + 1)]
-                for node in cell:
-                    if node not in grid_area:
-                        grid_area.append(node)
-            F[array(grid_area)] = array(force)[0]
+            # Create input array
+            F = np.zeros(self.data_size)
+            F[self.grid_correspondences[self.g_areas[self.idx_zone]]] = self.forces[self.idx_zone]
+            self.F = np.zeros((self.mesh_coarse.N(), 3))
+            self.F[self.areas[self.idx_zone]] = self.forces[self.idx_zone]
+
+        # Load a force sample from Dataset
+        else:
+            sleep(0.5)
+            F = np.zeros(self.data_size) if self.sample_in is None else self.sample_in
+            self.F = F[self.grid_correspondences]
 
         # Set training data
         self.set_training_data(input_array=F.copy(),
-                               output_array=zeros(self.data_size))
-
-    def compute_pattern_forces(self):
-
-        # Get current zone
-        zone = p_forces.zones[self.idx_zone]
-
-        # Define next force value
-        f = array([0., 0., 0.])
-        for direction in self.directions[self.idx_direction]:
-            f[direction] = self.amplitudes[self.idx_amplitude] * p_forces.amplitude[zone]
-        self.forces[self.idx_zone] = [f.tolist()] * len(self.areas[self.idx_zone])
-
-        # Increment direction index
-        if self.idx_amplitude == len(self.amplitudes) - 1 and self.idx_zone == len(self.areas) - 1:
-            self.idx_direction = (self.idx_direction + 1) % len(self.directions)
-        # Increment zone index
-        if self.idx_amplitude == len(self.amplitudes) - 1:
-            self.idx_zone = (self.idx_zone + 1) % len(self.areas)
-        # Increment amplitude index
-        self.idx_amplitude = (self.idx_amplitude + 1) % len(self.amplitudes)
-
-    def compute_random_forces(self):
-
-        # Pick random zone
-        zones = choice(len(self.areas), size=p_forces.simultaneous, replace=False)
-
-        # Define next force value
-        for i in zones:
-            f = uniform(low=-1, high=1, size=(3,))
-            f = f * p_forces.amplitude[p_forces.zones[i]]
-            self.forces[i] = [f.tolist()] * len(self.areas[i])
-
-        # Time to visualize
-        sleep(0.5)
+                               output_array=np.zeros(self.data_size))
 
     def apply_prediction(self, prediction):
 
-        # Reshape prediction
-        U = reshape(prediction, self.data_size)
+        # Reshape to correspond to sparse grid
+        U = np.reshape(prediction, self.data_size)
+        U_sparse = U[self.grid_correspondences]
+        self.update_visual(U_sparse)
 
-        # Update detailed mesh visualization
-        new_points = []
+    def update_visual(self, U):
 
-        from scipy.interpolate import RegularGridInterpolator
-        x = np.linspace(self.grid[0][0], self.grid[0][-1], len(self.grid[0]))
-        y = np.linspace(self.grid[1][0], self.grid[1][-1], len(self.grid[1]))
-        z = np.linspace(self.grid[2][0], self.grid[2][-1], len(self.grid[2]))
-        # X, Y, Z = np.meshgrid(x, y, z, indexing='ij', sparse=True)
-        pred = reshape(U, (p_grid.nb_cells[0] + 1, p_grid.nb_cells[1] + 1, p_grid.nb_cells[2] + 1, -1))
-        interpolator = RegularGridInterpolator([x, y, z], pred, method='nearest')
+        # Apply mappings
+        updated_position = self.sparse_grid.points().copy() + U
+        mesh_position = self.mapping.apply(updated_position)
+        mesh_coarse_position = self.mapping_coarse.apply(updated_position)
 
-        for position in self.mesh.points():
-            # x_cell = array(array(self.grid[0]) < position[0], dtype=int).tolist().index(0) - 1
-            # y_cell = array(array(self.grid[1]) < position[1], dtype=int).tolist().index(0) - 1
-            # z_cell = array(array(self.grid[2]) < position[2], dtype=int).tolist().index(0) - 1
-            #
-            #
-            # # cell = [self.cell_corner(x_cell,     y_cell,     z_cell),
-            # #         self.cell_corner(x_cell + 1, y_cell + 1, z_cell + 1),
-            # #         self.cell_corner(x_cell,     y_cell,     z_cell + 1),
-            # #         self.cell_corner(x_cell + 1, y_cell + 1, z_cell),
-            # #         self.cell_corner(x_cell,     y_cell + 1, z_cell),
-            # #         self.cell_corner(x_cell + 1, y_cell,     z_cell + 1),
-            # #         self.cell_corner(x_cell,     y_cell + 1, z_cell + 1),
-            # #         self.cell_corner(x_cell + 1, y_cell,     z_cell)]
-            # # interp = vedo.utils.linInterpolate(position,
-            # #                                      [self.grid_positions[cell[0]], self.grid_positions[cell[1]]],
-            # #                                      [U[cell[0]], U[cell[1]]])
-            # D = []
-            # for x in (-1, 0, 1, 2):
-            #     for y in (-1, 0, 1, 2):
-            #         for z in (-1, 0, 1, 2):
-            #             D.append(U[self.cell_corner(x_cell + x, y_cell + y, z_cell + z)])
-            # U_norms = np.linalg.norm(array(D), axis=1)
-            # interp = D[list(U_norms).index(max(U_norms))]
-
-            interp = interpolator(position)
-
-            new_points.append(position + interp[0])
-
-        updated_mesh = self.mesh.clone().points(new_points)
-        mapped_mesh = self.mapping.apply(updated_mesh.points()) if self.detailed else updated_mesh
+        # Update surface mesh
         self.factory.update_object_dict(object_id=0,
-                                        new_data_dict={'positions': mapped_mesh.points().copy()})
+                                        new_data_dict={'positions': mesh_position})
 
         # Update arrows representing force fields
-        position, vec = [], []
-        for area, force in zip(self.areas, self.forces):
-            if list(force[0]) != [0., 0., 0.]:
-                position += list(updated_mesh.points()[array(area)])
-                vec += list(0.25 * array(force) / p_model.scale)
-        if len(position) == 0 or len(vec) == 0:
-            position, vec = [0., 0., 0.], [0., 0., 0.]
         self.factory.update_object_dict(object_id=1,
-                                        new_data_dict={'positions': position,
-                                                       'vectors': vec})
+                                        new_data_dict={'positions': mesh_coarse_position if self.compute_sample else updated_position,
+                                                       'vectors': 0.25 * self.F / p_model.scale})
 
-        # Update arrows representing displacement field
-        self.factory.update_object_dict(object_id=3,
-                                        new_data_dict={'positions': self.grid_positions,
-                                                       'vectors': U})
+        # Update sparse grid positions
+        self.factory.update_object_dict(object_id=2,
+                                        new_data_dict={'positions': updated_position})
 
         # Send visualization data to update
         self.update_visualisation(visu_dict=self.factory.updated_object_dict)
 
     def close(self):
-
         # Shutdown message
         print("Bye!")

@@ -30,7 +30,7 @@ def launch_training():
                                                            'sleep': False,
                                                            'allow_requests': True},
                                                as_tcp_ip_client=True,
-                                               number_of_thread=4)
+                                               number_of_thread=10)
     # Fully Connected configuration (the number of neurones on the first and last layer is defined by the total amount
     # of parameters in the input and the output vectors respectively)
     network_config = FCConfig(loss=MSELoss,
@@ -39,9 +39,11 @@ def launch_training():
                               dim_layers=[nb_points * dimension, nb_points * dimension, dimension],
                               dim_output=dimension)
     # Dataset configuration with the path to the existing Dataset
-    dataset_config = BaseDatasetConfig(shuffle_dataset=True)
+    dataset_config = BaseDatasetConfig(shuffle_dataset=True,
+                                       normalize=False)
     # Create DataGenerator
-    trainer = BaseTrainer(session_name='sessions/online_training',
+    trainer = BaseTrainer(session_dir='sessions',
+                          session_name='online_training',
                           environment_config=environment_config,
                           dataset_config=dataset_config,
                           network_config=network_config,

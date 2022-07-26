@@ -49,8 +49,7 @@ class Beam(BaseEnvironment):
         self.compute_sample = True
         step = 0.1
         self.amplitudes = np.concatenate((np.arange(0, 1, step),
-                                          np.arange(1, -1, -step),
-                                          np.arange(-1, 0, step)))
+                                          np.arange(1, 0, -step)))
         self.idx_amplitude = 0
         self.force_value = None
         self.zone = None

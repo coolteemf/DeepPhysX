@@ -16,6 +16,8 @@ from DeepPhysX_Core.Visualizer.VedoVisualizer import VedoVisualizer
 from DeepPhysX_Sofa.Environment.SofaEnvironmentConfig import SofaEnvironmentConfig
 
 # Session related imports
+from download import LiverDownloader
+LiverDownloader().get_session('run')
 from Environment.LiverTraining import LiverTraining
 
 # Dataset parameters
@@ -48,12 +50,6 @@ def launch_data_generation(dataset_dir, dataset_mode):
 
 
 if __name__ == '__main__':
-
-    # Check data
-    if not os.path.exists('Environment/models'):
-        from download import download_all
-        print('Downloading Liver demo data...')
-        download_all()
 
     # Define dataset
     user_session = 'sessions/liver_data_user'
