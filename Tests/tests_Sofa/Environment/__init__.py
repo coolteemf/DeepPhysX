@@ -1,2 +1,0 @@
-from .tests_SofaEnvironment import TestSofaEnvironment
-from .tests_SofaEnvironmentConfig import TestSofaEnvironmentConfig
