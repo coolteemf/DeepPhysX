@@ -217,6 +217,9 @@ class NetworkManager:
 
         # Intermediate states saving
         elif self.save_each_epoch:
+            print(" self.network_dir", self.network_dir)
+            print("self.network_template_name.format(self.saved_counter)",
+                  self.network_template_name.format(self.saved_counter))
             path = self.network_dir + self.network_template_name.format(self.saved_counter)
             self.saved_counter += 1
             print(f"[{self.name}] Saving intermediate network at {path}.")
