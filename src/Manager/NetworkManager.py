@@ -106,12 +106,9 @@ class NetworkManager:
             # Setting network directory
             if self.new_session and self.network_config.network_dir and isdir(self.network_config.network_dir):
                 self.network_dir = self.network_config.network_dir
-                self.network_dir = copy_dir(self.network_dir, self.session_dir, dest_dir='network')
                 self.load_network()
-            else:
-                self.network_dir = osPathJoin(self.session_dir, 'network/')
-                self.network_dir = create_dir(self.network_dir, dir_name='network')
-
+            self.network_dir = osPathJoin(self.session_dir, 'network/')
+            self.network_dir = create_dir(self.network_dir, dir_name='network')
         # Prediction
         else:
             # Configure as prediction
