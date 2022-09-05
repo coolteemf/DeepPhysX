@@ -731,6 +731,12 @@ class DatasetManager:
 
         return self.get_data(get_inputs=False, get_outputs=True, batched=batched)
 
+    def set_eval(self) -> None:
+        self.mode = self.modes['Validation']
+
+    def set_train(self) -> None:
+        self.mode = self.modes['Training']
+
     def close(self) -> None:
         """
         | Launch the close procedure of the dataset manager

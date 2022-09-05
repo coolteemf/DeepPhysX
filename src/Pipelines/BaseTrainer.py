@@ -37,7 +37,9 @@ class BaseTrainer(BasePipeline):
                  nb_epochs: int = 0,
                  nb_batches: int = 0,
                  batch_size: int = 0,
-                 debug: bool = False):
+                 debug: bool = False,
+                 do_validation: bool = False,
+                 nb_validation_batches: int = 0):
 
         if environment_config is None and dataset_config.dataset_dir is None:
             print("BaseTrainer: You have to give me a dataset source (existing dataset directory or simulation to "
@@ -73,6 +75,9 @@ class BaseTrainer(BasePipeline):
             id_batch, nb_batch = self.digits[1].format(0), self.digits[1].format(self.nb_batches)
             self.progress_bar = Progressbar(start=0, stop=self.nb_batches * self.nb_epochs, c='orange',
                                             title=f'Epoch n°{id_epoch}/{nb_epoch} - Batch n°{id_batch}/{nb_batch} ')
+
+        self.do_validation = do_validation
+        self.nb_validation_batches = nb_validation_batches
 
         self.manager = Manager(pipeline=self,
                                network_config=self.network_config,
@@ -114,6 +119,20 @@ class BaseTrainer(BasePipeline):
         self.manager.get_data(self.id_epoch, self.batch_size)
         _, self.loss_dict = self.manager.optimize_network()
 
+    def execute_validation(self):
+        self.manager.set_eval()
+        id_batch = 0
+        while id_batch < self.nb_validation_batches:
+            self.validate()
+            id_batch += 1
+
+    def validate(self):
+        """
+        | Pulls data from the manager and run a prediction step.
+        """
+        self.manager.get_data(self.id_epoch, self.batch_size)
+        prediction, self.loss_dict = self.manager.get_prediction()
+
     def save_network(self) -> None:
         """
         | Registers the network weights and biases in the corresponding directory (session_name/network or
@@ -145,6 +164,7 @@ class BaseTrainer(BasePipeline):
         """
 
         self.id_batch = 0
+        self.manager.set_train()
 
     def epoch_end(self) -> None:
         """
@@ -153,6 +173,8 @@ class BaseTrainer(BasePipeline):
         """
 
         self.manager.stats_manager.add_train_epoch_loss(self.loss_dict['loss'], self.id_epoch)
+        if self.do_validation:
+            self.execute_validation()
 
     def epoch_condition(self) -> bool:
         """
