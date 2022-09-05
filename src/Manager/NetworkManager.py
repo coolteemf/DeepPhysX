@@ -55,7 +55,7 @@ class NetworkManager:
         self.session_dir: str = session_dir if session_dir is not None else osPathJoin(get_first_caller(), session_name)
         self.new_session: bool = new_session
         self.network_dir: Optional[str] = None
-        self.network_template_name: str = session_name + '_network_{}'
+        self.network_template_name: str = '_network_{}'
 
         # Network management
         self.manager: Any = manager
