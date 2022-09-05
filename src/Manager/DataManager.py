@@ -228,6 +228,14 @@ class DataManager:
         self.is_training = True
         self.dataset_manager.set_train()
 
+    def set_eval(self) -> None:
+        self.is_training = False
+        self.dataset_manager.set_eval()
+
+    def set_train(self) -> None:
+        self.is_training = True
+        self.dataset_manager.set_train()
+
     def close(self) -> None:
         """
         | Launch the closing procedure on its managers

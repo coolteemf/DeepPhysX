@@ -133,6 +133,20 @@ class BaseTrainer(BasePipeline):
         self.manager.get_data(epoch=0, batch_size=self.batch_size)
         prediction, self.loss_dict = self.manager.get_prediction()
 
+    def execute_validation(self):
+        self.manager.set_eval()
+        id_batch = 0
+        while id_batch < self.nb_validation_batches:
+            self.validate()
+            id_batch += 1
+
+    def validate(self):
+        """
+        | Pulls data from the manager and run a prediction step.
+        """
+        self.manager.get_data(self.id_epoch, self.batch_size)
+        prediction, self.loss_dict = self.manager.get_prediction()
+
     def save_network(self) -> None:
         """
         | Registers the network weights and biases in the corresponding directory (session_name/network or
