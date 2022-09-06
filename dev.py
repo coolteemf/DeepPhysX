@@ -2,7 +2,7 @@ from os import listdir, symlink, unlink, mkdir
 from os.path import join, islink, abspath, pardir, isdir
 from pathlib import Path
 from sys import argv
-from site import USER_SITE
+from site import USER_SITE, getsitepackages
 from shutil import rmtree
 
 from config import check_repositories
@@ -23,13 +23,14 @@ PROJECT = 'DeepPhysX'
 packages = ['Core']
 available = ['Torch', 'Sofa']
 root = abspath(join(Path(__file__).parent.absolute(), pardir))
+site_pkg_repo = join(getsitepackages()[0], PROJECT) if len(getsitepackages()) == 1 else join(USER_SITE, PROJECT)
 
 # Option 1: create the symbolic links
 if argv[1] == 'set':
 
     # Create main repository in site-packages
-    if not isdir(join(USER_SITE, PROJECT)):
-        mkdir(join(USER_SITE, PROJECT))
+    if not isdir(site_pkg_repo):
+        mkdir(site_pkg_repo)
 
     # Link to every existing packages
     for package_name in listdir(root):
@@ -38,15 +39,14 @@ if argv[1] == 'set':
 
     # Create symbolic links in site-packages
     for package_name in packages:
-        if not islink(join(USER_SITE, PROJECT, package_name)):
-            symlink(src=join(root, package_name, 'src'), dst=join(USER_SITE, PROJECT, package_name))
-            print(f"Linked {join(USER_SITE, PROJECT, package_name)} -> {join(root, package_name, 'src')}")
+        if not islink(join(site_pkg_repo, package_name)):
+            symlink(src=join(root, package_name, 'src'), dst=join(site_pkg_repo, package_name))
+            print(f"Linked {join(site_pkg_repo, package_name)} -> {join(root, package_name, 'src')}")
 
 # Option 2: remove the symbolic links
 else:
-
-    if isdir(join(USER_SITE, PROJECT)):
-        for package_name in listdir(join(USER_SITE, PROJECT)):
-            unlink(join(USER_SITE, PROJECT, package_name))
-            print(f"Unlinked {join(USER_SITE, PROJECT, package_name)} -> {join(root, package_name, 'src')}")
-        rmtree(join(USER_SITE, PROJECT))
+    if isdir(site_pkg_repo):
+        for package_name in listdir(site_pkg_repo):
+            unlink(join(site_pkg_repo, package_name))
+            print(f"Unlinked {join(site_pkg_repo, package_name)} -> {join(root, package_name, 'src')}")
+        rmtree(site_pkg_repo)
