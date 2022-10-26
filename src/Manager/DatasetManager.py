@@ -5,8 +5,7 @@ from os import listdir, symlink
 from json import dump as json_dump
 from json import load as json_load
 
-import numpy as np
-from numpy import load, squeeze, ndarray, concatenate, float64, random, cumsum, unique, nonzero
+from numpy import load, squeeze, ndarray, concatenate, float64, random, cumsum, unique, nonzero, asarray
 
 from DeepPhysX.Core.Dataset.BaseDatasetConfig import BaseDatasetConfig
 from DeepPhysX.Core.Utils.pathUtils import get_first_caller, create_dir
@@ -129,7 +128,7 @@ class DatasetManager:
                     self.dataset_dir = dataset_dir
                     if abspath(self.dataset_dir) != osPathJoin(self.session_dir, 'dataset'):
                         symlink(abspath(self.dataset_dir), osPathJoin(self.session_dir, 'dataset'))
-                        self.load_directory(shuffle_data=self.shuffle_dataset)
+                        self.load_directory()
                     # Special case: adding data in existing Dataset with DataGeneration
                     else:
                         self.load_directory(load_data=False)
@@ -137,7 +136,7 @@ class DatasetManager:
             # Existing training session
             else:
                 self.dataset_dir = osPathJoin(self.session_dir, 'dataset/')
-                self.load_directory(shuffle_data=self.shuffle_dataset)
+                self.load_directory()
         # Prediction
         else:
             # Saving running data
@@ -153,7 +152,7 @@ class DatasetManager:
                 if dataset_dir[-8:] != "dataset/":
                     dataset_dir += "dataset/"
                 self.dataset_dir = dataset_dir
-                self.load_directory(shuffle_data=self.shuffle_dataset)
+                self.load_directory()
 
     def get_data_manager(self) -> Any:
         """
@@ -346,7 +345,7 @@ class DatasetManager:
         self.idx_partitions[self.mode] = nb_running_partitions
         self.create_partitions()
 
-    def load_directory(self, load_data: bool = True, shuffle_data: bool = False) -> None:
+    def load_directory(self, load_data: bool = True) -> None:
         """
         | Load the desired directory. Try to find partition list and upload it.
         | No data loading here.
@@ -357,10 +356,6 @@ class DatasetManager:
             raise Warning(f"[{self.name}] Loading directory: The given path is not an existing directory")
         if load_data:
             print(f"[{self.name}] Loading directory: Read dataset from {self.dataset_dir}")
-        else:
-            if shuffle_data:
-                raise ValueError(f"[{self.name}] load_directory: shuffle_data can't be set to True if load_data is set "
-                                 f"to False")
 
         # 2. Look for the json info file
         if isfile(osPathJoin(self.dataset_dir, self.json_filename)):
@@ -395,7 +390,7 @@ class DatasetManager:
         # 4. Load data from partitions
         self.idx_partitions = [len(partitions_list) for partitions_list in self.list_partitions['input']]
         if load_data:
-            self.load_partitions(shuffle_data=shuffle_data, force_reload=True)
+            self.load_partitions()
 
     def search_partitions(self, mode: str) -> Dict[str, List[str]]:
         """
@@ -476,36 +471,27 @@ class DatasetManager:
         # Store the data shapes
         self.json_dict['data_shape'] = data_shape
 
-    def load_partitions(self, shuffle_data: bool = False, force_reload: bool = False) -> None:
+    def load_partitions(self) -> None:
         """
         | Load data from partitions.
-
-        :param bool force_reload: If True, force partitions reload
-        :param bool shuffle_data: If True, samples from partitions will be shuffled
         """
 
-        # 1. If there is only one partition for the current mode for input field at least, don't need to reload it
-        if self.last_loaded_dataset_mode == self.mode and self.idx_partitions[self.mode] == 1 and not force_reload:
-            return
-
-        # 2. Check partitions existence for the current mode
+        # 1. Check partitions existence for the current mode
         if self.idx_partitions[self.mode] == 0:
             raise ValueError(f"[{self.name}] No partitions to read for {list(self.modes.keys())[self.mode]} mode.")
 
-        # 3. Load new data in dataset
+        # 2. Load new data in dataset
         self.dataset.empty()
         # Training mode with mixed dataset: read multiple partitions per field
         if self.mode == self.modes['Training'] and self.idx_partitions[self.modes['Running']] > 0:
-            if self.samples_indices_idx is None:
-                self.load_multiple_partitions([self.modes['Training'], self.modes['Running']], shuffle_data=shuffle_data)
+            self.load_multiple_partitions([self.modes['Training'], self.modes['Running']])
             self.read_multiple_partitions()
             return
         # Training mode without mixed dataset or other modes: check the number of partitions per field to read
         if self.idx_partitions[self.mode] == 1:
             self.read_last_partitions()
         else:
-            if self.samples_indices_idx is None:
-                self.load_multiple_partitions([self.mode], shuffle_data=shuffle_data)
+            self.load_multiple_partitions([self.mode])
             self.read_multiple_partitions()
 
     def read_last_partitions(self) -> None:
@@ -518,7 +504,7 @@ class DatasetManager:
             data = load(self.current_partition_path[field])
             self.dataset.set(field, data)
 
-    def load_multiple_partitions(self, modes: List[int], shuffle_data: bool = False) -> None:
+    def load_multiple_partitions(self, modes: List[int]) -> None:
         """
         | Specialisation of the load_partitions() function. It can load a list of partitions.
 
@@ -556,7 +542,7 @@ class DatasetManager:
             total_num_samples == self.nb_sample_per_partition[self.fields[0]][0] * \
             len(self.nb_sample_per_partition[self.fields[0]])
         self.samples_indices = range(total_num_samples)
-        if shuffle_data:
+        if self.shuffle_dataset:
             self.samples_indices = random.choice(self.samples_indices, len(self.samples_indices), replace=False)
 
     def read_multiple_partitions(self) -> None:
@@ -573,7 +559,7 @@ class DatasetManager:
         first_part_n_samples = self.nb_sample_per_partition[self.fields[0]][0]
         n_samples_in_dataset = first_part_n_samples
         # Indices of the samples to be loaded
-        samples_to_load = np.asarray([self.samples_indices[i%len(self.samples_indices)]
+        samples_to_load = asarray([self.samples_indices[i%len(self.samples_indices)]
                            for i in range(self.samples_indices_idx, self.samples_indices_idx+n_samples_in_dataset)])
         # Computing which partition contains the desired sample
         if self.same_nb_sample_for_all_partitions:
@@ -604,6 +590,14 @@ class DatasetManager:
                 dataset = load(self.mul_part_list_path[part_to_load][field])
                 self.dataset.add(field, dataset[samples])
                 del dataset
+        for p in parts_to_load:
+            part_filename = self.mul_part_list_path[p][self.fields[0]]
+            if self.mode == self.modes['Training'] and '/train_' not in part_filename:
+                raise ValueError(f"Mode is set to training but the loaded partition {part_filename} appears "
+                                 "to not be a training partition")
+            elif self.mode == self.modes['Validation'] and '/valid_' not in part_filename:
+                raise ValueError(f"Mode is set to validation but the loaded partition {part_filename} appears "
+                                 "to not be a validation partition")
 
         self.samples_indices_idx = (self.samples_indices_idx + n_samples_in_dataset)%len(self.samples_indices)
         self.current_partition_path['input'] = self.mul_part_list_path[part_to_load_unique[0]][self.fields[0]]
@@ -772,9 +766,11 @@ class DatasetManager:
 
     def set_eval(self) -> None:
         self.mode = self.modes['Validation']
+        self.load_partitions()
 
     def set_train(self) -> None:
         self.mode = self.modes['Training']
+        self.load_partitions()
 
     def close(self) -> None:
         """
