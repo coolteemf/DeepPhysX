@@ -4,7 +4,9 @@ from os.path import isfile, isdir, abspath
 from os import listdir, symlink
 from json import dump as json_dump
 from json import load as json_load
-from numpy import load, squeeze, ndarray, concatenate, float64
+
+import numpy as np
+from numpy import load, squeeze, ndarray, concatenate, float64, random, cumsum, unique, nonzero
 
 from DeepPhysX.Core.Dataset.BaseDatasetConfig import BaseDatasetConfig
 from DeepPhysX.Core.Utils.pathUtils import get_first_caller, create_dir
@@ -84,12 +86,13 @@ class DatasetManager:
             'input': [[], [], []] if self.record_data['input'] else None,
             'output': [[], [], []] if self.record_data['output'] else None}
         self.idx_partitions: List[int] = [0, 0, 0]
+        self.nb_sample_per_partition = {field: [] for field in self.fields}
+        self.same_nb_sample_for_all_partitions = None
+        self.samples_indices_idx: Optional[int] = None
         self.current_partition_path: Dict[str, Optional[str]] = {'input': None, 'output': None}
 
         # Dataset loading with multiple partitions variables
         self.mul_part_list_path: Optional[List[Dict[str, str]]] = None
-        self.mul_part_slices: Optional[List[List[int]]] = None
-        self.mul_part_idx: Optional[int] = None
 
         # Dataset Json file
         self.json_filename: str = 'dataset.json'
@@ -126,7 +129,7 @@ class DatasetManager:
                     self.dataset_dir = dataset_dir
                     if abspath(self.dataset_dir) != osPathJoin(self.session_dir, 'dataset'):
                         symlink(abspath(self.dataset_dir), osPathJoin(self.session_dir, 'dataset'))
-                        self.load_directory()
+                        self.load_directory(shuffle_data=self.shuffle_dataset)
                     # Special case: adding data in existing Dataset with DataGeneration
                     else:
                         self.load_directory(load_data=False)
@@ -134,7 +137,7 @@ class DatasetManager:
             # Existing training session
             else:
                 self.dataset_dir = osPathJoin(self.session_dir, 'dataset/')
-                self.load_directory()
+                self.load_directory(shuffle_data=self.shuffle_dataset)
         # Prediction
         else:
             # Saving running data
@@ -150,7 +153,7 @@ class DatasetManager:
                 if dataset_dir[-8:] != "dataset/":
                     dataset_dir += "dataset/"
                 self.dataset_dir = dataset_dir
-                self.load_directory()
+                self.load_directory(shuffle_data=self.shuffle_dataset)
 
     def get_data_manager(self) -> Any:
         """
@@ -232,8 +235,6 @@ class DatasetManager:
             # if not force_partition_reload:
             #     return None
             self.load_partitions()
-            if self.shuffle_dataset:
-                self.dataset.shuffle()
             self.dataset.current_sample = 0
 
         # 2. Update dataset indices with batch size
@@ -273,8 +274,6 @@ class DatasetManager:
         if data['input'].shape[0] < batch_size:
             # Load next samples from the dataset
             self.load_partitions()
-            if self.shuffle_dataset:
-                self.dataset.shuffle()
             self.dataset.current_sample = 0
             # Get the remaining samples
             missing_samples = batch_size - data['input'].shape[0]
@@ -347,7 +346,7 @@ class DatasetManager:
         self.idx_partitions[self.mode] = nb_running_partitions
         self.create_partitions()
 
-    def load_directory(self, load_data: bool = True) -> None:
+    def load_directory(self, load_data: bool = True, shuffle_data: bool = False) -> None:
         """
         | Load the desired directory. Try to find partition list and upload it.
         | No data loading here.
@@ -358,6 +357,10 @@ class DatasetManager:
             raise Warning(f"[{self.name}] Loading directory: The given path is not an existing directory")
         if load_data:
             print(f"[{self.name}] Loading directory: Read dataset from {self.dataset_dir}")
+        else:
+            if shuffle_data:
+                raise ValueError(f"[{self.name}] load_directory: shuffle_data can't be set to True if load_data is set "
+                                 f"to False")
 
         # 2. Look for the json info file
         if isfile(osPathJoin(self.dataset_dir, self.json_filename)):
@@ -392,7 +395,7 @@ class DatasetManager:
         # 4. Load data from partitions
         self.idx_partitions = [len(partitions_list) for partitions_list in self.list_partitions['input']]
         if load_data:
-            self.load_partitions(force_reload=True)
+            self.load_partitions(shuffle_data=shuffle_data, force_reload=True)
 
     def search_partitions(self, mode: str) -> Dict[str, List[str]]:
         """
@@ -473,17 +476,16 @@ class DatasetManager:
         # Store the data shapes
         self.json_dict['data_shape'] = data_shape
 
-    def load_partitions(self, force_reload: bool = False) -> None:
+    def load_partitions(self, shuffle_data: bool = False, force_reload: bool = False) -> None:
         """
         | Load data from partitions.
 
         :param bool force_reload: If True, force partitions reload
+        :param bool shuffle_data: If True, samples from partitions will be shuffled
         """
 
         # 1. If there is only one partition for the current mode for input field at least, don't need to reload it
         if self.last_loaded_dataset_mode == self.mode and self.idx_partitions[self.mode] == 1 and not force_reload:
-            if self.shuffle_dataset:
-                self.dataset.shuffle()
             return
 
         # 2. Check partitions existence for the current mode
@@ -494,16 +496,16 @@ class DatasetManager:
         self.dataset.empty()
         # Training mode with mixed dataset: read multiple partitions per field
         if self.mode == self.modes['Training'] and self.idx_partitions[self.modes['Running']] > 0:
-            if self.mul_part_idx is None:
-                self.load_multiple_partitions([self.modes['Training'], self.modes['Running']])
+            if self.samples_indices_idx is None:
+                self.load_multiple_partitions([self.modes['Training'], self.modes['Running']], shuffle_data=shuffle_data)
             self.read_multiple_partitions()
             return
         # Training mode without mixed dataset or other modes: check the number of partitions per field to read
         if self.idx_partitions[self.mode] == 1:
             self.read_last_partitions()
         else:
-            if self.mul_part_idx is None:
-                self.load_multiple_partitions([self.mode])
+            if self.samples_indices_idx is None:
+                self.load_multiple_partitions([self.mode], shuffle_data=shuffle_data)
             self.read_multiple_partitions()
 
     def read_last_partitions(self) -> None:
@@ -516,7 +518,7 @@ class DatasetManager:
             data = load(self.current_partition_path[field])
             self.dataset.set(field, data)
 
-    def load_multiple_partitions(self, modes: List[int]) -> None:
+    def load_multiple_partitions(self, modes: List[int], shuffle_data: bool = False) -> None:
         """
         | Specialisation of the load_partitions() function. It can load a list of partitions.
 
@@ -525,9 +527,10 @@ class DatasetManager:
 
         # 1. Initialize multiple partition loading variables
         self.mul_part_list_path = {field: [] for field in self.fields}
-        self.mul_part_slices = []
-        self.mul_part_idx = 0
-        nb_sample_per_partition = {field: [] for field in self.fields}
+        self.samples_indices = []
+        self.samples_indices_idx = 0
+        self.nb_sample_per_partition = {field: [] for field in self.fields}
+        self.same_nb_sample_for_all_partitions = False
 
         # 2. For each field, load all partitions
         for field in self.fields:
@@ -536,38 +539,74 @@ class DatasetManager:
                 self.mul_part_list_path[field] += [self.dataset_dir + partition
                                                    for partition in self.list_partitions[field][mode]]
                 # 2.2. Find the number of samples in each partition
-                nb_sample_per_partition[field] += self.json_dict['nb_samples'][list(self.modes.keys())[mode]]
+                self.nb_sample_per_partition[field] += self.json_dict['nb_samples'][list(self.modes.keys())[mode]]
 
         # 3. Invert the partitions list structure
-        nb_partition = len(nb_sample_per_partition[self.fields[0]])
+        nb_partition = len(self.nb_sample_per_partition[self.fields[0]])
         inverted_list = [{} for _ in range(nb_partition)]
         for i in range(nb_partition):
             for field in self.fields:
                 inverted_list[i][field] = self.mul_part_list_path[field][i]
         self.mul_part_list_path = inverted_list
 
-        # 4. Define the slicing pattern of reading for partitions
-        for idx in nb_sample_per_partition[self.fields[0]]:
-            idx_slicing = [0]
-            for _ in range(nb_partition - 1):
-                idx_slicing.append(idx_slicing[-1] + idx // nb_partition + 1)
-            idx_slicing.append(idx)
-            self.mul_part_slices.append(idx_slicing)
+        # 4. Define indices of partitions to load
+        total_num_samples = sum(self.nb_sample_per_partition[self.fields[0]])
+        # Check if all partitions have the same number of samples
+        self.same_nb_sample_for_all_partitions = \
+            total_num_samples == self.nb_sample_per_partition[self.fields[0]][0] * \
+            len(self.nb_sample_per_partition[self.fields[0]])
+        self.samples_indices = range(total_num_samples)
+        if shuffle_data:
+            self.samples_indices = random.choice(self.samples_indices, len(self.samples_indices), replace=False)
 
     def read_multiple_partitions(self) -> None:
         """
         | Read data in a list of partitions.
+        | Translate a list of samples number into partition numbers and load the relevant samples
+        | in the selected partitions.
+        | Example: sample #1234 , 10 samples per partition -> partition #123 is loaded and
+        | the 4th sample in the partition is put in the dataset.
         """
 
-        for i, partitions in enumerate(self.mul_part_list_path):
-            for field in partitions.keys():
-                dataset = load(partitions[field])
-                samples = slice(self.mul_part_slices[i][self.mul_part_idx],
-                                self.mul_part_slices[i][self.mul_part_idx + 1])
+        # No parameter in config for the number of samples to load in the dataset
+        # set it to the number of samples in a partition
+        first_part_n_samples = self.nb_sample_per_partition[self.fields[0]][0]
+        n_samples_in_dataset = first_part_n_samples
+        # Indices of the samples to be loaded
+        samples_to_load = np.asarray([self.samples_indices[i%len(self.samples_indices)]
+                           for i in range(self.samples_indices_idx, self.samples_indices_idx+n_samples_in_dataset)])
+        # Computing which partition contains the desired sample
+        if self.same_nb_sample_for_all_partitions:
+            parts_to_load = [s//first_part_n_samples for s in samples_to_load]
+        else:
+            parts_to_load = []
+            for s in samples_to_load:
+                part_to_load = s//first_part_n_samples
+                if part_to_load>0:
+                    # Compute the max sample idx of each partition
+                    cumsum_samples = cumsum(self.nb_sample_per_partition[self.fields[0]])
+                    # If the sample to load is greater than max sample of the chose partition, increase the part num
+                    while cumsum_samples[part_to_load] < s and part_to_load < len(cumsum_samples):
+                        part_to_load += 1
+                    while cumsum_samples[part_to_load-1] >= s and part_to_load > 0:
+                        part_to_load -= 1
+                parts_to_load.append(part_to_load)
+        # If several samples are in the same partition, the partition is loaded only once
+        part_to_load_unique = unique(parts_to_load)
+        for part_to_load in part_to_load_unique:
+            samples = samples_to_load[nonzero(parts_to_load == part_to_load)]
+            if self.same_nb_sample_for_all_partitions:
+                samples = samples % first_part_n_samples
+            else:
+                if part_to_load > 0:
+                    samples -= cumsum_samples[part_to_load-1]
+            for field in self.fields:
+                dataset = load(self.mul_part_list_path[part_to_load][field])
                 self.dataset.add(field, dataset[samples])
                 del dataset
-        self.mul_part_idx = (self.mul_part_idx + 1) % (len(self.mul_part_slices[0]) - 1)
-        self.current_partition_path['input'] = self.mul_part_list_path[0][self.fields[0]]
+
+        self.samples_indices_idx = (self.samples_indices_idx + n_samples_in_dataset)%len(self.samples_indices)
+        self.current_partition_path['input'] = self.mul_part_list_path[part_to_load_unique[0]][self.fields[0]]
         self.dataset.current_sample = 0
 
     def update_json(self, update_shapes: bool = False, update_nb_samples: bool = False,
