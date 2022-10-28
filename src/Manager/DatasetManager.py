@@ -87,7 +87,7 @@ class DatasetManager:
         self.idx_partitions: List[int] = [0, 0, 0]
         self.nb_sample_per_partition = {field: [] for field in self.fields}
         self.same_nb_sample_for_all_partitions = None
-        self.samples_indices_idx: Optional[int] = None
+        self.samples_indices_idx: Optional[int] = 0
         self.current_partition_path: Dict[str, Optional[str]] = {'input': None, 'output': None}
 
         # Dataset loading with multiple partitions variables
@@ -514,7 +514,6 @@ class DatasetManager:
         # 1. Initialize multiple partition loading variables
         self.mul_part_list_path = {field: [] for field in self.fields}
         self.samples_indices = []
-        self.samples_indices_idx = 0
         self.nb_sample_per_partition = {field: [] for field in self.fields}
         self.same_nb_sample_for_all_partitions = False
 
