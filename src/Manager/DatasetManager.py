@@ -765,10 +765,12 @@ class DatasetManager:
 
     def set_eval(self) -> None:
         self.mode = self.modes['Validation']
+        self.samples_indices_idx = 0
         self.load_partitions()
 
     def set_train(self) -> None:
         self.mode = self.modes['Training']
+        self.samples_indices_idx = 0
         self.load_partitions()
 
     def close(self) -> None:
