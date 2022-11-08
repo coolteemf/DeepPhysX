@@ -1,6 +1,9 @@
 from typing import Optional
 from sys import stdout
 
+from DeepPhysX.Core.Manager.DataManager import DataManager
+from DeepPhysX.Core.Manager.NetworkManager import NetworkManager
+from DeepPhysX.Core.Manager.StatsManager import StatsManager
 from DeepPhysX.Core.Pipelines.BasePipeline import BasePipeline
 from DeepPhysX.Core.Manager.Manager import Manager
 from DeepPhysX.Core.Network.BaseNetworkConfig import BaseNetworkConfig
@@ -39,7 +42,10 @@ class BaseTrainer(BasePipeline):
                  batch_size: int = 0,
                  debug: bool = False,
                  do_validation: bool = False,
-                 nb_validation_batches: int = 0):
+                 nb_validation_batches: int = 0,
+                 network_manager=NetworkManager,
+                 data_manager=DataManager,
+                 stats_manager=StatsManager):
 
         if environment_config is None and dataset_config.dataset_dir is None:
             print("BaseTrainer: You have to give me a dataset source (existing dataset directory or simulation to "
@@ -86,7 +92,10 @@ class BaseTrainer(BasePipeline):
                                session_name=session_name,
                                session_dir=session_dir,
                                new_session=new_session,
-                               batch_size=batch_size)
+                               batch_size=batch_size,
+                               network_manager=network_manager,
+                               data_manager=data_manager,
+                               stats_manager=stats_manager)
 
         self.manager.save_info_file()
 

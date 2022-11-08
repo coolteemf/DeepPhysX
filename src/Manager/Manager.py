@@ -37,7 +37,10 @@ class Manager:
                  session_name: str = 'default',
                  session_dir: str = None,
                  new_session: bool = True,
-                 batch_size: int = 1):
+                 batch_size: int = 1,
+                 network_manager = NetworkManager,
+                 data_manager = DataManager,
+                 stats_manager = StatsManager):
 
         self.pipeline: Any = pipeline
         #Constructing the session_dir with the provided arguments
@@ -65,14 +68,14 @@ class Manager:
 
         self.session_name: str = session_name
         # Always create the NetworkMmanager
-        self.network_manager = NetworkManager(manager=self,
+        self.network_manager = network_manager(manager=self,
                                               network_config=network_config,
                                               session_name=self.session_name,
                                               session_dir=self.session_dir,
                                               new_session=new_session,
                                               train=train)
         # Always create the DataManager for same reason
-        self.data_manager = DataManager(manager=self,
+        self.data_manager = data_manager(manager=self,
                                         dataset_config=dataset_config,
                                         environment_config=environment_config,
                                         session_name=self.session_name,
@@ -82,7 +85,7 @@ class Manager:
                                         record_data=pipeline.record_data,
                                         batch_size=batch_size)
         # Create the StatsManager for training
-        self.stats_manager = StatsManager(manager=self,
+        self.stats_manager = stats_manager(manager=self,
                                           log_dir=osPathJoin(self.session_dir, 'stats/')) if train else None
 
     def get_pipeline(self) -> Any:
