@@ -1,4 +1,8 @@
 from typing import Optional
+
+from DeepPhysX.Core.Manager.DataManager import DataManager
+from DeepPhysX.Core.Manager.NetworkManager import NetworkManager
+from DeepPhysX.Core.Manager.StatsManager import StatsManager
 from numpy import ndarray
 
 from DeepPhysX.Core.Network.BaseNetworkConfig import BaseNetworkConfig
@@ -31,7 +35,11 @@ class BaseRunner(BasePipeline):
                  session_dir: Optional[str] = None,
                  nb_steps: int = 0,
                  record_inputs: bool = False,
-                 record_outputs: bool = False):
+                 record_outputs: bool = False,
+                 network_manager=NetworkManager,
+                 data_manager=DataManager,
+                 stats_manager=StatsManager
+                 ):
 
         BasePipeline.__init__(self,
                               network_config=network_config,
@@ -61,7 +69,10 @@ class BaseRunner(BasePipeline):
                                environment_config=self.environment_config,
                                session_name=session_name,
                                session_dir=session_dir,
-                               new_session=True)
+                               new_session=True,
+                               network_manager=network_manager,
+                               data_manager=data_manager,
+                               stats_manager=stats_manager)
 
     def execute(self) -> None:
         """
