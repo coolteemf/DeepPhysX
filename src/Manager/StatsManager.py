@@ -1,8 +1,9 @@
-from typing import Dict, Union, Any, Iterable, Optional
-from tensorboardX import SummaryWriter
+from typing import Dict, Any, Iterable, Optional
+from torch.utils.tensorboard import SummaryWriter
 from tensorboard import program
 from webbrowser import open as w_open
 from numpy import full, inf, array, ndarray, append, concatenate
+from os.path import join
 
 
 def generate_default_scene():
@@ -16,39 +17,36 @@ def generate_default_material():
 
 
 class StatsManager:
-    """
-    | Record all given values using the tensorboard framework. Open a tab in the navigator to inspect these values
-      during the training.
-
-    :param str log_dir: Path of the created directory
-    :param Manager manager: Manager that handles the StatsManager
-    :param bool keep_losses: If True Allow saving loss to .csv file
-    """
 
     def __init__(self,
-                 log_dir: str,
-                 manager: Any = None,
+                 session: str,
                  keep_losses: bool = False):
+        """
+        StatsManager records all the given values using the Tensorboard framework.
+        Open a tab in the navigator to inspect these values during the training.
+
+        :param session: Path to the session repository.
+        :param keep_losses: If True, allow saving loss to .csv file.
+        """
 
         self.name: str = self.__class__.__name__
 
         # Init writer
-        self.manager = manager
-        self.log_dir: str = log_dir
-        self.writer: SummaryWriter = SummaryWriter(log_dir)
+        self.log_dir: str = join(session, 'stats/')
+        self.writer: SummaryWriter = SummaryWriter(self.log_dir)
 
         # Open Tensorboard
         if not self.manager.pipeline.debug:
             tb = program.TensorBoard()
             port = 6006
-            tb.configure(argv=[None, '--logdir', log_dir, '--port', str(port)])
+            tb.configure(argv=[None, '--logdir', self.log_dir, '--port', str(port)])
             while True and port<7000:
                 try:
                     url = tb.launch()
                     break
                 except:
                     port +=1
-                    tb.configure(argv=[None, '--logdir', log_dir, '--port', str(port)])
+                    tb.configure(argv=[None, '--logdir', self.log_dir, '--port', str(port)])
                     continue
             w_open(url)
 
@@ -58,18 +56,9 @@ class StatsManager:
         self.keep_losses: bool = keep_losses
         self.tag_dict: Dict[str, int] = {}
 
-    def get_manager(self) -> Any:
-        """
-        | Return the Manager of the StatsManager.
-
-        :return: Manager that handles the StatsManager
-        """
-
-        return self.manager
-
     def add_train_batch_loss(self, value: float, count: int) -> None:
         """
-        | Add batch loss to tensorboard framework. Also compute mean and variance.
+        Add batch loss to tensorboard framework. Also compute mean and variance.
 
         :param float value: Value to store
         :param int count: ID of the value
@@ -85,7 +74,7 @@ class StatsManager:
 
     def add_train_epoch_loss(self, value: float, count: int) -> None:
         """
-        | Add epoch loss to tensorboard framework. Also compute mean and variance.
+        Add epoch loss to tensorboard framework. Also compute mean and variance.
 
         :param float value: Value to store
         :param int count: ID of the value
@@ -99,7 +88,7 @@ class StatsManager:
 
     def add_train_test_batch_loss(self, train_value: float, test_value: float, count: int) -> None:
         """
-        | Add train and test batch loss to tensorboard framework.
+        Add train and test batch loss to tensorboard framework.
 
         :param float train_value: Value of the training batch
         :param float test_value: Value of the testing batch
@@ -113,7 +102,7 @@ class StatsManager:
 
     def add_values_multi_plot(self, graph_name: str, tags: Iterable, values: Iterable, counts: Iterable) -> None:
         """
-        | Plot multiples value on the same graph
+        Plot multiples value on the same graph
 
         :param str graph_name: Name of the graph
         :param Iterable tags: Iterable containing the names of the values
@@ -126,7 +115,7 @@ class StatsManager:
 
     def add_test_loss(self, value: float, count: int) -> None:
         """
-        | Add test loss to tensorboard framework. Also compute mean and variance.
+        Add test loss to tensorboard framework. Also compute mean and variance.
 
         :param float value: Value to store
         :param int count: ID of the value
@@ -140,7 +129,7 @@ class StatsManager:
 
     def add_test_loss_OOB(self, value: float, count: int) -> None:
         """
-        | Add out of bound test loss to tensorboard framework. Also compute mean and variance.
+        Add out of bound test loss to tensorboard framework. Also compute mean and variance.
 
         :param float value: Value to store
         :param int count: ID of the value
@@ -154,7 +143,7 @@ class StatsManager:
 
     def add_custom_scalar(self, tag: str, value: float, count: int) -> None:
         """
-        | Add a custom scalar to tensorboard framework.
+        Add a custom scalar to tensorboard framework.
 
         :param str tag: Graph name
         :param float value: Value to store
@@ -165,7 +154,7 @@ class StatsManager:
 
     def add_custom_scalar_full(self, tag: str, value: float, count: int) -> None:
         """
-        | Add a custom scalar to tensorboard framework. Also compute mean and variance.
+        Add a custom scalar to tensorboard framework. Also compute mean and variance.
 
         :param str tag: Graph name
         :param float value: Value to store
@@ -184,7 +173,7 @@ class StatsManager:
 
     def update_mean_get_var(self, index: int, value: float, count: int) -> Optional[ndarray]:
         """
-        | Update mean and return the variance of the selected value
+        Update mean and return the variance of the selected value
 
         :param float value: Value to add in the computation of the mean
         :param int index: Target that is updated by the value
@@ -234,7 +223,7 @@ class StatsManager:
                     faces: Optional[ndarray] = None, b_n_3: bool = False,
                     config_dict: Optional[Dict[Any, Any]] = None) -> None:
         """
-        | Add 3D Mesh cloud to tensorboard framework.
+        Add 3D Mesh cloud to tensorboard framework.
 
         :param str tag: Data identifier
         :param ndarray vertices: List of the 3D coordinates of vertices.
@@ -262,7 +251,7 @@ class StatsManager:
     def add_network_weight_grad(self, network: Any, count: int, save_weights: bool = False,
                                 save_gradients: bool = True) -> None:
         """
-        | Add network weights and gradiant if specified to tensorboard framework.
+        Add network weights and gradiant if specified to tensorboard framework.
 
         :param BaseNetwork network: Network you want to display
         :param int count: ID of the sample
@@ -279,18 +268,13 @@ class StatsManager:
 
     def close(self) -> None:
         """
-        | Closing procedure
-
-        :return:
+        Launch the closing procedure of the StatsManager.
         """
 
         self.writer.close()
         del self.train_loss
 
-    def __str__(self) -> str:
-        """
-        :return: A string containing valuable information about the StatsManager
-        """
+    def __str__(self):
 
         description = "\n"
         description += f"# {self.name}\n"
