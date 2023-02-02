@@ -1,7 +1,7 @@
 from typing import Any, Optional, Type
 from collections import namedtuple
 from os.path import isdir
-from numpy import typeDict
+from numpy import sctypeDict as typeDict
 
 from DeepPhysX.Core.Network.BaseNetwork import BaseNetwork
 from DeepPhysX.Core.Network.BaseOptimization import BaseOptimization
