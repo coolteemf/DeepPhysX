@@ -107,6 +107,7 @@ class NetworkManager:
             if self.new_session and self.network_config.network_dir and isdir(self.network_config.network_dir):
                 self.network_dir = self.network_config.network_dir
                 self.load_network()
+                self.load_optimizer()
             self.network_dir = osPathJoin(self.session_dir, 'network/')
             self.network_dir = create_dir(self.network_dir, dir_name='network')
         # Prediction
@@ -117,6 +118,36 @@ class NetworkManager:
             self.network_dir = osPathJoin(self.session_dir, 'network/')
             # Load parameters
             self.load_network()
+
+    def load_optimizer(self):
+        """
+        | Load an existing set of parameters to the optimizer.
+        """
+
+        # Get eventual epoch saved optimizers
+        optimizers_list = [osPathJoin(self.network_dir, f) for f in listdir(self.network_dir) if
+                         isfile(osPathJoin(self.network_dir, f)) and f.__contains__('_optimizer_.')]
+        optimizers_list = sorted(optimizers_list)
+        # Add the final saved optimizer
+        last_saved_optimizer = [osPathJoin(self.network_dir, f) for f in listdir(self.network_dir) if
+                              isfile(osPathJoin(self.network_dir, f)) and f.__contains__('optimizer.')]
+        optimizers_list = optimizers_list + last_saved_optimizer
+        which_optimizer = self.network_config.which_network
+        if len(optimizers_list) == 0:
+            print(f"[{self.name}]: There is no optimizer in {self.network_dir}.")
+            return
+        elif len(optimizers_list) == 1:
+            which_optimizer = 0
+        elif len(optimizers_list) > 1 and which_optimizer is None:
+            print(f"[{self.name}] There is more than one optimizer in this directory, loading the most trained by "
+                  f"default. If you want to load another optimizer please use the 'which_network' variable.")
+            which_optimizer = -1
+        elif which_optimizer > len(optimizers_list) > 1:
+            print(f"[{self.name}] The selected optimizer doesn't exist (index is too big), loading the most trained "
+                  f"by default.")
+            which_optimizer = -1
+        print(f"[{self.name}]: Loading optimizer from {optimizers_list[which_optimizer]}.")
+        self.optimization.load_parameters(optimizers_list[which_optimizer], self.network.device)
 
     def load_network(self) -> None:
         """
@@ -223,6 +254,29 @@ class NetworkManager:
             print(f"[{self.name}] Saving intermediate network at {path}.")
             self.network.save_parameters(path)
 
+    def save_optimizer(self, last_save: bool = False) -> None:
+        """
+        | Save the optimizer with the corresponding suffix, so they do not erase the last save.
+
+        :param bool last_save: Do not add suffix if it's the last save
+        """
+
+        # Final session saving
+        if last_save:
+            path = self.network_dir + "optimizer"
+            print(f"[{self.name}] Saving final optimizer at {path}.")
+            self.optimization.save_parameters(path)
+
+        # Intermediate states saving
+        elif self.save_each_epoch:
+            print(" self.network_dir", self.network_dir)
+            print("self.network_template_name.format(self.saved_counter)",
+                  self.network_template_name.format(self.saved_counter))
+            path = self.network_dir + self.network_template_name.format(self.saved_counter)
+            self.saved_counter += 1
+            print(f"[{self.name}] Saving intermediate optimizer at {path}.")
+            self.optimization.optimizer.save_parameters(path)
+
     def set_eval(self) -> None:
         self.network.set_eval()
 
@@ -236,6 +290,7 @@ class NetworkManager:
 
         if self.training:
             self.save_network(last_save=True)
+            self.save_optimizer(last_save=True)
         del self.network
         del self.network_config
 
