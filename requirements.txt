@@ -1,7 +1,5 @@
 numpy
-vedo
+SimulationSimpleDatabase
 tensorboard
-tensorboardX
 pyDataverse
 torch
-yaml
