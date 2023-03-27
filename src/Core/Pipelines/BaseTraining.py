@@ -1,110 +1,130 @@
 from typing import Optional
-from sys import stdout
+from os.path import join, isfile, exists, sep
+from datetime import datetime
+from vedo import ProgressBar
 
+from DeepPhysX.Core.Pipelines.BasePipeline import BasePipeline
 from DeepPhysX.Core.Manager.DataManager import DataManager
 from DeepPhysX.Core.Manager.NetworkManager import NetworkManager
 from DeepPhysX.Core.Manager.StatsManager import StatsManager
-from DeepPhysX.Core.Pipelines.BasePipeline import BasePipeline
-from DeepPhysX.Core.Manager.Manager import Manager
 from DeepPhysX.Core.Network.BaseNetworkConfig import BaseNetworkConfig
-from DeepPhysX.Core.Dataset.BaseDatasetConfig import BaseDatasetConfig
+from DeepPhysX.Core.Database.BaseDatabaseConfig import BaseDatabaseConfig
 from DeepPhysX.Core.Environment.BaseEnvironmentConfig import BaseEnvironmentConfig
-from DeepPhysX.Core.Utils.progressbar import Progressbar
+from DeepPhysX.Core.Utils.path import get_first_caller, create_dir
 
 
-class BaseTrainer(BasePipeline):
-    """
-    | BaseTrainer is a pipeline defining the training process of an artificial neural network.
-    | It provides a highly tunable learning process that can be used with any machine learning library.
-
-    :param BaseNetworkConfig network_config: Specialisation containing the parameters of the network manager
-    :param BaseDatasetConfig dataset_config: Specialisation containing the parameters of the dataset manager
-    :param Optional[BaseEnvironmentConfig] environment_config: Specialisation containing the parameters of the
-                                                               environment manager
-    :param str session_name: Name of the newly created directory if session_dir is not defined
-    :param Optional[str] session_dir: Name of the directory in which to write all the necessary data
-    :param bool new_session: Define the creation of new directories to store data
-    :param int nb_epochs: Number of epochs
-    :param int nb_batches: Number of batches
-    :param int batch_size: Size of a batch
-    :param bool debug: If True, main training features will not be launched
-    """
+class BaseTraining(BasePipeline):
 
     def __init__(self,
                  network_config: BaseNetworkConfig,
-                 dataset_config: BaseDatasetConfig,
+                 database_config: BaseDatabaseConfig,
                  environment_config: Optional[BaseEnvironmentConfig] = None,
-                 session_name: str = 'default',
-                 session_dir: Optional[str] = None,
+                 session_dir: str = 'sessions',
+                 session_name: str = 'training',
                  new_session: bool = True,
-                 nb_epochs: int = 0,
-                 nb_batches: int = 0,
+                 epoch_nb: int = 0,
+                 batch_nb: int = 0,
                  batch_size: int = 0,
                  debug: bool = False,
                  do_validation: bool = False,
                  nb_validation_batches: int = 0,
+                 save_each_epoch: bool = False,
                  network_manager=NetworkManager,
                  data_manager=DataManager,
                  stats_manager=StatsManager):
+        """
+        BaseTraining implements the main loop that defines the training process of an artificial neural network.
+        Training can be launched with several data sources (from a Dataset, from an Environment, from combined sources).
+        It provides a highly tunable learning process that can be used with any machine learning library.
 
-        if environment_config is None and dataset_config.dataset_dir is None:
-            print("BaseTrainer: You have to give me a dataset source (existing dataset directory or simulation to "
-                  "create data on the fly")
-            quit(0)
+        :param network_config: Configuration object with the parameters of the Network.
+        :param database_config: Configuration object with the parameters of the Database.
+        :param environment_config: Configuration object with the parameters of the Environment.
+        :param session_dir: Relative path to the directory which contains sessions repositories.
+        :param session_name: Name of the new the session repository.
+        :param new_session: If True, a new repository will be created for this session.
+        :param epoch_nb: Number of epochs to perform.
+        :param batch_nb: Number of batches to use.
+        :param batch_size: Number of samples in a single batch.
+        :param debug: If True, main training features will not be launched.
+        """
 
         BasePipeline.__init__(self,
                               network_config=network_config,
-                              dataset_config=dataset_config,
+                              database_config=database_config,
                               environment_config=environment_config,
-                              session_name=session_name,
                               session_dir=session_dir,
+                              session_name=session_name,
+                              new_session=new_session,
                               pipeline='training')
 
-        # Training variables
-        self.nb_epochs = nb_epochs
-        self.id_epoch = 0
-        self.nb_batches = nb_batches
+        # Define the session repository
+        root = get_first_caller()
+        session_dir = join(root, session_dir)
+
+        # Create a new session if required
+        if not new_session:
+            new_session = not exists(join(session_dir, session_name))
+        if new_session:
+            session_name = create_dir(session_dir=session_dir,
+                                      session_name=session_name).split(sep)[-1]
+        self.session = join(session_dir, session_name)
+
+        # Configure 'produce_data' flag
+        if environment_config is None and database_config.existing_dir is None:
+            raise ValueError(f"[{self.name}] No data source provided.")
+        produce_data = database_config.existing_dir is None
+
+        # Create a DataManager
+        self.data_manager = data_manager(pipeline=self,
+                                        database_config=database_config,
+                                        environment_config=environment_config,
+                                        session=self.session,
+                                        new_session=new_session,
+                                        produce_data=produce_data,
+                                        batch_size=batch_size)
         self.batch_size = batch_size
-        self.id_batch = 0
-        self.nb_samples = nb_batches * batch_size * nb_epochs
+
+        # Create a NetworkManager
+        self.network_manager = network_manager(network_config=network_config,
+                                              pipeline=self.type,
+                                              session=self.session,
+                                              new_session=new_session)
+        self.data_manager.connect_handler(self.network_manager.get_database_handler())
+        self.network_manager.link_clients(self.data_manager.nb_environment)
+
+        # Create a StatsManager
+        self.stats_manager = stats_manager(session=self.session) if not debug else None
+
+        # Training variables
+        self.epoch_nb = epoch_nb
+        self.epoch_id = 0
+        self.batch_nb = batch_nb
+        self.batch_size = batch_size
+        self.batch_id = 0
+        self.nb_samples = batch_nb * batch_size * epoch_nb
         self.loss_dict = None
-
-        # Tell if data is recording while predicting (output is recorded only if input too)
-        self.record_data = {'input': True, 'output': True}
-
         self.debug = debug
-        if not self.debug:
-            self.progress_counter = 0
-            self.digits = ['{' + f':0{len(str(self.nb_epochs))}d' + '}',
-                           '{' + f':0{len(str(self.nb_batches))}d' + '}']
-            id_epoch, nb_epoch = self.digits[0].format(0), self.digits[0].format(self.nb_epochs)
-            id_batch, nb_batch = self.digits[1].format(0), self.digits[1].format(self.nb_batches)
-            self.progress_bar = Progressbar(start=0, stop=self.nb_batches * self.nb_epochs, c='orange',
-                                            title=f'Epoch n°{id_epoch}/{nb_epoch} - Batch n°{id_batch}/{nb_batch} ')
-
         self.do_validation = do_validation
         self.nb_validation_batches = nb_validation_batches
+        self.save_each_epoch = save_each_epoch
 
-        self.manager = Manager(pipeline=self,
-                               network_config=self.network_config,
-                               dataset_config=dataset_config,
-                               environment_config=self.environment_config,
-                               session_name=session_name,
-                               session_dir=session_dir,
-                               new_session=new_session,
-                               batch_size=batch_size,
-                               network_manager=network_manager,
-                               data_manager=data_manager,
-                               stats_manager=stats_manager)
+        # Progressbar
+        self.progress_counter = 0
+        self.digits = ['{' + f':0{len(str(self.epoch_nb))}d' + '}',
+                       '{' + f':0{len(str(self.batch_nb))}d' + '}']
+        epoch_id, epoch_nb = self.digits[0].format(0), self.digits[0].format(self.epoch_nb)
+        batch_id, batch_nb = self.digits[1].format(0), self.digits[1].format(self.batch_nb)
+        self.progress_bar = ProgressBar(start=0, stop=self.batch_nb * self.epoch_nb, c='orange',
+                                        title=f'Epoch n°{epoch_id}/{epoch_nb} - Batch n°{batch_id}/{batch_nb}')
 
-        self.manager.save_info_file()
+        self.save_info_file()
 
     def execute(self) -> None:
         """
-        | Main function of the training process \"execute\" call the functions associated with the learning process.
-        | Each of the called functions are already implemented so one can start a basic training.
-        | Each of the called function can also be rewritten via inheritance to provide more specific / complex training
-          process.
+        Launch the training Pipeline.
+        Each event is already implemented for a basic pipeline but can also be rewritten via inheritance to describe a
+        more complex Pipeline.
         """
 
         self.train_begin()
@@ -117,162 +137,155 @@ class BaseTrainer(BasePipeline):
                 self.batch_end()
             self.epoch_count()
             self.epoch_end()
-            self.save_network()
         self.train_end()
-
-    def optimize(self) -> None:
-        """
-        | Pulls data from the manager and run a prediction and optimizer step.
-        """
-
-        self.manager.get_data(self.id_epoch, self.batch_size)
-        _, self.loss_dict = self.manager.optimize_network()
-
-    def execute_validation(self):
-        self.manager.set_eval()
-        id_batch = 0
-        while id_batch < self.nb_validation_batches:
-            self.validate()
-            id_batch += 1
-
-    def validate(self):
-        """
-        | Pulls data from the manager and run a prediction step.
-        """
-        self.manager.get_data(epoch=0, batch_size=self.batch_size)
-        prediction, self.loss_dict = self.manager.get_prediction()
-
-    def execute_validation(self):
-        self.manager.set_eval()
-        id_batch = 0
-        while id_batch < self.nb_validation_batches:
-            self.validate()
-            id_batch += 1
-
-    def validate(self):
-        """
-        | Pulls data from the manager and run a prediction step.
-        """
-        self.manager.get_data(self.id_epoch, self.batch_size)
-        prediction, self.loss_dict = self.manager.get_prediction()
-
-    def save_network(self) -> None:
-        """
-        | Registers the network weights and biases in the corresponding directory (session_name/network or
-          session_dir/network)
-        """
-
-        self.manager.save_network()
 
     def train_begin(self) -> None:
         """
-        | Called once at the very beginning of the training process.
-        | Allows the user to run some pre-computations.
+        Called once at the beginning of the training Pipeline.
         """
 
         pass
 
-    def train_end(self) -> None:
+    def epoch_condition(self) -> bool:
         """
-        | Called once at the very end of the training process.
-        | Allows the user to run some post-computations.
+        Check the epoch number condition.
         """
 
-        self.manager.close()
+        return self.epoch_id < self.epoch_nb
 
     def epoch_begin(self) -> None:
         """
-        | Called one at the start of each epoch.
-        | Allows the user to run some pre-epoch computations.
+        Called one at the beginning of each epoch.
         """
 
-        self.id_batch = 0
-        self.manager.set_train()
-
-    def epoch_end(self) -> None:
-        """
-        | Called one at the end of each epoch.
-        | Allows the user to run some post-epoch computations.
-        """
-
-        self.manager.stats_manager.add_train_epoch_loss(self.loss_dict['loss'], self.id_epoch)
-        if self.do_validation:
-            self.execute_validation()
-
-    def epoch_condition(self) -> bool:
-        """
-        | Condition that characterize the end of the training process.
-        
-        :return: False if the training needs to stop.
-        """
-
-        return self.id_epoch < self.nb_epochs
-
-    def epoch_count(self) -> None:
-        """
-        | Allows user for custom update of epochs count.
-        """
-
-        self.id_epoch += 1
-
-    def batch_begin(self) -> None:
-        """
-        | Called one at the start of each batch.
-        | Allows the user to run some pre-batch computations.
-        """
-
-        if not self.debug:
-            stdout.write("\033[K")
-            self.progress_counter += 1
-            id_epoch, nb_epoch = self.digits[0].format(self.id_epoch + 1), self.digits[0].format(self.nb_epochs)
-            id_batch, nb_batch = self.digits[1].format(self.id_batch + 1), self.digits[1].format(self.nb_batches)
-            self.progress_bar.title = f'Epoch n°{id_epoch}/{nb_epoch} - Batch n°{id_batch}/{nb_batch} '
-            self.progress_bar.print(counts=self.progress_counter)
-
-    def batch_end(self) -> None:
-        """
-        | Called one at the start of each batch.
-        | Allows the user to run some post-batch computations.
-        """
-
-        self.manager.stats_manager.add_train_batch_loss(self.loss_dict['loss'],
-                                                        self.id_epoch * self.nb_batches + self.id_batch)
-        for key in self.loss_dict.keys():
-            if key != 'loss':
-                self.manager.stats_manager.add_custom_scalar(tag=key,
-                                                             value=self.loss_dict[key],
-                                                             count=self.id_epoch * self.nb_batches + self.id_batch)
+        self.data_manager.set_train()
+        self.network_manager.set_train()
+        self.stats_manager.set_train()
+        self.batch_id = 0
 
     def batch_condition(self) -> bool:
         """
-        | Condition that characterize the end of the epoch.
-        
-        :return: False if the epoch needs to stop.
+        Check the batch number condition.
         """
 
-        return self.id_batch < self.nb_batches
+        return self.batch_id < self.batch_nb
 
-    def batch_count(self):
+    def batch_begin(self) -> None:
         """
-        | Allows user for custom update of batches count.
-        
-        :return:
+        Called one at the beginning of a batch production.
         """
 
-        self.id_batch += 1
+        self.progress_counter += 1
+        id_epoch, nb_epoch = self.digits[0].format(self.epoch_id + 1), self.digits[0].format(self.epoch_nb)
+        id_batch, nb_batch = self.digits[1].format(self.batch_id + 1), self.digits[1].format(self.batch_nb)
+        self.progress_bar.title = f'Epoch n°{id_epoch}/{nb_epoch} - Batch n°{id_batch}/{nb_batch} '
+        self.progress_bar.print(counts=self.progress_counter)
 
-    def __str__(self) -> str:
+    def optimize(self) -> None:
         """
-        :return: str Contains training information about the training process
+        Pulls data, run a prediction and an optimizer step.
+        """
+        self.data_manager.get_data(epoch=self.epoch_id,
+                                   animate=True)
+        self.loss_dict = self.network_manager.compute_prediction_and_loss(
+            data_lines=self.data_manager.data_lines,
+            normalization=self.data_manager.normalization,
+            optimize=True)
+
+    def execute_validation(self):
+        self.data_manager.set_eval()
+        self.network_manager.set_eval()
+        self.stats_manager.set_eval()
+        id_batch = 0
+        while id_batch < self.nb_validation_batches:
+            self.validate()
+            id_batch += 1
+
+    def validate(self):
+        """
+        | Pulls data from the manager and run a prediction step.
+        """
+        self.data_manager.get_data(epoch=0)
+        prediction, self.loss_dict = self.manager.get_prediction()
+
+    def batch_count(self) -> None:
+        """
+        Increment the batch counter.
         """
 
-        description = "\n"
-        description += f"# {self.__class__.__name__}\n"
-        description += f"    Session directory: {self.manager.session_dir}\n"
-        description += f"    Number of epochs: {self.nb_epochs}\n"
-        description += f"    Number of batches per epoch: {self.nb_batches}\n"
+        self.batch_id += 1
+
+    def batch_end(self) -> None:
+        """
+        Called one at the end of a batch production.
+        """
+
+        if self.stats_manager is not None:
+            self.stats_manager.add_train_batch_loss(self.loss_dict['loss'],
+                                                    self.epoch_id * self.batch_nb + self.batch_id)
+            for key in self.loss_dict.keys():
+                if key != 'loss':
+                    self.stats_manager.add_custom_scalar(tag=key,
+                                                         value=self.loss_dict[key],
+                                                         count=self.epoch_id * self.batch_nb + self.batch_id)
+
+    def epoch_count(self) -> None:
+        """
+        Increment the epoch counter.
+        """
+
+        self.epoch_id += 1
+
+    def epoch_end(self) -> None:
+        """
+        Called one at the end of each epoch.
+        """
+
+        if self.stats_manager is not None:
+            self.stats_manager.add_train_epoch_loss(self.loss_dict['loss'], self.epoch_id)
+        self.network_manager.save_network()
+        if self.do_validation:
+            self.execute_validation()
+
+    def train_end(self) -> None:
+        """
+        Called once at the end of the training Pipeline.
+        """
+
+        self.data_manager.close()
+        self.network_manager.close()
+        if self.stats_manager is not None:
+            self.stats_manager.close()
+
+    def save_info_file(self) -> None:
+        """
+        Save a .txt file that provides a template for user notes and the description of all the components.
+        """
+
+        filename = join(self.session, 'info.txt')
+        date_time = datetime.now().strftime('%d/%m/%Y %H:%M:%S')
+        if not isfile(filename):
+            f = open(filename, "w+")
+            # Session description template for user
+            f.write("## DeepPhysX Training Session ##\n")
+            f.write(date_time + "\n\n")
+            f.write("Personal notes on the training session:\nNetwork Input:\nNetwork Output:\nComments:\n\n")
+            # Listing every component descriptions
+            f.write("## List of Components Parameters ##\n")
+            f.write(str(self))
+            f.write(str(self.network_manager))
+            f.write(str(self.data_manager))
+            if self.stats_manager is not None:
+                f.write(str(self.stats_manager))
+            f.close()
+
+    def __str__(self):
+
+        description = BasePipeline.__str__(self)
+        description += f"    Number of epochs: {self.epoch_nb}\n"
+        description += f"    Number of batches per epoch: {self.batch_nb}\n"
         description += f"    Number of samples per batch: {self.batch_size}\n"
-        description += f"    Number of samples per epoch: {self.nb_batches * self.batch_size}\n"
-        description += f"    Total: Number of batches : {self.nb_batches * self.nb_epochs}\n"
+        description += f"    Number of samples per epoch: {self.batch_nb * self.batch_size}\n"
+        description += f"    Total: Number of batches : {self.batch_nb * self.epoch_nb}\n"
         description += f"           Number of samples : {self.nb_samples}\n"
         return description
