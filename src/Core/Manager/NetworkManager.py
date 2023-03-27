@@ -33,7 +33,7 @@ class NetworkManager:
         self.session: str = session
         self.new_session: bool = new_session
         self.network_dir: Optional[str] = None
-        self.network_template_name: str = session.split(sep)[-1] + '_network_{}'
+        self.network_template_name: str = '_network_{}'
         self.saved_counter: int = 0
         self.save_each_epoch: bool = network_config.save_each_epoch
 
@@ -201,7 +201,8 @@ class NetworkManager:
 
         # 3. Compute loss
         data_pred, data_opt = self.data_transformation.transform_before_loss(data_pred, data_opt)
-        data_loss = self.optimization.compute_loss(data_pred, data_opt)
+        data_loss = self.optimization.compute_loss({'prediction': data_pred},
+                                                   {'ground_truth': data_opt})
 
         # 4. Optimize network if training
         if optimize:
@@ -278,6 +279,12 @@ class NetworkManager:
     #                                   Manager behavior                                     #
     ##########################################################################################
     ##########################################################################################
+
+    def set_eval(self) -> None:
+        self.network.set_eval()
+
+    def set_train(self) -> None:
+        self.network.set_train()
 
     def close(self) -> None:
         """
