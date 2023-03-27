@@ -5,14 +5,13 @@ from DeepPhysX.Core.Network.BaseNetwork import BaseNetwork
 
 
 class BaseOptimization:
-    """
-    | BaseOptimization is dedicated to network optimization: compute loss between prediction and target, update
-      network parameters.
-
-    :param namedtuple config: Namedtuple containing BaseOptimization parameters
-    """
 
     def __init__(self, config: namedtuple):
+        """
+        BaseOptimization computes loss between prediction and target and optimizes the Network parameters.
+
+        :param config: Set of BaseOptimization parameters.
+        """
 
         self.manager: Any = None
 
@@ -28,53 +27,53 @@ class BaseOptimization:
 
     def set_loss(self) -> None:
         """
-        | Initialize the loss function.
+        Initialize the loss function.
         """
 
         raise NotImplementedError
 
-    def compute_loss(self, prediction: Any, ground_truth: Any, data: Dict[str, Any]) -> Dict[str, float]:
+    def compute_loss(self,
+                     data_pred: Dict[str, Any],
+                     data_opt: Dict[str, Any]) -> Dict[str, Any]:
         """
-        | Compute loss from prediction / ground truth.
+        Compute loss from prediction / ground truth.
 
-        :param Any prediction: Tensor produced by the forward pass of the Network
-        :param Any ground_truth: Ground truth tensor to be compared with prediction
-        :param Dict[str, Any] data: Additional data sent as dict to compute loss value
-        :return: Loss value
-        """
-
-        raise NotImplementedError
-
-    def transform_loss(self, data: Dict[str, Any]) -> Dict[str, float]:
-        """
-        | Apply a transformation on the loss value using the potential additional data.
-
-        :param Dict[str, Any] data: Additional data sent as dict to compute loss value
-        :return: Transformed loss value
+        :param data_pred: Tensor produced by the forward pass of the Network.
+        :param data_opt: Ground truth tensor to be compared with prediction.
+        :return: Loss value.
         """
 
         raise NotImplementedError
 
-    def set_optimizer(self, net: BaseNetwork) -> None:
+    def transform_loss(self,
+                       data_opt: Dict[str, Any]) -> Dict[str, float]:
         """
-        | Define an optimization process.
+        Apply a transformation on the loss value using the potential additional data.
 
-        :param BaseNetwork net: Network whose parameters will be optimized.
+        :param data_opt: Additional data sent as dict to compute loss value
+        :return: Transformed loss value.
+        """
+
+        raise NotImplementedError
+
+    def set_optimizer(self,
+                      net: BaseNetwork) -> None:
+        """
+        Define an optimization process.
+
+        :param net: Network whose parameters will be optimized.
         """
 
         raise NotImplementedError
 
     def optimize(self) -> None:
         """
-        | Run an optimization step.
+        Run an optimization step.
         """
 
         raise NotImplementedError
 
-    def __str__(self) -> str:
-        """
-        :return: String containing information about the BaseOptimization object
-        """
+    def __str__(self):
 
         description = "\n"
         description += f"  {self.__class__.__name__}\n"
