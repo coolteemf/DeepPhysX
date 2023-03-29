@@ -158,9 +158,7 @@ class BaseTraining(BasePipeline):
         Called one at the beginning of each epoch.
         """
 
-        self.data_manager.set_train()
-        self.network_manager.set_train()
-        self.stats_manager.set_train()
+        self.set_train()
         self.batch_id = 0
 
     def batch_condition(self) -> bool:
@@ -193,9 +191,7 @@ class BaseTraining(BasePipeline):
             optimize=True)
 
     def execute_validation(self):
-        self.data_manager.set_eval()
-        self.network_manager.set_eval()
-        self.stats_manager.set_eval()
+        self.set_eval()
         id_batch = 0
         while id_batch < self.nb_validation_batches:
             self.validate()
@@ -246,6 +242,7 @@ class BaseTraining(BasePipeline):
         self.network_manager.save_network()
         if self.do_validation:
             self.execute_validation()
+            self.stats_manager.add_test_loss(self.loss_dict['loss'], self.epoch_id)
 
     def train_end(self) -> None:
         """
@@ -256,6 +253,14 @@ class BaseTraining(BasePipeline):
         self.network_manager.close()
         if self.stats_manager is not None:
             self.stats_manager.close()
+
+    def set_eval(self):
+        self.data_manager.set_eval()
+        self.network_manager.set_eval()
+
+    def set_train(self):
+        self.data_manager.set_train()
+        self.network_manager.set_train()
 
     def save_info_file(self) -> None:
         """
