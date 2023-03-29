@@ -36,19 +36,18 @@ class StatsManager:
         self.writer: SummaryWriter = SummaryWriter(self.log_dir)
 
         # Open Tensorboard
-        if not self.manager.pipeline.debug:
-            tb = program.TensorBoard()
-            port = 6006
-            tb.configure(argv=[None, '--logdir', self.log_dir, '--port', str(port)])
-            while True and port<7000:
-                try:
-                    url = tb.launch()
-                    break
-                except:
-                    port +=1
-                    tb.configure(argv=[None, '--logdir', self.log_dir, '--port', str(port)])
-                    continue
-            w_open(url)
+        tb = program.TensorBoard()
+        port = 6006
+        tb.configure(argv=[None, '--logdir', self.log_dir, '--port', str(port)])
+        while True and port<7000:
+            try:
+                url = tb.launch()
+                break
+            except:
+                port +=1
+                tb.configure(argv=[None, '--logdir', self.log_dir, '--port', str(port)])
+                continue
+        w_open(url)
 
         # Values
         self.mean: ndarray = full(4, inf)  # Contains in the 1st dimension the mean, and 2nd the variance of the mean
