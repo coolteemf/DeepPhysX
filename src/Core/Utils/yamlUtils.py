@@ -102,7 +102,7 @@ def convert_type_to_type_str(type_to_convert: type):
 
 def unpack_pipeline_config(pipeline_config):
     """Initializes the network, environment and dataset config objects from the pipeline config."""
-    nested_configs_keys = ['network_config', 'environment_config', 'dataset_config']
+    nested_configs_keys = ['network_config', 'environment_config', 'database_config']
     unpacked = {}
     for key in pipeline_config:
         if key in nested_configs_keys and pipeline_config[key] is not None:
