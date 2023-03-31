@@ -201,8 +201,7 @@ class NetworkManager:
 
         # 3. Compute loss
         data_pred, data_opt = self.data_transformation.transform_before_loss(data_pred, data_opt)
-        data_loss = self.optimization.compute_loss({'prediction': data_pred},
-                                                   {'ground_truth': data_opt})
+        data_loss = self.optimization.compute_loss(data_pred, data_opt)
 
         # 4. Optimize network if training
         if optimize:
