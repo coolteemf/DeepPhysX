@@ -3,6 +3,8 @@ from os.path import join, isfile, exists, sep
 from datetime import datetime
 from vedo import ProgressBar
 
+import torch
+
 from DeepPhysX.Core.Pipelines.BasePipeline import BasePipeline
 from DeepPhysX.Core.Manager.DataManager import DataManager
 from DeepPhysX.Core.Manager.NetworkManager import NetworkManager
@@ -129,11 +131,18 @@ class BaseTraining(BasePipeline):
         self.train_begin()
         while self.epoch_condition():
             self.epoch_begin()
-            while self.batch_condition():
-                self.batch_begin()
-                self.optimize()
-                self.batch_count()
-                self.batch_end()
+            with torch.profiler.profile(schedule=torch.profiler.schedule(wait=1, warmup=3, active=self.batch_nb - 4),
+            on_trace_ready=torch.profiler.tensorboard_trace_handler(
+                f"/home/francois/Projects/nn_log"),
+            record_shapes=True,
+            with_stack=False) as prof:
+                while self.batch_condition():
+                    self.batch_begin()
+                    self.optimize()
+                    self.batch_count()
+                    self.batch_end()
+                    prof.step()
+            print(prof.key_averages().table(sort_by="cuda_time_total", row_limit=-1))
             self.epoch_count()
             self.epoch_end()
         self.train_end()
