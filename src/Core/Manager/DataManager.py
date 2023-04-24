@@ -131,20 +131,23 @@ class DataManager:
         else:
 
             # Get data from Dataset
-            if self.environment_manager.load_samples:
-                if load_samples:
-                    self.data_lines = self.database_manager.get_data(batch_size=1)
-                self.environment_manager.dispatch_batch(data_lines=self.data_lines,
-                                                        animate=animate,
-                                                        request_prediction=True,
-                                                        save_data=self.produce_data)
-            # Get data from Environment
+            if self.environment_manager is None:
+                self.data_lines = self.database_manager.get_data(batch_size=1)
             else:
-                self.data_lines = self.environment_manager.get_data(animate=animate,
-                                                                    request_prediction=True,
-                                                                    save_data=self.produce_data)
-                if self.produce_data:
-                    self.database_manager.add_data(self.data_lines)
+                if self.environment_manager.load_samples:
+                    if load_samples:
+                        self.data_lines = self.database_manager.get_data(batch_size=1)
+                    self.environment_manager.dispatch_batch(data_lines=self.data_lines,
+                                                            animate=animate,
+                                                            request_prediction=True,
+                                                            save_data=self.produce_data)
+                # Get data from Environment
+                else:
+                    self.data_lines = self.environment_manager.get_data(animate=animate,
+                                                                        request_prediction=True,
+                                                                        save_data=self.produce_data)
+                    if self.produce_data:
+                        self.database_manager.add_data(self.data_lines)
 
     def load_sample(self) -> List[int]:
         """
