@@ -255,7 +255,8 @@ class NetworkManager:
             data_pred[field].reshape(-1)
         self.database_handler.update(table_name='Exchange',
                                      data=data_pred,
-                                     line_id=instance_id)
+                                     line_id=instance_id,
+                                     create_fields=True)
 
     @classmethod
     def normalize_data(cls,
