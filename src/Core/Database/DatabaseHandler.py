@@ -206,18 +206,20 @@ class DatabaseHandler:
     def update(self,
                table_name: str,
                data: Dict[str, Any],
-               line_id: Union[int, List[int]]) -> None:
+               line_id: Union[int, List[int]],
+               create_fields: bool = False) -> None:
         """
         Update a line in a Database.
 
         :param table_name: Name of the Table.
         :param data: Updated line of the Table.
         :param line_id: Index of the line to edit.
+        :param create_fields: Create missing fields.
         """
 
         database = self.__exchange_db if table_name == 'Exchange' else self.__storing_partitions[line_id[0]]
         line_id = line_id[1] if type(line_id) == list else line_id
-        database.update(table_name=table_name, data=data, line_id=line_id)
+        database.update(table_name=table_name, data=data, line_id=line_id, create_fields=create_fields)
 
     def get_line(self,
                  table_name: str,
