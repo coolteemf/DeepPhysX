@@ -53,18 +53,18 @@ class BasePrediction(BasePipeline):
 
         # Create a NetworkManager
         self.network_manager = network_manager(network_config=network_config,
-                                              pipeline=self.type,
-                                              session=self.session,
-                                              new_session=False)
+                                               pipeline=self.type,
+                                               session=self.session,
+                                               new_session=False)
 
         # Create a DataManager
         self.data_manager = data_manager(pipeline=self,
-                                        database_config=database_config,
-                                        environment_config=environment_config,
-                                        session=self.session,
-                                        new_session=False,
-                                        produce_data=record,
-                                        batch_size=1)
+                                         database_config=database_config,
+                                         environment_config=environment_config,
+                                         session=self.session,
+                                         new_session=False,
+                                         produce_data=record,
+                                         batch_size=1)
         self.data_manager.connect_handler(self.network_manager.get_database_handler())
         self.network_manager.link_clients(self.data_manager.nb_environment)
 
@@ -111,11 +111,27 @@ class BasePrediction(BasePipeline):
 
     def predict(self) -> None:
         """
-        Pull the data from the manager and return the prediction.
+        Pull the data from the manager and return the prediction in the Exchange table of database handler.
         """
 
         self.data_manager.get_data(epoch=0,
                                    animate=True)
+        if self.data_manager.environment_manager is None:
+            # Get the batch from the Database
+            batch = self.network_manager.database_handler.get_lines(table_name='Training',
+                                                                    lines_id=self.data_manager.data_lines)
+            for key in batch.keys():
+                if isinstance(batch[key], dict):  # The element is from a referenced table
+                    batch[key] = batch[key][key]
+                for i, element in enumerate(batch[key]):
+                    # Put the batch in the Exchange table
+                    self.network_manager.get_database_handler().update(table_name='Exchange',
+                                                                       data={key: element},
+                                                                       line_id=i+1,
+                                                                       create_fields=True)
+                    # Compute the prediction from the Exchange table
+                    self.network_manager.compute_online_prediction(instance_id=i+1,
+                                                                   normalization=self.data_manager.normalization)
 
     def sample_end(self) -> None:
         """
