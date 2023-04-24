@@ -114,9 +114,8 @@ class BasePrediction(BasePipeline):
         Pull the data from the manager and return the prediction.
         """
 
-        self.network_manager.compute_prediction_and_loss(optimize=False,
-                                                         data_lines=list(self.step_id),
-                                                         normalization=self.data_manager.normalization)
+        self.data_manager.get_data(epoch=0,
+                                   animate=True)
 
     def sample_end(self) -> None:
         """
